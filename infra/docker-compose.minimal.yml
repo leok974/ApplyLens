@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports: ["5433:5432"]
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  api:
+    build: ./../services/api
+    working_dir: /app
+    command: bash -lc "uvicorn app.main:app --host 0.0.0.0 --port ${API_PORT}"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      CORS_ORIGINS: http://localhost:${WEB_PORT}
+      ES_ENABLED: "false"
+    volumes:
+      - ../services/api:/app
+    ports: ["${API_PORT}:${API_PORT}"]
+    depends_on:
+      - db
+
+  web:
+    build: ./../apps/web
+    working_dir: /web
+    command: bash -lc "npm install && npm run dev -- --host"
+    ports: ["${WEB_PORT}:${WEB_PORT}"]
+    volumes:
+      - ../apps/web:/web
+    depends_on: [api]
+
+volumes:
+  db_data:

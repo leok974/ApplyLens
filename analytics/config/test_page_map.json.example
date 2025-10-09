@@ -1,0 +1,9 @@
+{
+  "_comment": "Optional: Map test names to page paths for weight recommendations",
+  "_example_mappings": {
+    "login flow test": "/login",
+    "checkout test": "/checkout",
+    "homepage performance": "/",
+    "search functionality": "/search"
+  }
+}

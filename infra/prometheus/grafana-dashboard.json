@@ -1,0 +1,205 @@
+{
+  "dashboard": {
+    "title": "ApplyLens API Overview",
+    "uid": "applylens-overview",
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "title": "HTTP req/s",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum by (method,status_code) (rate(applylens_http_requests_total[5m]))",
+            "legendFormat": "{{method}} {{status_code}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "fillOpacity": 10
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "title": "HTTP latency (p50/p90/p99)",
+        "type": "timeseries",
+        "targets": [
+          { 
+            "expr": "histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          { 
+            "expr": "histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+            "legendFormat": "p90",
+            "refId": "B"
+          },
+          { 
+            "expr": "histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": { 
+          "defaults": { 
+            "unit": "s",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "fillOpacity": 10
+            }
+          } 
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
+        "title": "Backfill outcomes (last 1h)",
+        "type": "bargauge",
+        "options": { 
+          "orientation": "horizontal",
+          "displayMode": "gradient"
+        },
+        "targets": [
+          { 
+            "expr": "sum by (result) (increase(applylens_backfill_requests_total[1h]))", 
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
+        "title": "Emails inserted (rate)",
+        "type": "timeseries",
+        "targets": [
+          { 
+            "expr": "rate(applylens_backfill_inserted_total[5m]) * 60", 
+            "legendFormat": "emails/min",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "fillOpacity": 10
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
+        "title": "Subsystem health",
+        "type": "stat",
+        "targets": [
+          { 
+            "expr": "max(applylens_db_up)", 
+            "legendFormat": "Database",
+            "refId": "A"
+          },
+          { 
+            "expr": "max(applylens_es_up)", 
+            "legendFormat": "Elasticsearch",
+            "refId": "B"
+          }
+        ],
+        "options": { 
+          "reduceOptions": { 
+            "calcs": ["last"] 
+          }, 
+          "orientation": "horizontal",
+          "textMode": "value_and_name",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 1, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+        "title": "Gmail connected (per user)",
+        "type": "table",
+        "targets": [
+          { 
+            "expr": "applylens_gmail_connected", 
+            "legendFormat": "{{user_email}}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "job": true,
+                "instance": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+        "title": "HTTP Error Rate (5m)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(rate(applylens_http_requests_total{status_code=~\"5..\"}[5m])) / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))",
+            "legendFormat": "Error rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "fillOpacity": 10
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 0.05, "color": "red" }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

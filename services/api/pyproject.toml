@@ -1,0 +1,33 @@
+[project]
+name = "applylens-api"
+version = "0.1.0"
+description = "ApplyLens FastAPI backend"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic-settings",
+  "SQLAlchemy>=2.0",
+  "psycopg2-binary",
+  "alembic",
+  "python-multipart",
+  "orjson",
+  "elasticsearch>=8,<9",
+  "httpx",
+  "google-auth",
+  "google-auth-oauthlib",
+  "google-api-python-client",
+  "pdfminer.six",
+  "beautifulsoup4",
+  "bleach",
+  "python-dateutil",
+  "python-slugify",
+  "starlette-exporter",
+  "prometheus-client",
+]
+
+[tool.uvicorn]
+factory = true
+
+[tool.setuptools]
+py-modules = []

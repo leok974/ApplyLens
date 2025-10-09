@@ -1,0 +1,403 @@
+import os
+import re
+import base64
+import email
+import datetime as dt
+from typing import Dict, List, Optional
+from dateutil.relativedelta import relativedelta
+from bs4 import BeautifulSoup
+import bleach
+
+from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request as GRequest
+
+from sqlalchemy.orm import Session
+from .models import OAuthToken, Email, Application, AppStatus
+from .ingest.gmail_metrics import compute_thread_reply_metrics
+
+from elasticsearch import Elasticsearch, helpers
+
+ELASTICSEARCH_URL = os.getenv("ES_URL")
+ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")
+
+LABEL_MAP_BOOSTS = {
+    "interview": 3.0,
+    "offer": 4.0,
+    "rejection": 0.5,
+}
+
+ATS_SYNONYMS = ["lever", "workday", "smartrecruiters", "greenhouse"]
+
+def _get_creds(db: Session, user_email: str) -> Credentials:
+    tok: OAuthToken = db.query(OAuthToken).filter_by(provider="google", user_email=user_email).first()
+    if not tok:
+        raise ValueError("No OAuth token for user")
+    creds = Credentials(
+        token=tok.access_token,
+        refresh_token=tok.refresh_token,
+        token_uri=tok.token_uri,
+        client_id=tok.client_id,
+        client_secret=tok.client_secret,
+        scopes=tok.scopes.split()
+    )
+    if not creds.valid and creds.refresh_token:
+        creds.refresh(GRequest())
+        # persist refreshed tokens
+        tok.access_token = creds.token
+        tok.expiry = creds.expiry
+        db.commit()
+    return creds
+
+def _strip_html(html: str) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+    text = soup.get_text(" ", strip=True)
+    # light sanitize
+    return bleach.clean(text, tags=[], strip=True)
+
+def _parts_to_text(payload: dict) -> str:
+    # Prefer text/plain
+    def find_text_plain(p):
+        if p.get("mimeType") == "text/plain" and p.get("body", {}).get("data"):
+            return base64.urlsafe_b64decode(p["body"]["data"]).decode(errors="replace")
+        for sp in p.get("parts", []) or []:
+            v = find_text_plain(sp)
+            if v: return v
+        return None
+
+    def find_text_html(p):
+        if p.get("mimeType") == "text/html" and p.get("body", {}).get("data"):
+            html = base64.urlsafe_b64decode(p["body"]["data"]).decode(errors="replace")
+            return _strip_html(html)
+        for sp in p.get("parts", []) or []:
+            v = find_text_html(sp)
+            if v: return v
+        return None
+
+    text = find_text_plain(payload)
+    if text:
+        return text
+    html_text = find_text_html(payload)
+    if html_text:
+        return html_text
+    # Fallback: body.data at top
+    body = payload.get("body", {}).get("data")
+    if body:
+        raw = base64.urlsafe_b64decode(body).decode(errors="replace")
+        try:
+            return _strip_html(raw)
+        except Exception:
+            return raw
+    return ""
+
+def _header(headers: List[Dict], name: str) -> Optional[str]:
+    for h in headers:
+        if h.get("name", "").lower() == name.lower():
+            return h.get("value")
+    return None
+
+INTERVIEW_REGEX = re.compile(r"(?i)\binterview|phone screen|onsite\b")
+REJECT_REGEX = re.compile(r"(?i)\b(not selected|unfortunately|regret to inform|rejection)\b")
+OFFER_REGEX = re.compile(r"(?i)\boffer\b")
+RECEIPT_REGEX = re.compile(r"(?i)\bapplication (received|submitted|confirmation)\b")
+NEWSLETTER_HINT = re.compile(r"(?i)\bunsubscribe\b")
+
+# NEW: Company and role extraction patterns
+COMPANY_REGEX = re.compile(r"(?i)(?:from|at|with|@)\s+([A-Z][A-Za-z0-9\s&.,'-]{2,40}?)(?:\s+(?:team|recruiting|talent|hr|careers)|\s*<|\s*\(|$)")
+ROLE_REGEX = re.compile(r"(?i)(?:for|position:|role:|as)\s+([A-Za-z0-9\s/+-]{3,60}?)(?:\s+at|\s+position|\s*-|\s*\||$)")
+
+def extract_company(sender: str, body: str) -> Optional[str]:
+    """Extract company name from sender or body text"""
+    # Try sender domain first
+    if sender and "@" in sender:
+        domain = sender.split("@")[1].split(">")[0].strip()
+        # Extract main domain (e.g., acme.com from careers.acme.com)
+        parts = domain.split(".")
+        if len(parts) >= 2:
+            company = parts[-2].capitalize()
+            if company.lower() not in ["gmail", "yahoo", "outlook", "hotmail", "mail"]:
+                return company
+    
+    # Try body text pattern matching
+    match = COMPANY_REGEX.search(body[:500] if body else "")
+    if match:
+        return match.group(1).strip()
+    
+    return None
+
+def extract_role(subject: str) -> Optional[str]:
+    """Extract job role from subject line"""
+    if not subject:
+        return None
+    match = ROLE_REGEX.search(subject)
+    if match:
+        return match.group(1).strip()
+    return None
+
+def extract_source(headers: List[Dict], sender: str, subject: str, body: str) -> Optional[str]:
+    """Extract ATS/source from headers or content"""
+    hnames = {h["name"].lower(): h["value"] for h in headers}
+    for k in ["list-unsubscribe", "x-mailer", "x-sendgrid-sender"]:
+        if k in hnames: 
+            return k
+    for k in ATS_SYNONYMS:
+        if k in (sender or "").lower() or k in (subject or "").lower() or k in (body or "").lower():
+            return k
+    return None
+
+def estimate_source_confidence(src: Optional[str]) -> float:
+    """Estimate confidence of source detection"""
+    if not src:
+        return 0.0
+    if src in ("lever", "workday", "smartrecruiters", "greenhouse"):
+        return 0.9
+    if src in ("list-unsubscribe", "x-mailer", "x-sendgrid-sender"):
+        return 0.6
+    return 0.4
+
+def upsert_application_for_email(db: Session, email_obj: Email) -> Optional[Application]:
+    """
+    Find or create an Application using (thread_id) or (company+role) as key.
+    Links the email to the application.
+    """
+    if not (email_obj.company or email_obj.role or email_obj.thread_id):
+        return None
+
+    app = None
+    # Try to find by thread_id first
+    if email_obj.thread_id:
+        app = db.query(Application).filter_by(thread_id=email_obj.thread_id).first()
+
+    # Try to find by company+role
+    if not app and email_obj.company:
+        app = (
+            db.query(Application)
+              .filter(Application.company == email_obj.company)
+              .filter(Application.role == email_obj.role)
+              .order_by(Application.id.desc())
+              .first()
+        )
+
+    # Create new application if not found
+    if not app:
+        app = Application(
+            company=email_obj.company or "unknown",
+            role=email_obj.role,
+            source=email_obj.source,
+            source_confidence=email_obj.source_confidence,
+            thread_id=email_obj.thread_id,
+            status=AppStatus.interview if "interview" in (email_obj.label_heuristics or []) else AppStatus.applied,
+            last_email_id=email_obj.id,
+        )
+        db.add(app)
+        db.flush()  # get app.id
+
+    # Update thread_id if missing
+    if not app.thread_id and email_obj.thread_id:
+        app.thread_id = email_obj.thread_id
+    
+    # Update source if we have better confidence
+    if email_obj.source and (not app.source or app.source_confidence < email_obj.source_confidence):
+        app.source = email_obj.source
+        app.source_confidence = email_obj.source_confidence
+
+    app.last_email_id = email_obj.id
+    db.flush()
+
+    # Link email -> application
+    email_obj.application_id = app.id
+    return app
+
+def derive_labels(sender: str, subject: str, body: str) -> List[str]:
+    """Heuristically derive email labels based on content"""
+    labels = []
+    subj = subject or ""
+    text = " ".join([subj, body or ""])
+    s = (sender or "").lower()
+
+    if INTERVIEW_REGEX.search(text):
+        labels.append("interview")
+    if OFFER_REGEX.search(text):
+        labels.append("offer")
+    if REJECT_REGEX.search(text):
+        labels.append("rejection")
+    if RECEIPT_REGEX.search(text):
+        labels.append("application_receipt")
+    if NEWSLETTER_HINT.search(text) or any(k in s for k in ["news", "newsletter", "noreply"]) or "list-unsubscribe" in text.lower():
+        labels.append("newsletter_ads")
+    return list(set(labels))
+
+def es_client():
+    return Elasticsearch(ELASTICSEARCH_URL)
+
+def ensure_es_index():
+    """Ensure the Elasticsearch index exists with proper mappings"""
+    es = es_client()
+    if es.indices.exists(index=ES_INDEX):
+        return
+    es.indices.create(
+        index=ES_INDEX,
+        settings={
+            "analysis": {
+                "filter": {
+                    "ats_synonyms": {
+                        "type": "synonym",
+                        "synonyms": [", ".join(ATS_SYNONYMS)]
+                    }
+                },
+                "analyzer": {
+                    "ats_analyzer": {
+                        "tokenizer": "standard",
+                        "filter": ["lowercase","ats_synonyms"]
+                    }
+                }
+            }
+        },
+        mappings={
+            "properties": {
+                "gmail_id": {"type":"keyword"},
+                "thread_id": {"type":"keyword"},
+                "subject": {"type":"text","analyzer":"ats_analyzer"},
+                "body_text": {"type":"text","analyzer":"ats_analyzer"},
+                "sender": {"type":"keyword"},
+                "recipient": {"type":"keyword"},
+                "received_at": {"type":"date"},
+                "labels": {"type":"keyword"},
+                "label_heuristics": {"type":"keyword"},
+                "subject_suggest": {"type":"completion"},
+                # NEW: quick hooks for filtering
+                "company": {"type":"keyword"},
+                "role": {"type":"text","analyzer":"ats_analyzer"},
+                "source": {"type":"keyword"},
+                "source_confidence": {"type":"float"}
+            }
+        }
+    )
+
+def index_bulk_emails(docs: List[dict]):
+    """Bulk index emails into Elasticsearch"""
+    if not docs: return
+    es = es_client()
+    ensure_es_index()
+    actions = []
+    for d in docs:
+        actions.append({
+            "_index": ES_INDEX,
+            "_id": d["gmail_id"],
+            "_op_type": "index",
+            **d
+        })
+    helpers.bulk(es, actions)
+
+def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
+    """Backfill Gmail messages into database and Elasticsearch"""
+    creds = _get_creds(db, user_email)
+    svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
+    after_date = (dt.datetime.utcnow() - relativedelta(days=days)).strftime("%Y/%m/%d")
+    q = f"newer_than:{days}d"
+    # Or use after: yyyy/mm/dd -> f"after:{after_date}"
+    
+    # First, get all threads (not individual messages)
+    threads = []
+    page_token = None
+    while True:
+        resp = svc.users().threads().list(userId="me", q=q, pageToken=page_token, maxResults=500).execute()
+        threads.extend(resp.get("threads", []))
+        page_token = resp.get("nextPageToken")
+        if not page_token:
+            break
+
+    es_docs = []
+    inserted = 0
+    
+    # Process each thread
+    for thread_meta in threads:
+        thread_id = thread_meta["id"]
+        
+        # Get full thread with all messages
+        thread = svc.users().threads().get(userId="me", id=thread_id, format="full").execute()
+        messages = thread.get("messages", [])
+        
+        # Compute reply metrics once per thread
+        metrics = compute_thread_reply_metrics(messages, user_email.lower())
+        
+        # Process each message in the thread
+        for meta in messages:
+            payload = meta.get("payload", {})
+            headers = payload.get("headers", [])
+            subject = _header(headers, "Subject") or ""
+            sender = _header(headers, "From") or ""
+            recipient = _header(headers, "To") or ""
+            internal_date = int(meta.get("internalDate", "0")) // 1000
+            received_at = dt.datetime.utcfromtimestamp(internal_date)
+
+            body_text = _parts_to_text(payload)
+            label_heur = derive_labels(sender, subject, body_text)
+
+            # NEW: Extract quick hooks
+            company = extract_company(sender, body_text)
+            role = extract_role(subject)
+            source = extract_source(headers, sender, subject, body_text)
+            source_conf = estimate_source_confidence(source)
+
+            # Upsert in DB
+            existing = db.query(Email).filter_by(gmail_id=meta["id"]).first()
+            if not existing:
+                existing = Email(gmail_id=meta["id"])
+                db.add(existing)
+
+            existing.thread_id = thread_id
+            existing.subject = subject
+            existing.body_text = body_text
+            existing.sender = sender
+            existing.recipient = recipient
+            existing.received_at = received_at
+            existing.labels = meta.get("labelIds", [])
+            existing.label_heuristics = label_heur
+            existing.raw = meta
+
+            # NEW: Save quick hooks
+            existing.company = company
+            existing.role = role
+            existing.source = source
+            existing.source_confidence = source_conf
+            
+            # NEW: Save reply metrics (denormalized per message)
+            if metrics["first_user_reply_at"]:
+                existing.first_user_reply_at = dt.datetime.fromisoformat(metrics["first_user_reply_at"])
+            if metrics["last_user_reply_at"]:
+                existing.last_user_reply_at = dt.datetime.fromisoformat(metrics["last_user_reply_at"])
+            existing.user_reply_count = metrics["user_reply_count"]
+
+            db.flush()  # get email.id for linking
+            upsert_application_for_email(db, existing)  # NEW: Link to application
+
+            inserted += 1
+
+            # Prepare ES doc
+            es_docs.append({
+                "gmail_id": existing.gmail_id,
+                "thread_id": existing.thread_id,
+                "subject": subject,
+                "body_text": body_text,
+                "sender": sender,
+                "recipient": recipient,
+                "received_at": received_at.isoformat(),
+                "labels": existing.labels or [],
+                "label_heuristics": label_heur,
+                "subject_suggest": {"input": [subject] if subject else []},
+                # NEW: Index quick hooks for filtering
+                "company": company,
+                "role": role,
+                "source": source,
+                "source_confidence": source_conf,
+                # NEW: Index reply metrics
+                "first_user_reply_at": metrics["first_user_reply_at"],
+                "last_user_reply_at": metrics["last_user_reply_at"],
+                "user_reply_count": metrics["user_reply_count"],
+                "replied": metrics["replied"],
+            })
+
+    db.commit()
+    index_bulk_emails(es_docs)
+    return inserted

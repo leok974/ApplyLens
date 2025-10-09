@@ -1,0 +1,20 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: Default
+    receivers:
+      - uid: default_webhook
+        type: webhook
+        settings:
+          url: http://host.docker.internal:9000/webhook   # TODO: replace or add email/slack
+          httpMethod: POST
+          maxAlerts: 0
+
+  # Example email contact point (uncomment if SMTP configured)
+  # - orgId: 1
+  #   name: Email
+  #   receivers:
+  #     - uid: ops_email
+  #       type: email
+  #       settings:
+  #         addresses: you@example.com

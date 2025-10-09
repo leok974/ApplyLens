@@ -1,0 +1,128 @@
+# ApplyLens - Comprehensive .gitignore
+
+# ===================================
+# Environment & Secrets
+# ===================================
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+config.json
+secrets.json
+credentials.json
+token.json
+
+# OAuth secrets - DO NOT COMMIT
+infra/secrets/*.json
+secrets/*.json
+secrets/google.json
+client_secret_*.json
+oauth_credentials.json
+
+# ===================================
+# Python
+# ===================================
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+env/
+ENV/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.tox/
+.nox/
+
+# ===================================
+# Node.js
+# ===================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ===================================
+# React / Vite
+# ===================================
+.vite/
+.turbo/
+dist/
+build/
+*.local
+*.tsbuildinfo
+
+# ===================================
+# Database
+# ===================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+applylens.db
+
+# ===================================
+# Logs
+# ===================================
+*.log
+logs/
+uvicorn.log
+
+# ===================================
+# IDEs & Editors
+# ===================================
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ===================================
+# OS Files
+# ===================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+/mnt/data
+
+# ===================================
+# Testing
+# ===================================
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ===================================
+# Temporary Files
+# ===================================
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ===================================
+# Misc
+# ===================================
+.cache/
+downloads/
+attachments/

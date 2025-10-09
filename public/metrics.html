@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metrics Dashboard</title>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; color: #111; }
+    h1 { margin-bottom: 8px; }
+    .meta { color:#555; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; }
+    th { cursor: pointer; user-select: none; }
+    .row { display:flex; gap:16px; align-items:center; }
+    progress { width: 160px; height: 10px; }
+    .pill { font-size: 12px; padding: 4px 8px; border-radius: 999px; background: #f5f5f5; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 16px 0 24px; }
+    .card { border:1px solid #eee; border-radius:12px; padding:16px; }
+    .muted { color:#777; }
+  </style>
+</head>
+<body>
+  <h1>Metrics Dashboard</h1>
+  <div class="meta" id="meta">Loading…</div>
+  <div class="grid">
+    <div class="card"><div class="muted">Current Order</div><div id="order"></div></div>
+    <div class="card"><div class="muted">Top Sections (by weight)</div><ol id="top"></ol></div>
+  </div>
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th data-k="section">Section</th>
+        <th data-k="views">Views</th>
+        <th data-k="clicks">Clicks</th>
+        <th data-k="ctr">CTR</th>
+        <th data-k="avg_dwell_ms">Avg dwell (ms)</th>
+        <th data-k="weight">Weight</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <script>
+    const API = (window.BACKEND_BASE || "http://127.0.0.1:8001") + "/agent";
+    const $ = sel => document.querySelector(sel);
+    const fmtPct = n => (n*100).toFixed(1) + "%";
+    const state = { rows: [], sort: { k: "weight", dir: -1 } };
+
+    async function load() {
+      const [summaryRes, layoutRes] = await Promise.all([
+        fetch(API + "/metrics/summary"),
+        fetch(API + "/layout"),
+      ]);
+      const summary = await summaryRes.json();
+      const layout = await layoutRes.json();
+      state.rows = summary.rows;
+      $("#meta").textContent = `Updated ${new Date(summary.updated).toLocaleString()} · ${summary.total_events} events (14d window)`;
+      $("#order").textContent = layout.order.join("  ›  ");
+      const top = [...summary.rows].sort((a,b)=>b.weight-a.weight).slice(0,5);
+      $("#top").innerHTML = top.map(r=>`<li><span class="pill">${r.section}</span> ${fmtPct(r.ctr)} CTR · ${Math.round(r.avg_dwell_ms)}ms dwell</li>`).join("");
+      renderTable();
+    }
+
+    function renderTable() {
+      const { k, dir } = state.sort;
+      const rows = [...state.rows].sort((a,b)=> (a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0) * dir);
+      const tbody = $("#tbl tbody");
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.section}</td>
+          <td>${r.views}</td>
+          <td>${r.clicks}</td>
+          <td><div class="row"><progress max="1" value="${r.ctr || 0}"></progress> ${fmtPct(r.ctr || 0)}</div></td>
+          <td>${Math.round(r.avg_dwell_ms)}</td>
+          <td><div class="row"><progress max="1" value="${r.weight || 0.5}"></progress> ${(r.weight||0.5).toFixed(3)}</div></td>
+        </tr>`).join("");
+    }
+
+    document.querySelectorAll("th[data-k]").forEach(th=>{
+      th.addEventListener("click", ()=>{
+        const k = th.getAttribute("data-k");
+        state.sort = state.sort.k === k ? { k, dir: -state.sort.dir } : { k, dir: (k==="section"?1:-1) };
+        renderTable();
+      });
+    });
+
+    load().catch(e=>{
+      $("#meta").textContent = "Failed to load metrics: " + e;
+    });
+  </script>
+</body>
+</html>

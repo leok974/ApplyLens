@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Table hover smoothing */
+.transition {
+  transition: all 120ms ease-in-out;
+}
+
+/* Dialog minimal reset */
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+dialog {
+  border: 0;
+}
+
+/* Subtle white hover for bordered buttons on gray rows */
+.hover\:bg-white:hover {
+  background: white;
+}

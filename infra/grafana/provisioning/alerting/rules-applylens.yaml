@@ -1,0 +1,267 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: ApplyLens Alerts
+    folder: ApplyLens
+    interval: 1m
+    rules:
+
+      # === API Down ===
+      - uid: applens_api_down
+        title: ApplyLens API Down
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom
+            relativeTimeRange: { from: 60, to: 0 }
+            model:
+              refId: A
+              expr: up{job="applylens-api"}
+              instant: true
+              range: false
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              settings: { }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [ 0.5 ]
+                  operator: and
+                  reducer: last
+                  type: query
+        for: 1m
+        annotations:
+          summary: "API is down"
+          description: "applylens-api target not responding > 1m"
+        labels:
+          severity: critical
+          alertname: ApplyLensApiDown
+
+      # === High HTTP Error Rate ===
+      - uid: applens_http_error_rate
+        title: High HTTP Error Rate (5xx > 5% / 5m)
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: A
+              expr: |
+                (sum(rate(applylens_http_requests_total{status=~"5.."}[5m]))
+                 / ignoring(status) sum(rate(applylens_http_requests_total[5m])))
+              instant: true
+              range: false
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              settings: { }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [ 0.05 ]
+                  operator: and
+                  reducer: last
+                  type: query
+        for: 5m
+        annotations:
+          summary: "HTTP 5xx > 5% (5m)"
+          description: "Error rate above 5% for 5 minutes"
+        labels:
+          severity: warning
+          alertname: HighHttpErrorRate
+
+      # === Backfill Errors ===
+      - uid: applens_backfill_errors
+        title: Backfill errors detected (10m)
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              expr: increase(applylens_backfill_requests_total{result="error"}[10m])
+              instant: true
+              range: false
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              settings: { }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [ 0 ]
+                  operator: and
+                  reducer: last
+                  type: query
+        for: 10m
+        annotations:
+          summary: "Backfill errors detected"
+          description: "One or more backfill errors in the last 10 minutes"
+        labels:
+          severity: warning
+          alertname: BackfillFailing
+
+      # === Gmail Disconnected (15m) ===
+      - uid: applens_gmail_disconnected
+        title: Gmail disconnected (15m)
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom
+            relativeTimeRange: { from: 900, to: 0 }   # 15m window
+            model:
+              refId: A
+              expr: max_over_time(applylens_gmail_connected[15m])
+              instant: true
+              range: false
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              settings: { }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [ 1 ]   # < 1 means disconnected across last 15m window
+                  operator: and
+                  reducer: last
+                  type: query
+        for: 15m
+        annotations:
+          summary: "Gmail disconnected"
+          description: "applylens_gmail_connected has been 0 for the last 15 minutes"
+        labels:
+          severity: warning
+          alertname: GmailDisconnected
+
+      # === SLO Burn Rate (Fast: 1h @ 99.9%) ===
+      # Pages quickly when a sharp spike will blow the budget soon.
+      - uid: applens_burn_fast_1h
+        title: SLO burn rate high (1h > 14.4x)
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom
+            relativeTimeRange: { from: 3600, to: 0 }   # 1h lookback
+            model:
+              refId: A
+              expr: |
+                (sum(rate(applylens_http_requests_total{status=~"5.."}[1h]))
+                 / sum(rate(applylens_http_requests_total[1h]))) / 0.001
+              instant: true
+              range: false
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              settings: { }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [ 14.4 ]
+                  operator: and
+                  reducer: last
+                  type: query
+        for: 5m
+        annotations:
+          summary: "SLO burn rate high (fast window)"
+          description: "1h burn rate > 14.4× for 5m (99.9% SLO). Investigate and mitigate quickly."
+        labels:
+          severity: critical
+          alertname: SLOBurnRateFast1h
+
+      # === SLO Burn Rate (Slow: 6h @ 99.9%) ===
+      # Catches sustained issues; less sensitive to noise.
+      - uid: applens_burn_slow_6h
+        title: SLO burn rate high (6h > 6x)
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prom
+            relativeTimeRange: { from: 21600, to: 0 }  # 6h lookback
+            model:
+              refId: A
+              expr: |
+                (sum(rate(applylens_http_requests_total{status=~"5.."}[6h]))
+                 / sum(rate(applylens_http_requests_total[6h]))) / 0.001
+              instant: true
+              range: false
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+              settings: { }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [ 6 ]
+                  operator: and
+                  reducer: last
+                  type: query
+        for: 30m
+        annotations:
+          summary: "SLO burn rate high (slow window)"
+          description: "6h burn rate > 6× for 30m (99.9% SLO). Sustained degradation consuming error budget."
+        labels:
+          severity: warning
+          alertname: SLOBurnRateSlow6h

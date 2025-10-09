@@ -1,0 +1,102 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports: ["5433:5432"]
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports: ["9200:9200"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es:9200
+    ports: ["${KIBANA_PORT}:5601"]
+    depends_on:
+      es:
+        condition: service_healthy
+
+  api:
+    build: ./../services/api
+    working_dir: /app
+    command: bash -lc "uvicorn app.main:app --host 0.0.0.0 --port ${API_PORT}"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS}
+      ES_ENABLED: ${ES_ENABLED}
+      ES_URL: ${ES_URL}
+      ES_RECREATE_ON_START: ${ES_RECREATE_ON_START}
+      GOOGLE_CREDENTIALS: ${GOOGLE_CREDENTIALS}
+      GOOGLE_OAUTH_SCOPES: ${GOOGLE_OAUTH_SCOPES}
+      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET}
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
+      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX}
+    volumes:
+      - ../services/api:/app
+      - ./secrets:/secrets:ro
+    ports: ["${API_PORT}:${API_PORT}"]
+    depends_on:
+      - db
+      - es
+
+  web:
+    build: ./../apps/web
+    working_dir: /web
+    command: bash -lc "npm install && npm run dev -- --host"
+    ports: ["${WEB_PORT}:${WEB_PORT}"]
+    volumes:
+      - ../apps/web:/web
+    depends_on: [api]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: infra-prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: infra-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+volumes:
+  db_data:
+  es_data:

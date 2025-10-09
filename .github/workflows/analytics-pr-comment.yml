@@ -1,0 +1,78 @@
+name: Analytics PR Comment
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  analytics-comment:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install analytics dependencies if needed
+          # pip install -r analytics/requirements.txt
+      
+      - name: Run analytics pipeline
+        run: |
+          # Run analytics if pipeline exists
+          if [ -f "analytics/pipeline.py" ]; then
+            python -m analytics.pipeline --window-days 7 || true
+          fi
+      
+      - name: Compose latest insights
+        id: insights
+        shell: bash
+        run: |
+          echo "### 📊 Analytics Insights" > insights.md
+          if [ -f "analytics/outputs/insight-summary.md" ]; then
+            cat analytics/outputs/insight-summary.md >> insights.md
+          else
+            echo "_No analytics data available yet._" >> insights.md
+          fi
+          {
+            echo "body<<'MD'"
+            cat insights.md
+            echo "MD"
+          } >> $GITHUB_OUTPUT
+      
+      - name: Compose recommendations (if present)
+        id: rec
+        shell: bash
+        run: |
+          echo "### 🧩 Recommendations (weights)" > rec.md
+          if grep -q "## Recommendations" analytics/outputs/insight-summary.md 2>/dev/null; then
+            awk '/## Recommendations/{flag=1;next}/^## /{flag=0}flag' analytics/outputs/insight-summary.md >> rec.md || true
+          else
+            echo "_No recommendations for this PR yet._" >> rec.md
+          fi
+          {
+            echo "body<<'MD'"
+            cat rec.md
+            echo "MD"
+          } >> $GITHUB_OUTPUT
+      
+      - name: Post insights comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: analytics-insights
+          message: ${{ steps.insights.outputs.body }}
+      
+      - name: Post recommendations comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: analytics-recs
+          message: ${{ steps.rec.outputs.body }}

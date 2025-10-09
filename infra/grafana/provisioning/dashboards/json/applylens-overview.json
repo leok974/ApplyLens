@@ -1,0 +1,298 @@
+{
+  "title": "ApplyLens API Overview",
+  "uid": "applylens-overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "HTTP req/s",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 7 },
+      "targets": [
+        {
+          "expr": "sum by (method,status_code) (rate(applylens_http_requests_total[5m]))",
+          "legendFormat": "{{method}} {{status_code}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "fillOpacity": 10
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP latency (p50/p90/p99)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 7 },
+      "fieldConfig": { 
+        "defaults": { 
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "fillOpacity": 10
+          }
+        } 
+      },
+      "targets": [
+        { 
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        { 
+          "expr": "histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+          "legendFormat": "p90",
+          "refId": "B"
+        },
+        { 
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Backfill outcomes (1h)",
+      "gridPos": { "x": 0, "y": 7, "w": 8, "h": 7 },
+      "options": { 
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "targets": [
+        { 
+          "expr": "sum by (result) (increase(applylens_backfill_requests_total[1h]))", 
+          "legendFormat": "{{result}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Emails inserted (rate)",
+      "gridPos": { "x": 8, "y": 7, "w": 8, "h": 7 },
+      "targets": [
+        { 
+          "expr": "rate(applylens_backfill_inserted_total[5m])", 
+          "legendFormat": "inserted/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "fillOpacity": 10
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Subsystem health",
+      "gridPos": { "x": 16, "y": 7, "w": 8, "h": 7 },
+      "options": { 
+        "reduceOptions": { 
+          "calcs": ["last"] 
+        }, 
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "value"
+      },
+      "targets": [
+        { 
+          "expr": "max(applylens_db_up)", 
+          "legendFormat": "DB up",
+          "refId": "A"
+        },
+        { 
+          "expr": "max(applylens_es_up)", 
+          "legendFormat": "ES up",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 1, "color": "green" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Gmail connected (per user)",
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 8 },
+      "targets": [
+        { 
+          "expr": "applylens_gmail_connected", 
+          "legendFormat": "{{user_email}}",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "instance": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "API Uptime (last 30d)",
+      "gridPos": { "x": 0, "y": 22, "w": 8, "h": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 95 },
+              { "color": "green", "value": 99.9 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "avg_over_time(up{job=\"applylens-api\"}[30d]) * 100",
+          "legendFormat": "uptime %",
+          "datasource": { "type": "prometheus", "uid": "prom" },
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Last Alert Fired (minutes ago)",
+      "gridPos": { "x": 8, "y": 22, "w": 8, "h": 7 },
+      "fieldConfig": { "defaults": { "unit": "m" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prom" },
+          "refId": "A",
+          "expr": "(time() - max_over_time(timestamp(ALERTS{alertstate=\"firing\"}[30d])))/60"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "SLO Burn Rate (1h, 99.9% SLO)",
+      "gridPos": { "x": 0, "y": 29, "w": 12, "h": 7 },
+      "fieldConfig": { 
+        "defaults": { 
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        } 
+      },
+      "options": { "legend": { "showLegend": true } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prom" },
+          "refId": "A",
+          "expr": "(sum(rate(applylens_http_requests_total{status=~\"5..\"}[1h])) / sum(rate(applylens_http_requests_total[1h]))) / 0.001"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "SLO Burn Rate (6h, 99.9% SLO)",
+      "gridPos": { "x": 12, "y": 29, "w": 12, "h": 7 },
+      "fieldConfig": { 
+        "defaults": { 
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 6 }
+            ]
+          }
+        } 
+      },
+      "options": { "legend": { "showLegend": true } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prom" },
+          "refId": "A",
+          "expr": "(sum(rate(applylens_http_requests_total{status=~\"5..\"}[6h])) / sum(rate(applylens_http_requests_total[6h]))) / 0.001"
+        }
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "API Uptime (last 1h)",
+      "gridPos": { "x": 0, "y": 36, "w": 8, "h": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 95 },
+              { "color": "green", "value": 99.9 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prom" },
+          "refId": "A",
+          "expr": "avg_over_time(up{job=\"applylens-api\"}[1h]) * 100"
+        }
+      ]
+    }
+  ]
+}

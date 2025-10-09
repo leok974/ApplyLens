@@ -1,0 +1,11 @@
+apiVersion: 1
+policies:
+  - orgId: 1
+    receiver: Default                 # default route
+    group_by:
+      - alertname
+    routes:
+      - receiver: Default
+        object_matchers:
+          - [ "severity", "=~", "critical|warning|info" ]
+        continue: false

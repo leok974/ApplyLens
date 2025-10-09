@@ -1,0 +1,106 @@
+{
+  "attributes": {
+    "title": "Time to Response (Median) by Week",
+    "description": "Median time to first reply for job application emails, grouped by week",
+    "visualizationType": "lnsXY",
+    "state": {
+      "datasourceStates": {
+        "formBased": {
+          "layers": {
+            "layer1": {
+              "columns": {
+                "x": {
+                  "label": "Week",
+                  "dataType": "date",
+                  "operationType": "date_histogram",
+                  "sourceField": "received_at",
+                  "params": {
+                    "interval": "w"
+                  }
+                },
+                "y": {
+                  "label": "Median Response (hrs)",
+                  "dataType": "number",
+                  "operationType": "formula",
+                  "isBucketed": false,
+                  "params": {
+                    "formula": "median(to_number((to_datetime(first_reply_at) - to_datetime(received_at)) / 3600000))",
+                    "format": {
+                      "id": "number",
+                      "params": {
+                        "decimals": 1
+                      }
+                    }
+                  }
+                }
+              },
+              "columnOrder": ["x", "y"],
+              "incompleteColumns": {}
+            }
+          }
+        }
+      },
+      "visualization": {
+        "legend": {
+          "isVisible": true,
+          "position": "right"
+        },
+        "valueLabels": "hide",
+        "fittingFunction": "None",
+        "yLeftExtent": {
+          "mode": "full"
+        },
+        "yRightExtent": {
+          "mode": "full"
+        },
+        "axisTitlesVisibilitySettings": {
+          "x": true,
+          "yLeft": true,
+          "yRight": true
+        },
+        "tickLabelsVisibilitySettings": {
+          "x": true,
+          "yLeft": true,
+          "yRight": true
+        },
+        "gridlinesVisibilitySettings": {
+          "x": true,
+          "yLeft": true,
+          "yRight": true
+        },
+        "preferredSeriesType": "line",
+        "layers": [
+          {
+            "layerId": "layer1",
+            "accessors": ["y"],
+            "position": "top",
+            "seriesType": "line",
+            "showGridlines": false,
+            "layerType": "data",
+            "xAccessor": "x"
+          }
+        ]
+      },
+      "query": {
+        "query": "",
+        "language": "kuery"
+      },
+      "filters": []
+    },
+    "references": [
+      {
+        "type": "index-pattern",
+        "id": "gmail_emails*",
+        "name": "indexpattern-datasource-current-indexpattern"
+      },
+      {
+        "type": "index-pattern",
+        "id": "gmail_emails*",
+        "name": "indexpattern-datasource-layer-layer1"
+      }
+    ]
+  },
+  "type": "lens",
+  "references": [],
+  "managed": false
+}

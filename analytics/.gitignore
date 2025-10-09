@@ -1,0 +1,7 @@
+# Analytics data and outputs (generated)
+data/
+outputs/
+*.sqlite
+*.db
+__pycache__/
+*.pyc

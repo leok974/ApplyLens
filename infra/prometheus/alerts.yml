@@ -1,0 +1,58 @@
+groups:
+  - name: applylens
+    rules:
+      - alert: ApplyLensApiDown
+        expr: (1 - up{job="applylens-api"}) == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API is down"
+          description: "applylens-api target not responding > 1m"
+
+      - alert: HighHttpErrorRate
+        expr: |
+          (sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m]))
+           / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP 5xx > 5% (5m)"
+          description: "Error rate above 5% for 5 minutes"
+
+      - alert: BackfillFailing
+        expr: increase(applylens_backfill_requests_total{result="error"}[10m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backfill errors detected"
+          description: "One or more backfill errors in the last 10 minutes"
+
+      - alert: BackfillRateLimitedSpike
+        expr: increase(applylens_backfill_requests_total{result="rate_limited"}[15m]) > 10
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Frequent rate-limits"
+          description: "More than 10 rate-limited backfills in 15 minutes"
+
+      - alert: GmailDisconnected
+        expr: max_over_time(applylens_gmail_connected[15m]) < 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Gmail disconnected"
+          description: "Gmail connection gauge has been 0 for 15 minutes"
+
+      - alert: DependenciesDown
+        expr: (min(applylens_db_up) == 0) or (min(applylens_es_up) == 0)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DB/ES not ready"
+          description: "Either DB or Elasticsearch reports down"
