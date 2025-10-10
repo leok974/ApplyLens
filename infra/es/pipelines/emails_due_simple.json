@@ -1,0 +1,12 @@
+{
+  "description": "Lightweight due-date extraction near 'due' phrases (mm/dd(/yyyy))",
+  "processors": [
+    {
+      "script": {
+        "lang": "painless",
+        "source": "if (ctx.body_text == null) return; String t = ctx.body_text.toLowerCase(); Pattern p = /due[^\\n\\r\\.:]{0,80}?(\\d{1,2}\\/\\d{1,2}(?:\\/\\d{2,4})?)/; Matcher m = p.matcher(t); def arr = new ArrayList(); while (m.find()) { arr.add(m.group(1)); } if (arr.size() > 0) { String year = ZonedDateTime.now(ZoneOffset.UTC).getYear().toString(); def iso = new ArrayList(); for (d in arr) { def parts = d.split('/'); String mm = parts[0]; String dd = parts[1]; String yy = parts.length > 2 ? parts[2] : year; if (yy.length()==2) { yy = '20' + yy; } String isoStr = yy + '-' + (mm.length()==1? '0'+mm : mm) + '-' + (dd.length()==1? '0'+dd : dd) + 'T00:00:00Z'; iso.add(isoStr); } if (ctx.containsKey('dates') == false || ctx.dates == null) { ctx.dates = iso; } else { def s = new HashSet(ctx.dates); s.addAll(iso); ctx.dates = new ArrayList(s); } if (ctx.expires_at == null && ctx.dates.size() > 0) { ctx.expires_at = ctx.dates.stream().sorted().findFirst().orElse(null); } }"
+      }
+    }
+  ]
+}
+

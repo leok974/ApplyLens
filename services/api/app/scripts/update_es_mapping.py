@@ -43,8 +43,19 @@ EMAILS_V1_MAPPING_UPDATE = {
             "labels": {"type": "keyword"},
             "urls": {"type": "keyword"},
             "has_unsubscribe": {"type": "boolean"},
-            "money_amounts": {"type": "float"},
-            "dates": {"type": "date"},
+            
+            # NEW: Due dates and money amounts for bills
+            "dates": {
+                "type": "date",
+                "format": "strict_date_optional_time||epoch_millis"
+            },
+            "money_amounts": {
+                "type": "nested",
+                "properties": {
+                    "amount": {"type": "float"},
+                    "currency": {"type": "keyword"}
+                }
+            },
             
             # NEW: Classification & Automation fields
             "category": {
@@ -126,6 +137,8 @@ def update_existing_index_mapping(es_client, index_name="emails_v1"):
     
     # Extract only the new fields (automation-related)
     new_fields = {
+        "dates": new_properties["dates"],
+        "money_amounts": new_properties["money_amounts"],
         "category": new_properties["category"],
         "risk_score": new_properties["risk_score"],
         "expires_at": new_properties["expires_at"],

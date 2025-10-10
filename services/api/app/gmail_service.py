@@ -15,6 +15,11 @@ from google.auth.transport.requests import Request as GRequest
 from sqlalchemy.orm import Session
 from .models import OAuthToken, Email, Application, AppStatus
 from .ingest.gmail_metrics import compute_thread_reply_metrics
+from .ingest.due_dates import (
+    extract_due_dates,
+    extract_earliest_due_date,
+    extract_money_amounts,
+)
 
 from elasticsearch import Elasticsearch, helpers
 
@@ -339,6 +344,12 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
             role = extract_role(subject)
             source = extract_source(headers, sender, subject, body_text)
             source_conf = estimate_source_confidence(source)
+            
+            # NEW: Extract due dates and money amounts for bills
+            combined_text = f"{subject} {body_text}"
+            due_dates = extract_due_dates(combined_text, received_at)
+            money_amounts = extract_money_amounts(combined_text)
+            earliest_due = extract_earliest_due_date(combined_text, received_at)
 
             # Upsert in DB
             existing = db.query(Email).filter_by(gmail_id=meta["id"]).first()
@@ -396,6 +407,10 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
                 "last_user_reply_at": metrics["last_user_reply_at"],
                 "user_reply_count": metrics["user_reply_count"],
                 "replied": metrics["replied"],
+                # NEW: Index due dates and money amounts for bills
+                "dates": due_dates,
+                "money_amounts": money_amounts,
+                "expires_at": earliest_due,
             })
 
     db.commit()
