@@ -36,6 +36,40 @@ pip install "elasticsearch>=8.0.0,<9.0.0"
 
 ## Usage
 
+### Pre-Flight Checks
+
+Before running the backfill, check how many bills are missing dates:
+
+**ES|QL Query (Kibana Dev Tools):**
+```sql
+FROM gmail_emails_v2
+| WHERE category == "bills" AND NOT _exists_:dates
+| STATS missing=count()
+```
+
+**cURL:**
+```bash
+curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query": {
+      "bool": {
+        "must": [
+          {"term": {"category": "bills"}},
+          {"bool": {"must_not": {"exists": {"field": "dates"}}}}
+        ]
+      }
+    },
+    "size": 0,
+    "track_total_hits": true
+  }'
+```
+
+**Makefile:**
+```bash
+make check-bills-missing
+```
+
 ### 1. Dry Run (Recommended First)
 
 See what would be updated without making changes:
@@ -78,7 +112,53 @@ $env:DRY_RUN="0"
 python scripts/backfill_bill_dates.py
 ```
 
-## Configuration
+### Post-Flight Verification
+
+After running the backfill, verify the results:
+
+**ES|QL Query (Check bills with dates and expires_at):**
+```sql
+FROM gmail_emails_v2
+| WHERE category == "bills" AND _exists_:dates
+| STATS with_expiry=count(_exists_:expires_at), total=count()
+```
+
+**Expected result:** Most/all bills should have both `dates` and `expires_at` populated.
+
+**cURL:**
+```bash
+curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query": {
+      "bool": {
+        "must": [
+          {"term": {"category": "bills"}},
+          {"exists": {"field": "dates"}}
+        ]
+      }
+    },
+    "size": 0,
+    "aggs": {
+      "with_expiry": {
+        "filter": {"exists": {"field": "expires_at"}}
+      }
+    }
+  }'
+```
+
+**Makefile:**
+```bash
+make check-bills-with-dates
+```
+
+**Example output:**
+```
+Bills with dates: 523
+Bills with expires_at: 523
+```
+
+### 3. Monitor Progress
 
 Environment variables:
 

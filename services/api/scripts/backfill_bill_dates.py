@@ -145,14 +145,19 @@ def transform(doc: Dict[str, Any]) -> Dict[str, Any] | None:
 
 def run():
     """Run the backfill job."""
+    # Re-read DRY_RUN in case it was changed via environment
+    dry_run = os.getenv("DRY_RUN", "1") == "1"
+    batch = int(os.getenv("BATCH", "500"))
+    es_index = os.getenv("ES_EMAIL_INDEX", "gmail_emails_v2")
+    
     client = es()
     to_update = []
     count = 0
     scanned = 0
     
-    print(f"Starting backfill for index: {ES_INDEX}")
-    print(f"Mode: {'DRY RUN' if DRY_RUN else 'LIVE UPDATE'}")
-    print(f"Batch size: {BATCH}")
+    print(f"Starting backfill for index: {es_index}")
+    print(f"Mode: {'DRY RUN' if dry_run else 'LIVE UPDATE'}")
+    print(f"Batch size: {batch}")
     print("-" * 60)
     
     for hit in scan_bills_missing_dates(client):
@@ -162,19 +167,19 @@ def run():
         if upd:
             action = {
                 "_op_type": "update",
-                "_index": ES_INDEX,
+                "_index": es_index,
                 "_id": hit["_id"],
                 "doc": upd
             }
             to_update.append(action)
             
-            if DRY_RUN and len(to_update) <= 5:
+            if dry_run and len(to_update) <= 5:
                 # Show first few updates in dry run
                 print(f"Would update {hit['_id']}: {upd}")
         
         # Bulk update when batch is full
-        if len(to_update) >= BATCH:
-            if not DRY_RUN:
+        if len(to_update) >= batch:
+            if not dry_run:
                 helpers.bulk(client, to_update)
             count += len(to_update)
             print(f"Processed {scanned} docs, updated {count} docs...")
@@ -182,12 +187,12 @@ def run():
     
     # Final batch
     if to_update:
-        if not DRY_RUN:
+        if not dry_run:
             helpers.bulk(client, to_update)
         count += len(to_update)
     
     print("-" * 60)
-    print(f"Backfill {'(DRY RUN) ' if DRY_RUN else ''}completed.")
+    print(f"Backfill {'(DRY RUN) ' if dry_run else ''}completed.")
     print(f"Scanned: {scanned} bills")
     print(f"Updated: {count} bills")
     print(f"Unchanged: {scanned - count} bills")

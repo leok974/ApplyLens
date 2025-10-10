@@ -12,7 +12,7 @@ dependencies = [
   "alembic",
   "python-multipart",
   "orjson",
-  "elasticsearch>=8,<9",
+  "elasticsearch>=8.12,<9",
   "httpx",
   "google-auth",
   "google-auth-oauthlib",
