@@ -58,7 +58,7 @@ jobs:
           current = get_current_migration()
           print(f'Current migration: {current}')
           try:
-              require_min_migration('0009_add_emails_category', 'emails.category column')
+              require_min_migration('0012_add_emails_features_json', 'email automation system fields')
               print('✓ Schema version check passed')
           except RuntimeError as e:
               print(f'✗ Schema check failed: {e}')

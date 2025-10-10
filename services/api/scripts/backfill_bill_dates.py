@@ -149,7 +149,7 @@ def run():
     # Schema guard: Ensure database has required columns
     print("Checking database schema...")
     try:
-        require_min_migration("0009_add_emails_category", "emails.category column")
+        require_min_migration("0012_add_emails_features_json", "email automation system fields")
         print("✓ Database schema validation passed\n")
     except RuntimeError as e:
         print(f"❌ Schema validation failed:\n{e}", file=sys.stderr)
