@@ -1,7 +1,7 @@
 # ApplyLens API - Makefile
 # Provides convenient targets for common operations
 
-.PHONY: help test backfill-bills check-bills-missing check-bills-with-dates
+.PHONY: help test backfill-bills check-bills-missing check-bills-with-dates validate-backfill validate-backfill-json validate-backfill-before-after
 
 # Configuration with defaults
 ES_URL ?= http://localhost:9200
@@ -24,6 +24,10 @@ help:
 	@echo "  make backfill-bills-live    - Execute backfill (DRY_RUN=0)"
 	@echo "  make check-bills-missing    - Count bills missing dates"
 	@echo "  make check-bills-with-dates - Count bills with dates populated"
+	@echo ""
+	@echo "Validation:"
+	@echo "  make validate-backfill      - Validate backfill results (human-readable)"
+	@echo "  make validate-backfill-json - Validate backfill results (JSON output)"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  ES_URL=$(ES_URL)"
@@ -80,3 +84,17 @@ check-bills-with-dates:
 		-H 'Content-Type: application/json' \
 		-d '{"query":{"bool":{"must":[{"term":{"category":"bills"}},{"exists":{"field":"dates"}}]}},"size":0,"aggs":{"with_expiry":{"filter":{"exists":{"field":"expires_at"}}}}}' \
 		| python -c "import sys, json; data=json.load(sys.stdin); total=data['hits']['total']['value']; expiry=data['aggregations']['with_expiry']['doc_count']; print(f\"Bills with dates: {total}\"); print(f\"Bills with expires_at: {expiry}\")"
+
+# Validation targets
+validate-backfill:
+	@echo "Validating backfill on $(ES_EMAIL_INDEX) via $(ES_URL)"
+	@ES_URL=$(ES_URL) ES_EMAIL_INDEX=$(ES_EMAIL_INDEX) \
+		$(PYTHON) scripts/validate_backfill.py --pretty
+
+validate-backfill-json:
+	@ES_URL=$(ES_URL) ES_EMAIL_INDEX=$(ES_EMAIL_INDEX) \
+		$(PYTHON) scripts/validate_backfill.py --json
+
+validate-backfill-before-after:
+	@echo "=== BEFORE ==="; $(MAKE) validate-backfill
+	@echo "=== AFTER  ==="; $(MAKE) validate-backfill

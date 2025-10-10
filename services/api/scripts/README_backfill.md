@@ -34,6 +34,65 @@ python -c "import elasticsearch; print(elasticsearch.__version__)"
 pip install "elasticsearch>=8.0.0,<9.0.0"
 ```
 
+## Quick Validation
+
+Use `validate_backfill.py` to check backfill results at any time:
+
+**Human-Readable Summary:**
+```bash
+python scripts/validate_backfill.py --pretty
+```
+
+**Example Output:**
+```
+Index: gmail_emails_v2
+Missing dates[] (bills): 0
+Bills with dates[]:      1243
+Bills with expires_at:   1243
+Verdict: OK  @ 2025-10-10T14:22:31Z
+```
+
+**PowerShell:**
+```powershell
+$env:ES_URL="http://localhost:9200"
+$env:ES_EMAIL_INDEX="gmail_emails_v2"
+python scripts/validate_backfill.py --pretty
+```
+
+**JSON Output (for automation):**
+```bash
+python scripts/validate_backfill.py --json
+# {"index": "gmail_emails_v2", "missing_dates_count": 0, "bills_with_dates": 1243, ...}
+```
+
+**Makefile:**
+```bash
+make validate-backfill           # Human-readable
+make validate-backfill-json      # JSON output
+```
+
+**Verdict Guide:**
+- ✅ **OK**: No missing dates, all counts consistent
+- ⚠️ **CHECK**: Missing dates found or data anomalies detected
+
+**Before/After Workflow:**
+
+Run validation before the backfill, then run it again after to prove the improvement:
+
+```bash
+# Before
+make validate-backfill > before.txt
+
+# Run backfill
+make backfill-bills-live
+
+# After
+make validate-backfill > after.txt
+
+# Compare
+diff before.txt after.txt
+```
+
 ## Usage
 
 ### Pre-Flight Checks
@@ -116,7 +175,41 @@ python scripts/backfill_bill_dates.py
 
 After running the backfill, verify the results:
 
-**ES|QL Query (Check bills with dates and expires_at):**
+**Quick Validation (Recommended):**
+
+Use the validation script for a comprehensive health check:
+
+```bash
+# Human-readable summary
+python scripts/validate_backfill.py --pretty
+
+# JSON output (for automation)
+python scripts/validate_backfill.py --json
+```
+
+**PowerShell:**
+```powershell
+$env:ES_URL="http://localhost:9200"
+$env:ES_EMAIL_INDEX="gmail_emails_v2"
+python scripts/validate_backfill.py --pretty
+```
+
+**Makefile:**
+```bash
+make validate-backfill           # Human-readable
+make validate-backfill-json      # JSON output
+```
+
+**Example Output:**
+```
+Index: gmail_emails_v2
+Missing dates[] (bills): 0
+Bills with dates[]:      1243
+Bills with expires_at:   1243
+Verdict: OK  @ 2025-10-10T14:22:31Z
+```
+
+**Manual ES|QL Query (Check bills with dates and expires_at):**
 ```sql
 FROM gmail_emails_v2
 | WHERE category == "bills" AND _exists_:dates
@@ -147,7 +240,7 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
   }'
 ```
 
-**Makefile:**
+**Makefile (legacy check):**
 ```bash
 make check-bills-with-dates
 ```
