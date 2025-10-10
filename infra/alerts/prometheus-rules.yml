@@ -1,0 +1,52 @@
+# PrometheusRule: ApplyLens Alerts
+# Load into Prometheus via your alerts loader; labels assume env injection.
+
+groups:
+  - name: applylens.core
+    interval: 30s
+    rules:
+      - alert: APIHighErrorRateFast
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: page
+          team: applylens
+          service: api
+        annotations:
+          summary: "High 5xx rate (>5% for 10m)"
+          runbook: "services/api/docs/runbooks/api-errors.md"
+
+      - alert: RiskJobFailures
+        expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
+        for: 30m
+        labels:
+          severity: page
+          team: applylens
+          service: api
+        annotations:
+          summary: "Risk recompute failures detected"
+          runbook: "services/api/docs/runbooks/risk-job.md"
+
+      - alert: ParityDriftTooHigh
+        expr: max_over_time(applylens_parity_mismatch_ratio[30m]) > 0.005
+        for: 15m
+        labels:
+          severity: ticket
+          team: applylens
+          service: api
+        annotations:
+          summary: "DB↔ES parity drift > 0.5%"
+          runbook: "services/api/docs/runbooks/parity.md"
+
+      - alert: BackfillDurationSLO
+        expr: histogram_quantile(0.95, sum(rate(applylens_backfill_duration_seconds_bucket[15m])) by (le)) > 300
+        for: 30m
+        labels:
+          severity: ticket
+          team: applylens
+          service: api
+        annotations:
+          summary: "Backfill p95 duration > 5 min"
+          runbook: "services/api/docs/runbooks/backfill.md"

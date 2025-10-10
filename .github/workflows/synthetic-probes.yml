@@ -1,0 +1,81 @@
+name: Synthetic Probes
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 * * * *"  # Run hourly
+
+jobs:
+  probes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Health Check
+        run: |
+          echo "Checking /healthz endpoint..."
+          curl -fsS ${{ secrets.APPLYLENS_BASE_URL }}/healthz
+          echo "✓ Health check passed"
+      
+      - name: Liveness Check
+        run: |
+          echo "Checking /live endpoint..."
+          curl -fsS ${{ secrets.APPLYLENS_BASE_URL }}/live
+          echo "✓ Liveness check passed"
+      
+      - name: Readiness Check
+        run: |
+          echo "Checking /ready endpoint..."
+          response=$(curl -fsS ${{ secrets.APPLYLENS_BASE_URL }}/ready)
+          echo "$response" | jq .
+          
+          # Verify db and es are ok
+          db_status=$(echo "$response" | jq -r '.db')
+          es_status=$(echo "$response" | jq -r '.es')
+          
+          if [ "$db_status" != "ok" ]; then
+            echo "❌ Database is not ready: $db_status"
+            exit 1
+          fi
+          
+          if [ "$es_status" != "ok" ]; then
+            echo "❌ Elasticsearch is not ready: $es_status"
+            exit 1
+          fi
+          
+          echo "✓ Readiness check passed (DB: $db_status, ES: $es_status)"
+      
+      - name: Metrics Endpoint
+        run: |
+          echo "Checking /metrics endpoint..."
+          metrics=$(curl -fsS ${{ secrets.APPLYLENS_BASE_URL }}/metrics)
+          
+          # Check for key metrics
+          echo "$metrics" | head -n 50
+          
+          if ! echo "$metrics" | grep -q "applylens_http_requests_total"; then
+            echo "❌ Missing HTTP metrics"
+            exit 1
+          fi
+          
+          echo "✓ Metrics endpoint responding"
+      
+      - name: Automation Health Check
+        run: |
+          echo "Checking /automation/health endpoint..."
+          response=$(curl -fsS ${{ secrets.APPLYLENS_BASE_URL }}/automation/health)
+          echo "$response" | jq .
+          
+          # Verify response has expected fields
+          if ! echo "$response" | jq -e '.total_emails' > /dev/null; then
+            echo "❌ Missing total_emails field"
+            exit 1
+          fi
+          
+          echo "✓ Automation health check passed"
+      
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "⚠️ Synthetic probes failed!"
+          echo "Check the logs above for details."
+          # TODO: Add Slack/email notification here
