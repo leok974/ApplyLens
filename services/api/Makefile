@@ -1,7 +1,7 @@
 # ApplyLens API - Makefile
 # Provides convenient targets for common operations
 
-.PHONY: help test backfill-bills check-bills-missing check-bills-with-dates validate-backfill validate-backfill-json validate-backfill-before-after
+.PHONY: help test backfill-bills check-bills-missing check-bills-with-dates validate-backfill validate-backfill-json validate-backfill-before-after emit-backfill-health
 
 # Configuration with defaults
 ES_URL ?= http://localhost:9200
@@ -28,6 +28,9 @@ help:
 	@echo "Validation:"
 	@echo "  make validate-backfill      - Validate backfill results (human-readable)"
 	@echo "  make validate-backfill-json - Validate backfill results (JSON output)"
+	@echo ""
+	@echo "Monitoring:"
+	@echo "  make emit-backfill-health   - Emit health metrics to ES for Kibana trending"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  ES_URL=$(ES_URL)"
@@ -98,3 +101,9 @@ validate-backfill-json:
 validate-backfill-before-after:
 	@echo "=== BEFORE ==="; $(MAKE) validate-backfill
 	@echo "=== AFTER  ==="; $(MAKE) validate-backfill
+
+# Emit backfill health metrics to Elasticsearch for Kibana trending
+emit-backfill-health:
+	@echo "Emitting backfill health metrics to ES..."
+	@ES_URL=$(ES_URL) ES_EMAIL_INDEX=$(ES_EMAIL_INDEX) \
+		$(PYTHON) scripts/emit_backfill_health.py

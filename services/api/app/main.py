@@ -152,3 +152,10 @@ try:
     app.include_router(analytics_router)
 except ImportError:
     pass  # Analytics module not available
+
+# Backfill health metrics (Prometheus)
+try:
+    from .routers.metrics import router as backfill_metrics_router
+    app.include_router(backfill_metrics_router)
+except ImportError:
+    pass  # Backfill metrics module not available
