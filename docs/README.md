@@ -39,6 +39,20 @@ This folder contains all documentation for the ApplyLens project.
 - [STICKY_SEARCH_FILTERS_COMPLETE.md](./STICKY_SEARCH_FILTERS_COMPLETE.md) - Sticky filters & shareable URLs (700+ lines)
 - [STICKY_SEARCH_FILTERS_QUICKREF.md](./STICKY_SEARCH_FILTERS_QUICKREF.md) - Sticky filters quick reference
 
+#### Email Automation & Classification
+- [EMAIL_AUTOMATION_SYSTEM_COMPLETE.md](./EMAIL_AUTOMATION_SYSTEM_COMPLETE.md) - Full automation system (1,000+ lines)
+- [EMAIL_AUTOMATION_QUICKREF.md](./EMAIL_AUTOMATION_QUICKREF.md) - Quick reference guide
+  - **Features**: Smart classification (promotions, bills, security, applications)
+  - **Risk Scoring**: 0-100 phishing/spam detection
+  - **Policy Engine**: JSON-based automation rules
+  - **Safety**: Preview mode, confidence thresholds, audit trail
+  - **Testing**: 53 tests (37 unit + 16 E2E)
+- [ADVANCED_EMAIL_AUTOMATION.md](./ADVANCED_EMAIL_AUTOMATION.md) - Advanced features (NEW)
+  - **Policy Engine**: JSON-based rule evaluation with 9 operators
+  - **Unsubscribe**: RFC-2369 List-Unsubscribe automation
+  - **NL Agent**: Natural language command parsing
+  - **Testing**: 48 tests (28 unit + 20 E2E)
+
 #### Email Extraction & Parsing
 - [EMAIL_EXTRACTION_FEATURE_COMPLETE.md](./EMAIL_EXTRACTION_FEATURE_COMPLETE.md) - Extraction feature
 - [EMAIL_EXTRACTION_QUICKREF.md](./EMAIL_EXTRACTION_QUICKREF.md) - Quick reference

@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Index, ForeignKey, Enum, Float
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Index, ForeignKey, Enum, Float, BigInteger, TIMESTAMP
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from .db import Base
@@ -55,6 +55,13 @@ class Email(Base):
     first_user_reply_at = Column(DateTime(timezone=True), nullable=True)
     last_user_reply_at = Column(DateTime(timezone=True), nullable=True)
     user_reply_count = Column(Integer, default=0)
+    
+    # Email automation system fields
+    category = Column(Text, nullable=True, index=True)  # promotions, bills, security, personal, applications
+    risk_score = Column(Float, nullable=True, index=True)  # 0-100, higher = more suspicious
+    expires_at = Column(DateTime(timezone=True), nullable=True, index=True)  # When email content expires
+    profile_tags = Column(ARRAY(Text), nullable=True)  # User-specific tags for personalization
+    features_json = Column(JSONB, nullable=True)  # Extracted features for ML/classification
 
     # Optional link to application
     application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
@@ -92,3 +99,51 @@ class Application(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     emails = relationship("Email", back_populates="application", foreign_keys="Email.application_id")
+
+
+class ActionsAudit(Base):
+    """
+    Audit log of all actions taken on emails (manual and automated)
+    
+    Tracks:
+    - What action was taken (archive, label, quarantine, etc.)
+    - Who took it (agent/automation or user)
+    - Which policy triggered it (if applicable)
+    - Confidence and rationale
+    - When it happened
+    """
+    __tablename__ = "actions_audit"
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    email_id = Column(Text, nullable=True, index=True)  # Gmail ID (string), not FK
+    action = Column(Text, nullable=False, index=True)  # archive, label, quarantine, delete, etc.
+    actor = Column(Text, nullable=False, index=True)  # "agent" (automation) or "user" (manual)
+    policy_id = Column(Text, nullable=True)  # Which policy triggered this
+    confidence = Column(Float, nullable=True)  # Confidence score 0-1
+    rationale = Column(Text, nullable=True)  # Human-readable explanation
+    payload = Column(JSONB, nullable=True)  # Action-specific data (e.g., {"label": "important"})
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class UserProfile(Base):
+    """
+    User preferences and behavior patterns for personalization
+    
+    Stores:
+    - User interests (used for classification)
+    - Brand preferences (for filtering promotions)
+    - Active categories (what they care about)
+    - Mute rules (automation preferences)
+    - Open rates by category (engagement metrics)
+    """
+    __tablename__ = "user_profile"
+    
+    user_id = Column(Text, primary_key=True)
+    interests = Column(ARRAY(Text), nullable=True)  # ["tech", "finance", "travel"]
+    brand_prefs = Column(ARRAY(Text), nullable=True)  # ["amazon", "nike", "apple"]
+    active_categories = Column(ARRAY(Text), nullable=True)  # ["applications", "bills"]
+    mute_rules = Column(JSONB, nullable=True)  # {"promo": {"expire_auto_archive": true}}
+    last_seen_domains = Column(ARRAY(Text), nullable=True)  # Recently seen sender domains
+    open_rates = Column(JSONB, nullable=True)  # {"promo": 0.23, "bills": 0.88}
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+

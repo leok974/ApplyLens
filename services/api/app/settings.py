@@ -17,6 +17,26 @@ class Settings(BaseSettings):
     
     # OAuth (required for multi-user)
     OAUTH_REDIRECT_URI: Optional[str] = None
+    OAUTH_STATE_SECRET: Optional[str] = None
+    DEFAULT_USER_EMAIL: Optional[str] = None
+    GOOGLE_CREDENTIALS: Optional[str] = None
+    GOOGLE_OAUTH_SCOPES: Optional[str] = None
+    
+    # PostgreSQL
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
+    
+    # Web frontend
+    WEB_PORT: Optional[int] = None
+    CORS_ALLOW_ORIGINS: Optional[str] = None
+    
+    # Elasticsearch
+    ES_ENABLED: bool = True
+    ES_URL: str = "http://es:9200"
+    ES_RECREATE_ON_START: bool = False
+    ELASTICSEARCH_INDEX: str = "gmail_emails"
+    KIBANA_PORT: Optional[int] = None
     
     # PDF parsing
     GMAIL_PDF_PARSE: bool = False
@@ -27,5 +47,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = "../../infra/.env"
+        extra = "ignore"  # Allow extra fields from .env
 
 settings = Settings()

@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "email_id": "test_email_123",
+      "action": "archive",
+      "policy_id": "test_policy",
+      "confidence": 0.95,
+      "rationale": "Test approval workflow deployment"
+    }
+  ]
+}

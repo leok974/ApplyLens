@@ -97,6 +97,41 @@ app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
+# Email automation system
+try:
+    from .routers.mail_tools import router as mail_tools_router
+    app.include_router(mail_tools_router)
+except ImportError:
+    pass  # Mail tools module not available yet
+
+# Unsubscribe automation
+try:
+    from .routers.unsubscribe import router as unsubscribe_router
+    app.include_router(unsubscribe_router)
+except ImportError:
+    pass  # Unsubscribe module not available yet
+
+# Natural language agent
+try:
+    from .routers.nl_agent import router as nl_router
+    app.include_router(nl_router)
+except ImportError:
+    pass  # NL agent module not available yet
+
+# Policy execution (approvals tray)
+try:
+    from .routers.policy_exec import router as policy_exec_router
+    app.include_router(policy_exec_router)
+except ImportError:
+    pass  # Policy exec module not available yet
+
+# Approvals Tray API (Postgres + ES write-through)
+try:
+    from .routers.approvals import router as approvals_router
+    app.include_router(approvals_router)
+except ImportError:
+    pass  # Approvals module not available yet
+
 # Phase 51.2 — Analytics endpoints (optional, gated)
 try:
     from .routers.analytics import router as analytics_router
