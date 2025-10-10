@@ -159,3 +159,11 @@ try:
     app.include_router(backfill_metrics_router)
 except ImportError:
     pass  # Backfill metrics module not available
+
+# Automation (risk scoring, etc.)
+try:
+    from .routers.automation import router as automation_router
+    app.include_router(automation_router)
+except ImportError:
+    pass  # Automation module not available
+

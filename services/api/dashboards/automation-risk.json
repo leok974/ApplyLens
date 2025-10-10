@@ -1,0 +1,163 @@
+{
+  "attributes": {
+    "title": "ApplyLens - Email Risk Automation Dashboard",
+    "description": "Visualizes risk score distribution, trends, and high-risk emails for the automation scoring system",
+    "visualizationType": "lens",
+    "state": {
+      "datasourceStates": {
+        "formBased": {
+          "layers": {
+            "risk_distribution": {
+              "columns": {
+                "category_col": {
+                  "label": "Email Category",
+                  "dataType": "string",
+                  "operationType": "terms",
+                  "sourceField": "category",
+                  "params": {
+                    "size": 10,
+                    "orderBy": {
+                      "type": "column",
+                      "columnId": "avg_risk"
+                    },
+                    "orderDirection": "desc"
+                  }
+                },
+                "avg_risk": {
+                  "label": "Average Risk Score",
+                  "dataType": "number",
+                  "operationType": "average",
+                  "sourceField": "risk_score"
+                },
+                "count": {
+                  "label": "Email Count",
+                  "dataType": "number",
+                  "operationType": "count"
+                }
+              },
+              "columnOrder": ["category_col", "avg_risk", "count"],
+              "incompleteColumns": {}
+            },
+            "risk_over_time": {
+              "columns": {
+                "timestamp": {
+                  "label": "Date",
+                  "dataType": "date",
+                  "operationType": "date_histogram",
+                  "sourceField": "received_at",
+                  "params": {
+                    "interval": "1d"
+                  }
+                },
+                "avg_risk_trend": {
+                  "label": "Avg Risk Score",
+                  "dataType": "number",
+                  "operationType": "average",
+                  "sourceField": "risk_score"
+                },
+                "max_risk_trend": {
+                  "label": "Max Risk Score",
+                  "dataType": "number",
+                  "operationType": "max",
+                  "sourceField": "risk_score"
+                }
+              },
+              "columnOrder": ["timestamp", "avg_risk_trend", "max_risk_trend"],
+              "incompleteColumns": {}
+            },
+            "high_risk_emails": {
+              "columns": {
+                "sender": {
+                  "label": "Sender",
+                  "dataType": "string",
+                  "operationType": "terms",
+                  "sourceField": "sender.keyword",
+                  "params": {
+                    "size": 20,
+                    "orderBy": {
+                      "type": "column",
+                      "columnId": "max_risk_sender"
+                    },
+                    "orderDirection": "desc"
+                  }
+                },
+                "max_risk_sender": {
+                  "label": "Max Risk Score",
+                  "dataType": "number",
+                  "operationType": "max",
+                  "sourceField": "risk_score"
+                },
+                "email_count": {
+                  "label": "Email Count",
+                  "dataType": "number",
+                  "operationType": "count"
+                }
+              },
+              "columnOrder": ["sender", "max_risk_sender", "email_count"],
+              "incompleteColumns": {}
+            }
+          }
+        }
+      },
+      "visualization": {
+        "layers": [
+          {
+            "layerId": "risk_distribution",
+            "layerType": "data",
+            "seriesType": "bar_horizontal",
+            "xAccessor": "avg_risk",
+            "splitAccessor": "category_col",
+            "accessors": ["count"]
+          },
+          {
+            "layerId": "risk_over_time",
+            "layerType": "data",
+            "seriesType": "line",
+            "xAccessor": "timestamp",
+            "accessors": ["avg_risk_trend", "max_risk_trend"]
+          },
+          {
+            "layerId": "high_risk_emails",
+            "layerType": "data",
+            "seriesType": "bar_horizontal",
+            "xAccessor": "max_risk_sender",
+            "splitAccessor": "sender",
+            "accessors": ["email_count"]
+          }
+        ],
+        "shape": "mixed"
+      },
+      "query": {
+        "query": "risk_score:*",
+        "language": "kuery"
+      },
+      "filters": [
+        {
+          "meta": {
+            "alias": "Has Risk Score",
+            "negate": false,
+            "disabled": false
+          },
+          "query": {
+            "exists": {
+              "field": "risk_score"
+            }
+          }
+        }
+      ]
+    },
+    "references": [
+      {
+        "id": "gmail_emails_v2",
+        "name": "indexpattern-datasource-current-indexpattern",
+        "type": "index-pattern"
+      }
+    ]
+  },
+  "version": "8.0.0",
+  "migrationVersion": {
+    "lens": "8.0.0"
+  },
+  "coreMigrationVersion": "8.0.0",
+  "typeMigrationVersion": "8.0.0"
+}

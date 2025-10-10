@@ -2,7 +2,7 @@
 Prometheus metrics for ApplyLens API.
 Centralized metrics definitions to avoid circular imports.
 """
-from prometheus_client import Counter, Gauge
+from prometheus_client import Counter, Gauge, Summary
 
 # --- Custom Prometheus Metrics ---
 
@@ -32,3 +32,26 @@ ES_UP = Gauge(
     "applylens_es_up",
     "Elasticsearch ping successful (1=up, 0=down)"
 )
+
+# --- Risk Scoring Metrics ---
+
+risk_recompute_requests = Counter(
+    "applylens_risk_recompute_requests_total",
+    "Total risk recomputation requests"
+)
+
+risk_recompute_duration = Summary(
+    "applylens_risk_recompute_duration_seconds",
+    "Risk recomputation duration in seconds"
+)
+
+risk_emails_scored_total = Counter(
+    "applylens_risk_emails_scored_total",
+    "Total number of emails scored"
+)
+
+risk_score_avg = Gauge(
+    "applylens_risk_score_avg",
+    "Average current risk score across all emails"
+)
+
