@@ -26,6 +26,7 @@ from elasticsearch import Elasticsearch, helpers
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.ingest.due_dates import extract_due_dates
+from app.utils.schema_guard import require_min_migration, require_columns
 
 ES_URL = os.getenv("ES_URL", "http://localhost:9200")
 ES_INDEX = os.getenv("ES_EMAIL_INDEX", "gmail_emails_v2")
@@ -145,6 +146,15 @@ def transform(doc: Dict[str, Any]) -> Dict[str, Any] | None:
 
 def run():
     """Run the backfill job."""
+    # Schema guard: Ensure database has required columns
+    print("Checking database schema...")
+    try:
+        require_min_migration("0009_add_emails_category", "emails.category column")
+        print("✓ Database schema validation passed\n")
+    except RuntimeError as e:
+        print(f"❌ Schema validation failed:\n{e}", file=sys.stderr)
+        sys.exit(1)
+    
     # Re-read DRY_RUN in case it was changed via environment
     dry_run = os.getenv("DRY_RUN", "1") == "1"
     batch = int(os.getenv("BATCH", "500"))
