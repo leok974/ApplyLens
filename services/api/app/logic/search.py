@@ -178,6 +178,71 @@ async def find_by_filter(
     return [_hit_to_email(h) for h in res["hits"]["hits"]]
 
 
+async def find_bills_due_before(
+    cutoff_iso: str, limit: int = 200
+) -> List[Dict[str, Any]]:
+    """
+    Find bills whose 'dates' array or 'expires_at' is before cutoff.
+    Prefer 'dates' if present; otherwise fall back to 'expires_at'.
+    
+    Args:
+        cutoff_iso: ISO datetime string (exclusive upper bound)
+        limit: Maximum number of results to return
+        
+    Returns:
+        List of bill email dictionaries with fields: id, category, subject,
+        money_amounts, dates, expires_at, sender_domain, received_at
+        
+    Example:
+        >>> bills = await find_bills_due_before("2025-10-15T00:00:00Z")
+        >>> [b["subject"] for b in bills]
+        ["Electric bill due Oct 10", "Water bill due Oct 12"]
+    """
+    client = es_client()
+    body = {
+        "size": limit,
+        "query": {
+            "bool": {
+                "filter": [
+                    {"term": {"category": "bills"}},
+                    {
+                        "bool": {
+                            "should": [
+                                {"range": {"dates": {"lt": cutoff_iso}}},
+                                {"range": {"expires_at": {"lt": cutoff_iso}}},
+                            ],
+                            "minimum_should_match": 1,
+                        }
+                    },
+                ]
+            }
+        },
+        "sort": [{"received_at": "desc"}],
+        "_source": [
+            "id",
+            "category",
+            "subject",
+            "money_amounts",
+            "dates",
+            "expires_at",
+            "sender_domain",
+            "received_at",
+        ],
+    }
+    res = client.search(index=ES_INDEX, body=body)
+    
+    # Enrich results with dates/money_amounts (not in _hit_to_email)
+    results = []
+    for h in res["hits"]["hits"]:
+        email = _hit_to_email(h)
+        src = h.get("_source", {})
+        email["money_amounts"] = src.get("money_amounts", [])
+        email["dates"] = src.get("dates", [])
+        results.append(email)
+    
+    return results
+
+
 async def search_emails(
     category: str = None,
     sender_domain: str = None,

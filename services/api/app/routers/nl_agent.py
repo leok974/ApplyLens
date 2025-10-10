@@ -9,6 +9,7 @@ Supports commands like:
 - "unsubscribe from newsletters I haven't opened in 60 days"
 - "show me suspicious emails"
 - "summarize bills due before next week"
+- "show my bills due before Friday"
 """
 
 from fastapi import APIRouter
@@ -18,8 +19,19 @@ import re
 import datetime as dt
 
 # Import search helpers and policy engine
-from app.logic.search import find_expired_promos, find_high_risk, find_unsubscribe_candidates
+from app.logic.search import (
+    find_expired_promos,
+    find_high_risk,
+    find_unsubscribe_candidates,
+    find_bills_due_before,
+)
 from app.logic.policy_engine import apply_policies
+from app.logic.timewin import parse_due_cutoff
+from app.routers.productivity import (
+    CreateRemindersRequest,
+    Reminder,
+    create_reminders,
+)
 
 router = APIRouter(prefix="/nl", tags=["nl-agent"])
 
@@ -200,21 +212,49 @@ async def run(query: NLQuery):
         }
     
     elif parsed["intent"] == "summarize_bills":
-        # Summarize bills and create reminders
-        # In full version, query ES for bills with due dates < parsed["before"]
-        # For MVP: synthesize one reminder
-        items = [
-            {
-                "email_id": "bill_1",
-                "title": "Pay electric bill",
-                "due_at": None,
-                "notes": "From bills category"
-            }
-        ]
+        # Parse date cutoff from natural language
+        cutoff = parse_due_cutoff(query.text)
+        
+        # Find bills due before cutoff
+        emails = []
+        if cutoff:
+            emails = await find_bills_due_before(cutoff_iso=cutoff)
+        
+        # Build reminders for each bill email
+        items = []
+        for e in emails:
+            # Extract due date from dates array or expires_at
+            due_at = cutoff  # Default to cutoff
+            if e.get("dates") and len(e["dates"]) > 0:
+                due_at = e["dates"][0]  # First date in array
+            elif e.get("expires_at"):
+                due_at = e["expires_at"]
+            
+            # Format money amounts if available
+            money_str = ""
+            if e.get("money_amounts"):
+                amounts = e["money_amounts"]
+                if amounts and len(amounts) > 0:
+                    amt = amounts[0]
+                    money_str = f" - ${amt.get('amount', 0):.2f}"
+            
+            items.append({
+                "email_id": e["id"],
+                "title": (e.get("subject") or f"Bill from {e.get('sender_domain', 'unknown')}") + money_str,
+                "due_at": due_at,
+                "notes": f"Auto-created from bills due search (category: {e.get('category')})"
+            })
+        
+        # Fallback if no bills found
+        if not items:
+            items = [{
+                "email_id": "bill_fallback",
+                "title": "No bills found" + (f" before {cutoff}" if cutoff else ""),
+                "due_at": cutoff,
+                "notes": "Try specifying a date like 'before Friday' or 'by 10/15'"
+            }]
         
         # Create reminders via productivity router
-        from app.routers.productivity import CreateRemindersRequest, Reminder, create_reminders
-        
         reminder_req = CreateRemindersRequest(
             items=[Reminder(**item) for item in items]
         )
@@ -222,8 +262,10 @@ async def run(query: NLQuery):
         
         return {
             "intent": "summarize_bills",
+            "cutoff": cutoff,
             "created": created["created"],
-            "reminders": items
+            "reminders": items,
+            "count": len(emails)
         }
     
     # Fallback for unrecognized commands
