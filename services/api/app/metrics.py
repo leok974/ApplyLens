@@ -55,3 +55,25 @@ risk_score_avg = Gauge(
     "Average current risk score across all emails"
 )
 
+# Parity Check Metrics
+parity_checks_total = Counter(
+    "applylens_parity_checks_total",
+    "Total number of parity checks performed"
+)
+
+parity_mismatches_total = Counter(
+    "applylens_parity_mismatches_total",
+    "Total number of mismatches detected"
+)
+
+parity_mismatch_ratio = Gauge(
+    "applylens_parity_mismatch_ratio",
+    "Current parity mismatch ratio (mismatches / total checked)"
+)
+
+parity_last_check_timestamp = Gauge(
+    "applylens_parity_last_check_timestamp",
+    "Unix timestamp of last parity check"
+)
+
+
