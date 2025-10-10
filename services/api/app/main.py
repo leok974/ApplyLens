@@ -132,6 +132,20 @@ try:
 except ImportError:
     pass  # Approvals module not available yet
 
+# Grouped unsubscribe
+try:
+    from .routers.unsubscribe_group import router as unsubscribe_group_router
+    app.include_router(unsubscribe_group_router)
+except ImportError:
+    pass  # Grouped unsubscribe module not available yet
+
+# Productivity tools (reminders, calendar)
+try:
+    from .routers.productivity import router as productivity_router
+    app.include_router(productivity_router)
+except ImportError:
+    pass  # Productivity module not available yet
+
 # Phase 51.2 — Analytics endpoints (optional, gated)
 try:
     from .routers.analytics import router as analytics_router
