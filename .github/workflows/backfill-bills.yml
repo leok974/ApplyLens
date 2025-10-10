@@ -48,6 +48,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
       
+      - name: Check database schema version
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Checking database schema version..."
+          python -c "
+          from app.utils.schema_guard import require_min_migration, get_current_migration
+          current = get_current_migration()
+          print(f'Current migration: {current}')
+          try:
+              require_min_migration('0009_add_emails_category', 'emails.category column')
+              print('✓ Schema version check passed')
+          except RuntimeError as e:
+              print(f'✗ Schema check failed: {e}')
+              exit(1)
+          "
+      
       - name: Verify Elasticsearch connectivity
         env:
           ES_URL: ${{ secrets.ES_URL }}
