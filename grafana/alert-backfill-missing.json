@@ -1,0 +1,69 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "name": "Backfill Health",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "alert-missing-dates",
+          "title": "Backfill: Missing bill dates > 0",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "timeSeriesQuery",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "expr": "bills_missing_dates{instance=~\"$instance\"}",
+                "instant": false,
+                "range": true,
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "reduce",
+              "datasourceUid": "__expr__",
+              "model": {
+                "expression": "A",
+                "reducer": "last",
+                "type": "reduce",
+                "refId": "B"
+              }
+            },
+            {
+              "refId": "C",
+              "queryType": "threshold",
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [],
+                "expression": "B",
+                "type": "threshold",
+                "refId": "C",
+                "params": [
+                  1,
+                  "gt"
+                ]
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "10m",
+          "labels": {
+            "service": "applylens-api"
+          },
+          "annotations": {
+            "summary": "Bills missing dates[] > 0 for 10m",
+            "runbook_url": "https://your.runbook.url/backfill"
+          }
+        }
+      ]
+    }
+  ]
+}
