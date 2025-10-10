@@ -2,7 +2,7 @@
 Prometheus metrics for ApplyLens API.
 Centralized metrics definitions to avoid circular imports.
 """
-from prometheus_client import Counter, Gauge, Summary
+from prometheus_client import Counter, Gauge, Summary, Histogram
 
 # --- Custom Prometheus Metrics ---
 
@@ -76,4 +76,22 @@ parity_last_check_timestamp = Gauge(
     "Unix timestamp of last parity check"
 )
 
+# --- Backfill Performance Metrics ---
 
+backfill_duration_seconds = Histogram(
+    "applylens_backfill_duration_seconds",
+    "Duration of backfill jobs in seconds",
+    buckets=[10, 30, 60, 120, 300, 600, 1800, 3600]  # 10s to 1h
+)
+
+risk_batch_duration_seconds = Histogram(
+    "applylens_risk_batch_duration_seconds",
+    "Duration of risk scoring batches in seconds",
+    buckets=[1, 5, 10, 30, 60, 120, 300]  # 1s to 5m
+)
+
+risk_requests_total = Counter(
+    "applylens_risk_requests_total",
+    "Total risk computation requests by outcome",
+    ["outcome"]  # success, failure
+)

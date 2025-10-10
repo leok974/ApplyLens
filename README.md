@@ -183,3 +183,64 @@ All documentation has been organized in the [`docs/`](./docs/) folder:
 - **[Testing](./docs/RUNNING_TESTS.md)** - Unit & E2E tests
 
 📖 **See the [Documentation Index](./docs/README.md) for the complete list of 70+ guides.**
+
+## 🔧 Monitoring & Observability
+
+ApplyLens includes production-ready monitoring infrastructure:
+
+### Prometheus Metrics
+- **HTTP metrics:** Request rate, latency, error rate (via starlette-exporter)
+- **Risk scoring:** Batch duration, failure rate, email coverage
+- **Parity checks:** DB↔ES mismatch detection and ratio
+- **System health:** Database and Elasticsearch availability
+
+**Metrics endpoint:** http://localhost:8003/metrics
+
+### Health Endpoints
+- `/healthz` - Liveness probe (basic check)
+- `/live` - Liveness alias
+- `/ready` - Readiness probe (DB + ES + migration version)
+
+### Grafana Dashboard
+Import the operational dashboard for real-time monitoring:
+```bash
+# Import ops-overview.json into Grafana
+# Location: services/api/dashboards/ops-overview.json
+# Panels: Error rates, latency, parity, performance
+```
+
+### Alerts & Runbooks
+Production-critical alerts with runbooks:
+- **APIHighErrorRateFast** - 5xx rate > 5% ([runbook](services/api/docs/runbooks/api-errors.md))
+- **RiskJobFailures** - Risk computation failures ([runbook](services/api/docs/runbooks/risk-job.md))
+- **ParityDriftTooHigh** - DB↔ES drift > 0.5% ([runbook](services/api/docs/runbooks/parity.md))
+- **BackfillDurationSLO** - p95 duration > 5min ([runbook](services/api/docs/runbooks/backfill.md))
+
+**Alert rules:** `infra/alerts/prometheus-rules.yml`
+
+### Structured Logging
+Enable JSON logging for production:
+```bash
+# Set environment variable
+UVICORN_LOG_CONFIG=services/api/app/logging.yaml
+
+# Logs include: timestamp, level, logger, message
+```
+
+### Optional Tracing
+Enable OpenTelemetry distributed tracing:
+```bash
+# Install tracing dependencies
+pip install -e ".[tracing]"
+
+# Enable tracing
+OTEL_ENABLED=1
+OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+
+# Instruments: FastAPI, SQLAlchemy, HTTP clients
+```
+
+**Documentation:**
+- [Phase 12.3 Complete Guide](PHASE_12.3_COMPLETE.md)
+- [Deployment Checklist](DEPLOYMENT.md) *(coming soon)*
+
