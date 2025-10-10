@@ -1,0 +1,126 @@
+{
+  "index_patterns": ["analytics_applylens_*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "analytics_30day_retention",
+      "refresh_interval": "30s"
+    },
+    "mappings": {
+      "properties": {
+        "d": {
+          "type": "date",
+          "format": "strict_date_optional_time||yyyy-MM-dd"
+        },
+        "id": {
+          "type": "keyword"
+        },
+        "emails": {
+          "type": "integer"
+        },
+        "emails_scored": {
+          "type": "integer"
+        },
+        "avg_risk": {
+          "type": "float"
+        },
+        "min_risk": {
+          "type": "float"
+        },
+        "max_risk": {
+          "type": "float"
+        },
+        "low_risk_count": {
+          "type": "integer"
+        },
+        "medium_risk_count": {
+          "type": "integer"
+        },
+        "high_risk_count": {
+          "type": "integer"
+        },
+        "critical_risk_count": {
+          "type": "integer"
+        },
+        "unscored_count": {
+          "type": "integer"
+        },
+        "recruiter_count": {
+          "type": "integer"
+        },
+        "interview_count": {
+          "type": "integer"
+        },
+        "offer_count": {
+          "type": "integer"
+        },
+        "rejection_count": {
+          "type": "integer"
+        },
+        "coverage_pct": {
+          "type": "float"
+        },
+        "high_risk_pct": {
+          "type": "float"
+        },
+        "critical_risk_pct": {
+          "type": "float"
+        },
+        "total_checked": {
+          "type": "integer"
+        },
+        "total_mismatches": {
+          "type": "integer"
+        },
+        "mismatch_ratio": {
+          "type": "float"
+        },
+        "risk_score_mismatches": {
+          "type": "integer"
+        },
+        "expires_at_mismatches": {
+          "type": "integer"
+        },
+        "category_mismatches": {
+          "type": "integer"
+        },
+        "last_check_at": {
+          "type": "date"
+        },
+        "slo_status": {
+          "type": "keyword"
+        },
+        "backfill_count": {
+          "type": "integer"
+        },
+        "avg_duration_seconds": {
+          "type": "float"
+        },
+        "p50_duration_seconds": {
+          "type": "float"
+        },
+        "p95_duration_seconds": {
+          "type": "float"
+        },
+        "p99_duration_seconds": {
+          "type": "float"
+        },
+        "total_emails_processed": {
+          "type": "integer"
+        },
+        "failed_count": {
+          "type": "integer"
+        },
+        "success_rate_pct": {
+          "type": "float"
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "ApplyLens analytics aggregates from BigQuery dbt marts",
+    "version": 1,
+    "created_by": "Phase 12.4 - Analytics Infrastructure"
+  }
+}

@@ -1,0 +1,75 @@
+name: Analytics Sync
+
+# Sync BigQuery aggregates to Elasticsearch for Kibana dashboards
+# Runs dbt models and exports results nightly at 3:15 AM UTC
+
+on:
+  schedule:
+    # Run at 3:15 AM UTC daily (after midnight US timezones)
+    - cron: '15 3 * * *'
+  
+  workflow_dispatch:
+    # Allow manual trigger for testing and ad-hoc syncs
+
+jobs:
+  dbt_and_export:
+    name: Run dbt & Export to Elasticsearch
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    env:
+      BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+      BQ_DATASET: applylens
+      ES_URL: ${{ secrets.ES_URL }}
+      ES_ANALYTICS_INDEX: analytics_applylens
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install dbt-bigquery google-cloud-bigquery elasticsearch
+          pip install dbt-core==1.8.0
+      
+      - name: Set up BigQuery credentials
+        run: |
+          echo "${{ secrets.BQ_SA_JSON }}" > $HOME/bq_sa.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/bq_sa.json" >> $GITHUB_ENV
+      
+      - name: Install dbt packages
+        working-directory: analytics/dbt
+        run: dbt deps --profiles-dir .
+      
+      - name: Run dbt models
+        working-directory: analytics/dbt
+        run: |
+          dbt run --profiles-dir . --target ci
+          dbt test --profiles-dir . --target ci
+      
+      - name: Export to Elasticsearch
+        run: python analytics/export/export_to_es.py
+        env:
+          BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          ES_URL: ${{ secrets.ES_URL }}
+      
+      - name: Upload dbt logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-logs
+          path: analytics/dbt/logs/
+          retention-days: 7
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Analytics sync failed. Check logs for details."
+          echo "To re-run manually: gh workflow run analytics-sync.yml"

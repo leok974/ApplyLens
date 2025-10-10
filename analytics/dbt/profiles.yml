@@ -1,0 +1,25 @@
+applylens:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account-json
+      project: "{{ env_var('BQ_PROJECT', 'applylens-analytics') }}"
+      dataset: applylens
+      threads: 4
+      keyfile_json: "{{ env_var('BQ_SA_JSON') }}"
+      location: US
+      priority: interactive
+      timeout_seconds: 300
+      maximum_bytes_billed: 1000000000  # 1GB limit
+    
+    ci:
+      type: bigquery
+      method: service-account-json
+      project: "{{ env_var('BQ_PROJECT') }}"
+      dataset: applylens
+      threads: 4
+      keyfile_json: "{{ env_var('BQ_SA_JSON') }}"
+      location: US
+      priority: interactive
+      timeout_seconds: 300
