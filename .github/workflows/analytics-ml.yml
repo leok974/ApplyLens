@@ -44,16 +44,31 @@ jobs:
           pip install dbt-bigquery==${{ env.DBT_VERSION }}
 
       - name: Authenticate to GCP
+        id: auth-train
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.BQ_SA_JSON }}
+
+      - name: Sanity check BigQuery secrets
+        env:
+          BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_SA_JSON: ${{ secrets.BQ_SA_JSON }}
+        run: |
+          echo "BQ_PROJECT length: ${#BQ_PROJECT}"
+          echo "BQ_SA_JSON length: ${#BQ_SA_JSON}"
+          if [ -z "$BQ_PROJECT" ] || [ -z "$BQ_SA_JSON" ]; then
+            echo "❌ Missing BigQuery secrets!"
+            exit 1
+          fi
+          echo "✅ BigQuery secrets are configured"
 
       - name: Train ARIMA models
         working-directory: analytics/dbt
         env:
           BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_SA_JSON: ${{ secrets.BQ_SA_JSON }}
         run: |
-          dbt run --select ml:m_* --target prod
+          dbt run --select ml:m_* --target prod --profiles-dir .
           echo "✅ Model training complete"
 
   forecast-and-detect:
@@ -85,24 +100,40 @@ jobs:
           pip install google-cloud-bigquery elasticsearch
 
       - name: Authenticate to GCP
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.BQ_SA_JSON }}
+
+      - name: Sanity check BigQuery secrets
+        env:
+          BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_SA_JSON: ${{ secrets.BQ_SA_JSON }}
+        run: |
+          echo "BQ_PROJECT length: ${#BQ_PROJECT}"
+          echo "BQ_SA_JSON length: ${#BQ_SA_JSON}"
+          if [ -z "$BQ_PROJECT" ] || [ -z "$BQ_SA_JSON" ]; then
+            echo "❌ Missing BigQuery secrets!"
+            exit 1
+          fi
+          echo "✅ BigQuery secrets are configured"
 
       - name: Generate forecasts
         working-directory: analytics/dbt
         env:
           BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_SA_JSON: ${{ secrets.BQ_SA_JSON }}
         run: |
-          dbt run --select ml:pred_* --target prod
+          dbt run --select ml:pred_* --target prod --profiles-dir .
           echo "✅ Forecasts generated"
 
       - name: Detect anomalies
         working-directory: analytics/dbt
         env:
           BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_SA_JSON: ${{ secrets.BQ_SA_JSON }}
         run: |
-          dbt run --select ml:anomaly_detection --target prod
+          dbt run --select ml:anomaly_detection --target prod --profiles-dir .
           echo "✅ Anomalies detected"
 
       - name: Export anomalies to Elasticsearch

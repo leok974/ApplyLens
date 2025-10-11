@@ -40,9 +40,23 @@ jobs:
           pip install dbt-core==1.8.0
       
       - name: Set up BigQuery credentials
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.BQ_SA_JSON }}
+      
+      - name: Sanity check BigQuery secrets
+        env:
+          BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_SA_JSON: ${{ secrets.BQ_SA_JSON }}
         run: |
-          echo "${{ secrets.BQ_SA_JSON }}" > $HOME/bq_sa.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/bq_sa.json" >> $GITHUB_ENV
+          echo "BQ_PROJECT length: ${#BQ_PROJECT}"
+          echo "BQ_SA_JSON length: ${#BQ_SA_JSON}"
+          if [ -z "$BQ_PROJECT" ] || [ -z "$BQ_SA_JSON" ]; then
+            echo "❌ Missing BigQuery secrets!"
+            exit 1
+          fi
+          echo "✅ BigQuery secrets are configured"
       
       - name: Install dbt packages
         working-directory: analytics/dbt
@@ -50,15 +64,19 @@ jobs:
       
       - name: Run dbt models
         working-directory: analytics/dbt
+        env:
+          BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_SA_JSON: ${{ secrets.BQ_SA_JSON }}
         run: |
           dbt run --profiles-dir . --target ci
           dbt test --profiles-dir . --target ci
       
       - name: Export to Elasticsearch
-        run: python analytics/export/export_to_es.py
         env:
           BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
           ES_URL: ${{ secrets.ES_URL }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        run: python analytics/export/export_to_es.py
       
       - name: Upload dbt logs
         if: always()
