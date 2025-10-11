@@ -233,3 +233,52 @@ export async function createApplicationFromEmail(emailId: number): Promise<Creat
   if (!r.ok) throw new Error('Failed to create application from email')
   return r.json()
 }
+
+// Search Explain
+
+export type ExplainResponse = {
+  id: string
+  reason: string
+  evidence: {
+    labels?: string[]
+    label_heuristics?: string[]
+    list_unsubscribe?: boolean
+    is_promo?: boolean
+    is_newsletter?: boolean
+    keywords_hit?: boolean
+    sender?: string
+    sender_domain?: string
+  }
+}
+
+export async function explainEmail(id: string): Promise<ExplainResponse> {
+  const r = await fetch(`/api/search/explain/${id}`)
+  if (!r.ok) throw new Error(`Explain failed: ${r.status}`)
+  return r.json()
+}
+
+// Quick Actions (dry-run mode)
+
+export type ActionResponse = {
+  status: string
+  action: string
+  doc_id: string
+  message?: string
+}
+
+async function postAction(path: string, doc_id: string, note?: string): Promise<ActionResponse> {
+  const r = await fetch(`/api/search/actions/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ doc_id, note })
+  })
+  if (!r.ok) throw new Error(`Action ${path} failed: ${r.status}`)
+  return r.json()
+}
+
+export const actions = {
+  archive: (id: string, note?: string) => postAction('archive', id, note),
+  markSafe: (id: string, note?: string) => postAction('mark_safe', id, note),
+  markSuspicious: (id: string, note?: string) => postAction('mark_suspicious', id, note),
+  unsubscribeDry: (id: string, note?: string) => postAction('unsubscribe_dryrun', id, note),
+}

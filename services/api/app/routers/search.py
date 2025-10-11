@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+import re
 from ..es import es, ES_ENABLED, INDEX
 
 # ---- Tunables for "demo pop"
@@ -255,4 +256,210 @@ def search(
     return SearchResponse(
         total=res["hits"]["total"]["value"],
         hits=hits
+    )
+
+
+# ----- Explain endpoint -----
+
+def _heuristic_reason(doc: dict) -> str:
+    """Fallback reasoning if ES `reason` field not present."""
+    subj = doc.get("subject", "")
+    labels = doc.get("labels") or []
+    label_heuristics = doc.get("label_heuristics") or []
+    
+    # Check Gmail categories first
+    if "CATEGORY_PROMOTIONS" in labels:
+        return "Gmail: Promotions category"
+    if "CATEGORY_SOCIAL" in labels:
+        return "Gmail: Social category"
+    if "CATEGORY_UPDATES" in labels:
+        return "Gmail: Updates category"
+    if "CATEGORY_FORUMS" in labels:
+        return "Gmail: Forums category"
+    
+    # Check label heuristics
+    if "offer" in label_heuristics:
+        return "Detected as job offer"
+    if "interview" in label_heuristics:
+        return "Detected as interview"
+    if "rejection" in label_heuristics:
+        return "Detected as rejection"
+    if "newsletter_ads" in label_heuristics:
+        return "Detected as newsletter/ad"
+    if "application_receipt" in label_heuristics:
+        return "Detected as application receipt"
+    
+    # Check unsubscribe header
+    if doc.get("list_unsubscribe") or doc.get("has_unsubscribe"):
+        return "Unsubscribe header present"
+    
+    # Check promo/newsletter flags
+    if doc.get("is_promo"):
+        return "Promo keywords detected"
+    if doc.get("is_newsletter"):
+        return "Newsletter pattern detected"
+    
+    # Keyword analysis
+    if re.search(r"(deal|sale|promo|coupon|% off|discount)", subj, re.I):
+        return "Promo keywords in subject"
+    
+    return "Uncategorized"
+
+
+class ExplainResponse(BaseModel):
+    """Explanation of why an email was categorized."""
+    id: str
+    reason: str
+    evidence: dict
+
+
+@router.get("/explain/{doc_id}", response_model=ExplainResponse)
+def explain(doc_id: str):
+    """
+    Explain why an email was categorized/scored the way it was.
+    
+    Returns reasoning based on:
+    - Gmail labels (CATEGORY_*)
+    - Label heuristics (offer, interview, rejection, etc.)
+    - List-Unsubscribe header presence
+    - Promo/newsletter flags and keywords
+    """
+    if not ES_ENABLED or es is None:
+        raise HTTPException(status_code=503, detail="Elasticsearch disabled")
+    
+    try:
+        # Get document from ES
+        result = es.get(index=INDEX, id=doc_id)
+        doc = result["_source"]
+    except Exception as e:
+        if "404" in str(e) or "not_found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve document: {str(e)}")
+    
+    # Use stored reason or generate heuristic
+    reason = doc.get("reason") or _heuristic_reason(doc)
+    
+    # Collect evidence
+    evidence = {
+        "labels": doc.get("labels", []),
+        "label_heuristics": doc.get("label_heuristics", []),
+        "list_unsubscribe": bool(doc.get("list_unsubscribe") or doc.get("has_unsubscribe")),
+        "is_promo": doc.get("is_promo", False),
+        "is_newsletter": doc.get("is_newsletter", False),
+        "keywords_hit": bool(re.search(
+            r"(deal|sale|promo|coupon|% off|discount)",
+            doc.get("subject", ""),
+            re.I
+        )),
+        "sender": doc.get("sender") or doc.get("from_addr"),
+        "sender_domain": doc.get("sender_domain"),
+    }
+    
+    return ExplainResponse(
+        id=doc_id,
+        reason=reason,
+        evidence=evidence
+    )
+
+
+# ----- Quick actions (dry-run) -----
+
+class ActionRequest(BaseModel):
+    """Request body for quick actions."""
+    doc_id: str
+    note: Optional[str] = None
+
+
+class ActionResponse(BaseModel):
+    """Response for quick actions."""
+    status: str
+    action: str
+    doc_id: str
+    message: Optional[str] = None
+
+
+async def _record_audit(action: str, doc_id: str, note: Optional[str] = None):
+    """Record action to audit log index (dry-run, no Gmail mutation)."""
+    if not ES_ENABLED or es is None:
+        return
+    
+    try:
+        audit_index = "applylens_audit"
+        payload = {
+            "action": action,
+            "doc_id": doc_id,
+            "note": note,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        es.index(index=audit_index, body=payload)
+    except Exception as e:
+        # Log but don't fail the request
+        print(f"Warning: Failed to record audit log: {e}")
+
+
+@router.post("/actions/archive", response_model=ActionResponse)
+async def archive(req: ActionRequest):
+    """
+    Archive email (dry-run mode).
+    
+    Records intent to applylens_audit index without mutating Gmail.
+    In production, this would remove the INBOX label via Gmail API.
+    """
+    await _record_audit("archive", req.doc_id, req.note)
+    return ActionResponse(
+        status="accepted",
+        action="archive",
+        doc_id=req.doc_id,
+        message="Dry-run: Archive action recorded to audit log"
+    )
+
+
+@router.post("/actions/mark_safe", response_model=ActionResponse)
+async def mark_safe(req: ActionRequest):
+    """
+    Mark email as safe (dry-run mode).
+    
+    Records intent to applylens_audit index without mutating Gmail.
+    In production, this would add a custom 'safe' label via Gmail API.
+    """
+    await _record_audit("mark_safe", req.doc_id, req.note)
+    return ActionResponse(
+        status="accepted",
+        action="mark_safe",
+        doc_id=req.doc_id,
+        message="Dry-run: Mark safe action recorded to audit log"
+    )
+
+
+@router.post("/actions/mark_suspicious", response_model=ActionResponse)
+async def mark_suspicious(req: ActionRequest):
+    """
+    Mark email as suspicious (dry-run mode).
+    
+    Records intent to applylens_audit index without mutating Gmail.
+    In production, this would add a custom 'suspicious' label via Gmail API.
+    """
+    await _record_audit("mark_suspicious", req.doc_id, req.note)
+    return ActionResponse(
+        status="accepted",
+        action="mark_suspicious",
+        doc_id=req.doc_id,
+        message="Dry-run: Mark suspicious action recorded to audit log"
+    )
+
+
+@router.post("/actions/unsubscribe_dryrun", response_model=ActionResponse)
+async def unsubscribe_dryrun(req: ActionRequest):
+    """
+    Unsubscribe from email list (dry-run mode).
+    
+    Records intent to applylens_audit index without performing actual unsubscribe.
+    In production, this would parse list_unsubscribe header and make HTTP request.
+    """
+    await _record_audit("unsubscribe_dryrun", req.doc_id, req.note)
+    return ActionResponse(
+        status="accepted",
+        action="unsubscribe_dryrun",
+        doc_id=req.doc_id,
+        message="Dry-run: Unsubscribe action recorded to audit log"
     )

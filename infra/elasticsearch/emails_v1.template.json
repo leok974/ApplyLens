@@ -1,0 +1,147 @@
+{
+  "index_patterns": ["emails_v1*"],
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0,
+        "analysis": {
+          "analyzer": {
+            "applylens_text": {
+              "type": "custom",
+              "tokenizer": "standard",
+              "filter": ["lowercase", "stop", "snowball"]
+            },
+            "applylens_text_shingles": {
+              "type": "custom",
+              "tokenizer": "standard",
+              "filter": ["lowercase", "stop", "snowball", "shingle"]
+            },
+            "ats_search_analyzer": {
+              "type": "custom",
+              "tokenizer": "standard",
+              "filter": ["lowercase", "ats_synonyms"]
+            }
+          },
+          "filter": {
+            "ats_synonyms": {
+              "type": "synonym",
+              "synonyms": [
+                "lever, lever.co",
+                "workday, myworkday",
+                "smartrecruiters, smart recruiters",
+                "greenhouse, greenhouse.io"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "mappings": {
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "gmail_id": {
+          "type": "keyword"
+        },
+        "thread_id": {
+          "type": "keyword"
+        },
+        "sender": {
+          "type": "keyword"
+        },
+        "sender_domain": {
+          "type": "keyword"
+        },
+        "from_addr": {
+          "type": "keyword"
+        },
+        "recipient": {
+          "type": "keyword"
+        },
+        "subject": {
+          "type": "text",
+          "analyzer": "applylens_text",
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            },
+            "shingles": {
+              "type": "text",
+              "analyzer": "applylens_text_shingles"
+            }
+          }
+        },
+        "body_text": {
+          "type": "text",
+          "analyzer": "applylens_text",
+          "fields": {
+            "shingles": {
+              "type": "text",
+              "analyzer": "applylens_text_shingles"
+            }
+          }
+        },
+        "body_html": {
+          "type": "text",
+          "index": false
+        },
+        "received_at": {
+          "type": "date"
+        },
+        "labels": {
+          "type": "keyword"
+        },
+        "label_heuristics": {
+          "type": "keyword"
+        },
+        "list_unsubscribe": {
+          "type": "keyword"
+        },
+        "urls": {
+          "type": "keyword"
+        },
+        "spf_result": {
+          "type": "keyword"
+        },
+        "dkim_result": {
+          "type": "keyword"
+        },
+        "dmarc_result": {
+          "type": "keyword"
+        },
+        "is_newsletter": {
+          "type": "boolean"
+        },
+        "is_promo": {
+          "type": "boolean"
+        },
+        "has_unsubscribe": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "keyword"
+        },
+        "company": {
+          "type": "keyword"
+        },
+        "role": {
+          "type": "text"
+        },
+        "source": {
+          "type": "keyword"
+        },
+        "first_user_reply_at": {
+          "type": "date"
+        },
+        "user_reply_count": {
+          "type": "integer"
+        },
+        "replied": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
