@@ -1,0 +1,29 @@
+name: Smoke (applylens.app)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  smoke-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run smoke tests (PowerShell)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'continue'
+          $output = .\scripts\smoke-applylens.ps1 | Tee-Object -Variable lines
+          # Fail ONLY on errors, not warnings. Your script prints "❌" for hard fails.
+          $hasFail = $lines | Select-String -SimpleMatch "❌"
+          if ($hasFail) {
+            Write-Host "`n--- SMOKE OUTPUT ---"
+            $lines | ForEach-Object { Write-Host $_ }
+            throw "Smoke test failures detected."
+          } else {
+            Write-Host "All smoke checks passed (warnings ignored)."
+          }
