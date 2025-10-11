@@ -58,8 +58,11 @@ services:
       - ./secrets:/secrets:ro
     ports: ["${API_PORT}:${API_PORT}"]
     depends_on:
-      - db
-      - es
+      db:
+        condition: service_started
+      es:
+        condition: service_healthy
+    restart: unless-stopped
 
   web:
     build: ./../apps/web

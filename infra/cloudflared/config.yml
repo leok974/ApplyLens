@@ -1,8 +1,8 @@
 # Cloudflare Tunnel Configuration Template
-# Replace <YOUR_TUNNEL_UUID> with the actual UUID from `cloudflared tunnel list`
+# Replace 08d5feee-f504-47a2-a1f2-b86564900991 with the actual UUID from `cloudflared tunnel list`
 
-tunnel: <YOUR_TUNNEL_UUID>
-credentials-file: /etc/cloudflared/<YOUR_TUNNEL_UUID>.json
+tunnel: 08d5feee-f504-47a2-a1f2-b86564900991
+credentials-file: /etc/cloudflared/08d5feee-f504-47a2-a1f2-b86564900991.json
 
 ingress:
   # Main API endpoint
@@ -23,3 +23,6 @@ ingress:
   
   # Catch-all rule (required, must be last)
   - service: http_status:404
+
+
+

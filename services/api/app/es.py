@@ -120,11 +120,32 @@ SETTINGS_AND_MAPPINGS = {
 es = Elasticsearch(ES_URL) if ES_ENABLED else None
 
 def ensure_index():
+    """Ensure Elasticsearch index exists with retry logic for startup."""
     if not ES_ENABLED or es is None:
         return
-    exists = es.indices.exists(index=INDEX)
-    if exists and ES_RECREATE_ON_START:
-        es.indices.delete(index=INDEX, ignore=[404])
-        exists = False
-    if not exists:
-        es.indices.create(index=INDEX, body=SETTINGS_AND_MAPPINGS)
+    
+    # Retry logic for ES connection during startup
+    import time
+    from elasticsearch.exceptions import ConnectionError
+    
+    max_retries = 30
+    retry_delay = 1
+    
+    for attempt in range(max_retries):
+        try:
+            exists = es.indices.exists(index=INDEX)
+            if exists and ES_RECREATE_ON_START:
+                es.indices.delete(index=INDEX, ignore=[404])
+                exists = False
+            if not exists:
+                es.indices.create(index=INDEX, body=SETTINGS_AND_MAPPINGS)
+            print(f"✓ Elasticsearch index '{INDEX}' is ready")
+            return
+        except ConnectionError as e:
+            if attempt < max_retries - 1:
+                print(f"⏳ Waiting for Elasticsearch (attempt {attempt + 1}/{max_retries})...")
+                time.sleep(retry_delay)
+                continue
+            else:
+                print(f"✗ Failed to connect to Elasticsearch after {max_retries} attempts")
+                raise
