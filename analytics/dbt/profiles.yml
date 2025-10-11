@@ -3,11 +3,11 @@ applylens:
   outputs:
     dev:
       type: bigquery
-      method: service-account-json
+      method: service-account
       project: "{{ env_var('BQ_PROJECT', 'applylens-analytics') }}"
       dataset: applylens
       threads: 4
-      keyfile_json: "{{ env_var('BQ_SA_JSON') }}"
+      keyfile: "{{ env_var('BQ_KEYFILE', 'applylens-ci.json') }}"
       location: US
       priority: interactive
       timeout_seconds: 300
@@ -24,13 +24,13 @@ applylens:
       priority: interactive
       timeout_seconds: 300
     
-    prod:
+    local_prod:
       type: bigquery
-      method: service-account-json
+      method: service-account
       project: "{{ env_var('BQ_PROJECT') }}"
       dataset: applylens
       threads: 8  # More threads for production
-      keyfile_json: "{{ env_var('BQ_SA_JSON') }}"
+      keyfile: "applylens-ci.json"  # Use local file
       location: US
       priority: interactive
       timeout_seconds: 600  # Longer timeout for prod

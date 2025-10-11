@@ -14,7 +14,7 @@ SELECT
   prediction_interval_lower_bound AS lower_bound,
   prediction_interval_upper_bound AS upper_bound
 FROM ML.FORECAST(
-  MODEL `{{ env_var('BQ_PROJECT') }}.ml.m_email_count_arima`,
+  MODEL `{{ env_var('BQ_PROJECT') }}.{{ target.schema }}.m_email_count_arima`,
   STRUCT(7 AS horizon, 0.9 AS confidence_level)
 )
 ORDER BY forecast_timestamp

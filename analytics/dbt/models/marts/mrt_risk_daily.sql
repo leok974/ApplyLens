@@ -64,4 +64,4 @@ select
   ROUND(critical_risk_count * 100.0 / NULLIF(emails, 0), 2) as critical_risk_pct
 
 from daily_emails
-order by d DESC
+-- Note: ORDER BY removed for partitioned table compatibility

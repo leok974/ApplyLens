@@ -1,15 +1,8 @@
 {{
   config(
     materialized='table',
-    schema='ml'
-  )
-}}
-
--- BigQuery ML ARIMA model for email count forecasting
--- Trains on historical email volume data to predict future traffic patterns
--- Useful for capacity planning and anomaly detection
-
-CREATE OR REPLACE MODEL `{{ env_var('BQ_PROJECT') }}.ml.m_email_count_arima`
+    schema='ml',
+    sql_header="CREATE OR REPLACE MODEL `{{ env_var('BQ_PROJECT') }}.ml.m_email_count_arima`
 OPTIONS(
   MODEL_TYPE='ARIMA_PLUS',
   TIME_SERIES_TIMESTAMP_COL='d',
@@ -17,11 +10,18 @@ OPTIONS(
   HOLIDAY_REGION='US',
   AUTO_ARIMA=TRUE,
   DATA_FREQUENCY='DAILY'
-) AS
+) AS"
+  )
+}}
+
+-- BigQuery ML ARIMA model for email count forecasting
+-- Trains on historical email volume data to predict future traffic patterns
+-- Useful for capacity planning and anomaly detection
+
 SELECT 
   d,
   emails
-FROM `{{ env_var('BQ_PROJECT') }}.marts.mrt_risk_daily`
+FROM `{{ env_var('BQ_PROJECT') }}.applylens.mrt_risk_daily`
 WHERE d < CURRENT_DATE()
   AND emails IS NOT NULL
 ORDER BY d

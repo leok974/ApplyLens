@@ -22,6 +22,10 @@ secrets/google.json
 client_secret_*.json
 oauth_credentials.json
 
+# BigQuery service account - DO NOT COMMIT
+analytics/dbt/applylens-ci.json
+**/applylens-ci.json
+
 # Cloudflare Tunnel credentials - DO NOT COMMIT
 infra/cloudflared/*.json
 infra/cloudflared/cert.pem
