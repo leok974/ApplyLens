@@ -25,3 +25,8 @@ models:
     marts:
       +schema: marts
       +materialized: table
+    ml:
+      +schema: ml
+      +materialized: table
+      +tags: ['ml', 'bigquery_ml']
+

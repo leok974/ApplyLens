@@ -50,3 +50,58 @@ groups:
         annotations:
           summary: "Backfill p95 duration > 5 min"
           runbook: "services/api/docs/runbooks/backfill.md"
+
+  - name: applylens.ml_anomalies
+    interval: 1h
+    rules:
+      - alert: MLAnomalyDetectedAvgRisk
+        expr: |
+          sum(increase(applylens_ml_anomalies_total{metric="avg_risk", severity="high"}[1h])) > 0
+        for: 1h
+        labels:
+          severity: ticket
+          team: applylens
+          service: analytics
+        annotations:
+          summary: "ML detected high anomalies in average risk score"
+          description: "Predictive analytics flagged {{ $value }} high-severity anomalies in avg_risk over the past hour"
+          runbook: "analytics/ML_README.md#anomaly-response"
+
+      - alert: MLAnomalyDetectedEmailVolume
+        expr: |
+          sum(increase(applylens_ml_anomalies_total{metric="email_count", severity="high"}[1h])) > 5
+        for: 1h
+        labels:
+          severity: page
+          team: applylens
+          service: analytics
+        annotations:
+          summary: "ML detected high email volume anomalies"
+          description: "Email traffic anomaly: {{ $value }} high-severity anomalies detected in the past hour - possible capacity issue"
+          runbook: "analytics/ML_README.md#anomaly-response"
+
+      - alert: MLAnomalyDetectedParityDrift
+        expr: |
+          sum(increase(applylens_ml_anomalies_total{metric="parity_ratio", severity="high"}[1h])) > 0
+        for: 1h
+        labels:
+          severity: ticket
+          team: applylens
+          service: analytics
+        annotations:
+          summary: "ML detected data quality degradation anomalies"
+          description: "Parity drift anomaly: {{ $value }} high-severity anomalies detected - DB↔ES consistency may be degrading"
+          runbook: "analytics/ML_README.md#anomaly-response"
+
+      - alert: MLAnomalyDetectedBackfillSLO
+        expr: |
+          sum(increase(applylens_ml_anomalies_total{metric="backfill_p95", severity="high"}[1h])) > 0
+        for: 1h
+        labels:
+          severity: page
+          team: applylens
+          service: analytics
+        annotations:
+          summary: "ML predicts backfill SLO violations"
+          description: "Backfill performance anomaly: {{ $value }} high-severity anomalies detected - SLO violations predicted"
+          runbook: "analytics/ML_README.md#anomaly-response"
