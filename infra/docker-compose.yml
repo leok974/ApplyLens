@@ -97,6 +97,18 @@ services:
     depends_on:
       - prometheus
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: infra-cloudflared
+    command: tunnel run applylens
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    depends_on:
+      - api
+      - kibana
+      - grafana
+    restart: unless-stopped
+
 volumes:
   db_data:
   es_data:

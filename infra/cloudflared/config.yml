@@ -1,0 +1,25 @@
+# Cloudflare Tunnel Configuration Template
+# Replace <YOUR_TUNNEL_UUID> with the actual UUID from `cloudflared tunnel list`
+
+tunnel: <YOUR_TUNNEL_UUID>
+credentials-file: /etc/cloudflared/<YOUR_TUNNEL_UUID>.json
+
+ingress:
+  # Main API endpoint
+  - hostname: applylens.app
+    service: http://api:8003
+  
+  # www subdomain
+  - hostname: www.applylens.app
+    service: http://api:8003
+  
+  # Kibana dashboard (optional)
+  - hostname: kibana.applylens.app
+    service: http://kibana:5601
+  
+  # Grafana monitoring (optional)
+  - hostname: grafana.applylens.app
+    service: http://grafana:3000
+  
+  # Catch-all rule (required, must be last)
+  - service: http_status:404

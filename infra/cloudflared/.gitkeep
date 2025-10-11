@@ -1,0 +1,46 @@
+# ⚠️ IMPORTANT: Credentials File Required
+
+This directory needs your Cloudflare Tunnel credentials file.
+
+## Setup Instructions
+
+1. **Create a tunnel** (if you haven't already):
+   ```bash
+   cloudflared tunnel create applylens
+   ```
+
+2. **Get your tunnel UUID**:
+   ```bash
+   cloudflared tunnel list
+   ```
+
+3. **Copy the credentials file here**:
+   ```bash
+   # Windows
+   copy "%USERPROFILE%\.cloudflared\<YOUR_TUNNEL_UUID>.json" "<YOUR_TUNNEL_UUID>.json"
+   
+   # Linux
+   cp ~/.cloudflared/<YOUR_TUNNEL_UUID>.json ./<YOUR_TUNNEL_UUID>.json
+   ```
+
+4. **Update config.yml**:
+   - Replace `<YOUR_TUNNEL_UUID>` with your actual UUID (2 places)
+
+5. **Start the tunnel**:
+   ```bash
+   docker compose up -d cloudflared
+   ```
+
+## Security Notes
+
+- ✅ Credentials files are gitignored
+- ✅ Never commit `*.json` files to version control
+- ✅ Keep credentials file permissions restricted: `chmod 600 *.json`
+
+## Files Needed
+
+- `<YOUR_TUNNEL_UUID>.json` - Tunnel credentials (REQUIRED)
+- `config.yml` - Tunnel configuration (provided, needs UUID update)
+- `cert.pem` - Login certificate (optional, only needed for management)
+
+See `README.md` for complete setup guide.
