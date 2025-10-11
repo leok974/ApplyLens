@@ -33,6 +33,8 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://es:9200
     ports: ["${KIBANA_PORT}:5601"]
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     depends_on:
       es:
         condition: service_healthy
@@ -97,8 +99,25 @@ services:
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini:ro
     depends_on:
       - prometheus
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: applylens-nginx
+    depends_on:
+      - api
+      - web
+      - grafana
+      - kibana
+      - prometheus
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+    ports:
+      - "8888:80"  # Local debug port; Cloudflare Tunnel will use nginx:80 internally
+    restart: unless-stopped
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -107,9 +126,7 @@ services:
     volumes:
       - ./cloudflared:/etc/cloudflared
     depends_on:
-      - api
-      - kibana
-      - grafana
+      - nginx
     restart: unless-stopped
 
 volumes:

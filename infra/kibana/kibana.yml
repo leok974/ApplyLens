@@ -1,0 +1,12 @@
+# Kibana configuration for subpath hosting
+server.host: "0.0.0.0"
+server.basePath: "/kibana"
+server.rewriteBasePath: true
+server.publicBaseUrl: "https://applylens.app/kibana"
+
+# Elasticsearch connection
+elasticsearch.hosts: ["http://es:9200"]
+
+# Disable telemetry
+telemetry.optIn: false
+telemetry.enabled: false

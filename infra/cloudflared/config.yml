@@ -1,25 +1,24 @@
-# Cloudflare Tunnel Configuration Template
-# Replace 08d5feee-f504-47a2-a1f2-b86564900991 with the actual UUID from `cloudflared tunnel list`
+# Cloudflare Tunnel Configuration
+# All traffic routes through Nginx for path-based routing
 
 tunnel: 08d5feee-f504-47a2-a1f2-b86564900991
 credentials-file: /etc/cloudflared/08d5feee-f504-47a2-a1f2-b86564900991.json
 
 ingress:
-  # Main API endpoint
+  # Main domain - route to Nginx (handles all path-based routing)
   - hostname: applylens.app
-    service: http://api:8003
+    service: http://nginx:80
   
-  # www subdomain
+  # www subdomain - also route to Nginx
   - hostname: www.applylens.app
-    service: http://api:8003
+    service: http://nginx:80
   
-  # Kibana dashboard (optional)
-  - hostname: kibana.applylens.app
-    service: http://kibana:5601
-  
-  # Grafana monitoring (optional)
-  - hostname: grafana.applylens.app
-    service: http://grafana:3000
+  # Optional: Keep subdomain routes for Kibana/Grafana if you prefer subdomain over path
+  # Uncomment these if you want kibana.applylens.app instead of applylens.app/kibana/
+  # - hostname: kibana.applylens.app
+  #   service: http://kibana:5601
+  # - hostname: grafana.applylens.app
+  #   service: http://grafana:3000
   
   # Catch-all rule (required, must be last)
   - service: http_status:404
