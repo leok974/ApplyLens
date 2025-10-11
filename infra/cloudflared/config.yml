@@ -1,24 +1,21 @@
 # Cloudflare Tunnel Configuration
-# All traffic routes through Nginx for path-based routing
+# Brand-correct routing for applylens.app with internal Docker aliases
 
 tunnel: 08d5feee-f504-47a2-a1f2-b86564900991
 credentials-file: /etc/cloudflared/08d5feee-f504-47a2-a1f2-b86564900991.json
 
 ingress:
-  # Main domain - route to Nginx (handles all path-based routing)
+  # Main domain - route to Nginx reverse proxy (handles path-based routing)
   - hostname: applylens.app
-    service: http://nginx:80
+    service: http://applylens.int:80
   
-  # www subdomain - also route to Nginx
+  # WWW subdomain - route to Nginx reverse proxy
   - hostname: www.applylens.app
-    service: http://nginx:80
+    service: http://applylens.int:80
   
-  # Optional: Keep subdomain routes for Kibana/Grafana if you prefer subdomain over path
-  # Uncomment these if you want kibana.applylens.app instead of applylens.app/kibana/
-  # - hostname: kibana.applylens.app
-  #   service: http://kibana:5601
-  # - hostname: grafana.applylens.app
-  #   service: http://grafana:3000
+  # API subdomain - direct route to FastAPI backend
+  - hostname: api.applylens.app
+    service: http://applylens-api.int:8000
   
   # Catch-all rule (required, must be last)
   - service: http_status:404
