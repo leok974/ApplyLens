@@ -20,7 +20,7 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  DBT_VERSION: '1.8.7'  # Updated for compatibility with latest google-cloud-bigquery
+  DBT_VERSION: '1.8.3'  # Updated for compatibility with latest google-cloud-bigquery
   BIGQUERY_VERSION: '3.25.0'  # Pin compatible version
 
 jobs:

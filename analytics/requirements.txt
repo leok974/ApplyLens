@@ -2,8 +2,8 @@
 # For dbt, BigQuery, and Elasticsearch integration
 
 # dbt with BigQuery adapter
-dbt-core==1.8.7
-dbt-bigquery==1.8.7
+dbt-core==1.8.3
+dbt-bigquery==1.8.3
 
 # Google Cloud BigQuery (pinned for compatibility with dbt-bigquery)
 google-cloud-bigquery==3.25.0
