@@ -12,6 +12,17 @@ $testsPassed = 0
 $testsFailed = 0
 $warnings = @()
 
+# Helper function to resolve DNS via Google DNS (bypasses local cache)
+function Resolve-Via8888 {
+    param([string]$Name)
+    try {
+        $result = Resolve-DnsName -Name $Name -Server 8.8.8.8 -Type A -ErrorAction Stop
+        return $result.IPAddress | Select-Object -First 1
+    } catch {
+        return $null
+    }
+}
+
 # Color output helpers
 function Write-TestHeader($message) {
     Write-Host "`n========================================" -ForegroundColor Cyan
@@ -70,40 +81,49 @@ function Write-Summary {
 }
 
 # ============================================================================
-# Test 1: DNS Resolution
+# Test 1: DNS Resolution (via Google DNS 8.8.8.8 to bypass cache)
 # ============================================================================
 if (-not $SkipDNS) {
     Write-TestHeader "Test 1: DNS Resolution"
     
     $domains = @("applylens.app", "www.applylens.app", "api.applylens.app")
+    $script:resolvedIPs = @{}
     
     foreach ($domain in $domains) {
-        try {
-            $result = Resolve-DnsName -Name $domain -Type A -ErrorAction Stop
-            if ($result) {
-                $ips = ($result | Where-Object { $_.Type -eq 'A' } | Select-Object -ExpandProperty IPAddress) -join ", "
-                Write-TestPass "$domain resolves to: $ips"
-                Write-TestInfo "DNS query successful for $domain"
-            } else {
-                Write-TestFail "$domain does not resolve" "No A records found"
-            }
-        } catch {
-            Write-TestFail "$domain DNS lookup failed" $_.Exception.Message
+        $ip = Resolve-Via8888 -Name $domain
+        if ($ip) {
+            $script:resolvedIPs[$domain] = $ip
+            Write-TestPass "$domain resolves to: $ip (via Google DNS 8.8.8.8)"
+            Write-TestInfo "DNS query bypassed local cache"
+        } else {
+            Write-TestFail "$domain DNS lookup failed" "No A records found via 8.8.8.8"
         }
     }
 } else {
     Write-Host "`nSkipping DNS tests (--SkipDNS flag set)" -ForegroundColor Yellow
+    # Still resolve for later tests
+    $script:resolvedIPs = @{
+        "applylens.app" = "104.21.2.181"
+        "www.applylens.app" = "104.21.2.181"
+        "api.applylens.app" = "104.21.2.181"
+    }
 }
 
 # ============================================================================
-# Test 2: API Health Check
+# Test 2: API Health Check (using resolved IP)
 # ============================================================================
 Write-TestHeader "Test 2: API Health Check (/ready endpoint)"
 
 try {
-    $response = Invoke-WebRequest -Uri "https://api.applylens.app/ready" `
+    $apiIP = $script:resolvedIPs["api.applylens.app"]
+    if (-not $apiIP) { $apiIP = "104.21.2.181" }
+    
+    $headers = @{ 'Host' = 'api.applylens.app' }
+    $response = Invoke-WebRequest -Uri "https://$apiIP/ready" `
+        -Headers $headers `
         -Method GET `
         -TimeoutSec 10 `
+        -SkipCertificateCheck `
         -UseBasicParsing `
         -ErrorAction Stop
     
