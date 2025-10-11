@@ -65,6 +65,10 @@ services:
       es:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - applylens-api.int
 
   web:
     build: ./../apps/web
@@ -118,6 +122,10 @@ services:
     ports:
       - "8888:80"  # Local debug port; Cloudflare Tunnel will use nginx:80 internally
     restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - applylens.int
 
   cloudflared:
     image: cloudflare/cloudflared:latest
