@@ -15,7 +15,7 @@ ingress:
   
   # API subdomain - direct route to FastAPI backend
   - hostname: api.applylens.app
-    service: http://applylens-api.int:8000
+    service: http://applylens-api.int:8003
   
   # Catch-all rule (required, must be last)
   - service: http_status:404

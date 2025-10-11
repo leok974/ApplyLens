@@ -136,6 +136,8 @@ services:
     depends_on:
       - nginx
     restart: unless-stopped
+    networks:
+      - default
 
 volumes:
   db_data:
