@@ -23,3 +23,15 @@ applylens:
       location: US
       priority: interactive
       timeout_seconds: 300
+    
+    prod:
+      type: bigquery
+      method: service-account-json
+      project: "{{ env_var('BQ_PROJECT') }}"
+      dataset: applylens
+      threads: 8  # More threads for production
+      keyfile_json: "{{ env_var('BQ_SA_JSON') }}"
+      location: US
+      priority: interactive
+      timeout_seconds: 600  # Longer timeout for prod
+      maximum_bytes_billed: 10000000000  # 10GB limit for production
