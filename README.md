@@ -69,6 +69,59 @@ GET  /suggest?q=interv         # Autocomplete suggestions
 
 For complete documentation, see [`GMAIL_SETUP.md`](./GMAIL_SETUP.md).
 
+## 🤖 Phase-2: Intelligent Email Categorization
+
+ApplyLens now includes **ML-powered email categorization** with automated workflows!
+
+### Features
+
+- **Two-Stage Labeling**: High-precision rules (95% confidence) + ML fallback
+- **4 Categories**: newsletter, promo, recruiting, bill
+- **Profile Analytics**: Sender analysis, category trends, time-series volume
+- **Automated Workflows**: Three automation options (Makefile, npm, PowerShell)
+- **TF-IDF + Logistic Regression**: Trained on balanced weak labels
+
+### Quick Start (Choose Your Platform)
+
+```bash
+# Unix/Linux/Mac → Makefile
+make phase2-all
+
+# Cross-Platform → npm
+npm install && npm run phase2:all
+
+# Windows → PowerShell
+.\scripts\phase2-all.ps1
+```
+
+### What It Does
+
+1. **Export**: Streams emails from ES, applies rules, exports balanced JSONL
+2. **Train**: TF-IDF + Logistic Regression on 12.5k samples (89% accuracy)
+3. **Apply**: Labels all emails with category, confidence, expires_at
+
+### API Endpoints
+
+```bash
+# Labeling
+POST /labels/apply              # Label all emails
+POST /labels/apply-batch        # Label filtered emails
+GET  /labels/stats              # Aggregated statistics
+
+# Profile Analytics
+GET  /profile/summary           # Category distribution + top senders
+GET  /profile/senders           # Sender list (filterable by category)
+GET  /profile/categories/{cat}  # Category details
+GET  /profile/time-series       # Email volume trends
+```
+
+### Documentation
+
+- **Quick Reference**: [`PHASE_2_QUICK_REF.md`](./PHASE_2_QUICK_REF.md) - One-page cheat sheet
+- **Automation Guide**: [`PHASE_2_AUTOMATION.md`](./PHASE_2_AUTOMATION.md) - Full automation docs
+- **API Reference**: [`PHASE_2_IMPLEMENTATION.md`](./PHASE_2_IMPLEMENTATION.md) - Complete API docs
+- **Workflow Details**: [`PHASE_2_WORKFLOW.md`](./PHASE_2_WORKFLOW.md) - Step-by-step guide
+
 ## Quickstart (Docker) - Minimal Setup
 
 Fast start without Elasticsearch/Kibana:

@@ -68,10 +68,13 @@ export default function Tracker() {
       if (statusFilter) params.status = statusFilter
       if (search) params.company = search
       const data = await listApplications(params)
-      setApplications(data)
+      // Ensure we always have an array, even if API returns null/undefined
+      setApplications(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Failed to load applications:', error)
       showToast('Failed to load applications', 'error')
+      // Don't crash the page - set empty array
+      setApplications([])
     } finally {
       setLoading(false)
     }
@@ -219,8 +222,8 @@ export default function Tracker() {
       </div>
 
       {/* Applications Table */}
-      <div className="border rounded overflow-hidden">
-        <div className="sticky top-0 grid grid-cols-12 gap-2 font-medium text-xs px-3 py-2 bg-gray-50 border-b z-10">
+      <div className="surface-card overflow-hidden">
+        <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-[color:hsl(var(--border))] bg-[color:hsl(var(--muted))] px-3 py-2 text-xs font-medium">
           <div className="col-span-3">Company</div>
           <div className="col-span-3">Role</div>
           <div className="col-span-2">Source</div>
@@ -228,24 +231,25 @@ export default function Tracker() {
           <div className="col-span-2 text-right">Actions</div>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-sm text-gray-500">Loading…</div>
+          <div className="p-8 text-center text-sm text-[color:hsl(var(--muted-foreground))]">Loading…</div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-[color:hsl(var(--border))]">
             {applications.map((r) => (
               <div
-                key={r.id}
-                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-gray-50 transition"
-                data-testid={`tracker-row-${r.id}`}
+                key={`app-${r.id}`}
+                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-[color:hsl(var(--muted))]/30 transition"
+                data-testid="tracker-row"
+                data-id={r.id}
               >
-                <div className="col-span-3 font-semibold">{r.company}</div>
-                <div className="col-span-3">{r.role}</div>
-                <div className="col-span-2 opacity-80">{r.source || '—'}</div>
+                <div className="col-span-3 font-semibold text-[color:hsl(var(--foreground))]">{r.company}</div>
+                <div className="col-span-3 text-[color:hsl(var(--foreground))]">{r.role}</div>
+                <div className="col-span-2 text-[color:hsl(var(--muted-foreground))]">{r.source || '—'}</div>
                 <div className="col-span-2">
                   <div className="flex items-center gap-2">
                     <StatusChip status={r.status} />
                     <select
                       aria-label={`Change status for ${r.company}`}
-                      className="border rounded px-2 py-1 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      className="rounded border border-[color:hsl(var(--border))] bg-[color:hsl(var(--card))] px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[color:hsl(var(--ring))]"
                       value={r.status}
                       data-testid={`status-select-${r.id}`}
                       onChange={(e) => updateRow(r.id, { status: e.target.value as AppStatus }, r)}

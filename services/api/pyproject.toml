@@ -14,9 +14,10 @@ dependencies = [
   "orjson",
   "elasticsearch>=8.12,<9",
   "httpx",
-  "google-auth",
+  "google-auth>=2.30.0",
   "google-auth-oauthlib",
   "google-api-python-client",
+  "google-cloud-bigquery>=3.25.0",
   "pdfminer.six",
   "beautifulsoup4",
   "bleach",
@@ -25,6 +26,10 @@ dependencies = [
   "starlette-exporter",
   "prometheus-client",
   "python-json-logger",
+  # Phase 2: Email categorization & ML
+  "scikit-learn",
+  "joblib",
+  "tldextract",
 ]
 
 [project.optional-dependencies]

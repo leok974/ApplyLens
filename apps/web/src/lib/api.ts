@@ -257,6 +257,39 @@ export async function explainEmail(id: string): Promise<ExplainResponse> {
   return r.json()
 }
 
+// Get email by ID (for details panel)
+
+export type EmailDetailResponse = {
+  id: string
+  subject: string
+  from_addr?: string
+  from?: string
+  to_addr?: string
+  to?: string
+  received_at?: string
+  date?: string
+  labels?: string[]
+  gmail_labels?: string[]
+  risk?: "low"|"med"|"high"
+  reason?: string
+  body_html?: string
+  body_text?: string
+  thread_id?: string
+  unsubscribe_url?: string | null
+}
+
+export async function getEmailById(id: string): Promise<EmailDetailResponse> {
+  const r = await fetch(`/api/search/by_id/${encodeURIComponent(id)}`)
+  if (!r.ok) throw new Error(`Failed to fetch email: ${r.status}`)
+  return r.json()
+}
+
+export async function getThread(threadId: string) {
+  const r = await fetch(`/api/threads/${encodeURIComponent(threadId)}?limit=20`);
+  if (!r.ok) throw new Error("Failed to fetch thread");
+  return r.json(); // expect { messages: [{id, from, date, snippet, body_html, body_text}, ...] oldest..newest }
+}
+
 // Quick Actions (dry-run mode)
 
 export type ActionResponse = {
@@ -281,4 +314,50 @@ export const actions = {
   markSafe: (id: string, note?: string) => postAction('mark_safe', id, note),
   markSuspicious: (id: string, note?: string) => postAction('mark_suspicious', id, note),
   unsubscribeDry: (id: string, note?: string) => postAction('unsubscribe_dryrun', id, note),
+}
+
+// ---------- Applications API (Paginated) ----------
+
+export type AppsSort = "updated_at" | "applied_at" | "company" | "status"
+export type AppsOrder = "asc" | "desc"
+
+export interface ListApplicationsParams {
+  limit?: number
+  status?: string | null
+  sort?: AppsSort
+  order?: AppsOrder
+  cursor?: string | null
+}
+
+export interface ApplicationRow {
+  id: string
+  company?: string
+  role?: string
+  status?: string
+  applied_at?: string
+  updated_at?: string
+  source?: string
+}
+
+export interface ListApplicationsResponse {
+  items: ApplicationRow[]
+  next_cursor?: string | null
+  sort: AppsSort
+  order: AppsOrder
+  total?: number | null
+}
+
+export async function listApplicationsPaged(
+  params: ListApplicationsParams = {}
+): Promise<ListApplicationsResponse> {
+  const q = new URLSearchParams()
+  if (params.limit) q.set("limit", String(params.limit))
+  if (params.status) q.set("status", params.status)
+  if (params.sort) q.set("sort", params.sort)
+  if (params.order) q.set("order", params.order)
+  if (params.cursor) q.set("cursor", params.cursor)
+
+  const r = await fetch(`/api/applications?${q.toString()}`)
+  if (!r.ok) throw new Error("Failed to list applications")
+  return r.json()
 }
