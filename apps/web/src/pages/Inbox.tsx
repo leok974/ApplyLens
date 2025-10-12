@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getGmailStatus, getGmailInbox, backfillGmail, initiateGmailAuth, Email, GmailConnectionStatus } from '../lib/api'
+import { getGmailStatus, getGmailInbox, initiateGmailAuth, Email, GmailConnectionStatus } from '../lib/api'
 import EmailCard from '../components/EmailCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle, AlertCircle } from 'lucide-react'
@@ -20,7 +20,6 @@ export default function Inbox() {
   const [page, setPage] = useState(1)
   const [labelFilter, setLabelFilter] = useState('')
   const [loading, setLoading] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   
   // Check connection status on mount
@@ -51,24 +50,9 @@ export default function Inbox() {
       .finally(() => setLoading(false))
   }, [status, page, labelFilter])
   
-  const handleSync = async (days = 60) => {
-    if (!status?.user_email) return
-    setSyncing(true)
-    setErr(null)
-    try {
-      const result = await backfillGmail(days, status.user_email)
-      setErr(`✅ Synced ${result.inserted} emails from the last ${days} days!`)
-      // Refresh inbox
-      const resp = await getGmailInbox(page, 50, labelFilter || undefined, status.user_email)
-      setEmails(resp.emails)
-      setTotal(resp.total)
-    } catch (e) {
-      setErr(`❌ Sync failed: ${e}`)
-    } finally {
-      setSyncing(false)
-    }
-  }
-
+  // Note: Sync buttons are now in AppHeader component
+  // TODO: Wire up sync functionality through context or props if needed
+  
   if (!status) {
     return <div className="p-4">Loading Gmail status...</div>
   }
@@ -102,29 +86,11 @@ export default function Inbox() {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">📬 Gmail Inbox</h1>
-          <p className="text-sm text-gray-600">
-            Connected as <span className="font-mono">{status.user_email}</span>
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleSync(7)}
-            disabled={syncing}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {syncing ? '⏳ Syncing...' : '🔄 Sync 7 days'}
-          </button>
-          <button
-            onClick={() => handleSync(60)}
-            disabled={syncing}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {syncing ? '⏳ Syncing...' : '🔄 Sync 60 days'}
-          </button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">📬 Gmail Inbox</h1>
+        <p className="text-sm text-muted-foreground">
+          Connected as <span className="font-mono">{status.user_email}</span>
+        </p>
       </div>
 
       {err && (

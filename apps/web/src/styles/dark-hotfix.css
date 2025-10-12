@@ -306,3 +306,45 @@ textarea {
   rounded-lg border border-[var(--border)] bg-[var(--input)] text-[color:var(--text)] placeholder-[color:var(--subtext)] focus:ring-2 focus:ring-[var(--ring)] focus:border-[var(--ring)];
 }
 */
+
+/* ==================== FINAL CATCH-ALL OVERRIDES ==================== */
+/* Kill lingering pastel/gray utility backgrounds in dark */
+html.dark .prose,
+html.dark .prose * {
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-links: hsl(var(--foreground));
+}
+
+/* Comprehensive gray/neutral backgrounds */
+html.dark .bg-gray-50, html.dark .bg-gray-100, html.dark .bg-gray-200,
+html.dark .bg-slate-50, html.dark .bg-slate-100, html.dark .bg-slate-200,
+html.dark .bg-neutral-50, html.dark .bg-neutral-100, html.dark .bg-neutral-200,
+html.dark .bg-zinc-50, html.dark .bg-zinc-100, html.dark .bg-zinc-200 {
+  background: var(--elev-1) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Common blue info shades that sometimes appear in custom CSS */
+html.dark [class*="bg-blue-50"], 
+html.dark [class*="bg-blue-100"], 
+html.dark [class*="bg-blue-200"] {
+  background: color-mix(in oklab, var(--accent) 12%, black) !important;
+  color: #dfe9ff !important;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, black) !important;
+}
+
+/* Ensure light text colors are replaced */
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: var(--subtext) !important;
+}
+
+html.dark .text-gray-400,
+html.dark .text-slate-400 {
+  color: color-mix(in oklab, var(--subtext) 70%, var(--bg)) !important;
+}

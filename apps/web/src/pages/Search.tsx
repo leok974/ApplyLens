@@ -2,13 +2,13 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { searchEmails, unifiedSuggest, SearchHit } from '../lib/api'
 import SearchResultsHeader from '../components/SearchResultsHeader'
 import EmailLabels from '../components/EmailLabels'
-import { LabelFilterChips } from '../components/LabelFilterChips'
-import { DateRangeControls } from '../components/DateRangeControls'
-import { RepliedFilterChips } from '../components/RepliedFilterChips'
-import { SortControl, SortKey } from '../components/SortControl'
+import { SearchFilters } from '../components/SearchFilters'
+import { SortKey } from '../components/SortControl'
 import { getRecencyScale } from '../state/searchPrefs'
 import { loadUiState, saveUiState, RepliedFilter } from '../state/searchUi'
 import { safeFormatDate } from '../lib/date'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 function allowOnlyMark(html: string) {
   // strips all tags except <mark>…</mark>
@@ -113,80 +113,57 @@ export default function Search() {
           font-weight: 500;
         }
       `}</style>
-      <form onSubmit={onSearch} style={{ display: 'flex', gap: 8, marginBottom: 12, position: 'relative' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <input
+      <form onSubmit={onSearch} className="flex gap-2 mb-3 relative">
+        <div className="relative flex-1">
+          <Input
             value={q}
             onChange={e => onChange(e.target.value)}
             placeholder="Search subject and body…"
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #ccc', borderRadius: 8 }}
+            className="w-full"
           />
           {sugs.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderTop: 'none', zIndex: 10, borderRadius: '0 0 8px 8px', maxHeight: '300px', overflowY: 'auto' }}>
+            <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-b-lg z-10 max-h-[300px] overflow-y-auto shadow-lg">
               {sugs.map((s: string, i: number) => (
-                <div key={`sug-${i}-${s}`} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: i < sugs.length - 1 ? '1px solid #eee' : 'none' }} onMouseDown={() => { setQ(s); setSugs([]); setTimeout(() => onSearch(), 0) }}>
+                <div 
+                  key={`sug-${i}-${s}`} 
+                  className="px-3 py-2 cursor-pointer hover:bg-secondary border-b last:border-b-0 border-border" 
+                  onMouseDown={() => { setQ(s); setSugs([]); setTimeout(() => onSearch(), 0) }}
+                >
                   {s}
                 </div>
               ))}
             </div>
           )}
         </div>
-        <button type="submit" style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #111', background: '#111', color: '#fff' }}>
-          Search
-        </button>
+        <Button type="submit">Search</Button>
       </form>
 
       {dym.length > 0 && (
-        <div style={{ marginBottom: 12, fontSize: 14, color: '#555' }}>
+        <div className="mb-3 text-sm text-muted-foreground">
           Did you mean: {dym.map((d: string, i: number) => (
-            <button key={`dym-${i}-${d}`} onClick={() => { setQ(d); setDym([]); setTimeout(() => onSearch(), 0) }} style={{ background: 'transparent', border: 'none', color: '#0a58ca', cursor: 'pointer', padding: 0, marginRight: 8, textDecoration: 'underline' }}>
+            <Button
+              key={`dym-${i}-${d}`}
+              variant="link"
+              size="sm"
+              className="h-auto p-0 mr-2"
+              onClick={() => { setQ(d); setDym([]); setTimeout(() => onSearch(), 0) }}
+            >
               {d}
-            </button>
+            </Button>
           ))}
         </div>
       )}
 
-      <div style={{ marginBottom: 16, padding: 12, background: '#f8f9fa', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Filter by label:</div>
-          <LabelFilterChips value={labels} onChange={setLabels} />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Filter by date:</div>
-          <DateRangeControls from={dates.from} to={dates.to} onChange={setDates} />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Filter by reply status:</div>
-          <RepliedFilterChips value={replied} onChange={setReplied} />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Sort results:</div>
-          <SortControl value={sort} onChange={setSort} />
-        </div>
-        {(labels.length > 0 || dates.from || dates.to || replied !== 'all' || sort !== 'relevance') && (
-          <div style={{ textAlign: 'right' }}>
-            <button
-              onClick={() => {
-                setLabels([])
-                setDates({})
-                setReplied('all')
-                setSort('relevance')
-              }}
-              style={{
-                fontSize: 12,
-                color: '#6c757d',
-                textDecoration: 'underline',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              Clear all filters
-            </button>
-          </div>
-        )}
-      </div>
+      <SearchFilters
+        labels={labels}
+        onLabelsChange={setLabels}
+        dates={dates}
+        onDatesChange={setDates}
+        replied={replied}
+        onRepliedChange={setReplied}
+        sort={sort}
+        onSortChange={setSort}
+      />
 
       {loading && <div>Searching…</div>}
       {err && <div style={{ color: 'crimson' }}>Error: {err}</div>}
