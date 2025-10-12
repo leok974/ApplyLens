@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { getGmailStatus, getGmailInbox, backfillGmail, initiateGmailAuth, Email, GmailConnectionStatus } from '../lib/api'
 import EmailCard from '../components/EmailCard'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CheckCircle, AlertCircle } from 'lucide-react'
 
 const LABEL_FILTERS = [
   { value: '', label: 'All' },
@@ -126,9 +128,14 @@ export default function Inbox() {
       </div>
 
       {err && (
-        <div className={`mb-4 p-4 rounded ${err.startsWith('✅') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-          {err}
-        </div>
+        <Alert variant={err.startsWith('✅') ? 'default' : 'destructive'} className="mb-4">
+          {err.startsWith('✅') ? (
+            <CheckCircle className="h-4 w-4" />
+          ) : (
+            <AlertCircle className="h-4 w-4" />
+          )}
+          <AlertDescription>{err}</AlertDescription>
+        </Alert>
       )}
 
       {/* Label Filter Tabs */}
