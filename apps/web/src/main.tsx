@@ -6,9 +6,10 @@ import '@/styles/theme.css'
 import '@/styles/dark-hotfix.css'
 import App from './App'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
+import { initTheme } from './lib/theme'
 
-// Force dark mode on root element
-document.documentElement.classList.add('dark')
+// Initialize theme based on saved preference or system setting
+initTheme()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
