@@ -48,8 +48,8 @@ class TestApprovalsBulkInsert:
         # Verify commit was called
         mock_db.commit.assert_called_once()
         
-            # Verify close was called
-            mock_db.close.assert_called_once()
+        # Verify close was called
+        mock_db.close.assert_called_once()
     
     def test_bulk_insert_multiple_rows(self, monkeypatch):
         """Test inserting multiple approval records."""

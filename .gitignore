@@ -21,6 +21,8 @@ secrets/*.json
 secrets/google.json
 client_secret_*.json
 oauth_credentials.json
+analytics/ingest/client_secret.json
+analytics/ingest/token.json
 
 # BigQuery service account - DO NOT COMMIT
 analytics/dbt/applylens-ci.json

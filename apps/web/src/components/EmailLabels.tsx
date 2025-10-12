@@ -7,9 +7,9 @@ export default function EmailLabels({ labels = [], className }: Props) {
   if (!ordered.length) return null;
   return (
     <div className={className ?? "flex flex-wrap gap-1"}>
-      {ordered.map((l: string) => (
+      {ordered.map((l: string, idx: number) => (
         <span
-          key={l}
+          key={`${l}-${idx}`}
           title={labelTitle(l)}
           className={
             "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset " +
