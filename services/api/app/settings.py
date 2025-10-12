@@ -22,6 +22,21 @@ class Settings(BaseSettings):
     GOOGLE_CREDENTIALS: Optional[str] = None
     GOOGLE_OAUTH_SCOPES: Optional[str] = None
     
+    # Google OAuth credentials (client ID and secret)
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    
+    # Google OAuth redirect URIs
+    # GOOGLE_REDIRECT_URI for production (e.g., https://api.applylens.app/auth/google/callback)
+    # GOOGLE_REDIRECT_URI_DEV for local development (e.g., http://localhost:8003/auth/google/callback)
+    GOOGLE_REDIRECT_URI: Optional[str] = None
+    GOOGLE_REDIRECT_URI_DEV: str = "http://localhost:8003/auth/google/callback"
+    
+    @property
+    def effective_redirect_uri(self) -> str:
+        """Return the effective redirect URI based on environment"""
+        return self.GOOGLE_REDIRECT_URI or self.GOOGLE_REDIRECT_URI_DEV
+    
     # PostgreSQL
     POSTGRES_USER: Optional[str] = None
     POSTGRES_PASSWORD: Optional[str] = None

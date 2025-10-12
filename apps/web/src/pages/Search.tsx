@@ -8,6 +8,7 @@ import { RepliedFilterChips } from '../components/RepliedFilterChips'
 import { SortControl, SortKey } from '../components/SortControl'
 import { getRecencyScale } from '../state/searchPrefs'
 import { loadUiState, saveUiState, RepliedFilter } from '../state/searchUi'
+import { safeFormatDate } from '../lib/date'
 
 function allowOnlyMark(html: string) {
   // strips all tags except <mark>…</mark>
@@ -213,7 +214,7 @@ export default function Search() {
                 <div style={{ flex: 1 }}>
                   <strong>{h.subject || '(no subject)'}</strong>
                   <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-                    {h.sender || h.from_addr} · {new Date(h.received_at).toLocaleString()}
+                    {h.sender || h.from_addr} · {safeFormatDate(h.received_at) ?? '—'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center' }}>

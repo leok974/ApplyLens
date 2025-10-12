@@ -18,13 +18,15 @@ from google.auth.transport import requests as google_requests
 
 from .db import SessionLocal
 from .models import OAuthToken
+from .settings import settings
 
 router = APIRouter(prefix="/auth/google", tags=["auth"])
 
-GOOGLE_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")
-SCOPES = os.getenv("GOOGLE_OAUTH_SCOPES", "").split()
-REDIRECT_URI = os.getenv("OAUTH_REDIRECT_URI")
-STATE_SECRET = os.getenv("OAUTH_STATE_SECRET", "dev_secret")
+# Load OAuth configuration from centralized settings
+GOOGLE_CREDENTIALS = settings.GOOGLE_CREDENTIALS
+SCOPES = settings.GOOGLE_OAUTH_SCOPES.split() if settings.GOOGLE_OAUTH_SCOPES else []
+REDIRECT_URI = settings.effective_redirect_uri
+STATE_SECRET = settings.OAUTH_STATE_SECRET or "dev_secret"
 
 def _load_client_config():
     with open(GOOGLE_CREDENTIALS, "r") as f:
@@ -42,6 +44,11 @@ def _decode_state(token: str) -> dict:
 @router.get("/login")
 def login():
     """Initiate OAuth flow with Google"""
+    if not GOOGLE_CREDENTIALS:
+        raise HTTPException(status_code=500, detail="GOOGLE_CREDENTIALS not configured")
+    if not REDIRECT_URI:
+        raise HTTPException(status_code=500, detail="GOOGLE_REDIRECT_URI not configured")
+    
     config = _load_client_config()
     flow = Flow.from_client_config(config, scopes=SCOPES, redirect_uri=REDIRECT_URI)
     state = _encode_state({"nonce": secrets.token_hex(16), "t": int(dt.datetime.utcnow().timestamp())})
@@ -51,11 +58,17 @@ def login():
         prompt="consent",
         state=state
     )
+    
+    # Log the redirect_uri being used (for debugging)
+    print(f"[OAuth] Initiating login flow with redirect_uri: {REDIRECT_URI}")
+    
     return RedirectResponse(auth_url)
 
 @router.get("/callback")
 def callback(request: Request, state: str, code: str):
     """Handle OAuth callback from Google"""
+    print(f"[OAuth] Callback received with redirect_uri: {REDIRECT_URI}")
+    
     try:
         _ = _decode_state(state)
     except Exception:
@@ -100,6 +113,6 @@ def callback(request: Request, state: str, code: str):
     finally:
         db.close()
 
-    # redirect to UI success page
-    ui_url = "/inbox?connected=google"
+    # redirect to frontend (direct to web app port with query param for success message)
+    ui_url = "http://localhost:5175/?connected=google"
     return RedirectResponse(ui_url)

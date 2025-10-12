@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { searchEmails, explainEmail, actions, SearchHit, ExplainResponse } from '../lib/api'
+import { safeFormatDate } from '../lib/date'
 
 export default function InboxWithActions() {
   const [q, setQ] = useState('')
@@ -64,11 +65,6 @@ export default function InboxWithActions() {
       {label}
     </button>
   )
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '—'
-    return dateStr.replace('T', ' ').replace('Z', '').split('.')[0]
-  }
 
   return (
     <div className="p-4 grid gap-4">
@@ -184,7 +180,7 @@ export default function InboxWithActions() {
 
                   {/* Received */}
                   <td className="py-3 px-2 text-sm text-gray-500">
-                    {formatDate(r.received_at)}
+                    {safeFormatDate(r.received_at) ?? '—'}
                   </td>
 
                   {/* Reason */}

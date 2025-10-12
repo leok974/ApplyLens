@@ -1,6 +1,7 @@
 import { Email, createApplicationFromEmail } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { safeFormatDate } from '../lib/date'
 
 const LABEL_COLORS: Record<string, string> = {
   interview: 'bg-blue-100 text-blue-800',
@@ -57,13 +58,7 @@ export default function EmailCard({ e }: { e: Email }) {
           )}
         </div>
         <div className="text-xs text-gray-500">
-          {new Date(e.received_at).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
+          {safeFormatDate(e.received_at) ?? '—'}
         </div>
       </div>
       

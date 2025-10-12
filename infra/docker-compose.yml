@@ -55,6 +55,11 @@ services:
       OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
       ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX}
+      # New OAuth environment variables
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      GOOGLE_REDIRECT_URI_DEV: ${GOOGLE_REDIRECT_URI_DEV}
     volumes:
       - ../services/api:/app
       - ./secrets:/secrets:ro
