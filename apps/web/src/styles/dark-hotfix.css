@@ -1,0 +1,80 @@
+/* --- ApplyLens Dark Hotfix (class-overrides) --- */
+:root {
+  --bg: #0b0d12;
+  --surface: #11141a;
+  --card-bg: #141821;
+  --card-bg-hover: #171c26;
+  --card-border: #232a36;
+  --muted-border: #1c2230;
+  --text: #e7ebf3;
+  --subtext: #adb7c5;
+  --badge: #1d2736;
+  --badge-border: #2a3343;
+  --focus: #7aa2ff;
+}
+
+/* Global surfaces */
+html.dark, html.dark body, html.dark #root { background: var(--bg); color: var(--text); }
+
+/* Hard overrides for common "light" classes used in cards */
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-slate-50,
+html.dark .bg-neutral-50 { background-color: var(--card-bg) !important; }
+
+html.dark .text-gray-900,
+html.dark .text-slate-900,
+html.dark .text-neutral-900 { color: var(--text) !important; }
+
+html.dark .text-gray-600,
+html.dark .text-slate-600,
+html.dark .text-neutral-600,
+html.dark .text-gray-500,
+html.dark .text-slate-500 { color: var(--subtext) !important; }
+
+html.dark .border,
+html.dark .border-gray-200,
+html.dark .border-slate-200,
+html.dark .divide-y > * + * { border-color: var(--card-border) !important; }
+
+html.dark hr, 
+html.dark .divide-gray-200 { border-color: var(--muted-border) !important; }
+
+html.dark .shadow,
+html.dark .shadow-sm { box-shadow: 0 1px 0 rgba(0,0,0,.4), 0 12px 24px rgba(0,0,0,.25) !important; }
+
+/* Hover state for cardy containers */
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-slate-50:hover { background-color: var(--card-bg-hover) !important; }
+
+/* Pills/badges (your status chips) */
+html.dark .badge,
+html.dark .rounded-full.px-2,
+html.dark .rounded-full.px-3 { 
+  background: var(--badge) !important; 
+  border: 1px solid var(--badge-border) !important; 
+  color: var(--text) !important; 
+}
+
+/* Buttons (neutral) */
+html.dark .btn,
+html.dark .btn-default {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--card-border) !important;
+}
+
+/* Inputs */
+html.dark input, 
+html.dark select, 
+html.dark textarea {
+  background: #0f131b !important;
+  color: var(--text) !important;
+  border-color: var(--card-border) !important;
+}
+
+/* Focus ring */
+html.dark :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Readability tweaks */
+html.dark .leading-snug, html.dark .leading-normal { line-height: 1.55 !important; }
