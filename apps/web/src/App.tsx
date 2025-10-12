@@ -10,11 +10,12 @@ import InboxPolished from './pages/InboxPolished'
 import InboxPolishedDemo from './pages/InboxPolishedDemo'
 import { ToastProvider } from './components/ui/use-toast'
 import { Toaster } from './components/ui/sonner'
+import { ProfileSummary } from './components/profile/ProfileSummary'
 
 export default function App() {
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-background text-foreground">
+      <div id="app-root" data-testid="app-root" className="min-h-screen bg-background text-foreground">
         <AppHeader />
         <main className="mx-auto max-w-6xl px-4 py-6">
           <Routes>
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/inbox-actions" element={<InboxWithActions />} />
             <Route path="/search" element={<Search />} />
             <Route path="/tracker" element={<Tracker />} />
+            <Route path="/profile" element={<ProfileSummary />} />
             <Route path="/applications" element={<Applications />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

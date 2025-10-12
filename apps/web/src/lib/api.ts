@@ -16,6 +16,13 @@ export type Email = {
   role?: string
   source?: string
   application_id?: number | null
+  // ML-powered fields (Phase 35)
+  category?: string
+  expires_at?: string | null
+  event_start_at?: string | null
+  event_end_at?: string | null
+  interests?: string[]
+  confidence?: number
 }
 
 export async function fetchEmails(): Promise<Email[]> {
@@ -36,11 +43,21 @@ export type SearchHit = {
   received_at: string
   score: number
   highlight?: { subject?: string[]; body_text?: string[] }
+  // Highlight fields for easy access
+  subject_highlight?: string
+  body_highlight?: string
   // Reply metrics
   first_user_reply_at?: string
   user_reply_count?: number
   replied?: boolean
   time_to_response_hours?: number | null
+  // ML-powered fields (Phase 35)
+  category?: string
+  expires_at?: string | null
+  event_start_at?: string | null
+  event_end_at?: string | null
+  interests?: string[]
+  confidence?: number
 }
 
 export async function searchEmails(
@@ -52,7 +69,9 @@ export async function searchEmails(
   dateFrom?: string,
   dateTo?: string,
   replied?: boolean,
-  sort?: string
+  sort?: string,
+  categories?: string[],
+  hideExpired?: boolean
 ): Promise<SearchHit[]> {
   let url = `/api/search/?q=${encodeURIComponent(query)}&limit=${limit}`
   if (labelFilter) {
@@ -77,6 +96,14 @@ export async function searchEmails(
   }
   if (sort && sort !== 'relevance') {
     url += `&sort=${encodeURIComponent(sort)}`
+  }
+  if (categories && categories.length > 0) {
+    categories.forEach(c => {
+      url += `&categories=${encodeURIComponent(c)}`
+    })
+  }
+  if (hideExpired !== undefined) {
+    url += `&hide_expired=${hideExpired}`
   }
   const r = await fetch(url)
   if (!r.ok) throw new Error('Search failed')
@@ -156,6 +183,35 @@ export async function backfillGmail(days = 60, userEmail?: string): Promise<Back
   if (!r.ok) throw new Error('Backfill failed')
   return r.json()
 }
+
+// Phase 2: ML Labeling and Profile APIs
+export type LabelRebuildResponse = {
+  updated: number
+  categories: Record<string, number>
+}
+
+export type ProfileRebuildResponse = {
+  user_email: string
+  emails_processed: number
+  senders: number
+  categories: number
+  interests: number
+}
+
+async function post(url: string, init: RequestInit = {}) {
+  const r = await fetch(url, { method: 'POST', ...init })
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
+  return r.json().catch(() => ({}))
+}
+
+export const sync7d = () => post('/api/gmail/backfill?days=7')
+export const sync60d = () => post('/api/gmail/backfill?days=60')
+
+export const relabel = (limit = 2000): Promise<LabelRebuildResponse> => 
+  post(`/api/ml/label/rebuild?limit=${limit}`)
+
+export const rebuildProfile = (userEmail: string): Promise<ProfileRebuildResponse> =>
+  post(`/profile/rebuild?user_email=${encodeURIComponent(userEmail)}`)
 
 export function initiateGmailAuth() {
   window.location.href = '/api/auth/google/login'

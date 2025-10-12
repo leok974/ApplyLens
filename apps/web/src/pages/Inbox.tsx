@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getGmailStatus, getGmailInbox, initiateGmailAuth, Email, GmailConnectionStatus } from '../lib/api'
 import EmailCard from '../components/EmailCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, AlertCircle } from 'lucide-react'
 
 const LABEL_FILTERS = [
@@ -70,16 +71,20 @@ export default function Inbox() {
         >
           🔐 Connect Gmail
         </button>
-        <div className="mt-8 text-left bg-gray-50 p-6 rounded-lg">
-          <h3 className="font-semibold mb-2">What happens when you connect:</h3>
-          <ul className="list-disc ml-6 text-sm text-gray-700 space-y-1">
-            <li>Secure OAuth 2.0 authentication (read-only access)</li>
-            <li>Automatic email labeling (interviews, offers, rejections)</li>
-            <li>Full-text search with autocomplete</li>
-            <li>Synonym matching for job search terms</li>
-            <li>Your credentials are encrypted and never exposed</li>
-          </ul>
-        </div>
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="text-base">What happens when you connect:</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc ml-6 text-sm space-y-1">
+              <li>Secure OAuth 2.0 authentication (read-only access)</li>
+              <li>Automatic email labeling (interviews, offers, rejections)</li>
+              <li>Full-text search with autocomplete</li>
+              <li>Synonym matching for job search terms</li>
+              <li>Your credentials are encrypted and never exposed</li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     )
   }
