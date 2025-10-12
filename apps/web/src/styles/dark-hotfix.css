@@ -1,80 +1,163 @@
-/* --- ApplyLens Dark Hotfix (class-overrides) --- */
+/* --- ApplyLens Dark Hotfix v2 (global overrides) --- */
 :root {
   --bg: #0b0d12;
-  --surface: #11141a;
-  --card-bg: #141821;
-  --card-bg-hover: #171c26;
-  --card-border: #232a36;
-  --muted-border: #1c2230;
+  --surface: #10141b;
+  --elev-1: #141821;
+  --elev-2: #171c26;
+  --border: #242b39;
+  --border-muted: #1b2230;
   --text: #e7ebf3;
-  --subtext: #adb7c5;
+  --subtext: #aeb8c7;
+  --accent: #2b66ff;
+  --accent-600: #1f55e6;
+  --accent-700: #1646c7;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
   --badge: #1d2736;
   --badge-border: #2a3343;
-  --focus: #7aa2ff;
+  --input: #0f131b;
+  --ring: #7aa2ff;
 }
 
-/* Global surfaces */
+/* root + app frame */
 html.dark, html.dark body, html.dark #root { background: var(--bg); color: var(--text); }
 
-/* Hard overrides for common "light" classes used in cards */
+/* ---------- GLOBAL TAILWIND OVERRIDES (no component edits needed) ---------- */
+/* Light backgrounds → dark surfaces */
 html.dark .bg-white,
 html.dark .bg-gray-50,
 html.dark .bg-slate-50,
-html.dark .bg-neutral-50 { background-color: var(--card-bg) !important; }
+html.dark .bg-neutral-50 { background-color: var(--elev-1) !important; }
 
-html.dark .text-gray-900,
-html.dark .text-slate-900,
-html.dark .text-neutral-900 { color: var(--text) !important; }
+/* Secondary containers / hovers */
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-neutral-50:hover { background-color: var(--elev-2) !important; }
 
-html.dark .text-gray-600,
-html.dark .text-slate-600,
-html.dark .text-neutral-600,
-html.dark .text-gray-500,
-html.dark .text-slate-500 { color: var(--subtext) !important; }
-
+/* Borders / dividers */
 html.dark .border,
+html.dark .border-gray-100,
 html.dark .border-gray-200,
 html.dark .border-slate-200,
-html.dark .divide-y > * + * { border-color: var(--card-border) !important; }
+html.dark .divide-y > * + * { border-color: var(--border) !important; }
+html.dark hr, html.dark .divide-gray-200 { border-color: var(--border-muted) !important; }
 
-html.dark hr, 
-html.dark .divide-gray-200 { border-color: var(--muted-border) !important; }
+/* Text colors */
+html.dark .text-gray-900,
+html.dark .text-slate-900 { color: var(--text) !important; }
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+html.dark .text-slate-600,
+html.dark .text-slate-500 { color: var(--subtext) !important; }
 
-html.dark .shadow,
-html.dark .shadow-sm { box-shadow: 0 1px 0 rgba(0,0,0,.4), 0 12px 24px rgba(0,0,0,.25) !important; }
-
-/* Hover state for cardy containers */
-html.dark .hover\:bg-gray-50:hover,
-html.dark .hover\:bg-slate-50:hover { background-color: var(--card-bg-hover) !important; }
-
-/* Pills/badges (your status chips) */
-html.dark .badge,
-html.dark .rounded-full.px-2,
-html.dark .rounded-full.px-3 { 
-  background: var(--badge) !important; 
-  border: 1px solid var(--badge-border) !important; 
-  color: var(--text) !important; 
+/* Shadows feel softer in dark */
+html.dark .shadow, html.dark .shadow-sm, html.dark .shadow-md {
+  box-shadow: 0 1px 0 rgba(0,0,0,.45), 0 12px 24px rgba(0,0,0,.25) !important;
 }
 
-/* Buttons (neutral) */
+/* Scrollbar (WebKit + Firefox) */
+html.dark * {
+  scrollbar-color: var(--border) transparent;
+}
+html.dark ::-webkit-scrollbar { height: 10px; width: 10px; }
+html.dark ::-webkit-scrollbar-track { background: transparent; }
+html.dark ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+html.dark ::-webkit-scrollbar-thumb:hover { background: #2a3343; }
+
+/* ---------- BUTTONS (covers Tailwind utilities + common classnames) ---------- */
+/* base */
+html.dark button,
 html.dark .btn,
-html.dark .btn-default {
-  background: var(--surface) !important;
+html.dark a[role="button"] {
+  background: var(--elev-1) !important;
   color: var(--text) !important;
-  border: 1px solid var(--card-border) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
 }
+html.dark button:hover,
+html.dark .btn:hover,
+html.dark a[role="button"]:hover { background: var(--elev-2) !important; }
+html.dark button:disabled,
+html.dark .btn:disabled { opacity: .6; cursor: not-allowed; }
 
-/* Inputs */
-html.dark input, 
-html.dark select, 
-html.dark textarea {
-  background: #0f131b !important;
-  color: var(--text) !important;
-  border-color: var(--card-border) !important;
+/* primary (blue) — match your Sync buttons */
+html.dark .btn-primary,
+html.dark .bg-blue-600,
+html.dark .bg-indigo-600 {
+  background: var(--accent) !important;
+  border-color: var(--accent-600) !important;
+  color: white !important;
 }
+html.dark .btn-primary:hover,
+html.dark .bg-blue-600:hover,
+html.dark .bg-indigo-600:hover { background: var(--accent-600) !important; }
+html.dark .btn-primary:active { background: var(--accent-700) !important; }
+
+/* outline/ghost */
+html.dark .btn-outline,
+html.dark .border-gray-300.bg-transparent {
+  background: transparent !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+html.dark .btn-ghost,
+html.dark .bg-transparent { background: transparent !important; color: var(--text) !important; }
+
+/* semantic helpers */
+html.dark .btn-danger { background: color-mix(in oklab, var(--danger) 25%, black); color: #fff; border-color: color-mix(in oklab, var(--danger) 55%, black); }
+html.dark .btn-success { background: color-mix(in oklab, var(--success) 25%, black); color: #fff; border-color: color-mix(in oklab, var(--success) 55%, black); }
+html.dark .btn-warning { background: color-mix(in oklab, var(--warning) 25%, black); color: #131313; border-color: color-mix(in oklab, var(--warning) 55%, black); }
 
 /* Focus ring */
-html.dark :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+html.dark :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-/* Readability tweaks */
+/* ---------- FORMS ---------- */
+html.dark input, html.dark select, html.dark textarea {
+  background: var(--input) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+html.dark input::placeholder, html.dark textarea::placeholder { color: var(--subtext) !important; }
+html.dark .form-help, html.dark .help-text { color: var(--subtext) !important; }
+
+/* ---------- NAV / TABS / CHIPS ---------- */
+html.dark .nav, html.dark .tabs { background: var(--surface) !important; border-color: var(--border) !important; }
+html.dark .tab, html.dark .chip, html.dark .badge, html.dark .rounded-full.px-2, html.dark .rounded-full.px-3 {
+  background: var(--badge) !important; border: 1px solid var(--badge-border) !important; color: var(--text) !important;
+}
+html.dark .tab-active, html.dark .chip-active, html.dark .badge-primary {
+  background: color-mix(in oklab, var(--accent) 18%, black) !important; border-color: var(--accent-600) !important;
+}
+
+/* ---------- MENUS / DROPDOWNS / MODALS / TOASTS ---------- */
+html.dark .menu, html.dark .dropdown-menu, html.dark .context-menu,
+html.dark .modal, html.dark .dialog, html.dark .toast, html.dark .tooltip {
+  background: var(--elev-1) !important; color: var(--text) !important; border: 1px solid var(--border) !important;
+}
+html.dark .modal-header, html.dark .dropdown-divider { border-color: var(--border-muted) !important; }
+
+/* ---------- TABLES / LISTS ---------- */
+html.dark table { color: var(--text); }
+html.dark thead, html.dark .table-header { background: var(--surface) !important; }
+html.dark tbody tr { border-color: var(--border-muted) !important; }
+html.dark tbody tr:hover { background: var(--elev-2) !important; }
+
+/* ---------- CODE / KBD ---------- */
+html.dark code, html.dark pre, html.dark kbd {
+  background: #0e1420 !important; color: #d8e3ff !important; border: 1px solid var(--border) !important;
+}
+
+/* ---------- MISC READABILITY ---------- */
 html.dark .leading-snug, html.dark .leading-normal { line-height: 1.55 !important; }
+html.dark .text-sm.muted, html.dark .muted { color: var(--subtext) !important; }
+
+/* optional higher contrast toggle: add class="contrast-plus" to <html> */
+html.dark.contrast-plus {
+  --elev-1:#10141c; --elev-2:#0f1420; --border:#2b3547; --text:#f1f5ff;
+}
