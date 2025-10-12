@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SenderAvatar } from "./SenderAvatar";
 import { Archive, ShieldCheck, ShieldAlert, ExternalLink, ChevronRight } from "lucide-react";
+import { formatDistanceToNowStrict, format } from "date-fns";
 
 const reasonStyle: Record<string, { label: string; className: string }> = {
   promo: { label: "Promo", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
@@ -26,6 +27,11 @@ type Props = {
   receivedAt: string;             // formatted
   reason?: keyof typeof reasonStyle;
   risk?: "low"|"med"|"high";
+  
+  // ML-powered fields (Phase 35)
+  category?: string;
+  expiresAt?: string | null;
+  eventStartAt?: string | null;
 
   density?: "compact"|"comfortable";
 
@@ -38,7 +44,9 @@ type Props = {
 
 export function EmailRow(props: Props) {
   const {
-    active, checked, onCheckChange, subject, sender, preview, receivedAt, reason, risk, density="comfortable",
+    active, checked, onCheckChange, subject, sender, preview, receivedAt, reason, risk, 
+    category, expiresAt, eventStartAt,
+    density="comfortable",
     onOpen, onArchive, onSafe, onSus, onExplain,
   } = props;
 
@@ -77,6 +85,28 @@ export function EmailRow(props: Props) {
             )}>{reasonStyle[reason]?.label ?? reason}</span>
           )}
           {risk === "high" && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800 dark:bg-rose-900/40 dark:text-rose-200">High risk</span>}
+          
+          {/* ML Category Badge (Phase 35) */}
+          {category && (
+            <Badge variant="secondary" className="text-[10px] capitalize h-5">
+              {category}
+            </Badge>
+          )}
+          
+          {/* Expiry Badge (Phase 35) */}
+          {expiresAt && (
+            <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px] h-5">
+              ⏰ {formatDistanceToNowStrict(new Date(expiresAt), { addSuffix: true })}
+            </Badge>
+          )}
+          
+          {/* Event Badge (Phase 35) */}
+          {eventStartAt && (
+            <Badge className="bg-sky-100 text-sky-900 border-sky-300 text-[10px] h-5">
+              📅 {format(new Date(eventStartAt), "MMM d")}
+            </Badge>
+          )}
+          
           <span className="ml-auto shrink-0 text-xs text-[color:hsl(var(--muted-foreground))]">{receivedAt}</span>
         </div>
 

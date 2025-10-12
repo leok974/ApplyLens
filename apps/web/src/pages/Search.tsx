@@ -1,23 +1,22 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { searchEmails, unifiedSuggest, SearchHit } from '../lib/api'
 import SearchResultsHeader from '../components/SearchResultsHeader'
 import EmailLabels from '../components/EmailLabels'
 import { SearchFilters } from '../components/SearchFilters'
+import { SearchControls } from '../components/search/SearchControls'
 import { SortKey } from '../components/SortControl'
 import { getRecencyScale } from '../state/searchPrefs'
 import { loadUiState, saveUiState, RepliedFilter } from '../state/searchUi'
 import { safeFormatDate } from '../lib/date'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-
-function allowOnlyMark(html: string) {
-  // strips all tags except <mark>…</mark>
-  return html
-    .replace(/<(?!(\/?mark\b))[^>]*>/gi, '') // drop any non-<mark> tags
-    .replace(/ on\w+="[^"]*"/gi, '');        // drop inline event handlers if any
-}
+import { Badge } from '@/components/ui/badge'
+import { formatDistanceToNowStrict, format } from 'date-fns'
+import { toMarkedHTML } from '@/lib/highlight'
 
 export default function Search() {
+  const [searchParams] = useSearchParams()
   const [q, setQ] = useState('Interview')
   const [hits, setHits] = useState<SearchHit[]>([])
   const [sugs, setSugs] = useState<string[]>([])
@@ -25,6 +24,13 @@ export default function Search() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [total, setTotal] = useState<number | undefined>(undefined)
+  
+  // Parse ML filter params from URL
+  const categories = useMemo(() => 
+    (searchParams.get("cat") ?? "").split(",").filter(Boolean), 
+    [searchParams]
+  )
+  const hideExpired = searchParams.get("hideExpired") !== "0"
   
   // Initialize from localStorage (sticky)
   const init = useMemo(() => loadUiState(), [])
@@ -46,7 +52,19 @@ export default function Search() {
     try {
       const scale = getRecencyScale()
       const repliedParam = replied === "all" ? undefined : replied === "true"
-      const res = await searchEmails(q, 20, undefined, scale, labels, dates.from, dates.to, repliedParam, sort)
+      const res = await searchEmails(
+        q, 
+        20, 
+        undefined, 
+        scale, 
+        labels, 
+        dates.from, 
+        dates.to, 
+        repliedParam, 
+        sort,
+        categories,
+        hideExpired
+      )
       setHits(res)
       setTotal(res.length) // Note: API should return total count
     } catch (e:any) {
@@ -71,10 +89,10 @@ export default function Search() {
 
   useEffect(() => { onSearch() }, [])
   
-  // Re-run search when filters change
+  // Re-run search when filters change (including ML filters)
   useEffect(() => {
     if (q.trim()) onSearch()
-  }, [labels, dates, replied, sort])
+  }, [labels, dates, replied, sort, categories, hideExpired])
 
   // Persist to localStorage whenever user changes filters/sort
   useEffect(() => {
@@ -154,6 +172,9 @@ export default function Search() {
         </div>
       )}
 
+      {/* ML-powered category filters & hide expired toggle */}
+      <SearchControls />
+
       <SearchFilters
         labels={labels}
         onLabelsChange={setLabels}
@@ -198,9 +219,11 @@ export default function Search() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold leading-snug text-[color:hsl(var(--foreground))]">
-                    {h.subject || '(no subject)'}
-                  </h3>
+                  <h3 
+                    data-testid="subject"
+                    className="font-semibold leading-snug text-[color:hsl(var(--foreground))]"
+                    dangerouslySetInnerHTML={toMarkedHTML(h.subject_highlight ?? h.subject ?? '(no subject)')}
+                  />
                   <div className="mt-1 text-xs text-[color:hsl(var(--muted-foreground))]">
                     {h.sender || h.from_addr} · {safeFormatDate(h.received_at) ?? '—'}
                   </div>
@@ -210,6 +233,28 @@ export default function Search() {
                     score: {h.score?.toFixed?.(2)}
                   </span>
                   <EmailLabels labels={h.label_heuristics || (h.label ? [h.label] : [])} />
+                  
+                  {/* ML Category Badge (Phase 35) */}
+                  {h.category && (
+                    <Badge data-testid="badge-category" variant="secondary" className="text-[10px] capitalize h-5">
+                      {h.category}
+                    </Badge>
+                  )}
+                  
+                  {/* Expiry Badge (Phase 35) */}
+                  {h.expires_at && (
+                    <Badge data-testid="badge-expires" className="bg-amber-100 text-amber-900 border-amber-300 text-[10px] h-5">
+                      ⏰ {formatDistanceToNowStrict(new Date(h.expires_at), { addSuffix: true })}
+                    </Badge>
+                  )}
+                  
+                  {/* Event Badge (Phase 35) */}
+                  {h.event_start_at && (
+                    <Badge data-testid="badge-event" className="bg-sky-100 text-sky-900 border-sky-300 text-[10px] h-5">
+                      📅 {format(new Date(h.event_start_at), "MMM d")}
+                    </Badge>
+                  )}
+                  
                   <span
                     title={h.first_user_reply_at ? `Replied ${ttrText} after receipt` : (h.replied ? 'Replied' : 'No reply yet')}
                     className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
@@ -222,10 +267,11 @@ export default function Search() {
                   </span>
                 </div>
               </div>
-              {h.highlight?.body_text && (
+              {h.body_highlight && (
                 <div
-                  style={{ marginTop: 6, fontSize: 14 }}
-                  dangerouslySetInnerHTML={{ __html: allowOnlyMark(h.highlight.body_text.join(' … ')) }}
+                  data-testid="snippet"
+                  className="mt-2 text-sm text-[color:hsl(var(--muted-foreground))]"
+                  dangerouslySetInnerHTML={toMarkedHTML(h.body_highlight)}
                 />
               )}
             </div>

@@ -1,0 +1,70 @@
+# High-precision rules for email category detection
+# These rules prioritize accuracy over recall - if matched, confidence is very high
+
+promotions:
+  # Headers typical of promotional emails
+  headers:
+    - "list-unsubscribe"
+    - "precedence: bulk"
+  # Domain patterns
+  from_domains:
+    - "*.promotions.*"
+    - "*.marketing.*"
+    - "noreply@*"
+  # Marketing lexicon (common promotional language)
+  lexicon_any:
+    - "deal"
+    - "sale"
+    - "save %"
+    - "coupon"
+    - "limited time"
+    - "offer expires"
+    - "discount"
+    - "free shipping"
+    - "buy now"
+    - "shop now"
+
+ats:
+  # Applicant Tracking Systems
+  domains:
+    - "greenhouse.io"
+    - "lever.co"
+    - "workday.com"
+    - "smartrecruiters.com"
+    - "ashbyhq.com"
+    - "myworkdayjobs.com"
+    - "icims.com"
+    - "ultipro.com"
+    - "taleo.net"
+    - "jobvite.com"
+
+bills:
+  # Invoice/bill detection patterns
+  regex_any:
+    - "(invoice|receipt|statement)"
+    - "(amount due|due date|autopay)"
+    - "(payment confirmation|payment received)"
+    - "(account summary|billing period)"
+
+banks:
+  # Financial institutions and payment platforms
+  domains:
+    - "chase.com"
+    - "boa.com"
+    - "capitalone.com"
+    - "paypal.com"
+    - "venmo.com"
+    - "stripe.com"
+    - "square.com"
+    - "wellsfargo.com"
+    - "citi.com"
+    - "amex.com"
+    - "discover.com"
+
+events:
+  # Events, webinars, conferences, meetups
+  regex_any:
+    - "(webinar|event|conference|meetup|workshop)"
+    - "(rsvp|register now|join us)"
+    - "(virtual event|zoom meeting|teams meeting)"
+    - "(save the date|mark your calendar)"

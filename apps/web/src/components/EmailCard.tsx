@@ -2,6 +2,8 @@ import { Email, createApplicationFromEmail } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { safeFormatDate } from '../lib/date'
+import { Badge } from './ui/badge'
+import { formatDistanceToNowStrict, format } from 'date-fns'
 
 const LABEL_COLORS: Record<string, string> = {
   interview: 'bg-blue-100 text-blue-800',
@@ -38,10 +40,10 @@ export default function EmailCard({ e }: { e: Email }) {
   }
   
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+    <div data-testid="search-result-item" className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          <h3 className="font-semibold text-lg">{e.subject || '(No Subject)'}</h3>
+          <h3 data-testid="subject" className="font-semibold text-lg">{e.subject || '(No Subject)'}</h3>
           <p className="text-sm text-gray-600">
             From: <span className="font-mono">{sender}</span>
             {e.recipient && (
@@ -64,7 +66,7 @@ export default function EmailCard({ e }: { e: Email }) {
       
       {/* Body Preview */}
       {(e.body_preview || e.body_text) && (
-        <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+        <p data-testid="snippet" className="text-sm text-gray-700 mb-3 line-clamp-2">
           {e.body_preview || e.body_text}
         </p>
       )}
@@ -93,6 +95,27 @@ export default function EmailCard({ e }: { e: Email }) {
           <span className="px-2 py-1 rounded text-xs bg-gray-50 text-gray-500 border border-gray-200">
             📧 {e.labels.length} Gmail label{e.labels.length !== 1 ? 's' : ''}
           </span>
+        )}
+        
+        {/* ML Category (Phase 35) */}
+        {e.category && (
+          <Badge data-testid="badge-category" variant="secondary" className="capitalize text-xs">
+            {e.category}
+          </Badge>
+        )}
+        
+        {/* Expiry Badge (Phase 35) */}
+        {e.expires_at && (
+          <Badge data-testid="badge-expires" className="bg-amber-100 text-amber-900 border-amber-300 text-xs">
+            ⏰ expires {formatDistanceToNowStrict(new Date(e.expires_at), { addSuffix: true })}
+          </Badge>
+        )}
+        
+        {/* Event Badge (Phase 35) */}
+        {e.event_start_at && (
+          <Badge data-testid="badge-event" className="bg-sky-100 text-sky-900 border-sky-300 text-xs">
+            📅 {format(new Date(e.event_start_at), "MMM d, h:mma")}
+          </Badge>
         )}
       </div>
       

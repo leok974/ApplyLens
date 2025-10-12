@@ -70,9 +70,10 @@ app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
 # Phase 2 - Category labeling and profile analytics
-from .routers import labels, profile
+from .routers import labels, profile, labeling
 app.include_router(labels.router)
 app.include_router(profile.router)
+app.include_router(labeling.router, prefix="/api")
 
 # Email automation system
 try:

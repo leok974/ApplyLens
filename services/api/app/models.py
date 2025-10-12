@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Index, ForeignKey, Enum, Float, BigInteger, TIMESTAMP
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Index, ForeignKey, Enum, Float, BigInteger, TIMESTAMP, text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -62,6 +62,14 @@ class Email(Base):
     expires_at = Column(DateTime(timezone=True), nullable=True, index=True)  # When email content expires
     profile_tags = Column(ARRAY(Text), nullable=True)  # User-specific tags for personalization
     features_json = Column(JSONB, nullable=True)  # Extracted features for ML/classification
+    
+    # Phase 2: ML and event fields
+    event_start_at = Column(DateTime(timezone=True), nullable=True, index=True)  # Event start date/time
+    event_location = Column(Text, nullable=True)  # Event location/venue
+    ml_features = Column(JSONB, nullable=True)  # ML feature vectors (TF-IDF, etc.)
+    ml_scores = Column(JSONB, nullable=True)  # ML model probability scores per category
+    amount_cents = Column(Integer, nullable=True)  # Bill amount in cents
+    due_date = Column(DateTime(timezone=True), nullable=True, index=True)  # Bill due date
 
     # Optional link to application
     application_id = Column(Integer, ForeignKey("applications.id"), nullable=True)
@@ -147,3 +155,64 @@ class UserProfile(Base):
     open_rates = Column(JSONB, nullable=True)  # {"promo": 0.23, "bills": 0.88}
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+
+class ProfileSenderStats(Base):
+    """
+    Aggregated statistics per sender domain for a user.
+    
+    Tracks:
+    - Total emails from this sender
+    - Last received date
+    - Category breakdown
+    - Open rate (if available)
+    """
+    __tablename__ = "profile_sender_stats"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_email = Column(String(320), nullable=False, index=True)
+    sender_domain = Column(String(255), nullable=False, index=True)
+    total = Column(Integer, nullable=False, server_default="0")
+    last_received_at = Column(DateTime(timezone=True), nullable=True)
+    categories = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    open_rate = Column(Float, nullable=True)
+
+Index("ix_profile_sender_stats_user_domain", ProfileSenderStats.user_email, ProfileSenderStats.sender_domain, unique=True)
+
+
+class ProfileCategoryStats(Base):
+    """
+    Aggregated statistics per category for a user.
+    
+    Tracks:
+    - Total emails in this category
+    - Last received date
+    """
+    __tablename__ = "profile_category_stats"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_email = Column(String(320), nullable=False, index=True)
+    category = Column(String(64), nullable=False, index=True)
+    total = Column(Integer, nullable=False, server_default="0")
+    last_received_at = Column(DateTime(timezone=True), nullable=True)
+
+Index("ix_profile_category_stats_user_cat", ProfileCategoryStats.user_email, ProfileCategoryStats.category, unique=True)
+
+
+class ProfileInterests(Base):
+    """
+    User interests extracted from email content.
+    
+    Tracks:
+    - Interest keywords/topics
+    - Relevance score
+    - Last update time
+    """
+    __tablename__ = "profile_interests"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_email = Column(String(320), nullable=False, index=True)
+    interest = Column(String(128), nullable=False, index=True)
+    score = Column(Float, nullable=False, server_default="0")
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+
+Index("ix_profile_interests_user_interest", ProfileInterests.user_email, ProfileInterests.interest, unique=True)

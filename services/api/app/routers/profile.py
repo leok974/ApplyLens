@@ -406,3 +406,371 @@ async def time_series(
         raise HTTPException(status_code=e.response.status_code, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch time series: {str(e)}")
+
+
+# ============================================================================
+# Phase 2: Database-backed Profile Analytics (ML labeling system)
+# ============================================================================
+
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import func, desc, and_
+from datetime import datetime, timedelta
+import logging
+import re
+from collections import Counter
+
+from app.db import get_db
+from app.models import Email, ProfileSenderStats, ProfileCategoryStats, ProfileInterests
+
+
+logger = logging.getLogger(__name__)
+
+
+@router.post("/rebuild")
+def profile_rebuild_v2(
+    user_email: str = Query(..., description="User email to rebuild profile for"),
+    lookback_days: int = Query(90, description="Days of email history to analyze"),
+    db: Session = Depends(get_db)
+):
+    """
+    Rebuild user profile from email history (database-backed).
+    
+    Aggregates:
+    - Sender statistics (volume, categories, open rate)
+    - Category statistics (volume per category)
+    - Interests (extracted keywords with scores)
+    
+    Args:
+        user_email: User email address
+        lookback_days: Days of history to analyze (default 90)
+        
+    Returns:
+        Dict with rebuild stats
+    """
+    logger.info(f"Rebuilding profile for {user_email} (lookback={lookback_days} days)")
+    
+    cutoff = datetime.utcnow() - timedelta(days=lookback_days)
+    
+    # Fetch user's emails
+    emails = (
+        db.query(Email)
+        .filter(
+            and_(
+                Email.recipient == user_email,
+                Email.received_at >= cutoff
+            )
+        )
+        .all()
+    )
+    
+    if not emails:
+        return {"message": "No emails found for user", "user_email": user_email}
+    
+    logger.info(f"Processing {len(emails)} emails...")
+    
+    # Clear existing profile data
+    db.query(ProfileSenderStats).filter(ProfileSenderStats.user_email == user_email).delete()
+    db.query(ProfileCategoryStats).filter(ProfileCategoryStats.user_email == user_email).delete()
+    db.query(ProfileInterests).filter(ProfileInterests.user_email == user_email).delete()
+    db.commit()
+    
+    # Aggregate sender stats
+    sender_stats = {}
+    for email in emails:
+        sender_domain = (email.sender or "").split("@")[-1]
+        if not sender_domain:
+            continue
+        
+        if sender_domain not in sender_stats:
+            sender_stats[sender_domain] = {
+                "total": 0,
+                "last_received_at": None,
+                "categories": {},
+                "opened": 0,
+            }
+        
+        sender_stats[sender_domain]["total"] += 1
+        
+        if email.received_at:
+            if not sender_stats[sender_domain]["last_received_at"]:
+                sender_stats[sender_domain]["last_received_at"] = email.received_at
+            else:
+                sender_stats[sender_domain]["last_received_at"] = max(
+                    sender_stats[sender_domain]["last_received_at"],
+                    email.received_at
+                )
+        
+        if email.category:
+            sender_stats[sender_domain]["categories"][email.category] = (
+                sender_stats[sender_domain]["categories"].get(email.category, 0) + 1
+            )
+    
+    # Insert sender stats
+    for domain, stats in sender_stats.items():
+        # Note: open_rate would require tracking email read status
+        open_rate = 0.0
+        
+        db.add(ProfileSenderStats(
+            user_email=user_email,
+            sender_domain=domain,
+            total=stats["total"],
+            last_received_at=stats["last_received_at"],
+            categories=stats["categories"],
+            open_rate=open_rate,
+        ))
+    
+    # Aggregate category stats
+    category_stats = {}
+    for email in emails:
+        if not email.category:
+            continue
+        
+        if email.category not in category_stats:
+            category_stats[email.category] = {
+                "total": 0,
+                "last_received_at": None,
+            }
+        
+        category_stats[email.category]["total"] += 1
+        
+        if email.received_at:
+            if not category_stats[email.category]["last_received_at"]:
+                category_stats[email.category]["last_received_at"] = email.received_at
+            else:
+                category_stats[email.category]["last_received_at"] = max(
+                    category_stats[email.category]["last_received_at"],
+                    email.received_at
+                )
+    
+    # Insert category stats
+    for category, stats in category_stats.items():
+        db.add(ProfileCategoryStats(
+            user_email=user_email,
+            category=category,
+            total=stats["total"],
+            last_received_at=stats["last_received_at"],
+        ))
+    
+    # Extract interests from subjects and bodies
+    interest_keywords = Counter()
+    
+    for email in emails:
+        text = f"{email.subject or ''} {email.body_text or ''}"[:1000]  # First 1000 chars
+        
+        # Extract capitalized phrases (likely topics/companies)
+        phrases = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', text)
+        for phrase in phrases:
+            if len(phrase) >= 3:  # Skip short words
+                interest_keywords[phrase.lower()] += 1
+        
+        # Extract hashtags
+        hashtags = re.findall(r'#(\w+)', text)
+        for tag in hashtags:
+            interest_keywords[tag.lower()] += 1
+    
+    # Filter and insert top interests
+    min_mentions = 3
+    top_interests = [
+        (keyword, count)
+        for keyword, count in interest_keywords.most_common(100)
+        if count >= min_mentions
+    ]
+    
+    for keyword, score in top_interests:
+        db.add(ProfileInterests(
+            user_email=user_email,
+            interest=keyword,
+            score=float(score),
+            updated_at=datetime.utcnow(),
+        ))
+    
+    db.commit()
+    
+    logger.info(f"Profile rebuild complete: {len(sender_stats)} senders, {len(category_stats)} categories, {len(top_interests)} interests")
+    
+    return {
+        "user_email": user_email,
+        "emails_processed": len(emails),
+        "senders": len(sender_stats),
+        "categories": len(category_stats),
+        "interests": len(top_interests),
+        "lookback_days": lookback_days,
+    }
+
+
+@router.get("/db-summary")
+def profile_summary_v2(
+    user_email: str = Query(..., description="User email to get summary for"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get profile summary for user (database-backed).
+    
+    Args:
+        user_email: User email address
+        
+    Returns:
+        Dict with top senders, categories, and interests
+    """
+    # Top senders
+    top_senders = (
+        db.query(ProfileSenderStats)
+        .filter(ProfileSenderStats.user_email == user_email)
+        .order_by(desc(ProfileSenderStats.total))
+        .limit(10)
+        .all()
+    )
+    
+    # Top categories
+    top_categories = (
+        db.query(ProfileCategoryStats)
+        .filter(ProfileCategoryStats.user_email == user_email)
+        .order_by(desc(ProfileCategoryStats.total))
+        .all()
+    )
+    
+    # Top interests
+    top_interests = (
+        db.query(ProfileInterests)
+        .filter(ProfileInterests.user_email == user_email)
+        .order_by(desc(ProfileInterests.score))
+        .limit(20)
+        .all()
+    )
+    
+    return {
+        "user_email": user_email,
+        "top_senders": [
+            {
+                "domain": s.sender_domain,
+                "total": s.total,
+                "categories": s.categories,
+                "open_rate": round(s.open_rate * 100, 2) if s.open_rate else 0,
+                "last_received": s.last_received_at.isoformat() if s.last_received_at else None,
+            }
+            for s in top_senders
+        ],
+        "categories": [
+            {
+                "category": c.category,
+                "total": c.total,
+                "last_received": c.last_received_at.isoformat() if c.last_received_at else None,
+            }
+            for c in top_categories
+        ],
+        "interests": [
+            {
+                "keyword": i.interest,
+                "score": i.score,
+            }
+            for i in top_interests
+        ],
+    }
+
+
+@router.get("/db-interests")
+def get_interests_v2(
+    user_email: str = Query(..., description="User email"),
+    limit: int = Query(50, description="Max interests to return"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get user interests with scores (database-backed).
+    
+    Args:
+        user_email: User email address
+        limit: Max number of interests (default 50)
+        
+    Returns:
+        List of interests with scores
+    """
+    interests = (
+        db.query(ProfileInterests)
+        .filter(ProfileInterests.user_email == user_email)
+        .order_by(desc(ProfileInterests.score))
+        .limit(limit)
+        .all()
+    )
+    
+    return [
+        {
+            "interest": i.interest,
+            "score": i.score,
+            "updated_at": i.updated_at.isoformat() if i.updated_at else None,
+        }
+        for i in interests
+    ]
+
+
+@router.get("/db-senders")
+def get_top_senders_v2(
+    user_email: str = Query(..., description="User email"),
+    limit: int = Query(20, description="Max senders to return"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get top senders by volume (database-backed).
+    
+    Args:
+        user_email: User email address
+        limit: Max number of senders (default 20)
+        
+    Returns:
+        List of sender domains with stats
+    """
+    senders = (
+        db.query(ProfileSenderStats)
+        .filter(ProfileSenderStats.user_email == user_email)
+        .order_by(desc(ProfileSenderStats.total))
+        .limit(limit)
+        .all()
+    )
+    
+    return [
+        {
+            "domain": s.sender_domain,
+            "total": s.total,
+            "categories": s.categories,
+            "open_rate": round(s.open_rate * 100, 2) if s.open_rate else 0,
+            "last_received": s.last_received_at.isoformat() if s.last_received_at else None,
+        }
+        for s in senders
+    ]
+
+
+@router.get("/db-categories")
+def get_categories_v2(
+    user_email: str = Query(..., description="User email"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get category breakdown for user (database-backed).
+    
+    Args:
+        user_email: User email address
+        
+    Returns:
+        List of categories with counts
+    """
+    categories = (
+        db.query(ProfileCategoryStats)
+        .filter(ProfileCategoryStats.user_email == user_email)
+        .order_by(desc(ProfileCategoryStats.total))
+        .all()
+    )
+    
+    total = sum(c.total for c in categories)
+    
+    return {
+        "total_emails": total,
+        "categories": [
+            {
+                "category": c.category,
+                "total": c.total,
+                "percentage": round(c.total / total * 100, 2) if total > 0 else 0,
+                "last_received": c.last_received_at.isoformat() if c.last_received_at else None,
+            }
+            for c in categories
+        ],
+    }
