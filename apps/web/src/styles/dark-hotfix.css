@@ -270,19 +270,20 @@ html.dark .react-datepicker__day--keyboard-selected {
 }
 
 /* ==================== UTILITY CLASSES ==================== */
+/* NOTE: These utility classes have been replaced by shadcn/ui components.
+   Keeping the definitions below commented out for legacy reference.
+   New components use Tailwind utilities directly in JSX/TSX files.
 
-/* Navigation links */
 .nav-link {
-  @apply rounded-xl border border-[var(--border)] bg-[var(--elev1)] px-3 py-2 text-sm hover:bg-[var(--elev2)] transition;
+  rounded-xl border border-[var(--border)] bg-[var(--elev1)] px-3 py-2 text-sm hover:bg-[var(--elev2)] transition;
 }
 
-/* Button variants */
 .btn {
-  @apply inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--elev1)] px-3 py-2 text-sm hover:bg-[var(--elev2)] transition;
+  inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--elev1)] px-3 py-2 text-sm hover:bg-[var(--elev2)] transition;
 }
 
 .btn-primary {
-  @apply inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm text-white transition;
+  inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm text-white transition;
   background: var(--accent);
   border-color: color-mix(in oklab, var(--accent) 55%, black);
 }
@@ -292,17 +293,16 @@ html.dark .react-datepicker__day--keyboard-selected {
 }
 
 .btn-outline {
-  @apply bg-transparent text-[color:var(--text)] hover:bg-[var(--elev2)];
+  bg-transparent text-[color:var(--text)] hover:bg-[var(--elev2)];
 }
 
-/* Badge component */
 .badge {
-  @apply inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--elev2)] px-2 py-0.5 text-xs;
+  inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--elev2)] px-2 py-0.5 text-xs;
 }
 
-/* Form elements */
 input, 
 select, 
 textarea {
-  @apply rounded-lg border border-[var(--border)] bg-[var(--input)] text-[color:var(--text)] placeholder-[color:var(--subtext)] focus:ring-2 focus:ring-[var(--ring)] focus:border-[var(--ring)];
+  rounded-lg border border-[var(--border)] bg-[var(--input)] text-[color:var(--text)] placeholder-[color:var(--subtext)] focus:ring-2 focus:ring-[var(--ring)] focus:border-[var(--ring)];
 }
+*/
