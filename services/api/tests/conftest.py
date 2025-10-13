@@ -44,10 +44,13 @@ def engine():
     
     The database schema is created at the start and dropped at the end.
     Uses DATABASE_URL from environment (set by pytest.ini).
+    
+    Note: Tests require PostgreSQL (models use PG-specific types like ARRAY, JSONB, ENUM).
+    Set TEST_DB_PASSWORD env var when running locally.
     """
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
-        pytest.fail("DATABASE_URL not set. Run tests with TEST_DB_PASSWORD environment variable.")
+        pytest.skip("DATABASE_URL not set. Skipping tests that require database.")
     
     # Create engine with test-friendly settings
     test_engine = create_engine(
