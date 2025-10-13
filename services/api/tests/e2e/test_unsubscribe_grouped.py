@@ -2,13 +2,10 @@
 E2E tests for grouped unsubscribe functionality.
 """
 import pytest
-from httpx import AsyncClient
-from app.main import app
 import app.routers.unsubscribe as U
 
-
 @pytest.mark.asyncio
-async def test_preview_and_execute_grouped(monkeypatch):
+async def test_preview_and_execute_grouped(monkeypatch, async_client):
     """
     Test preview and execution of grouped unsubscribes.
     
@@ -47,37 +44,35 @@ async def test_preview_and_execute_grouped(monkeypatch):
         }
     ]
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Step 1: Preview grouped
-        r = await ac.post("/unsubscribe/preview_grouped", json=cands)
-        assert r.status_code == 200
+    # Step 1: Preview grouped
+    r = await async_client.post("/unsubscribe/preview_grouped", json=cands)
+    assert r.status_code == 200
         
-        groups = r.json()["groups"]
+    groups = r.json()["groups"]
         
-        # Should have 2 groups
-        assert len(groups) == 2
+    # Should have 2 groups
+    assert len(groups) == 2
         
-        # One group has 2 items, one has 1
-        doms = {g["domain"]: g["count"] for g in groups}
-        assert doms.get("news.example.com") == 2
-        assert doms.get("alerts.example.org") == 1
+    # One group has 2 items, one has 1
+    doms = {g["domain"]: g["count"] for g in groups}
+    assert doms.get("news.example.com") == 2
+    assert doms.get("alerts.example.org") == 1
 
-        # Step 2: Execute group against news.example.com (fan-out 2 calls)
-        grp = [g for g in groups if g["domain"] == "news.example.com"][0]
-        r2 = await ac.post("/unsubscribe/execute_grouped", json=grp)
+    # Step 2: Execute group against news.example.com (fan-out 2 calls)
+    grp = [g for g in groups if g["domain"] == "news.example.com"][0]
+    r2 = await async_client.post("/unsubscribe/execute_grouped", json=grp)
         
-        assert r2.status_code == 200
-        result = r2.json()
-        assert result["applied"] == 2
-        assert result["domain"] == "news.example.com"
+    assert r2.status_code == 200
+    result = r2.json()
+    assert result["applied"] == 2
+    assert result["domain"] == "news.example.com"
         
-        # Verify both emails were unsubscribed
-        assert "e1" in executed
-        assert "e2" in executed
-
+    # Verify both emails were unsubscribed
+    assert "e1" in executed
+    assert "e2" in executed
 
 @pytest.mark.asyncio
-async def test_empty_domain_filtering(monkeypatch):
+async def test_empty_domain_filtering(monkeypatch, async_client):
     """
     Test that candidates without sender_domain are filtered out.
     """
@@ -101,21 +96,19 @@ async def test_empty_domain_filtering(monkeypatch):
         }
     ]
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/preview_grouped", json=cands)
-        assert r.status_code == 200
+    r = await async_client.post("/unsubscribe/preview_grouped", json=cands)
+    assert r.status_code == 200
         
-        groups = r.json()["groups"]
+    groups = r.json()["groups"]
         
-        # Only 1 group (empty domain filtered out)
-        assert len(groups) == 1
-        assert groups[0]["domain"] == "example.com"
-        assert groups[0]["count"] == 2
-        assert "e2" not in groups[0]["email_ids"]
-
+    # Only 1 group (empty domain filtered out)
+    assert len(groups) == 1
+    assert groups[0]["domain"] == "example.com"
+    assert groups[0]["count"] == 2
+    assert "e2" not in groups[0]["email_ids"]
 
 @pytest.mark.asyncio
-async def test_execute_partial_failure(monkeypatch):
+async def test_execute_partial_failure(monkeypatch, async_client):
     """
     Test that execution continues even if some unsubscribes fail.
     """
@@ -136,17 +129,15 @@ async def test_execute_partial_failure(monkeypatch):
         "params": {"headers": {"List-Unsubscribe": "<https://ex.com/u>"}}
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/execute_grouped", json=payload)
+    r = await async_client.post("/unsubscribe/execute_grouped", json=payload)
         
-        assert r.status_code == 200
-        # Should report 2 successful (e1, e3), e2 failed but continued
-        assert r.json()["applied"] == 2
-        assert call_count == 3  # All 3 were attempted
-
+    assert r.status_code == 200
+    # Should report 2 successful (e1, e3), e2 failed but continued
+    assert r.json()["applied"] == 2
+    assert call_count == 3  # All 3 were attempted
 
 @pytest.mark.asyncio
-async def test_multiple_domains_large_batch(monkeypatch):
+async def test_multiple_domains_large_batch(monkeypatch, async_client):
     """
     Test grouping with many emails across multiple domains.
     """
@@ -163,16 +154,15 @@ async def test_multiple_domains_large_batch(monkeypatch):
             "headers": {"List-Unsubscribe": f"<https://unsub.com/{i}>"}
         })
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/preview_grouped", json=cands)
-        assert r.status_code == 200
+    r = await async_client.post("/unsubscribe/preview_grouped", json=cands)
+    assert r.status_code == 200
         
-        groups = r.json()["groups"]
+    groups = r.json()["groups"]
         
-        # Should have 5 groups
-        assert len(groups) == 5
+    # Should have 5 groups
+    assert len(groups) == 5
         
-        # Each group should have 10 emails
-        for g in groups:
-            assert g["count"] == 10
-            assert len(g["email_ids"]) == 10
+    # Each group should have 10 emails
+    for g in groups:
+        assert g["count"] == 10
+        assert len(g["email_ids"]) == 10
