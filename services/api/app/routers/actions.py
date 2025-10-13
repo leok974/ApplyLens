@@ -25,7 +25,7 @@ from ..db import get_db
 from ..models import Email, ProposedAction, AuditAction, Policy, ActionType, PolicyStats
 from ..core.yardstick import evaluate_policy, validate_condition
 from ..core.executors import execute_action
-from ..core.learner import update_user_weights, featureize
+from ..core.learner import update_user_weights, featureize, score_ctx_with_user
 from ..telemetry.metrics import METRICS
 
 router = APIRouter(prefix="/actions", tags=["actions"])
@@ -111,7 +111,63 @@ def extract_domain(email_address: str) -> Optional[str]:
     return email_address.split("@")[-1].lower()
 
 
-def build_rationale(email: Email, policy: Policy) -> tuple[float, Dict[str, Any]]:
+def estimate_confidence(
+    policy: Policy,
+    feats: Dict[str, Any],
+    aggs: Dict[str, Any],
+    neighbors: List[Any],
+    db: Optional[Session] = None,
+    user: Optional[Any] = None,
+    email: Optional[Email] = None
+) -> float:
+    """
+    Estimate confidence score for a policy match with personalized learning bump.
+    
+    Args:
+        policy: Matched policy
+        feats: Email features dict
+        aggs: Aggregation features (promo_ratio, etc.)
+        neighbors: KNN neighbors (for future use)
+        db: Database session (for user weight lookup)
+        user: User object with email attribute
+        email: Email object being evaluated
+        
+    Returns:
+        Confidence score (0.01 - 0.99)
+    """
+    # Base confidence from policy
+    base = policy.confidence_threshold if policy else 0.7
+    
+    # Simple heuristics
+    if feats.get("category") == "promo" and aggs.get("promo_ratio", 0) > 0.6:
+        base += 0.1
+    if feats.get("risk_score", 0) >= 80:
+        base = 0.95
+    
+    # User-personalized bump: +/- up to ~0.15
+    if db and user and email:
+        f = []
+        if getattr(email, "category", None):
+            f.append(f"category:{email.category}")
+        if getattr(email, "sender_domain", None):
+            f.append(f"sender_domain:{email.sender_domain}")
+        subj = (getattr(email, "subject", "") or "").lower()
+        for tok in ("invoice", "receipt", "meetup", "interview", "newsletter", "offer"):
+            if tok in subj:
+                f.append(f"contains:{tok}")
+        
+        bump = max(-0.15, min(0.15, 0.05 * score_ctx_with_user(db, user.email, f)))
+        base += bump
+    
+    return max(0.01, min(0.99, base))
+
+
+def build_rationale(
+    email: Email,
+    policy: Policy,
+    db: Optional[Session] = None,
+    user: Optional[Any] = None
+) -> tuple[float, Dict[str, Any]]:
     """
     Build confidence score and rationale for an action proposal.
     
@@ -131,7 +187,7 @@ def build_rationale(email: Email, policy: Policy) -> tuple[float, Dict[str, Any]
         }
     }
     """
-    # TODO: Add ES aggregations and KNN neighbors in Phase 4.1
+    # Gather features for confidence estimation
     features = {
         "category": email.category,
         "risk_score": email.risk_score,
@@ -143,8 +199,10 @@ def build_rationale(email: Email, policy: Policy) -> tuple[float, Dict[str, Any]
         expired = datetime.utcnow() - email.expires_at.replace(tzinfo=None)
         features["expired_days"] = max(0, expired.days)
     
-    # Simple confidence heuristic (replace with ML in Phase 4.1)
-    confidence = policy.confidence_threshold
+    # Estimate confidence with personalized learning bump
+    aggs = {}  # TODO: Add ES aggregations in Phase 4.1
+    neighbors = []  # TODO: Add KNN neighbors in Phase 4.1
+    confidence = estimate_confidence(policy, features, aggs, neighbors, db=db, user=user, email=email)
     
     # Build narrative
     narrative = {
@@ -336,7 +394,7 @@ def propose_actions(
         # Try each policy (stop at first match)
         for policy in policies:
             if evaluate_policy({"condition": policy.condition}, ctx):
-                confidence, rationale = build_rationale(email, policy)
+                confidence, rationale = build_rationale(email, policy, db=db, user=user)
                 
                 if confidence >= policy.confidence_threshold:
                     pa = ProposedAction(

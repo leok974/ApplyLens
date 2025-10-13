@@ -84,6 +84,26 @@ export default function MailChat() {
   const [intentTokens, setIntentTokens] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dupes, setDupes] = useState<any[] | null>(null)
+  const [summary, setSummary] = useState<any | null>(null)
+
+  async function loadDupes() {
+    try {
+      const r = await fetch('/api/money/duplicates')
+      setDupes(await r.json())
+    } catch (err) {
+      console.error('Failed to load duplicates:', err)
+    }
+  }
+
+  async function loadSummary() {
+    try {
+      const r = await fetch('/api/money/summary')
+      setSummary(await r.json())
+    } catch (err) {
+      console.error('Failed to load summary:', err)
+    }
+  }
 
   async function send(text: string, opts?: { propose?: boolean; explain?: boolean; remember?: boolean }) {
     if (!text.trim() || busy) return
@@ -555,6 +575,35 @@ export default function MailChat() {
         {/* Right Sidebar - Policy Accuracy Panel */}
         <div className="lg:col-span-1 space-y-3">
           <PolicyAccuracyPanel />
+          
+          {/* Money Tools Panel */}
+          <div className="rounded-2xl border border-neutral-800 p-3 bg-neutral-900">
+            <div className="text-sm font-semibold mb-2">Money tools</div>
+            <div className="flex gap-2">
+              <button 
+                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700" 
+                onClick={loadDupes}
+              >
+                View duplicates
+              </button>
+              <button 
+                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700" 
+                onClick={loadSummary}
+              >
+                Spending summary
+              </button>
+            </div>
+            {dupes && (
+              <pre className="mt-2 text-[11px] overflow-auto max-h-40 bg-neutral-950 p-2 rounded border border-neutral-800">
+                {JSON.stringify(dupes, null, 2)}
+              </pre>
+            )}
+            {summary && (
+              <pre className="mt-2 text-[11px] overflow-auto max-h-40 bg-neutral-950 p-2 rounded border border-neutral-800">
+                {JSON.stringify(summary, null, 2)}
+              </pre>
+            )}
+          </div>
         </div>
       </div>
     </div>
