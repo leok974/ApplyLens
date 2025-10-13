@@ -1,8 +1,7 @@
 """
 Phase 6: Personalization models for per-user learning and policy analytics.
 """
-from sqlalchemy import Column, Integer, String, Float, JSON, DateTime, Boolean, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
 from datetime import datetime
 from ..db import Base
 

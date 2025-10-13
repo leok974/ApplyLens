@@ -141,7 +141,7 @@ def ensure_index():
                 es.indices.create(index=INDEX, body=SETTINGS_AND_MAPPINGS)
             print(f"✓ Elasticsearch index '{INDEX}' is ready")
             return
-        except ConnectionError as e:
+        except ConnectionError:
             if attempt < max_retries - 1:
                 print(f"⏳ Waiting for Elasticsearch (attempt {attempt + 1}/{max_retries})...")
                 time.sleep(retry_delay)

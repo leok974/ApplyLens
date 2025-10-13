@@ -10,7 +10,6 @@ Provides:
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
-from datetime import datetime
 from typing import Optional
 import logging
 import os
@@ -19,7 +18,6 @@ from app.db import get_db
 from app.models import Email
 from app.ml.predict_label import score_email
 from app.ml.rules import extract_extras
-from dateutil import parser as date_parser
 
 
 logger = logging.getLogger(__name__)

@@ -7,12 +7,9 @@ import json
 import base64
 import secrets
 import datetime as dt
-from urllib.parse import urlencode
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request as GRequest
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 

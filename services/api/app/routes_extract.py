@@ -9,15 +9,12 @@ Endpoints:
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
-from sqlalchemy.orm import Session
-from datetime import datetime
 
 from .db import SessionLocal
 from .models import Application, AppStatus, GmailToken
 from .settings import settings
-from .email_extractor import extract_from_email as extract_service, ExtractInput, ExtractResult
+from .email_extractor import extract_from_email as extract_service, ExtractInput
 from .gmail_providers import (
-    single_user_provider,
     db_backed_provider,
     mock_provider,
     GmailProvider,

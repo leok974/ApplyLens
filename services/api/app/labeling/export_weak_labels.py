@@ -230,7 +230,7 @@ def export(
                 break
 
     print()
-    print(f"✅ Export complete!")
+    print("✅ Export complete!")
     print(f"   Seen: {total_seen} documents")
     print(f"   Written: {total_written} documents")
     print()

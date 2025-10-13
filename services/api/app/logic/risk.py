@@ -8,7 +8,7 @@ Detects:
 - URL domain mismatches
 """
 import re
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List
 
 # Suspicious TLDs commonly used in phishing
 SUS_TLDS = {"zip", "mov", "country", "support", "top", "gq", "work", "tk", "ml", "ga", "cf"}

@@ -1,9 +1,7 @@
 # services/api/app/routers/security.py
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
-from typing import Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 import json
 import asyncio
 
@@ -87,7 +85,7 @@ def get_security_stats(db: Session = Depends(get_db)):
     from sqlalchemy import func
     
     # Count quarantined emails
-    quarantined = db.query(func.count(Email.id)).filter(Email.quarantined == True).scalar() or 0
+    quarantined = db.query(func.count(Email.id)).filter(Email.quarantined).scalar() or 0
     
     # Average risk score
     average_risk = db.query(func.avg(Email.risk_score)).filter(Email.risk_score.isnot(None)).scalar()

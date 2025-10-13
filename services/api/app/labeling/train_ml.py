@@ -197,7 +197,7 @@ def train_model(
     print(f"\n💾 Saving model to {model_output_path}")
     joblib.dump(pipeline, model_output_path)
     
-    print(f"\n✅ Model training complete!")
+    print("\n✅ Model training complete!")
     print(f"   Model file: {model_output_path}")
     print(f"   File size: {os.path.getsize(model_output_path) / 1024:.1f} KB")
 

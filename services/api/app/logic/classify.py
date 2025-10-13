@@ -12,7 +12,7 @@ Future: Can be enhanced with ML models trained on user feedback
 """
 import re
 from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Category detection patterns
 PROMO_HINTS = re.compile(
@@ -174,16 +174,9 @@ def extract_expiry_date(email: Dict[str, Any]) -> Optional[datetime]:
             return min(future_dates, key=lambda d: datetime.fromisoformat(d) if isinstance(d, str) else d)
     
     # Pattern matching for expiry language
-    subject = email.get("subject", "")
-    body = email.get("body_text", "")
-    combined = f"{subject} {body}"
+    email.get("subject", "")
+    email.get("body_text", "")
     
-    expiry_patterns = [
-        r"expires?\s+(?:on\s+)?([A-Z][a-z]+\s+\d{1,2})",  # "expires Oct 15"
-        r"valid\s+until\s+(\d{4}-\d{2}-\d{2})",           # "valid until 2025-10-20"
-        r"offer\s+ends?\s+(\d{1,2}/\d{1,2}/\d{4})",       # "offer ends 10/15/2025"
-        r"deadline:?\s+([A-Z][a-z]+\s+\d{1,2})",          # "deadline: Oct 15"
-    ]
     
     # For MVP, return None and rely on dates array
     # Full date parsing can be added with dateutil library

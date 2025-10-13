@@ -8,8 +8,8 @@ beyond the explicit rules.
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report, confusion_matrix
-from joblib import dump, load
+from sklearn.metrics import classification_report
+from joblib import dump
 import numpy as np
 from scipy.sparse import hstack
 from pathlib import Path
@@ -46,7 +46,7 @@ def build_features(rows: List[Email]) -> Tuple[any, np.ndarray, List[str]]:
     ]
     
     # Extract simple numeric features
-    sender_domains = [(r.sender or "").split("@")[-1] for r in rows]
+    [(r.sender or "").split("@")[-1] for r in rows]
     url_counts = [(r.body_text or "").count("http") for r in rows]
     money_mentions = [1 if "$" in (r.body_text or "") else 0 for r in rows]
     has_unsubscribe = [
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     # CLI usage: python -m app.ml.train_label_model
     logging.basicConfig(level=logging.INFO)
     result = train_model(limit=5000)
-    print(f"\nTraining complete!")
+    print("\nTraining complete!")
     print(f"Model: {result['model_path']}")
     print(f"Accuracy: {result['accuracy']:.3f}")
     print(f"Categories: {result['categories']}")
