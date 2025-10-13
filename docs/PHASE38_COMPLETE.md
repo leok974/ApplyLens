@@ -35,12 +35,14 @@ Added a chip-style button that toggles the `hideExpired` state:
 ```
 
 ### Features
+
 - Rounded pill-style button for modern look
 - Dynamic text: "Show expired" when hidden, "Hide expired" when shown
 - Color change: Secondary variant when expired emails are hidden, default when showing
 - Positioned next to the existing switch for easy access
 
 ### Testing
+
 ```bash
 # Navigate to http://localhost:5175/search
 # Click the "Show expired" chip
@@ -92,6 +94,7 @@ import { ProfileSummary } from './components/profile/ProfileSummary'
 ```
 
 ### Testing
+
 ```bash
 # Navigate to http://localhost:5175
 # Click "Profile" in top navigation
@@ -177,7 +180,8 @@ export function toMarkedHTML(s?: string) {
 }
 ```
 
-**Security:** 
+**Security:**
+
 - Escapes ALL HTML entities first
 - Only unescapes `<mark>` tags that Elasticsearch inserted
 - Prevents XSS attacks from malicious email content
@@ -233,6 +237,7 @@ curl -s "http://localhost:8003/api/search/?q=application&size=2"
 ```
 
 **Result:** ✅
+
 ```json
 [
   {
@@ -255,6 +260,7 @@ curl -s "http://localhost:8003/api/search/?q=interview&size=2"
 ```
 
 **Result:** ✅
+
 ```json
 {
   "subject": "Thanks for applying to Safran Passenger Innovations",
@@ -279,6 +285,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 ### SearchControls Component
 
 **Before:**
+
 ```tsx
 <div className="ml-auto flex items-center gap-2">
   <Label htmlFor="hide-expired">Hide expired</Label>
@@ -287,6 +294,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 ```
 
 **After:**
+
 ```tsx
 <div className="ml-auto flex items-center gap-2">
   <Label htmlFor="hide-expired">Hide expired</Label>
@@ -305,6 +313,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 ### Navigation Menu
 
 **Before:**
+
 - Inbox
 - Inbox (Actions)
 - Search
@@ -312,6 +321,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 - Settings
 
 **After:**
+
 - Inbox
 - Inbox (Actions)
 - Search
@@ -322,6 +332,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 ### Search Results
 
 **Before:**
+
 ```tsx
 <h3 className="font-semibold">
   {h.subject || '(no subject)'}
@@ -329,6 +340,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 ```
 
 **After:**
+
 ```tsx
 <h3 
   className="font-semibold"
@@ -382,6 +394,7 @@ Added to Search.tsx:
 ```
 
 **Features:**
+
 - `fragment_size: 150` - Each snippet is ~150 characters
 - `number_of_fragments: 3` - Up to 3 snippets per email
 - Multiple fragments joined with " ... "
@@ -389,12 +402,14 @@ Added to Search.tsx:
 ### Security Considerations
 
 **XSS Prevention:**
+
 1. Escape ALL HTML in email content
 2. Only unescape trusted `<mark>` tags from ES
 3. Use `dangerouslySetInnerHTML` only after sanitization
 4. No inline event handlers allowed
 
 **Why Safe:**
+
 - Email subject/body could contain malicious HTML
 - `toMarkedHTML()` escapes everything first
 - Only `<mark>` tags from Elasticsearch are restored
@@ -405,6 +420,7 @@ Added to Search.tsx:
 ## 📝 Files Modified
 
 ### Frontend
+
 - ✅ `apps/web/src/components/search/SearchControls.tsx` - Added "Show expired" chip
 - ✅ `apps/web/src/components/AppHeader.tsx` - Added Profile link
 - ✅ `apps/web/src/App.tsx` - Added Profile route
@@ -413,6 +429,7 @@ Added to Search.tsx:
 - ✅ `apps/web/src/lib/api.ts` - Added highlight fields to types
 
 ### Backend
+
 - ✅ `services/api/app/routers/search.py` - Added subject_highlight and body_highlight fields
 
 ---
@@ -442,6 +459,7 @@ Added to Search.tsx:
 ### Additional Polish Ideas
 
 1. **Loading Skeletons**
+
    ```tsx
    {loading && (
      <div className="space-y-3">
@@ -453,6 +471,7 @@ Added to Search.tsx:
    ```
 
 2. **Better Error Alerts**
+
    ```tsx
    {err && (
      <Alert variant="destructive">
@@ -472,6 +491,7 @@ Added to Search.tsx:
    - Add dark mode support to category badges
 
 4. **Empty State**
+
    ```tsx
    {!loading && hits.length === 0 && (
      <div className="text-center py-12">

@@ -7,6 +7,7 @@ Phase 4 adds intelligent email automation with human approval. **Status: 85% Com
 ## Files Created (11 total)
 
 ### Backend (6 files)
+
 1. `services/api/app/models.py` - Added action models (+130 lines)
 2. `services/api/alembic/versions/0016_phase4_actions.py` - Migration (92 lines)
 3. `services/api/app/core/yardstick.py` - Policy DSL evaluator (220 lines)
@@ -15,14 +16,17 @@ Phase 4 adds intelligent email automation with human approval. **Status: 85% Com
 6. `services/api/app/seeds/policies.py` - Default policies (130 lines)
 
 ### Frontend (2 files)
+
 7. `apps/web/src/lib/actionsClient.ts` - API client (200 lines)
 8. `apps/web/src/components/ActionsTray.tsx` - UI drawer (320 lines)
 
 ### Modified (2 files)
+
 9. `services/api/app/main.py` - Registered actions router
 10. `apps/web/src/components/AppHeader.tsx` - Added Actions button with badge
 
 ### Documentation (4 files)
+
 11. `docs/PHASE_4_IMPLEMENTATION_STATUS.md` - Detailed status
 12. `docs/PHASE_4_INTEGRATION_CHECKLIST.md` - Integration steps
 13. `docs/PHASE_4_SUMMARY.md` - Complete overview
@@ -66,6 +70,7 @@ POST   /api/actions/policies/{id}/test # Test policy
 ## Policy DSL Cheat Sheet
 
 ### Logical Operators
+
 ```json
 {"all": [expr1, expr2]}        // AND
 {"any": [expr1, expr2]}        // OR
@@ -73,6 +78,7 @@ POST   /api/actions/policies/{id}/test # Test policy
 ```
 
 ### Comparators
+
 ```json
 {"eq": ["field", "value"]}           // Equal
 {"neq": ["field", "value"]}          // Not equal
@@ -86,11 +92,13 @@ POST   /api/actions/policies/{id}/test # Test policy
 ```
 
 ### Special Values
+
 ```json
 {"lt": ["expires_at", "now"]}  // "now" → current datetime
 ```
 
 ### Example Policy
+
 ```json
 {
   "name": "Archive expired promos",
@@ -196,6 +204,7 @@ actions.router (FastAPI)
 ## Troubleshooting
 
 **Tray won't load:**
+
 ```powershell
 # Check API is running
 curl localhost:8003/health
@@ -205,6 +214,7 @@ docker logs infra-api-1 --tail 50
 ```
 
 **Migration fails:**
+
 ```powershell
 # Check current version
 docker exec infra-api-1 alembic current
@@ -214,6 +224,7 @@ docker exec infra-api-1 alembic history
 ```
 
 **Seeds fail:**
+
 ```powershell
 # Check if table exists
 docker exec -it infra-db-1 psql -U postgres -d lens -c "\d policies"
@@ -222,11 +233,13 @@ docker exec -it infra-db-1 psql -U postgres -d lens -c "\d policies"
 ## What's Missing
 
 ⏸️ **Requires Docker:**
+
 - Database migration
 - Policy seeding
 - API testing
 
 ⏸️ **Future Work:**
+
 - Backend unit tests
 - E2E Playwright tests
 - Service integration (Gmail/Calendar/Tasks)
@@ -237,15 +250,18 @@ docker exec -it infra-db-1 psql -U postgres -d lens -c "\d policies"
 ## Key Files to Know
 
 **Most Important:**
+
 - `routers/actions.py` - Main API logic
 - `core/yardstick.py` - Policy evaluator
 - `ActionsTray.tsx` - UI component
 
 **For Testing:**
+
 - `seeds/policies.py` - Reset/seed policies
 - `PHASE_4_INTEGRATION_CHECKLIST.md` - Test procedures
 
 **For Understanding:**
+
 - `PHASE_4_SUMMARY.md` - Architecture overview
 - `PHASE_4_UI_GUIDE.md` - UI behavior
 
@@ -329,6 +345,7 @@ ORDER BY priority;"
 ---
 
 **Need help?** See detailed docs:
+
 - Integration: `docs/PHASE_4_INTEGRATION_CHECKLIST.md`
 - Architecture: `docs/PHASE_4_SUMMARY.md`
 - UI Guide: `docs/PHASE_4_UI_GUIDE.md`

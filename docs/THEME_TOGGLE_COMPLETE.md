@@ -7,24 +7,28 @@ Successfully implemented a dark/light theme toggle system with localStorage pers
 ## Features
 
 ✅ **ThemeProvider with React Context**
+
 - Manages theme state globally across the application
 - Persists user preference to localStorage (key: "theme")
 - Supports three modes: "light", "dark", "system"
 - System mode respects OS preference via matchMedia
 
 ✅ **ModeToggle Component**
+
 - Sun/Moon icon button in header bar
 - Single-click toggle between light/dark
 - Dropdown menu for explicit theme selection (Light/Dark/System)
 - Accessible with ARIA labels
 
 ✅ **Tailwind Dark Mode Integration**
+
 - Class-based dark mode (`darkMode: ["class"]`)
 - CSS variables for all design tokens
 - Smooth transitions between themes
 - All shadcn/ui components support dark mode automatically
 
 ✅ **InboxPolished Integration**
+
 - Theme toggle in header bar (far right)
 - Dark mode classes on root container, header, and sidebar
 - All email cards, badges, and buttons adapt to theme
@@ -52,6 +56,7 @@ function applyTheme(theme: Theme) {
 ```
 
 **Key Features:**
+
 - `applyTheme()`: Applies/removes "dark" class on `<html>` element
 - `toggle()`: Quick toggle between light and dark (skips system)
 - `setTheme()`: Explicit theme selection with localStorage persistence
@@ -81,6 +86,7 @@ export function ModeToggle() {
 ```
 
 **User Interactions:**
+
 1. **Single Click**: Button click toggles between light/dark
 2. **Dropdown**: Open menu to explicitly select Light/Dark/System
 3. **Icon**: Sun icon for light mode, Moon icon for dark mode
@@ -120,6 +126,7 @@ The ThemeProvider wraps the entire application, ensuring theme context is availa
 ### Automatic Dark Mode (shadcn components)
 
 All shadcn/ui components automatically support dark mode via CSS variables:
+
 - Cards: `bg-card` (uses `--card` variable with dark variant)
 - Badges: `bg-secondary` (uses `--secondary` variable)
 - Buttons: `bg-primary` (uses `--primary` variable)
@@ -367,4 +374,4 @@ window.matchMedia("(prefers-color-scheme: dark)").matches
 ✅ InboxPolished page fully themed
 ✅ Clean, maintainable code structure
 
-**Next**: Test the theme toggle at http://localhost:5175/inbox-polished and verify all features work as expected.
+**Next**: Test the theme toggle at <http://localhost:5175/inbox-polished> and verify all features work as expected.

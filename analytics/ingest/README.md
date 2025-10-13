@@ -5,7 +5,7 @@ This script fetches emails from Gmail API and indexes them into both Elasticsear
 ## 📋 Prerequisites
 
 1. **Gmail OAuth Credentials**
-   - Create OAuth 2.0 credentials at https://console.cloud.google.com/apis/credentials
+   - Create OAuth 2.0 credentials at <https://console.cloud.google.com/apis/credentials>
    - Download `client_secret.json` and place in this directory
 
 2. **BigQuery Service Account**
@@ -44,6 +44,7 @@ python gmail_backfill_to_es_bq.py
 ```
 
 The script will:
+
 - Open your browser for Gmail OAuth (first time only)
 - Fetch emails from the last 60 days
 - Index them into Elasticsearch
@@ -109,6 +110,7 @@ bq query --project_id=applylens-gmail-1759983601 \
 The script extracts and indexes the following fields:
 
 **Email Metadata:**
+
 - `id` - Gmail message ID
 - `thread_id` - Gmail thread ID
 - `sender` - Full sender address
@@ -118,6 +120,7 @@ The script extracts and indexes the following fields:
 - `received_at` - Timestamp
 
 **Labels & Classification:**
+
 - `labels` - Gmail labels (array)
 - `reason` - Categorization reason
 - `is_newsletter` - Boolean
@@ -125,11 +128,13 @@ The script extracts and indexes the following fields:
 - `has_unsubscribe` - Boolean
 
 **Security:**
+
 - `spf_result` - SPF authentication result
 - `dkim_result` - DKIM authentication result
 - `dmarc_result` - DMARC authentication result
 
 **Content Analysis:**
+
 - `urls` - Extracted URLs (array)
 - `list_unsubscribe` - Unsubscribe header value
 
@@ -142,12 +147,14 @@ Make sure your OAuth client is configured with redirect URI: `http://localhost:P
 ### BigQuery Permission Denied
 
 Ensure your service account has these roles:
+
 - `BigQuery Data Editor`
 - `BigQuery Job User`
 
 ### Elasticsearch Connection Refused
 
 Make sure Elasticsearch is running:
+
 ```bash
 curl http://localhost:9200
 ```
@@ -155,6 +162,7 @@ curl http://localhost:9200
 ### Rate Limiting
 
 The script respects Gmail API rate limits. For large backfills (>10k emails), consider:
+
 - Running during off-peak hours
 - Using smaller `BACKFILL_DAYS` values
 - Batch processing with pagination
@@ -183,6 +191,7 @@ Python Script
 - **Large backfill** (10k+ emails): ~1-3 hours
 
 The script processes emails sequentially to avoid rate limits. For production use, consider:
+
 - Implementing concurrent processing with rate limiting
 - Adding deduplication logic
 - Using bulk insert APIs

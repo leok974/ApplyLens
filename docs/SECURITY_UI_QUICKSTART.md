@@ -85,6 +85,7 @@ Your email API responses should include:
 ```
 
 **Endpoints that should return this:**
+
 - `GET /api/search/` → Array of emails with security data
 - `GET /api/emails/` → Array of emails with security data
 - `GET /api/search/by_id/{id}` → Single email with security data
@@ -282,11 +283,13 @@ console.log(email.risk_score); // Should be a number
 ### Issue: Rescan button doesn't work
 
 **Possible causes:**
+
 1. API endpoint not implemented
 2. CORS issues (use `credentials: "include"`)
 3. Email ID format mismatch (string vs number)
 
 **Debug:**
+
 ```typescript
 // Check network tab in browser DevTools
 // POST /api/security/rescan/{id} should return 200

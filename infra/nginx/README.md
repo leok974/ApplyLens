@@ -33,12 +33,12 @@ All services are accessible via **path-based routing** on `applylens.app`:
 
 ## Public URLs (via Cloudflare Tunnel)
 
-- **API**: https://applylens.app/
-- **API Docs**: https://applylens.app/docs/
-- **Web App**: https://applylens.app/web/
-- **Grafana**: https://applylens.app/grafana/
-- **Kibana**: https://applylens.app/kibana/
-- **Prometheus**: https://applylens.app/prometheus/
+- **API**: <https://applylens.app/>
+- **API Docs**: <https://applylens.app/docs/>
+- **Web App**: <https://applylens.app/web/>
+- **Grafana**: <https://applylens.app/grafana/>
+- **Kibana**: <https://applylens.app/kibana/>
+- **Prometheus**: <https://applylens.app/prometheus/>
 
 ## Local Testing
 
@@ -64,14 +64,17 @@ open http://localhost:8888/kibana/
 ## Configuration Files
 
 ### Main Nginx Config
+
 **Location**: `infra/nginx/conf.d/applylens.conf`
 
 Defines all upstream services and routing rules. Uses `map` directive for WebSocket upgrade support.
 
 ### Security Headers
+
 **Location**: `infra/nginx/snippets/security-headers.conf`
 
 Applies security headers to all responses:
+
 - `X-Frame-Options: SAMEORIGIN` - Prevent clickjacking
 - `X-Content-Type-Options: nosniff` - Prevent MIME sniffing
 - `Referrer-Policy: strict-origin-when-cross-origin` - Control referrer info
@@ -79,9 +82,11 @@ Applies security headers to all responses:
 **Note**: HSTS is commented out until HTTPS is confirmed working via Cloudflare.
 
 ### Gzip Compression
+
 **Location**: `infra/nginx/snippets/gzip.conf`
 
 Compresses responses for:
+
 - text/plain, text/css
 - application/json, application/javascript
 - application/xml, text/javascript
@@ -89,6 +94,7 @@ Compresses responses for:
 ## Service-Specific Configuration
 
 ### Grafana Subpath Configuration
+
 **File**: `infra/grafana/grafana.ini`
 
 ```ini
@@ -98,11 +104,13 @@ serve_from_sub_path = true
 ```
 
 This tells Grafana to:
+
 1. Serve all assets with `/grafana/` prefix
 2. Rewrite internal links to include the subpath
 3. Handle redirects correctly
 
 ### Kibana Subpath Configuration
+
 **File**: `infra/kibana/kibana.yml`
 
 ```yaml
@@ -112,6 +120,7 @@ server.publicBaseUrl: "https://applylens.app/kibana"
 ```
 
 This tells Kibana to:
+
 1. Serve on `/kibana` base path
 2. Rewrite all URLs to include the base path
 3. Use the public URL for external links
@@ -156,24 +165,30 @@ nginx:
 ## Benefits
 
 ### 1. Single Hostname
+
 All services accessible via `applylens.app` without managing multiple subdomains or DNS records.
 
 ### 2. Clean URLs
+
 Path-based routing provides intuitive URLs:
+
 - `applylens.app/docs/` - obvious it's documentation
 - `applylens.app/grafana/` - obvious it's monitoring
 
 ### 3. Centralized Security
+
 - Security headers applied once at Nginx layer
 - Easy to add authentication middleware
 - Single SSL/TLS termination point at Cloudflare
 
 ### 4. Performance
+
 - Gzip compression reduces bandwidth
 - Nginx connection pooling to backends
 - Efficient static file serving
 
 ### 5. Flexibility
+
 Easy to add new services or change routing without touching DNS.
 
 ## Alternative: Subdomain Routing
@@ -192,6 +207,7 @@ ingress:
 ```
 
 Then create DNS routes:
+
 ```bash
 cloudflared tunnel route dns applylens api.applylens.app
 cloudflared tunnel route dns applylens grafana.applylens.app
@@ -207,6 +223,7 @@ cloudflared tunnel route dns applylens kibana.applylens.app
 **Cause**: Backend service is not running or not reachable.
 
 **Fix**:
+
 ```bash
 # Check which service is down
 docker compose ps
@@ -223,6 +240,7 @@ docker compose restart api
 **Cause**: Subpath configuration not loaded.
 
 **Fix**:
+
 ```bash
 # Verify config files are mounted
 docker compose exec grafana cat /etc/grafana/grafana.ini
@@ -237,6 +255,7 @@ docker compose restart grafana kibana
 **Cause**: Nginx config file not loaded or syntax error.
 
 **Fix**:
+
 ```bash
 # Test Nginx config syntax
 docker compose exec nginx nginx -t
@@ -253,6 +272,7 @@ docker compose logs nginx
 **Cause**: Tunnel not connected or misconfigured.
 
 **Fix**:
+
 ```bash
 # Check tunnel status
 docker compose logs cloudflared --tail 50
@@ -284,21 +304,25 @@ docker compose logs -f nginx
 
 1. Edit `infra/nginx/conf.d/applylens.conf`
 2. Add new location block:
+
    ```nginx
    location /newservice/ {
      proxy_pass http://newservice:8080/;
      proxy_set_header Host $host;
    }
    ```
+
 3. Reload: `docker compose exec nginx nginx -s reload`
 
 ### Enable HSTS (After HTTPS Confirmed)
 
 1. Edit `infra/nginx/snippets/security-headers.conf`
 2. Uncomment HSTS header:
+
    ```nginx
    add_header Strict-Transport-Security "max-age=86400; includeSubDomains; preload" always;
    ```
+
 3. Reload: `docker compose exec nginx nginx -s reload`
 
 ## Performance Tuning
@@ -350,6 +374,7 @@ docker compose exec nginx sh -c "openssl passwd -apr1 >> /etc/nginx/.htpasswd"
 ```
 
 Then in nginx config:
+
 ```nginx
 location /prometheus/ {
   auth_basic "Restricted";

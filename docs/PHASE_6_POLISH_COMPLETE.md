@@ -21,6 +21,7 @@ All Phase 6 polish features have been successfully implemented, tested, and depl
 **File:** `services/api/app/routers/actions.py`
 
 **New Function:**
+
 ```python
 def estimate_confidence(
     policy: Policy,
@@ -42,6 +43,7 @@ def estimate_confidence(
 ```
 
 **Key Features:**
+
 - Starts with policy baseline confidence
 - Applies simple heuristics (+0.1 for high promo ratio, 0.95 for high risk)
 - Adds personalized bump using `score_ctx_with_user()`
@@ -49,6 +51,7 @@ def estimate_confidence(
 - Extracts features from email (category, domain, subject tokens)
 
 **Updated:**
+
 - `build_rationale()` now calls `estimate_confidence()` instead of using fixed threshold
 - Accepts `db`, `user` parameters for personalization
 - Passed through from `/actions/propose` endpoint
@@ -58,6 +61,7 @@ def estimate_confidence(
 **File:** `services/api/app/telemetry/metrics.py`
 
 **Counters Available:**
+
 ```python
 policy_fired_total        # Incremented when policy creates proposal
 policy_approved_total     # Incremented when user approves
@@ -66,6 +70,7 @@ user_weight_updates       # Incremented on approve/reject with sign
 ```
 
 **Already Wired In:**
+
 - ✅ `propose` endpoint: `policy_fired_total` incremented
 - ✅ `approve` endpoint: `policy_approved_total` + `user_weight_updates` (plus)
 - ✅ `reject` endpoint: `policy_rejected_total` + `user_weight_updates` (minus)
@@ -77,6 +82,7 @@ user_weight_updates       # Incremented on approve/reject with sign
 **File:** `apps/web/src/components/MailChat.tsx`
 
 **Features:**
+
 ```typescript
 const [mode, setMode] = useState<'' | 'networking' | 'money'>('')
 
@@ -104,6 +110,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 **File:** `apps/web/src/components/MailChat.tsx`
 
 **New Features:**
+
 ```typescript
 const [dupes, setDupes] = useState<any[] | null>(null)
 const [summary, setSummary] = useState<any | null>(null)
@@ -120,6 +127,7 @@ async function loadSummary() {
 ```
 
 **UI Panel:**
+
 ```tsx
 <div className="rounded-2xl border border-neutral-800 p-3 bg-neutral-900">
   <div className="text-sm font-semibold mb-2">Money tools</div>
@@ -139,6 +147,7 @@ async function loadSummary() {
 **File:** `services/api/tests/test_confidence_learning.py`
 
 **Test Cases (5):**
+
 1. ✅ `test_confidence_bump_from_user_weights` - Positive weights increase confidence
 2. ✅ `test_confidence_without_user_weights` - Baseline without personalization
 3. ✅ `test_confidence_negative_weights` - Negative weights decrease confidence
@@ -146,6 +155,7 @@ async function loadSummary() {
 5. ✅ `test_confidence_without_db_params` - Works without db/user/email
 
 **Test Approach:**
+
 - Seeds user weights in test database
 - Creates mock emails with specific features
 - Calls `estimate_confidence()` with test data
@@ -157,6 +167,7 @@ async function loadSummary() {
 **File:** `apps/web/tests/chat.modes.spec.ts`
 
 **Test:**
+
 ```typescript
 test('mode=money is appended to SSE URL and shows export link', async ({ page }) => {
   let requestedUrl = ''
@@ -182,6 +193,7 @@ test('mode=money is appended to SSE URL and shows export link', async ({ page })
 **New Section:** "Polish & Final Touches"
 
 **Content:**
+
 - Confidence bump algorithm explanation with code example
 - Prometheus counters list with descriptions
 - Chat mode flags documentation
@@ -195,12 +207,14 @@ test('mode=money is appended to SSE URL and shows export link', async ({ page })
 ### Unit Tests
 
 **Run confidence learning tests:**
+
 ```bash
 cd services/api
 pytest tests/test_confidence_learning.py -v
 ```
 
 **Expected Output:**
+
 ```
 test_confidence_bump_from_user_weights PASSED
 test_confidence_without_user_weights PASSED
@@ -212,6 +226,7 @@ test_confidence_without_db_params PASSED
 ### E2E Tests
 
 **Run Playwright tests:**
+
 ```bash
 cd apps/web
 pnpm test chat.modes.spec.ts
@@ -222,6 +237,7 @@ pnpm test policy-panel.spec.ts
 ### Smoke Test
 
 **Test confidence bump effect:**
+
 ```powershell
 # 1. Propose actions
 Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
@@ -329,6 +345,7 @@ Results streamed back
 ## Performance Impact
 
 **Minimal:**
+
 - `estimate_confidence()` adds ~5-10ms per proposal (DB query for weights)
 - Metrics increments are async counters (~0.1ms)
 - Money tools panel loads on-demand (user-triggered)
@@ -337,6 +354,7 @@ Results streamed back
 ## Security Considerations
 
 **All Good:**
+
 - User weights isolated per user_id (no cross-user leakage)
 - Confidence bump capped at ±0.15 (prevents manipulation)
 - Metrics don't expose sensitive data (just counts)
@@ -374,18 +392,21 @@ Results streamed back
 ## Success Metrics
 
 **Implementation:**
+
 - ✅ 100% feature completion (all 7 items)
 - ✅ 809 lines of code added
 - ✅ 5 unit tests + 1 E2E test
 - ✅ Comprehensive documentation
 
 **Code Quality:**
+
 - ✅ TypeScript strict mode
 - ✅ Python type hints
 - ✅ Error handling
 - ✅ Test coverage
 
 **User Impact:**
+
 - 🎯 Confidence scores adapt to user preferences
 - 📊 Policy performance visible in metrics
 - 💰 Quick access to financial insights
@@ -396,6 +417,7 @@ Results streamed back
 Phase 6 polish features are **production-ready**! 🚀
 
 All requested features implemented:
+
 1. ✅ Confidence learning with ±0.15 bump
 2. ✅ Prometheus metrics wired
 3. ✅ Chat mode selector (already done)
@@ -403,6 +425,7 @@ All requested features implemented:
 5. ✅ Complete documentation
 
 **Next Steps:**
+
 1. Run full test suite in CI/CD
 2. Deploy to staging environment
 3. QA smoke tests

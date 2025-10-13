@@ -11,6 +11,7 @@
 Successfully implemented **Phase 4 Enhancements** including "Always do this" button, Prometheus metrics, and enhanced UI. All code is deployed, tested, and ready for production use.
 
 **Key Achievements:**
+
 - ✅ Backend endpoint for learned policy creation (`/api/actions/{id}/always`)
 - ✅ Prometheus metrics module with 4 counters
 - ✅ Frontend UI with purple "Always" button
@@ -19,10 +20,11 @@ Successfully implemented **Phase 4 Enhancements** including "Always do this" but
 - ✅ Automated test scripts (2 PowerShell scripts)
 
 **Deployment Status:**
+
 - Backend: ✅ Running in Docker (infra-api-1)
-- Frontend: ✅ Running on Vite (http://localhost:5175)
+- Frontend: ✅ Running on Vite (<http://localhost:5175>)
 - Database: ✅ Ready (policies table + 6 policies)
-- Metrics: ✅ Exposed (http://localhost:8003/metrics)
+- Metrics: ✅ Exposed (<http://localhost:8003/metrics>)
 
 ---
 
@@ -31,11 +33,13 @@ Successfully implemented **Phase 4 Enhancements** including "Always do this" but
 ### 1. Backend Features
 
 #### A. "Always Do This" Endpoint
+
 **File:** `services/api/app/routers/actions.py` (line 450)
 
 **Endpoint:** `POST /api/actions/{action_id}/always`
 
 **What it does:**
+
 1. Takes a proposed action
 2. Extracts stable features (category, sender_domain)
 3. Creates a new policy with `all` condition
@@ -43,6 +47,7 @@ Successfully implemented **Phase 4 Enhancements** including "Always do this" but
 5. Enables policy immediately
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:8003/api/actions/123/always \
   -H "Content-Type: application/json" \
@@ -53,30 +58,36 @@ curl -X POST http://localhost:8003/api/actions/123/always \
 ```
 
 #### B. Prometheus Metrics Module
+
 **File:** `services/api/app/telemetry/metrics.py` (45 lines)
 
 **Metrics exposed:**
+
 - `actions_proposed_total{policy_name}` - Proposals by policy
 - `actions_executed_total{action_type,outcome}` - Executions by type
 - `actions_failed_total{action_type,error_type}` - Failures by type
 - `policy_evaluations_total{policy_name,matched}` - Evaluations
 
 **Integrated in:**
+
 - `propose` endpoint - Track which policies create proposals
 - `approve` endpoint - Track execution success/failure
 
-**View at:** http://localhost:8003/metrics
+**View at:** <http://localhost:8003/metrics>
 
 ### 2. Frontend Features
 
 #### A. Enhanced API Client
+
 **File:** `apps/web/src/lib/actionsClient.ts`
 
 **Added:**
+
 - `alwaysDoThis(id, features)` function
 - Type update: `rationale.features?: Record<string, any>`
 
 **Usage:**
+
 ```typescript
 const result = await alwaysDoThis(actionId, {
   category: "promotions",
@@ -86,15 +97,18 @@ console.log(`Created policy: ${result.policy_id}`)
 ```
 
 #### B. Updated ActionsTray Component
+
 **File:** `apps/web/src/components/ActionsTray.tsx`
 
 **Changes:**
+
 - Added `handleAlways()` async handler
 - Added purple "Always do this" button (with Sparkles icon)
 - Success toast shows new policy ID
 - Automatically approves action after policy creation
 
 **Visual:**
+
 ```
 ┌─────────────────────────────────────┐
 │ Email Subject                      │
@@ -258,16 +272,19 @@ PS> pwsh ./scripts/test-always-feature.ps1
 ### Manual Test (When Emails Exist)
 
 1. **Sync emails:**
+
    ```bash
    curl -X POST http://localhost:8003/api/gmail/sync
    ```
 
 2. **Create test policy:**
+
    ```powershell
    pwsh ./scripts/create-test-policy.ps1
    ```
 
 3. **Propose actions:**
+
    ```bash
    curl -X POST http://localhost:8003/api/actions/propose \
      -H "Content-Type: application/json" \
@@ -275,7 +292,7 @@ PS> pwsh ./scripts/test-always-feature.ps1
    ```
 
 4. **Test in UI:**
-   - Open http://localhost:5175
+   - Open <http://localhost:5175>
    - Click "Actions" button (top-right)
    - Click "Always do this" on an action
    - Verify toast: "✨ Policy created (ID: XX)"
@@ -314,6 +331,7 @@ Action executed + screenshot captured
 ### Data Model
 
 **ProposedAction:**
+
 ```typescript
 {
   id: number
@@ -331,6 +349,7 @@ Action executed + screenshot captured
 ```
 
 **Policy (created by /always):**
+
 ```python
 {
   "name": "Learned: archive_email for example.com",
@@ -382,12 +401,13 @@ Grafana visualizes metrics
 ### Immediate (Optional)
 
 1. **Sync emails** (to test feature with real data)
+
    ```bash
    curl -X POST http://localhost:8003/api/gmail/sync
    ```
 
 2. **Test in UI**
-   - Open http://localhost:5175
+   - Open <http://localhost:5175>
    - Generate proposals
    - Try "Always do this" button
 
@@ -440,11 +460,13 @@ Grafana visualizes metrics
 ### Feature Adoption (To be measured)
 
 **Week 1 goals:**
+
 - [ ] 10+ learned policies created
 - [ ] <5% error rate on policy creation
 - [ ] Zero user confusion (support tickets)
 
 **Week 2 goals:**
+
 - [ ] 50+ learned policies active
 - [ ] 20% of actions handled by learned policies
 - [ ] <1% false positive rate
@@ -452,12 +474,14 @@ Grafana visualizes metrics
 ### Monitoring
 
 **Grafana dashboard panels:**
+
 - Proposal rate by policy (time series)
 - Execution success rate (gauge)
 - Top failure reasons (bar chart)
 - Actions by type (pie chart)
 
 **Alerting rules:**
+
 - Critical: All actions failing (5m)
 - Warning: High failure rate >10% (5m)
 - Info: No proposals in 1 hour
@@ -487,20 +511,22 @@ Grafana visualizes metrics
 
 ### Endpoints
 
-- **API docs:** http://localhost:8003/docs
-- **OpenAPI:** http://localhost:8003/openapi.json
-- **Metrics:** http://localhost:8003/metrics
-- **Frontend:** http://localhost:5175
+- **API docs:** <http://localhost:8003/docs>
+- **OpenAPI:** <http://localhost:8003/openapi.json>
+- **Metrics:** <http://localhost:8003/metrics>
+- **Frontend:** <http://localhost:5175>
 
 ### Troubleshooting
 
 **Common issues:**
+
 1. "No pending actions" → Sync emails first
 2. "Failed to create policy" → Check rationale has features
 3. "Metrics not showing" → Propose/approve actions first
 4. "API not responding" → Check Docker containers
 
 **Debug commands:**
+
 ```powershell
 # Check containers
 docker compose ps
@@ -540,6 +566,7 @@ curl http://localhost:8003/docs
 🎉 **Phase 4 Enhancements are complete!**
 
 **Delivered:**
+
 - ✅ "Always do this" button (backend + frontend)
 - ✅ Prometheus metrics (4 counters)
 - ✅ Type-safe integration
@@ -547,6 +574,7 @@ curl http://localhost:8003/docs
 - ✅ Automated test scripts (2 scripts)
 
 **Status:**
+
 - Backend: Deployed in Docker ✅
 - Frontend: Running on Vite ✅
 - Database: Policies seeded ✅
@@ -555,6 +583,7 @@ curl http://localhost:8003/docs
 - Tests: Ready ✅
 
 **Ready for:**
+
 - ✅ Production use
 - ✅ User testing
 - ✅ Monitoring setup

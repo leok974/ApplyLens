@@ -7,6 +7,7 @@ Complete guide to configuring Google OAuth for ApplyLens to eliminate `redirect_
 ## 🎯 Overview
 
 This guide covers:
+
 - Creating OAuth 2.0 credentials in Google Cloud Console
 - Configuring authorized redirect URIs and origins
 - Setting up environment variables for local and production
@@ -39,13 +40,14 @@ If you haven't already configured the OAuth consent screen:
 3. Click **Create**
 
 **Required Information:**
+
 - **App name**: ApplyLens
 - **User support email**: Your email address
 - **App logo**: (Optional) Upload ApplyLens logo
 - **Application home page**: `https://applylens.app`
 - **Application privacy policy link**: `https://applylens.app/privacy`
 - **Application terms of service link**: `https://applylens.app/terms`
-- **Authorized domains**: 
+- **Authorized domains**:
   - `applylens.app`
   - `localhost` (for local development)
 - **Developer contact information**: Your email address
@@ -54,6 +56,7 @@ If you haven't already configured the OAuth consent screen:
 
 **Scopes:**
 Add the following scopes:
+
 - `https://www.googleapis.com/auth/gmail.readonly` - Read Gmail messages
 - `https://www.googleapis.com/auth/userinfo.email` - See your email address
 - `openid` - Authenticate using OpenID Connect
@@ -86,7 +89,8 @@ https://applylens.app/auth/google/callback
 https://www.applylens.app/auth/google/callback
 ```
 
-**Note**: 
+**Note**:
+
 - Use `https://api.applylens.app/auth/google/callback` if your backend handles the OAuth callback
 - Use `https://applylens.app/auth/google/callback` if your frontend (SPA) handles the callback
 - ApplyLens uses **backend callback** by default
@@ -102,6 +106,7 @@ http://127.0.0.1:8003/auth/google/callback
 ```
 
 **Ports**:
+
 - `8003` - API server (FastAPI)
 - `5175` - Web frontend (Vite/React)
 
@@ -132,12 +137,14 @@ Authorized redirect URIs:
 Add these **Authorized JavaScript origins**:
 
 ### Production
+
 ```
 https://applylens.app
 https://www.applylens.app
 ```
 
 ### Development
+
 ```
 http://localhost:5175
 http://localhost:8003
@@ -162,12 +169,14 @@ http://127.0.0.1:5175
 ### Local Development (.env)
 
 1. Copy the example environment file:
+
    ```bash
    cd infra
    cp .env.example .env
    ```
 
 2. Edit `.env` and add your OAuth credentials:
+
    ```bash
    # Google OAuth Client Credentials
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
@@ -190,11 +199,13 @@ http://127.0.0.1:5175
    ```
 
 3. Copy your `google.json` file to the secrets directory:
+
    ```bash
    cp /path/to/google.json infra/secrets/google.json
    ```
 
 4. Generate a random OAuth state secret:
+
    ```bash
    # Using OpenSSL
    openssl rand -hex 32
@@ -209,12 +220,14 @@ http://127.0.0.1:5175
 ### Production (.env.prod)
 
 1. Copy the production example:
+
    ```bash
    cd infra
    cp .env.prod.example .env.prod
    ```
 
 2. Edit `.env.prod` with production values:
+
    ```bash
    # Google OAuth Client Credentials
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
@@ -257,18 +270,21 @@ print(f'Scopes: {settings.GOOGLE_OAUTH_SCOPES}')
 ### 6.2 Test OAuth Flow
 
 1. Start the application:
+
    ```bash
    cd infra
    docker compose up -d
    ```
 
 2. Open your browser and navigate to:
+
    ```
    http://localhost:8003/auth/google/login
    ```
 
 3. You should be redirected to Google's OAuth consent screen
 4. After granting permissions, you'll be redirected back to:
+
    ```
    http://localhost:8003/auth/google/callback?code=...&state=...
    ```
@@ -297,6 +313,7 @@ Run the automated smoke tests to verify OAuth configuration:
 ### Error: redirect_uri_mismatch
 
 **Symptom:**
+
 ```
 Error 400: redirect_uri_mismatch
 The redirect URI in the request, http://localhost:8003/auth/google/callback, 
@@ -304,6 +321,7 @@ does not match the ones authorized for the OAuth client.
 ```
 
 **Causes:**
+
 1. Redirect URI not added to Google Cloud Console
 2. Typo in redirect URI (trailing slash, http vs https, port mismatch)
 3. Environment variable not set or incorrect
@@ -318,6 +336,7 @@ does not match the ones authorized for the OAuth client.
    - If using `http://localhost:8003/auth/google/callback`, ensure it's listed exactly (no trailing slash)
 
 2. **Check Environment Variables:**
+
    ```bash
    # Print current redirect URI
    docker compose exec api python -c "
@@ -330,11 +349,13 @@ does not match the ones authorized for the OAuth client.
    - Check `infra/nginx/conf.d/applylens.conf`
    - Ensure `/auth/google/` routes are **not** rewritten
    - Restart Nginx after changes:
+
      ```bash
      docker compose restart nginx
      ```
 
 4. **Check Application Logs:**
+
    ```bash
    # View API logs
    docker compose logs -f api
@@ -345,6 +366,7 @@ does not match the ones authorized for the OAuth client.
    ```
 
 5. **Test with curl:**
+
    ```bash
    # Test login endpoint
    curl -I http://localhost:8003/auth/google/login
@@ -356,12 +378,14 @@ does not match the ones authorized for the OAuth client.
 ### Error: invalid_client
 
 **Symptom:**
+
 ```
 Error 401: invalid_client
 The OAuth client was not found.
 ```
 
 **Solution:**
+
 1. Verify `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set correctly
 2. Check that credentials match the ones from Google Cloud Console
 3. Ensure `google.json` file exists at `/secrets/google.json` in the container
@@ -369,12 +393,14 @@ The OAuth client was not found.
 ### Error: access_denied
 
 **Symptom:**
+
 ```
 Error: access_denied
 The user denied your request
 ```
 
 **Solution:**
+
 1. User clicked "Cancel" on the OAuth consent screen
 2. Ensure all required scopes are enabled in Google Cloud Console
 3. If app is in "Testing" mode, verify the user is added as a test user
@@ -382,16 +408,18 @@ The user denied your request
 ### Error: invalid_grant
 
 **Symptom:**
+
 ```
 Error: invalid_grant
 The provided authorization grant is invalid, expired, or revoked
 ```
 
 **Solution:**
+
 1. OAuth code expired (codes are valid for ~10 minutes)
 2. Code already used (can only be exchanged once)
 3. Clear browser cache and try again
-4. Revoke access and re-authorize: https://myaccount.google.com/permissions
+4. Revoke access and re-authorize: <https://myaccount.google.com/permissions>
 
 ---
 
@@ -424,11 +452,13 @@ User redirected to: /inbox?connected=google
 If you want the frontend to handle OAuth:
 
 1. Update `GOOGLE_REDIRECT_URI` to point to frontend:
+
    ```bash
    GOOGLE_REDIRECT_URI=https://applylens.app/auth/google/callback
    ```
 
 2. Add frontend callback route in React:
+
    ```typescript
    // src/pages/AuthCallback.tsx
    useEffect(() => {
@@ -452,6 +482,7 @@ If you want the frontend to handle OAuth:
 ### 1. Secure State Parameter
 
 The `OAUTH_STATE_SECRET` is used to prevent CSRF attacks:
+
 - **MUST** be at least 32 characters
 - **MUST** be random and unpredictable
 - **MUST** be different in production vs development
@@ -474,11 +505,13 @@ The `OAUTH_STATE_SECRET` is used to prevent CSRF attacks:
 ### 4. Scope Minimization
 
 Only request scopes you need:
+
 - `gmail.readonly` - Read-only access to Gmail
 - `userinfo.email` - User's email address
 - `openid` - OpenID Connect authentication
 
 **Do NOT request**:
+
 - `gmail.modify` - Allows modifying emails
 - `gmail.send` - Allows sending emails
 - Unnecessary profile scopes
@@ -533,9 +566,10 @@ If you encounter issues:
 5. Review Google Cloud Console settings
 
 For additional help, see:
+
 - `PHASE_2_IMPLEMENTATION.md` - API documentation
 - `DEPLOYMENT.md` - Production deployment guide
-- GitHub Issues: https://github.com/yourusername/applylens/issues
+- GitHub Issues: <https://github.com/yourusername/applylens/issues>
 
 ---
 

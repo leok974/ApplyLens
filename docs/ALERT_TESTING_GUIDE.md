@@ -13,6 +13,7 @@ Invoke-RestMethod http://localhost:9090/api/v1/targets `
 ```
 
 **Expected Output:**
+
 ```
 scrapeUrl               lastScrape                    health lastError
 ---------               ----------                    ------ ---------
@@ -96,6 +97,7 @@ Write-Host "✅ API restarted - alert should resolve" -ForegroundColor Green
 ```
 
 **Expected:**
+
 - Alert goes to **Pending** after ~15 seconds (first failed scrape)
 - Alert goes to **Firing** after 1 minute
 - Notification sent to webhook
@@ -159,6 +161,7 @@ Remove-Job $job
 ```
 
 **Expected:**
+
 - Error rate metric shows >5% for 5 minutes
 - Alert goes to **Firing** after 5 minutes
 - Notification sent to webhook
@@ -202,6 +205,7 @@ Write-Host "⏳ Alert will fire after 10 minutes of sustained errors" -Foregroun
 ```
 
 **Expected:**
+
 - Backfill request returns error
 - `applylens_backfill_requests_total{result="error"}` increments
 - Alert fires after 10 minutes if errors persist
@@ -218,6 +222,7 @@ python D:\ApplyLens\tools\grafana_webhook.py
 ```
 
 **Output:**
+
 ```
 ======================================================================
 🎧 GRAFANA WEBHOOK LISTENER
@@ -236,12 +241,13 @@ Press Ctrl+C to stop
 ### Test the Webhook from Grafana
 
 1. Keep the webhook listener running
-2. Open Grafana: http://localhost:3000/alerting/notifications
+2. Open Grafana: <http://localhost:3000/alerting/notifications>
 3. Click **Default** contact point
 4. Click **Test** button
 5. Check your terminal - you should see the test alert payload
 
 **Example Output:**
+
 ```
 ======================================================================
 🚨 GRAFANA ALERT RECEIVED - 2025-10-09 14:30:15
@@ -285,6 +291,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
 ## 📊 Useful PromQL Queries
 
 ### HTTP Request Rate
+
 ```promql
 # Overall request rate
 sum(rate(applylens_http_requests_total[5m]))
@@ -298,6 +305,7 @@ sum by (status_code) (rate(applylens_http_requests_total[5m]))
 ```
 
 ### Backfill Metrics
+
 ```promql
 # Backfill request rate by result
 sum by (result) (rate(applylens_backfill_requests_total[5m]))
@@ -310,6 +318,7 @@ rate(applylens_backfill_requests_total{result="success"}[5m])
 ```
 
 ### System Health
+
 ```promql
 # Database status
 applylens_db_up
@@ -438,6 +447,7 @@ Invoke-RestMethod http://localhost:3000/api/v1/provisioning/contact-points -Cred
 ### 1. Change Grafana Admin Password
 
 **Option A: Environment Variable (docker-compose.yml)**
+
 ```yaml
 grafana:
   environment:
@@ -445,6 +455,7 @@ grafana:
 ```
 
 **Option B: Via Grafana UI**
+
 ```
 1. Login: http://localhost:3000 (admin/admin)
 2. Click profile → Change password
@@ -482,6 +493,7 @@ def metrics():
 ```
 
 Then update Prometheus config:
+
 ```yaml
 # infra/prometheus/prometheus.yml
 scrape_configs:
@@ -523,6 +535,7 @@ grafana:
 ### 5. Configure Real Notification Channels
 
 Replace webhook with production channels (see `GRAFANA_ALERTING_SETUP.md`):
+
 - **Slack:** Use Incoming Webhooks
 - **Email:** Configure SMTP settings
 - **PagerDuty:** For critical alerts
@@ -532,16 +545,16 @@ Replace webhook with production channels (see `GRAFANA_ALERTING_SETUP.md`):
 
 ## 📚 Reference URLs
 
-- **Prometheus Targets:** http://localhost:9090/targets
-- **Prometheus Rules:** http://localhost:9090/rules
-- **Prometheus Graph:** http://localhost:9090/graph
-- **Grafana Alerts:** http://localhost:3000/alerting/list
-- **Grafana Contact Points:** http://localhost:3000/alerting/notifications
-- **Grafana Notification Policies:** http://localhost:3000/alerting/routes
-- **API Metrics:** http://localhost:8003/metrics
-- **API Health:** http://localhost:8003/healthz
-- **API Readiness:** http://localhost:8003/readiness
-- **Debug 500:** http://localhost:8003/debug/500 (testing only)
+- **Prometheus Targets:** <http://localhost:9090/targets>
+- **Prometheus Rules:** <http://localhost:9090/rules>
+- **Prometheus Graph:** <http://localhost:9090/graph>
+- **Grafana Alerts:** <http://localhost:3000/alerting/list>
+- **Grafana Contact Points:** <http://localhost:3000/alerting/notifications>
+- **Grafana Notification Policies:** <http://localhost:3000/alerting/routes>
+- **API Metrics:** <http://localhost:8003/metrics>
+- **API Health:** <http://localhost:8003/healthz>
+- **API Readiness:** <http://localhost:8003/readiness>
+- **Debug 500:** <http://localhost:8003/debug/500> (testing only)
 
 ---
 

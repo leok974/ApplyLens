@@ -37,6 +37,7 @@ python gmail_backfill_to_es_bq.py
 ```
 
 **Expected Output**:
+
 ```
 🚀 Starting Gmail backfill (last 60 days)
    ES: http://localhost:9200/emails_v1-000001
@@ -82,6 +83,7 @@ npm run dev
 ```
 
 **UI Features to Test**:
+
 - ✅ Search box (try searching for "interview", "promo", "offer")
 - ✅ Sender domain filter
 - ✅ Label filter
@@ -152,6 +154,7 @@ $env:GMAIL_TOKEN_PATH="analytics/ingest/token.json"
 ### API Environment Variables
 
 Already configured in `infra/.env`:
+
 ```bash
 ES_URL=http://elasticsearch:9200
 ES_EMAIL_INDEX=emails_v1-000001
@@ -165,12 +168,14 @@ CORS_ALLOW_ORIGINS=https://applylens.app,https://www.applylens.app
 ### Backend API Tests
 
 Run automated test script:
+
 ```powershell
 cd D:\ApplyLens
 .\scripts\test-phase1-endpoints.ps1
 ```
 
 **Expected Results**:
+
 ```
 ✅ Passed: 6
 ❌ Failed: 0
@@ -216,7 +221,7 @@ curl "http://localhost:9200/applylens_audit/_search?size=5&sort=timestamp:desc"
 
 ### Web UI Tests
 
-Navigate to: http://localhost:5173/inbox-actions
+Navigate to: <http://localhost:5173/inbox-actions>
 
 1. **Search Functionality**
    - [ ] Search for "interview" - results appear
@@ -271,6 +276,7 @@ Navigate to: http://localhost:5173/inbox-actions
 **Symptom**: `redirect_uri_mismatch` error
 
 **Solution**:
+
 1. Go to Google Cloud Console
 2. APIs & Services → Credentials
 3. Edit OAuth 2.0 Client ID
@@ -282,6 +288,7 @@ Navigate to: http://localhost:5173/inbox-actions
 **Symptom**: `Access Denied: Table applylens:applylens.public_emails`
 
 **Solution**:
+
 1. Verify service account has roles:
    - `BigQuery Data Editor`
    - `BigQuery Job User`
@@ -293,6 +300,7 @@ Navigate to: http://localhost:5173/inbox-actions
 **Symptom**: `requests.exceptions.ConnectionError`
 
 **Solution**:
+
 ```bash
 # Check if ES is running
 curl http://localhost:9200
@@ -307,12 +315,16 @@ docker compose up -d elasticsearch
 **Symptom**: `{"total": 0, "hits": []}`
 
 **Solution**:
+
 1. Run Gmail backfill script first (see Step 2 above)
 2. Verify documents were indexed:
+
    ```bash
    curl http://localhost:9200/emails_v1-000001/_count
    ```
+
 3. Check API is using correct index:
+
    ```bash
    # In infra/.env, verify:
    ES_EMAIL_INDEX=emails_v1-000001
@@ -323,13 +335,17 @@ docker compose up -d elasticsearch
 **Symptom**: Empty inbox view after backfill
 
 **Solution**:
+
 1. Open browser console (F12)
 2. Check for API errors
 3. Verify API is reachable:
+
    ```javascript
    fetch('/search/?q=*&size=1').then(r => r.json()).then(console.log)
    ```
+
 4. Check nginx is proxying `/search/` to API:
+
    ```bash
    curl http://localhost:8888/search/?q=test
    ```
@@ -339,14 +355,19 @@ docker compose up -d elasticsearch
 **Symptom**: No audit logs appear
 
 **Solution**:
+
 1. Check ES cluster health:
+
    ```bash
    curl http://localhost:9200/_cluster/health
    ```
+
 2. Manually create audit index:
+
    ```bash
    curl -X PUT http://localhost:9200/applylens_audit
    ```
+
 3. Re-try action button in UI
 
 ---
@@ -367,6 +388,7 @@ docker compose up -d elasticsearch
 ### Deployment Steps
 
 1. **Build Web App**
+
    ```bash
    cd apps/web
    npm run build
@@ -374,17 +396,20 @@ docker compose up -d elasticsearch
    ```
 
 2. **Restart API** (to pick up any config changes)
+
    ```bash
    cd infra
    docker compose restart api
    ```
 
 3. **Reload Nginx** (if config changed)
+
    ```bash
    docker compose exec nginx nginx -s reload
    ```
 
 4. **Verify Production**
+
    ```bash
    # Test via public URL
    curl https://applylens.app/api/health

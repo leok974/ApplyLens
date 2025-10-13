@@ -9,17 +9,21 @@
 ## ✅ 1. Database Verification
 
 ### Column Exists
+
 ```sql
 SELECT column_name FROM information_schema.columns
 WHERE table_name='emails' AND column_name='category';
 ```
+
 **Result:** ✅ `category` column found
 
 ### Index Exists
+
 ```sql
 SELECT indexname FROM pg_indexes 
 WHERE tablename='emails' AND indexname='ix_emails_category';
 ```
+
 **Result:** ✅ `ix_emails_category` index found
 
 ---
@@ -27,6 +31,7 @@ WHERE tablename='emails' AND indexname='ix_emails_category';
 ## ✅ 2. Migration Chain Integrity
 
 ### Alembic History
+
 ```bash
 $ docker-compose exec api alembic history --verbose | grep -E "0006|0008|0009"
 
@@ -42,6 +47,7 @@ Rev: 0006_reply_metrics
 **Result:** ✅ Chain is correct: 0006 → 0008 → 0009
 
 ### Current Version
+
 ```bash
 $ docker-compose exec api alembic current
 
@@ -75,9 +81,11 @@ class Email(Base):
 ## ✅ 4. Elasticsearch Backfill
 
 ### Script Created
+
 **File:** `services/api/scripts/backfill_es_category.py`
 
 ### Execution Results
+
 ```bash
 $ docker-compose exec api python scripts/backfill_es_category.py
 
@@ -120,6 +128,7 @@ Category breakdown:
 ```
 
 **Behavior:**
+
 - Runs **before** backfill job
 - **Fails fast** (seconds) if schema outdated
 - Shows **clear error message** with fix instructions
@@ -131,6 +140,7 @@ Category breakdown:
 ## ✅ 6. Backfill Job Test
 
 ### Dry Run Test
+
 ```bash
 $ docker-compose exec api env DRY_RUN=1 ES_EMAIL_INDEX=gmail_emails_v2 \
     python scripts/backfill_bill_dates.py
@@ -156,6 +166,7 @@ Unchanged: 1 bills
 ## ✅ 7. Validation Check
 
 ### Run Validation Utility
+
 ```bash
 $ docker-compose exec api python scripts/validate_backfill.py --pretty
 
@@ -189,6 +200,7 @@ Verdict: OK  @ 2025-10-10T15:52:55.225784Z
 ## Files Changed
 
 ### Created
+
 - `services/api/alembic/versions/0009_add_emails_category.py` - Migration
 - `services/api/app/utils/schema_guard.py` - Schema guard utility
 - `services/api/tests/unit/test_schema_guard.py` - Unit tests
@@ -198,6 +210,7 @@ Verdict: OK  @ 2025-10-10T15:52:55.225784Z
 - `docs/SCHEMA_MIGRATION_FIX_SUMMARY.md` - Fix summary
 
 ### Modified
+
 - `services/api/scripts/backfill_bill_dates.py` - Added schema guard
 - `.github/workflows/backfill-bills.yml` - Added pre-job schema check
 
@@ -206,6 +219,7 @@ Verdict: OK  @ 2025-10-10T15:52:55.225784Z
 ## What This Prevents
 
 ### Before (❌ Bad)
+
 ```
 GitHub Actions workflow starts...
 ├─ Install dependencies (3 minutes)
@@ -220,6 +234,7 @@ GitHub Actions workflow starts...
 ```
 
 ### After (✅ Good)
+
 ```
 GitHub Actions workflow starts...
 ├─ Install dependencies (3 minutes)
@@ -236,29 +251,34 @@ GitHub Actions workflow starts...
 ### For Production Deployment
 
 1. **Apply migration:**
+
    ```bash
    cd services/api
    alembic upgrade head
    ```
 
 2. **Verify migration:**
+
    ```bash
    alembic current
    # Should show: 0009_add_emails_category
    ```
 
 3. **Backfill ES (optional):**
+
    ```bash
    docker-compose exec api python scripts/backfill_es_category.py
    ```
 
 4. **Deploy code:**
+
    ```bash
    git pull
    docker-compose up -d --build
    ```
 
 5. **Run validation:**
+
    ```bash
    docker-compose exec api python scripts/validate_backfill.py --pretty
    ```
@@ -277,6 +297,7 @@ GitHub Actions workflow starts...
    - [ ] Code deployed after migration
 
 3. **Add schema guards to new scripts:**
+
    ```python
    from app.utils.schema_guard import require_min_migration
    
@@ -290,6 +311,7 @@ GitHub Actions workflow starts...
 ## Test Results
 
 ### Schema Guard Tests
+
 ```bash
 $ docker-compose exec api python scripts/verify_schema_guard.py
 
@@ -303,6 +325,7 @@ $ docker-compose exec api python scripts/verify_schema_guard.py
 ```
 
 ### Unit Tests (Planned)
+
 ```bash
 $ pytest tests/unit/test_schema_guard.py -v
 

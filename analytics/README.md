@@ -28,11 +28,13 @@ analytics/
 ## Quick Start
 
 ### 1. Run Pipeline
+
 ```bash
 python -m analytics.pipeline --window-days 7
 ```
 
 ### 2. View Outputs
+
 ```bash
 # CSV dashboards
 cat analytics/outputs/dashboards/kpis.csv
@@ -42,6 +44,7 @@ cat analytics/outputs/insight-summary.md
 ```
 
 ### 3. Test API
+
 ```bash
 curl http://localhost:8003/analytics/latest
 curl "http://localhost:8003/analytics/search?q=seo&k=5"
@@ -79,16 +82,19 @@ Place daily metrics in `analytics/data/` as JSON files:
 ## Components
 
 ### Phase 51.1 — CSV Dashboards
+
 - **Purpose:** Export KPI time-series to CSV for dashboards
 - **Output:** `outputs/dashboards/kpis.csv` (wide) and `kpis_long.csv` (long)
 - **KPIs:** SEO coverage %, Playwright pass %, P95 latency, Autofix count
 
 ### Phase 51.2 — Search API
+
 - **Purpose:** Semantic search over analytics insights
 - **Endpoints:** `/analytics/latest`, `/analytics/search`, `/analytics/dashboards/kpis.csv`
 - **Backend:** SQLite vector store with text embeddings
 
 ### Phase 51.3 — Weight Recommendations
+
 - **Purpose:** Recommend safe weight adjustments based on anomalies
 - **Logic:** Analyze SEO failures + Playwright test failures → suggest page priorities
 - **Output:** Recommendations section in markdown reports

@@ -1,4 +1,4 @@
-# 🎉 Phase 4 Integration Complete!
+# 🎉 Phase 4 Integration Complete
 
 ## ✅ What We Just Did
 
@@ -33,7 +33,7 @@ Successfully integrated **Phase 4: Agentic Actions & Approval Loop** into the ru
    - POST `/api/actions/propose` - Endpoint working ✅
 
 5. ✅ **Started Frontend**
-   - npm run dev running on http://localhost:5175 ✅
+   - npm run dev running on <http://localhost:5175> ✅
    - ActionsTray component integrated in AppHeader ✅
    - Actions button with badge visible ✅
 
@@ -41,11 +41,12 @@ Successfully integrated **Phase 4: Agentic Actions & Approval Loop** into the ru
 
 ### 1. Open the Application
 
-**URL:** http://localhost:5175
+**URL:** <http://localhost:5175>
 
 ### 2. Look for the Actions Button
 
 In the header, you should see:
+
 ```
 [Sync 7 days] [Sync 60 days] [✨ Actions] [Theme Toggle]
                                     ↑
@@ -63,6 +64,7 @@ In the header, you should see:
 To see the tray in action, we need to create some proposed actions. You can:
 
 **Option A: Trigger via API**
+
 ```powershell
 # Create test proposals (if you have matching emails)
 $body = @{limit=50} | ConvertTo-Json
@@ -70,6 +72,7 @@ curl -X POST http://localhost:8003/api/actions/propose -H "Content-Type: applica
 ```
 
 **Option B: Insert test data directly**
+
 ```sql
 -- Create a test proposed action
 INSERT INTO proposed_actions (
@@ -84,6 +87,7 @@ INSERT INTO proposed_actions (
 ```
 
 **Option C: Wait for real emails**
+
 - Run email sync: Click "Sync 7 days" button
 - ML labeling will categorize emails
 - Propose endpoint will match against policies
@@ -115,16 +119,19 @@ Once you have actions in the tray:
 ## 📊 Database Verification
 
 ### Check Tables Exist
+
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "\dt policies; \dt proposed_actions; \dt audit_actions;"
 ```
 
 ### View Policies
+
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, name, enabled, priority, action FROM policies ORDER BY priority;"
 ```
 
 Expected output:
+
 ```
  id |               name                | enabled | priority |         action
 ----+-----------------------------------+---------+----------+------------------------
@@ -136,11 +143,13 @@ Expected output:
 ```
 
 ### View Proposed Actions
+
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, email_id, action, status, confidence FROM proposed_actions ORDER BY created_at DESC LIMIT 10;"
 ```
 
 ### View Audit Trail
+
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, email_id, action, outcome, actor, created_at FROM audit_actions ORDER BY created_at DESC LIMIT 10;"
 ```
@@ -148,27 +157,32 @@ docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, email_id
 ## 🔧 API Testing Commands
 
 ### List All Policies
+
 ```powershell
 curl http://localhost:8003/api/actions/policies | ConvertFrom-Json | ConvertTo-Json -Depth 5
 ```
 
 ### List Enabled Policies Only
+
 ```powershell
 curl "http://localhost:8003/api/actions/policies?enabled_only=true" | ConvertFrom-Json | ConvertTo-Json
 ```
 
 ### Get Pending Actions (Tray)
+
 ```powershell
 curl http://localhost:8003/api/actions/tray | ConvertFrom-Json | ConvertTo-Json -Depth 5
 ```
 
 ### Propose Actions
+
 ```powershell
 $body = @{limit=50} | ConvertTo-Json
 curl -X POST http://localhost:8003/api/actions/propose -H "Content-Type: application/json" -d $body | ConvertFrom-Json | ConvertTo-Json
 ```
 
 ### Approve Action (Example)
+
 ```powershell
 # Get first pending action ID
 $actions = curl http://localhost:8003/api/actions/tray | ConvertFrom-Json
@@ -180,6 +194,7 @@ curl -X POST "http://localhost:8003/api/actions/$actionId/approve" -H "Content-T
 ```
 
 ### Reject Action (Example)
+
 ```powershell
 # Get first pending action ID
 $actions = curl http://localhost:8003/api/actions/tray | ConvertFrom-Json
@@ -190,12 +205,14 @@ curl -X POST "http://localhost:8003/api/actions/$actionId/reject"
 ```
 
 ### Test Policy Against Emails
+
 ```powershell
 $body = @{limit=20} | ConvertTo-Json
 curl -X POST "http://localhost:8003/api/actions/policies/1/test" -H "Content-Type: application/json" -d $body | ConvertFrom-Json | ConvertTo-Json
 ```
 
 ### Create Custom Policy
+
 ```powershell
 $policy = @{
     name = "Test Policy"
@@ -214,6 +231,7 @@ curl -X POST http://localhost:8003/api/actions/policies -H "Content-Type: applic
 ## 📈 What's Working
 
 ✅ **Backend Infrastructure:**
+
 - All models defined (ActionType, ProposedAction, AuditAction, Policy)
 - Database tables created and indexed
 - Yardstick policy engine evaluating DSL
@@ -222,6 +240,7 @@ curl -X POST http://localhost:8003/api/actions/policies -H "Content-Type: applic
 - Default policies seeded
 
 ✅ **Frontend UI:**
+
 - ActionsTray component rendered
 - Actions button in header with badge
 - Polling for pending count (every 30s)
@@ -230,6 +249,7 @@ curl -X POST http://localhost:8003/api/actions/policies -H "Content-Type: applic
 - Ready for action cards
 
 ✅ **Integration:**
+
 - API connected to database
 - Frontend connected to API
 - CORS configured
@@ -239,7 +259,9 @@ curl -X POST http://localhost:8003/api/actions/policies -H "Content-Type: applic
 ## ⚠️ Known Limitations
 
 ### 1. No Actions Created Yet
+
 The `propose` endpoint returns 0 actions because:
+
 - Emails in database may not match policy conditions
 - Need emails with:
   - `risk_score >= 80` (for quarantine)
@@ -249,7 +271,9 @@ The `propose` endpoint returns 0 actions because:
 **Solution:** Run email sync + ML labeling to populate fields
 
 ### 2. Action Executors Stubbed
+
 All action handlers print to console instead of executing:
+
 - Gmail operations not integrated
 - Calendar API not integrated
 - Tasks API not integrated
@@ -257,7 +281,9 @@ All action handlers print to console instead of executing:
 **Status:** Design is complete, services need injection
 
 ### 3. No Screenshot Cleanup
+
 Screenshots save to `/data/audit/YYYY-MM/` indefinitely:
+
 - No retention policy
 - No cleanup job
 - Can grow unbounded
@@ -265,7 +291,9 @@ Screenshots save to `/data/audit/YYYY-MM/` indefinitely:
 **Solution:** Add cron job to delete > 90 days
 
 ### 4. Rationale is Heuristic
+
 Current `build_rationale()` uses simple heuristics:
+
 - No ES aggregations
 - No KNN neighbors
 - No ML confidence scores
@@ -277,22 +305,26 @@ Current `build_rationale()` uses simple heuristics:
 ### Immediate (To See It Working)
 
 1. **Run Email Sync**
+
    ```
    Click "Sync 7 days" button in UI
    ```
 
 2. **Run ML Labeling**
+
    ```powershell
    curl -X POST http://localhost:8003/api/labeling/label?limit=100
    ```
 
 3. **Propose Actions**
+
    ```powershell
    $body = @{limit=100} | ConvertTo-Json
    curl -X POST http://localhost:8003/api/actions/propose -d $body
    ```
 
 4. **Refresh Tray**
+
    ```
    Click Actions button in UI
    Should now show pending actions!
@@ -373,6 +405,7 @@ The system is fully functional and ready for real-world testing. Once you run em
 ## 🙏 Summary
 
 This was a comprehensive implementation involving:
+
 - **11 files created** (6 backend, 2 frontend, 3 modified)
 - **~2,200 lines of production code**
 - **10 REST API endpoints**
@@ -388,6 +421,7 @@ The foundation is solid and the system is production-ready for human-in-the-loop
 ---
 
 **Next command to run:**
+
 ```
 Open: http://localhost:5175
 Click: "Actions" button in header

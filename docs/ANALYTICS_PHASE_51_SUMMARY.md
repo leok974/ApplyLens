@@ -7,6 +7,7 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 ## ✅ What Was Delivered
 
 ### Phase 51.1 — CSV Dashboards
+
 - ✅ `analytics/dashboards/exporter.py` - KPI time-series CSV export
 - ✅ `analytics/pipeline.py` - Main pipeline with CSV hook
 - ✅ Wide format CSV (`kpis.csv`) for dashboards
@@ -14,6 +15,7 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 - ✅ Automatic export on pipeline runs
 
 ### Phase 51.2 — Analytics Search API
+
 - ✅ `services/api/app/routers/analytics.py` - 3 new endpoints
   - `GET /analytics/latest` - Latest markdown report
   - `GET /analytics/search?q=...` - Semantic search
@@ -25,6 +27,7 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 - ✅ Auto-registration in `main.py` (graceful fallback)
 
 ### Phase 51.3 — Weight Recommendations
+
 - ✅ `analytics/recommenders/weights.py` - Heuristic weight adjustment logic
 - ✅ `analytics/summarizers/report_builder.py` - Report generator with recommendations
 - ✅ Auto-detection of SEO page failures
@@ -33,6 +36,7 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 - ✅ Evidence-based recommendations
 
 ### Optional Enhancements
+
 - ✅ `.github/workflows/analytics-pr-comment.yml` - PR comment automation
 - ✅ `analytics/config/test_page_map.json.example` - Optional test mapping
 - ✅ `analytics/.gitignore` - Ignore generated files
@@ -41,6 +45,7 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 ## 📁 Files Created (14 total)
 
 ### Core Modules (7)
+
 1. `analytics/dashboards/exporter.py` (68 lines)
 2. `analytics/recommenders/weights.py` (133 lines)
 3. `analytics/summarizers/report_builder.py` (44 lines)
@@ -50,10 +55,12 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 7. `analytics/rag/query_engine.py` (88 lines)
 
 ### API & Integration (2)
+
 8. `services/api/app/routers/analytics.py` (61 lines)
 9. `analytics/pipeline.py` (27 lines)
 
 ### Configuration & Docs (5)
+
 10. `analytics/config/test_page_map.json.example`
 11. `analytics/.gitignore`
 12. `.github/workflows/analytics-pr-comment.yml` (75 lines)
@@ -61,23 +68,27 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 14. `ANALYTICS_PHASE_51_QUICKSTART.md` (150+ lines)
 
 ### Modified Files (1)
+
 - `services/api/app/main.py` - Added analytics router registration
 
 ## 🎯 Key Features
 
 ### CSV Dashboard Export
+
 - Exports 4 KPI metrics daily
 - Wide format for table views
 - Long format for time-series charts
 - Grafana-ready (CSV plugin compatible)
 
 ### Analytics Search
+
 - Semantic search over analytics insights
 - Vector store backed (SQLite)
 - Configurable result count
 - RESTful API endpoints
 
 ### Weight Recommendations
+
 - Analyzes SEO page failures
 - Extracts paths from Playwright test failures
 - Recommends priority adjustments per page
@@ -85,6 +96,7 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 - Conservative deltas with evidence
 
 ### PR Comments
+
 - Auto-posts insights to pull requests
 - Separate sticky comments for insights and recommendations
 - Runs on PR open/sync
@@ -93,11 +105,13 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 ## 🚀 Quick Start
 
 ### 1. Run Pipeline
+
 ```bash
 python -m analytics.pipeline --window-days 7
 ```
 
 ### 2. Check Outputs
+
 ```bash
 # View CSV
 cat analytics/outputs/dashboards/kpis.csv
@@ -107,6 +121,7 @@ cat analytics/outputs/insight-summary.md
 ```
 
 ### 3. Test API
+
 ```bash
 curl http://localhost:8003/analytics/latest
 curl "http://localhost:8003/analytics/search?q=seo&k=5"
@@ -116,12 +131,14 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ## 🔧 Technical Details
 
 ### Architecture
+
 - **Modular design** - Each phase is independent
 - **Graceful degradation** - Missing modules don't break API
 - **Conservative recommendations** - Small, safe deltas
 - **Evidence-based** - All recommendations include rationale
 
 ### Data Flow
+
 ```
 Daily JSON files (analytics/data/*.json)
     ↓
@@ -143,6 +160,7 @@ PR comments (via GitHub Actions)
 ```
 
 ### KPI Metrics
+
 | Metric | Description | Source |
 |--------|-------------|--------|
 | `seo_coverage_pct` | SEO page coverage % | `blob.seo.pages` |
@@ -151,6 +169,7 @@ PR comments (via GitHub Actions)
 | `autofix_delta_count` | Auto-fix changes | `blob.autofix.delta_count` |
 
 ### Recommendation Logic
+
 1. Count SEO page failures
 2. Extract paths from failed Playwright tests
 3. Aggregate "pressure" by page path
@@ -161,6 +180,7 @@ PR comments (via GitHub Actions)
 ## 📊 Example Output
 
 ### CSV (Wide Format)
+
 ```csv
 date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 2025-10-01,95.2,98.5,245,12
@@ -169,6 +189,7 @@ date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 ```
 
 ### CSV (Long Format)
+
 ```csv
 date,metric,value
 2025-10-01,seo_coverage_pct,95.2
@@ -177,6 +198,7 @@ date,metric,value
 ```
 
 ### Recommendations (Markdown)
+
 ```markdown
 ## Recommendations
 
@@ -228,18 +250,21 @@ except Exception:
 ## 🔄 Next Steps for Users
 
 ### Immediate
+
 - [ ] Create sample data files in `analytics/data/`
 - [ ] Run pipeline to test CSV export
 - [ ] Test analytics API endpoints
 - [ ] Review recommendations output
 
 ### This Week
+
 - [ ] Set up Grafana CSV datasource (optional)
 - [ ] Create `test_page_map.json` for your tests
 - [ ] Add frontend analytics page
 - [ ] Enable PR comment workflow
 
 ### This Month
+
 - [ ] Replace dummy embedder with real model (e.g., sentence-transformers)
 - [ ] Implement proper cosine similarity in vector search
 - [ ] Add more KPI metrics specific to your project

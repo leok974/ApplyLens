@@ -1,71 +1,84 @@
 # 🚀 ApplyLens Prometheus - Quick Start Queries
 
-**Test these in Prometheus Graph UI:** http://localhost:9090/graph
+**Test these in Prometheus Graph UI:** <http://localhost:9090/graph>
 
 ---
 
 ## 🏃 Copy & Paste These First
 
 ### System Health Check
+
 ```promql
 applylens_db_up
 ```
+
 Should show: **1** (database is up)
 
 ```promql
 applylens_es_up
 ```
+
 Should show: **1** (Elasticsearch is up)
 
 ```promql
 applylens_gmail_connected{user_email="leoklemet.pa@gmail.com"}
 ```
+
 Should show: **1** (Gmail connected)
 
 ---
 
 ### HTTP Request Rate
+
 ```promql
 sum(rate(applylens_http_requests_total[5m]))
 ```
+
 Shows: **Requests per second** (over last 5 minutes)
 
 ```promql
 sum by (status_code) (rate(applylens_http_requests_total[5m]))
 ```
+
 Shows: **Requests per second by status code** (200, 404, 500, etc.)
 
 ---
 
 ### Response Time (Latency)
+
 ```promql
 histogram_quantile(0.95, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
 ```
+
 Shows: **p95 latency in seconds** (95% of requests are faster than this)
 
 ```promql
 histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
 ```
+
 Shows: **p99 latency** (99% of requests are faster than this)
 
 ---
 
 ### Backfill Activity
+
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ```
+
 Shows: **Backfill requests in last hour** (ok, rate_limited, error, bad_request)
 
 ```promql
 rate(applylens_backfill_inserted_total[5m]) * 60
 ```
+
 Shows: **Emails inserted per minute**
 
 ---
 
 ## 📊 Grafana Dashboard Import
 
-1. Open: http://localhost:3000
+1. Open: <http://localhost:3000>
 2. Login: `admin` / `admin`
 3. Click **+** (left sidebar) → **Import dashboard**
 4. Click **Upload JSON file**
@@ -80,22 +93,28 @@ Shows: **Emails inserted per minute**
 ## 🔍 Advanced Queries
 
 ### Error Rate (Percentage)
+
 ```promql
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m])) * 100
 ```
+
 Shows: **5xx error rate as percentage**
 
 ### Top Endpoints by Traffic
+
 ```promql
 topk(5, sum by (path) (increase(applylens_http_requests_total[1h])))
 ```
+
 Shows: **Top 5 endpoints by request count (last hour)**
 
 ### All Systems Operational
+
 ```promql
 min(applylens_db_up) * min(applylens_es_up)
 ```
+
 Shows: **1 if all up, 0 if any down**
 
 ---
@@ -136,9 +155,10 @@ In Prometheus Graph UI:
 
 ## 🚨 View Active Alerts
 
-http://localhost:9090/alerts
+<http://localhost:9090/alerts>
 
 **You should see:**
+
 - ApplyLensApiDown (inactive - API is up ✅)
 - HighHttpErrorRate (inactive - no errors ✅)
 - BackfillFailing (inactive - no failures ✅)
@@ -159,9 +179,9 @@ http://localhost:9090/alerts
 
 ## 🎯 Success Checklist
 
-- [x] Prometheus is running (http://localhost:9090)
-- [x] Grafana is running (http://localhost:3000)
-- [x] API target shows as "UP" (http://localhost:9090/targets)
+- [x] Prometheus is running (<http://localhost:9090>)
+- [x] Grafana is running (<http://localhost:3000>)
+- [x] API target shows as "UP" (<http://localhost:9090/targets>)
 - [x] Metrics are flowing (queries return data)
 - [ ] Dashboard imported in Grafana
 - [ ] Grafana password changed from default
@@ -172,6 +192,7 @@ http://localhost:9090/alerts
 ## 📚 Full Documentation
 
 For deep dive:
+
 - **MONITORING_COMPLETE.md** - Complete setup summary
 - **MONITORING_SETUP.md** - Detailed deployment guide
 - **PROMETHEUS_METRICS.md** - All metrics explained

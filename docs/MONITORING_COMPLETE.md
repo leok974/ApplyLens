@@ -1,13 +1,15 @@
-# 🎯 Prometheus + Grafana Setup Complete!
+# 🎯 Prometheus + Grafana Setup Complete
 
 ## ✅ What's Been Deployed
 
 ### Infrastructure Added
+
 - **Prometheus v2.55.1** - Metrics collection and alerting
 - **Grafana 11.1.0** - Visualization and dashboards
 - **Alert Rules** - 5 production-ready alerts configured
 
 ### Services Running
+
 ```
 ✅ infra-prometheus  → http://localhost:9090
 ✅ infra-grafana     → http://localhost:3000 (admin/admin)
@@ -15,6 +17,7 @@
 ```
 
 ### Configuration Files Created
+
 ```
 infra/
 ├── docker-compose.yml              (updated - added prometheus + grafana)
@@ -34,6 +37,7 @@ docs/
 ## 🚀 Quick Access
 
 ### Open Monitoring Tools
+
 ```powershell
 # Prometheus
 start http://localhost:9090/graph
@@ -46,7 +50,8 @@ start http://localhost:8003/metrics
 ```
 
 ### Import Grafana Dashboard
-1. Open Grafana: http://localhost:3000
+
+1. Open Grafana: <http://localhost:3000>
 2. Login: `admin` / `admin`
 3. Click **+** → **Import dashboard**
 4. Upload: `D:\ApplyLens\infra\prometheus\grafana-dashboard.json`
@@ -72,21 +77,24 @@ Your imported dashboard shows:
 ## 🔔 Alert Rules Configured
 
 ### Critical Alerts
+
 - **ApplyLensApiDown** - API unreachable >1 min
 - **DependenciesDown** - DB or ES down >2 min
 
 ### Warning Alerts
+
 - **HighHttpErrorRate** - 5xx errors >5% for 5 min
 - **BackfillFailing** - Backfill errors in last 10 min
 - **GmailDisconnected** - Gmail disconnected >15 min
 
-View alerts: http://localhost:9090/alerts
+View alerts: <http://localhost:9090/alerts>
 
 ---
 
 ## 📈 Essential Queries
 
 ### System Health
+
 ```promql
 # All systems up (should be 1)
 min(applylens_db_up) * min(applylens_es_up)
@@ -96,6 +104,7 @@ applylens_gmail_connected{user_email="leoklemet.pa@gmail.com"}
 ```
 
 ### API Performance
+
 ```promql
 # Request rate (per second)
 sum(rate(applylens_http_requests_total[5m]))
@@ -109,6 +118,7 @@ sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m]))
 ```
 
 ### Backfill Activity
+
 ```promql
 # Backfill outcomes (last hour)
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
@@ -122,6 +132,7 @@ rate(applylens_backfill_inserted_total[1m]) * 60
 ## 🧪 Test the Setup
 
 ### 1. Generate Some Traffic
+
 ```powershell
 # Trigger health checks
 Invoke-RestMethod "http://localhost:8003/readiness"
@@ -138,11 +149,13 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
 ```
 
 ### 2. Wait for Scrape (30 seconds)
+
 ```powershell
 Start-Sleep -Seconds 35
 ```
 
 ### 3. Query Prometheus
+
 ```powershell
 # View all ApplyLens metrics
 $query = "{__name__=~`"applylens_.*`"}"
@@ -153,7 +166,8 @@ $response.data.result | ForEach-Object {
 ```
 
 ### 4. Check Grafana Dashboard
-- Open: http://localhost:3000
+
+- Open: <http://localhost:3000>
 - Navigate to imported "ApplyLens API Overview" dashboard
 - See real-time metrics updating
 
@@ -162,6 +176,7 @@ $response.data.result | ForEach-Object {
 ## 📚 Documentation Guide
 
 ### For Operations
+
 - **MONITORING_SETUP.md** - Complete deployment and troubleshooting guide
   - Prometheus/Grafana configuration
   - Alert setup and notification channels
@@ -169,6 +184,7 @@ $response.data.result | ForEach-Object {
   - Troubleshooting common issues
 
 ### For Developers
+
 - **PROMETHEUS_METRICS.md** - Metric definitions and usage
   - All available metrics explained
   - How to add new metrics
@@ -176,6 +192,7 @@ $response.data.result | ForEach-Object {
   - Security considerations
 
 ### For Analysis
+
 - **PROMQL_RECIPES.md** - Query cookbook
   - 50+ ready-to-use PromQL queries
   - SLO/SLI calculations
@@ -187,6 +204,7 @@ $response.data.result | ForEach-Object {
 ## 🔧 Common Operations
 
 ### View Logs
+
 ```powershell
 # Prometheus logs
 docker logs infra-prometheus --tail 50
@@ -199,6 +217,7 @@ docker logs infra-api-1 | Select-String "metrics"
 ```
 
 ### Restart Services
+
 ```powershell
 # Restart Prometheus (after config change)
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus
@@ -211,6 +230,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus grafa
 ```
 
 ### Validate Configuration
+
 ```powershell
 # Check Prometheus config
 docker exec infra-prometheus promtool check config /etc/prometheus/prometheus.yml
@@ -278,17 +298,20 @@ Add to `prometheus/alerts.yml`:
 ## 🚨 What to Monitor
 
 ### Daily Checks
-- [ ] All targets up: http://localhost:9090/targets
-- [ ] No critical alerts: http://localhost:9090/alerts
+
+- [ ] All targets up: <http://localhost:9090/targets>
+- [ ] No critical alerts: <http://localhost:9090/alerts>
 - [ ] Grafana dashboard loads without errors
 
 ### Weekly Reviews
+
 - [ ] Error rate trend (should be <1%)
 - [ ] Latency trend (p95 should be <500ms)
 - [ ] Backfill success rate (should be >95%)
 - [ ] Storage usage (Prometheus data)
 
 ### Monthly Tasks
+
 - [ ] Review and update alert thresholds
 - [ ] Check for high-cardinality metrics
 - [ ] Verify alert notification channels work
@@ -299,19 +322,22 @@ Add to `prometheus/alerts.yml`:
 ## 🎓 Learning Resources
 
 ### Prometheus
-- Official Docs: https://prometheus.io/docs/
-- Query Language: https://prometheus.io/docs/prometheus/latest/querying/basics/
-- Best Practices: https://prometheus.io/docs/practices/naming/
+
+- Official Docs: <https://prometheus.io/docs/>
+- Query Language: <https://prometheus.io/docs/prometheus/latest/querying/basics/>
+- Best Practices: <https://prometheus.io/docs/practices/naming/>
 
 ### Grafana
-- Documentation: https://grafana.com/docs/grafana/latest/
-- Dashboard Examples: https://grafana.com/grafana/dashboards/
-- Provisioning: https://grafana.com/docs/grafana/latest/administration/provisioning/
+
+- Documentation: <https://grafana.com/docs/grafana/latest/>
+- Dashboard Examples: <https://grafana.com/grafana/dashboards/>
+- Provisioning: <https://grafana.com/docs/grafana/latest/administration/provisioning/>
 
 ### PromQL Learning
-- PromLabs: https://promlabs.com/promql-cheat-sheet/
-- Query Examples: https://github.com/infinityworks/prometheus-example-queries
-- Interactive Tutorial: https://prometheus.io/docs/prometheus/latest/querying/examples/
+
+- PromLabs: <https://promlabs.com/promql-cheat-sheet/>
+- Query Examples: <https://github.com/infinityworks/prometheus-example-queries>
+- Interactive Tutorial: <https://prometheus.io/docs/prometheus/latest/querying/examples/>
 
 ---
 
@@ -320,24 +346,28 @@ Add to `prometheus/alerts.yml`:
 Before deploying to production:
 
 ### Security
+
 - [ ] Change Grafana admin password
 - [ ] Restrict /metrics endpoint (IP allowlist or basic auth)
 - [ ] Enable HTTPS for Prometheus and Grafana
 - [ ] Configure secure credential storage
 
 ### Performance
+
 - [ ] Set Prometheus retention period based on storage
 - [ ] Configure recording rules for expensive queries
 - [ ] Add persistent volumes for both services
 - [ ] Monitor Prometheus memory usage
 
 ### Reliability
+
 - [ ] Configure alerting channels (Slack, PagerDuty, email)
 - [ ] Test alert notification delivery
 - [ ] Set up backup for Grafana dashboards
 - [ ] Document runbooks for each alert
 
 ### Observability
+
 - [ ] Add business metrics (user signups, conversion rates)
 - [ ] Create SLO dashboards (99.9% uptime, p95 < 500ms)
 - [ ] Set up long-term storage (Thanos, Cortex, or VictoriaMetrics)
@@ -362,6 +392,7 @@ Your monitoring is working when:
 If you encounter issues:
 
 1. **Check logs** first:
+
    ```powershell
    docker logs infra-prometheus --tail 100
    docker logs infra-grafana --tail 100
@@ -369,6 +400,7 @@ If you encounter issues:
    ```
 
 2. **Verify network connectivity**:
+
    ```powershell
    # From Prometheus to API
    docker exec infra-prometheus wget -O- http://api:8003/metrics
@@ -378,6 +410,7 @@ If you encounter issues:
    ```
 
 3. **Check configuration syntax**:
+
    ```powershell
    # Prometheus config
    docker exec infra-prometheus promtool check config /etc/prometheus/prometheus.yml
@@ -444,18 +477,21 @@ If you encounter issues:
 ### Recommended Actions
 
 **Immediate (Today):**
+
 - [ ] Import Grafana dashboard from `grafana-dashboard.json`
 - [ ] Change Grafana admin password
 - [ ] Test alerts by stopping a service
 - [ ] Bookmark monitoring URLs
 
 **This Week:**
+
 - [ ] Set up Slack/email alert notifications
 - [ ] Create custom dashboard for your workflow
 - [ ] Add business-specific metrics
 - [ ] Configure Prometheus retention period
 
 **This Month:**
+
 - [ ] Review alert thresholds based on real traffic
 - [ ] Add SLO/SLI dashboards
 - [ ] Set up Grafana user accounts for team

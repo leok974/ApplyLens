@@ -1,11 +1,13 @@
 # Theme Toggle v2 - Complete Implementation
 
 ## Overview
+
 Implemented a lightweight, production-ready theme toggle system with localStorage persistence, system preference detection, and automatic OS synchronization - replacing the old ThemeProvider context with pure functions.
 
 ## What Changed from v1
 
 ### v1 (Old - ThemeProvider)
+
 - ❌ Complex React context setup
 - ❌ Provider wrapper required
 - ❌ useTheme hook dependency
@@ -13,6 +15,7 @@ Implemented a lightweight, production-ready theme toggle system with localStorag
 - ❌ More re-renders
 
 ### v2 (New - Pure Functions)
+
 - ✅ Simple pure functions
 - ✅ No provider wrapper
 - ✅ No hook dependency
@@ -22,7 +25,9 @@ Implemented a lightweight, production-ready theme toggle system with localStorag
 ## Files Created
 
 ### 1. `apps/web/src/lib/theme.ts`
+
 Pure functions for theme management:
+
 - `getStoredTheme()` - Read from localStorage
 - `getSystemTheme()` - Detect OS preference
 - `applyTheme(theme)` - Apply + save theme
@@ -30,7 +35,9 @@ Pure functions for theme management:
 - `toggleTheme()` - Switch between themes
 
 ### 2. `apps/web/src/components/ThemeToggle.tsx`
+
 Lightweight React component:
+
 - Shows 🌙/☀️ emoji icons
 - Uses CSS variables from hotfix v2
 - Accessible with ARIA labels
@@ -39,6 +46,7 @@ Lightweight React component:
 ## Usage
 
 ### App Initialization
+
 ```typescript
 // apps/web/src/main.tsx
 import { initTheme } from './lib/theme'
@@ -47,6 +55,7 @@ initTheme() // Call before ReactDOM.createRoot()
 ```
 
 ### Add Toggle to UI
+
 ```tsx
 import ThemeToggle from './ThemeToggle'
 
@@ -59,6 +68,7 @@ import ThemeToggle from './ThemeToggle'
 ```
 
 ### Manual Theme Control
+
 ```typescript
 import { toggleTheme, applyTheme } from '@/lib/theme'
 
@@ -73,21 +83,25 @@ applyTheme('light')
 ## Features
 
 ### localStorage Persistence
+
 - **Key:** `ui:theme`
 - **Values:** `'light'` | `'dark'`
 - **Auto-save:** On every theme change
 
 ### System Preference Detection
+
 - Uses `prefers-color-scheme: dark` media query
 - Falls back to light if no preference
 - Auto-applies on first visit
 
 ### OS Sync
+
 - Watches for OS theme changes
 - Auto-updates if no saved preference
 - Respects user's explicit choice
 
 ### No Flash of Wrong Theme
+
 - `initTheme()` called before React renders
 - Theme applied synchronously
 - Instant dark mode on load
@@ -95,6 +109,7 @@ applyTheme('light')
 ## Testing
 
 ### E2E Tests
+
 ```
 ✓ details-panel.spec.ts (3.7s)
 ✓ inbox.smoke.spec.ts (1.7s)
@@ -107,6 +122,7 @@ applyTheme('light')
 ```
 
 ### Manual Checklist
+
 - ✅ Toggle switches theme
 - ✅ Persists after reload
 - ✅ System preference works
@@ -117,17 +133,20 @@ applyTheme('light')
 ## Technical Specs
 
 ### Bundle Size
+
 - theme.ts: ~500 bytes
 - ThemeToggle.tsx: ~1KB
 - Total: ~1.5KB (minified)
 
 ### Performance
+
 - Theme detection: <1ms
 - localStorage read: <1ms
 - Theme toggle: ~1ms
 - No polling, event-driven only
 
 ### Browser Support
+
 - Chrome/Edge 90+
 - Firefox 88+
 - Safari 14.1+
@@ -136,6 +155,7 @@ applyTheme('light')
 ## Migration from v1
 
 ### Remove Old Components
+
 ```bash
 # Delete these if you had them:
 rm apps/web/src/components/theme/ThemeProvider.tsx
@@ -143,6 +163,7 @@ rm apps/web/src/components/theme/ModeToggle.tsx
 ```
 
 ### Update Imports
+
 ```tsx
 // Old
 import { useTheme } from '@/components/theme/ThemeProvider'
@@ -154,6 +175,7 @@ toggleTheme() // Just call it!
 ```
 
 ### Remove Provider Wrapper
+
 ```tsx
 // Old
 <ThemeProvider>
@@ -168,18 +190,20 @@ toggleTheme() // Just call it!
 
 - ✅ Web container rebuilt
 - ✅ All tests passing (6/6)
-- ✅ Running at http://localhost:5175
+- ✅ Running at <http://localhost:5175>
 - ✅ Git commit: `fc9a05a`
 
 ## Summary
 
 **Old System:**
+
 - Complex context provider
 - 3+ files for theme logic
 - Requires React knowledge
 - More re-renders
 
 **New System:**
+
 - ✅ Pure functions (1 file)
 - ✅ Simple toggle component (1 file)
 - ✅ Zero React dependencies in logic

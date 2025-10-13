@@ -11,6 +11,7 @@
 ## Initial Response (10 minutes)
 
 ### 1. Run Parity Check
+
 ```powershell
 # Windows/PowerShell
 cd D:\ApplyLens\services\api
@@ -27,6 +28,7 @@ Get-Content parity.json | ConvertFrom-Json | Select-Object -ExpandProperty summa
 ```
 
 ### 2. Review Mismatch Details
+
 ```powershell
 # View first 10 mismatches
 Get-Content parity.json | ConvertFrom-Json | Select-Object -ExpandProperty mismatches | Select-Object -First 10
@@ -40,16 +42,19 @@ Import-Csv parity.csv | Format-Table -AutoSize
 ## Understanding Mismatch Types
 
 ### Float Comparison (risk_score)
+
 - **Tolerance:** ±0.001
 - **Example:** DB=42.0, ES=42.0001 → **MATCH**
 - **Example:** DB=42.0, ES=45.0 → **MISMATCH**
 
 ### Date Comparison (expires_at)
+
 - **Granularity:** Day-level only
 - **Example:** DB=2025-01-15T10:30:00, ES=2025-01-15T16:45:00 → **MATCH**
 - **Example:** DB=2025-01-15, ES=2025-01-16 → **MISMATCH**
 
 ### Text Comparison (category)
+
 - **Method:** Exact string match after .strip()
 - **Example:** DB="recruiter", ES="recruiter" → **MATCH**
 - **Example:** DB="recruiter", ES="unknown" → **MISMATCH**
@@ -59,11 +64,14 @@ Import-Csv parity.csv | Format-Table -AutoSize
 ## Common Causes & Fixes
 
 ### 1. Stale Elasticsearch Data
+
 **Symptoms:**
+
 - DB has newer values
 - Mismatches concentrated in recently updated records
 
 **Fix:**
+
 ```powershell
 # Reindex affected emails
 cd D:\ApplyLens\services\api
@@ -76,11 +84,14 @@ python scripts/check_parity.py --fields risk_score --sample 100
 ```
 
 ### 2. Missing ES Documents
+
 **Symptoms:**
+
 - Parity script shows "ES document not found"
 - DB count > ES count
 
 **Fix:**
+
 ```bash
 # Check document counts
 curl http://localhost:9200/emails/_count
@@ -91,11 +102,14 @@ docker-compose exec db psql -U postgres -d applylens -c "SELECT COUNT(*) FROM em
 ```
 
 ### 3. Risk Score Computation Drift
+
 **Symptoms:**
+
 - Same input data → different risk scores in DB vs ES
 - Pattern across many records
 
 **Investigation:**
+
 ```powershell
 # Find specific email with mismatch
 $email_id = "abc123"
@@ -125,11 +139,14 @@ db.close()
 ```
 
 ### 4. Category Classification Drift
+
 **Symptoms:**
+
 - Mismatches concentrated in `category` field
 - DB vs ES show different categories
 
 **Fix:**
+
 ```powershell
 # Check category distribution in DB
 docker-compose exec db psql -U postgres -d applylens -c "
@@ -147,11 +164,13 @@ docker-compose exec db psql -U postgres -d applylens -c "
 ## Reconciliation Strategy
 
 ### For Small Drift (<10 mismatches)
+
 1. Identify affected email IDs from parity report
 2. Manually trigger reindex for those IDs
 3. Re-run parity check to confirm fix
 
 ### For Large Drift (>100 mismatches)
+
 1. Run full backfill (analyze_risk.py --backfill)
 2. Wait 10 minutes for propagation
 3. Run parity check again
@@ -178,16 +197,19 @@ foreach ($id in $ids | Select-Object -First 10) {
 ## CI Integration Notes
 
 ### PR Workflow
+
 - **Threshold:** Allow ≤3 mismatches on PRs
 - **Action:** Warn in PR comment, don't fail build
 - **Purpose:** Allow iterative fixes
 
 ### Main Branch
+
 - **Threshold:** 0 mismatches required
 - **Action:** Fail build if any mismatches
 - **Purpose:** Prevent drift from entering production
 
 ### Viewing CI Results
+
 ```bash
 # Check GitHub Actions artifacts
 # Navigate to: https://github.com/leok974/ApplyLens/actions
@@ -199,6 +221,7 @@ foreach ($id in $ids | Select-Object -First 10) {
 ## Monitoring Queries
 
 ### Grafana (PromQL)
+
 ```promql
 # Current mismatch ratio
 applylens_parity_mismatch_ratio
@@ -211,6 +234,7 @@ rate(applylens_parity_mismatches_total[1h])
 ```
 
 ### Alert Thresholds
+
 ```yaml
 # Alert if ratio > 0.5% for 15 minutes
 expr: max_over_time(applylens_parity_mismatch_ratio[30m]) > 0.005
@@ -243,6 +267,7 @@ for: 5m
 ## Useful Queries
 
 ### Database
+
 ```sql
 -- Find records with NULL risk_score
 SELECT COUNT(*) FROM emails WHERE risk_score IS NULL;
@@ -256,6 +281,7 @@ LIMIT 20;
 ```
 
 ### Elasticsearch
+
 ```bash
 # Count documents
 curl http://localhost:9200/emails/_count
@@ -270,6 +296,7 @@ curl http://localhost:9200/emails/_search?pretty&size=5
 ---
 
 ## Related Links
+
 - [Parity Check Script](../../scripts/check_parity.py)
 - [Parity Integration Tests](../../tests/integration/test_parity_job.py)
 - [Phase 12.2 Documentation](../PHASE_12.2_PLAN.md)

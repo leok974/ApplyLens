@@ -39,24 +39,28 @@ ApplyLens now supports **multi-user Gmail integration** with enhanced email extr
 ## What's New
 
 ### Multi-User OAuth
+
 - Per-user Gmail tokens stored in database
 - OAuth flow: `/oauth/google/init` → `/oauth/google/callback`
 - Support for `X-User-Email` header or `user_email` in request body
 - Graceful fallback to single-user env vars if no user token found
 
 ### Enhanced Extraction
+
 - **Subject line hints**: Detects "Greenhouse", "Lever", "Workday" in subject
 - **Authentication headers**: Analyzes `Return-Path`, `DKIM-Signature`, `Authentication-Results`
 - **PDF attachment hints**: Detects interview invites by filename patterns
 - **Improved confidence scoring**: 0.4 (weak) to 0.95 (strong signals)
 
 ### PDF Text Extraction
+
 - Optional feature enabled via `GMAIL_PDF_PARSE=True`
 - Size guard: `GMAIL_PDF_MAX_BYTES` (default 2MB)
 - Uses `pdfminer.six` to extract text from PDFs
 - Prepends PDF text to email body for extraction
 
 ### Provider Pattern
+
 - **Single-user provider**: Uses env vars (quick start)
 - **DB-backed provider**: Per-user tokens from `gmail_tokens` table
 - **Mock provider**: For testing without Google API
@@ -89,6 +93,7 @@ pip install pdfminer.six  # Already in pyproject.toml
 Choose one of three modes:
 
 **Option A: Multi-User (Recommended)**
+
 ```bash
 # In services/api/.env
 GMAIL_CLIENT_ID=your-client-id.apps.googleusercontent.com
@@ -101,6 +106,7 @@ GMAIL_PDF_MAX_BYTES=2097152  # 2MB
 ```
 
 **Option B: Single-User (Legacy)**
+
 ```bash
 # In services/api/.env
 GMAIL_CLIENT_ID=your-client-id
@@ -110,6 +116,7 @@ GMAIL_USER=you@example.com
 ```
 
 **Option C: Mock (Testing)**
+
 ```bash
 USE_MOCK_GMAIL=True
 ```
@@ -184,6 +191,7 @@ EXECUTE FUNCTION update_gmail_tokens_updated_at();
 **File**: `alembic/versions/0005_add_gmail_tokens.py`
 
 **Run migrations**:
+
 ```bash
 cd services/api
 python -m alembic upgrade head
@@ -234,9 +242,11 @@ else:
 5. Click **Create Credentials** → **OAuth client ID**
 6. Choose **Web application**
 7. Add authorized redirect URI:
+
    ```
    http://localhost:8003/oauth/google/callback
    ```
+
    (Or your production callback URL)
 8. Save and copy **Client ID** and **Client Secret**
 
@@ -269,6 +279,7 @@ async function connectGmail(userEmail: string) {
 ```
 
 **Flow**:
+
 1. User clicks "Connect Gmail"
 2. App calls `/oauth/google/init?user_email=user@example.com`
 3. App redirects user to Google consent screen
@@ -469,6 +480,7 @@ GMAIL_PDF_MAX_BYTES=2097152  # 2MB max
 Extract company, role, source from email (no DB changes).
 
 **Request**:
+
 ```json
 {
   "gmail_thread_id": "18f2a3b4c5d6e7f8",  // Optional
@@ -482,6 +494,7 @@ Extract company, role, source from email (no DB changes).
 ```
 
 **Response**:
+
 ```json
 {
   "company": "acme",
@@ -504,6 +517,7 @@ Extract company, role, source from email (no DB changes).
 Extract and create/update application.
 
 **Request**:
+
 ```json
 {
   "gmail_thread_id": "18f2a3b4c5d6e7f8",
@@ -517,6 +531,7 @@ Extract and create/update application.
 ```
 
 **Response**:
+
 ```json
 {
   "saved": {
@@ -544,11 +559,13 @@ Extract and create/update application.
 Start OAuth flow for user.
 
 **Request**:
+
 ```
 GET /oauth/google/init?user_email=user@example.com
 ```
 
 **Response**:
+
 ```json
 {
   "authUrl": "https://accounts.google.com/o/oauth2/auth?..."
@@ -560,11 +577,13 @@ GET /oauth/google/init?user_email=user@example.com
 Handle OAuth callback (user lands here after Google consent).
 
 **Request**:
+
 ```
 GET /oauth/google/callback?code=xxx&state={"user_email":"..."}
 ```
 
 **Response**:
+
 ```html
 <html>
   <body>
@@ -579,11 +598,13 @@ GET /oauth/google/callback?code=xxx&state={"user_email":"..."}
 Check connection status for user.
 
 **Request**:
+
 ```
 GET /oauth/google/status?user_email=user@example.com
 ```
 
 **Response**:
+
 ```json
 {
   "connected": true,
@@ -598,11 +619,13 @@ GET /oauth/google/status?user_email=user@example.com
 Disconnect user's Gmail (delete tokens).
 
 **Request**:
+
 ```
 DELETE /oauth/google/disconnect?user_email=user@example.com
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -633,6 +656,7 @@ Confidence scores range from 0.4 (weak) to 0.95 (strong).
 ### Examples
 
 **Weak Signal** (0.4):
+
 ```
 From: unknown@example.com
 Subject: Hello
@@ -641,6 +665,7 @@ Text: General message
 ```
 
 **Medium Signal** (0.55):
+
 ```
 From: hr@company.com
 Subject: Application update
@@ -649,6 +674,7 @@ Text: Thanks for applying to the position
 ```
 
 **Strong Signal** (0.95):
+
 ```
 From: notifications@greenhouse.io
 Subject: Interview for Senior Engineer
@@ -747,6 +773,7 @@ def test_mock_provider():
 **Problem**: Missing OAuth credentials.
 
 **Solution**:
+
 ```bash
 # Check env vars
 env | grep GMAIL
@@ -762,6 +789,7 @@ OAUTH_REDIRECT_URI=...
 **Problem**: State parameter corrupted in OAuth callback.
 
 **Solution**:
+
 - Check redirect URI matches exactly
 - Ensure state JSON is valid
 - Check for URL encoding issues
@@ -771,6 +799,7 @@ OAUTH_REDIRECT_URI=...
 **Problem**: User's refresh token expired or revoked.
 
 **Solution**:
+
 - User needs to reconnect Gmail (re-consent)
 - Delete old token: `DELETE /oauth/google/disconnect`
 - Restart OAuth flow: `GET /oauth/google/init`
@@ -780,6 +809,7 @@ OAUTH_REDIRECT_URI=...
 **Problem**: Thread not found or permission denied.
 
 **Solution**:
+
 - Verify thread ID is correct
 - Check user has access to email
 - Ensure Gmail API is enabled in Google Cloud Console
@@ -790,6 +820,7 @@ OAUTH_REDIRECT_URI=...
 **Problem**: PDF parsing enabled but library missing.
 
 **Solution**:
+
 ```bash
 pip install pdfminer.six
 ```
@@ -799,6 +830,7 @@ pip install pdfminer.six
 **Problem**: Extractions have low confidence (<0.6).
 
 **Solution**:
+
 - Check email headers for ATS signals
 - Verify subject line has clear patterns
 - Look for job-related keywords
@@ -867,6 +899,7 @@ extraction_confidence = Histogram(
 ✅ **Production ready** - Security, performance, monitoring considered
 
 **Next Steps**:
+
 1. Run migrations
 2. Configure OAuth (multi-user) or env vars (single-user)
 3. Test with `/applications/extract` endpoint
@@ -874,6 +907,7 @@ extraction_confidence = Histogram(
 5. Monitor confidence scores and adjust heuristics
 
 **Support**:
+
 - Check troubleshooting section
 - Review test files for examples
 - See GMAIL_INTEGRATION.md for single-user setup

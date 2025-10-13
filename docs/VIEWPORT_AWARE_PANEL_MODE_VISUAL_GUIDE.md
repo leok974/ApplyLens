@@ -394,6 +394,7 @@ Example states:
 | ≥1024px  | true      | "split"           | "split"       | Enabled | Split |
 
 **Key Insight**: effectiveMode only equals "split" when BOTH conditions are true:
+
 1. Viewport ≥1024px (isDesktop = true)
 2. User has saved "split" preference (panelMode = "split")
 
@@ -403,4 +404,3 @@ Example states:
 **Last Updated**: October 11, 2025  
 **Breakpoint**: 1024px (lg)  
 **Status**: ✅ Production Ready
-

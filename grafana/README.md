@@ -7,6 +7,7 @@ Complete Grafana setup guide for monitoring backfill health via Prometheus metri
 ### 1. Dashboard (`backfill-health-dashboard.json`)
 
 **Panels:**
+
 - **Missing dates[] (bills)** — Stat panel showing count of bills without dates[] field
   - ✅ Green when 0
   - 🔴 Red when > 0
@@ -23,6 +24,7 @@ Complete Grafana setup guide for monitoring backfill health via Prometheus metri
 - **Last refresh (unix seconds)** — Stat panel showing last metrics refresh timestamp
 
 **Features:**
+
 - **Instance variable** — Multi-select dropdown to filter by API instance
 - **Tags**: applylens, backfill, mailbox
 - **Auto-refresh**: Every 30 seconds
@@ -35,15 +37,18 @@ Complete Grafana setup guide for monitoring backfill health via Prometheus metri
 **Trigger:** When `bills_missing_dates > 0` for 10 minutes
 
 **Evaluation:**
+
 - Query: `bills_missing_dates{instance=~"$instance"}`
 - Reduce: Last value
 - Threshold: Greater than 1
 - Duration: 10 minutes
 
 **Labels:**
+
 - service: applylens-api
 
 **Annotations:**
+
 - Summary: "Bills missing dates[] > 0 for 10m"
 - Runbook URL: Configurable
 
@@ -79,6 +84,7 @@ scrape_configs:
 ```
 
 **Reload Prometheus:**
+
 ```bash
 # Docker
 docker-compose restart prometheus
@@ -145,6 +151,7 @@ curl -X POST "${GRAFANA_HOST}/api/dashboards/db" \
 ```
 
 **PowerShell:**
+
 ```powershell
 $token = "your-api-token-here"
 $host = "http://localhost:3000"
@@ -166,6 +173,7 @@ curl -X POST "${GRAFANA_HOST}/api/ruler/grafana/api/v1/rules" \
 ```
 
 **PowerShell:**
+
 ```powershell
 Invoke-RestMethod -Method POST `
   -Uri "${host}/api/ruler/grafana/api/v1/rules" `
@@ -208,6 +216,7 @@ providers:
 ```
 
 **3. Copy dashboard JSON:**
+
 ```bash
 cp grafana/backfill-health-dashboard.json grafana/provisioning/dashboards/
 ```
@@ -227,6 +236,7 @@ services:
 ```
 
 **5. Restart Grafana:**
+
 ```bash
 docker-compose restart grafana
 ```
@@ -256,6 +266,7 @@ sed -i 's/"datasourceUid": "prometheus"/"datasourceUid": "YOUR_UID"/g' grafana/a
 Edit `grafana/alert-backfill-missing.json`:
 
 **Change threshold value** (currently > 0):
+
 ```json
 "params": [
   1,      // Threshold value (change this)
@@ -264,11 +275,13 @@ Edit `grafana/alert-backfill-missing.json`:
 ```
 
 **Change alert duration** (currently 10m):
+
 ```json
 "for": "10m"  // Change to "5m", "30m", etc.
 ```
 
 **Change evaluation interval** (currently 1m):
+
 ```json
 "interval": "1m"  // Change to "30s", "5m", etc.
 ```
@@ -295,6 +308,7 @@ Edit `grafana/alert-backfill-missing.json`:
 3. View **State**: Normal, Pending, Alerting, NoData, Error
 
 **Alert States:**
+
 - ✅ **Normal**: All bills have dates
 - ⏳ **Pending**: Missing dates detected, waiting for 10m threshold
 - 🔴 **Alerting**: Bills missing dates for > 10 minutes
@@ -361,6 +375,7 @@ Now alerts with `service=applylens-api` label route to your contact point.
 ### Dashboard shows "No data"
 
 **Check Prometheus scrape:**
+
 ```bash
 # Verify target is UP
 curl http://prometheus:9090/api/v1/targets | jq '.data.activeTargets[] | select(.job=="applylens-api")'
@@ -369,6 +384,7 @@ curl http://prometheus:9090/api/v1/targets | jq '.data.activeTargets[] | select(
 ```
 
 **Check metrics exist:**
+
 ```bash
 # Query Prometheus directly
 curl 'http://prometheus:9090/api/v1/query?query=bills_missing_dates' | jq .
@@ -377,6 +393,7 @@ curl 'http://prometheus:9090/api/v1/query?query=bills_missing_dates' | jq .
 ```
 
 **Check data source:**
+
 - Grafana → Connections → Data sources → Prometheus
 - Click **Save & test**
 - Should show green checkmark
@@ -384,6 +401,7 @@ curl 'http://prometheus:9090/api/v1/query?query=bills_missing_dates' | jq .
 ### Alert doesn't fire
 
 **Check alert rule:**
+
 ```bash
 # Get alert rule status
 curl http://localhost:3000/api/ruler/grafana/api/v1/rules \
@@ -391,11 +409,13 @@ curl http://localhost:3000/api/ruler/grafana/api/v1/rules \
 ```
 
 **Check evaluation:**
+
 - Grafana → Alerting → Alert rules → "Backfill: Missing bill dates > 0"
 - Click **View details**
 - See evaluation history and query results
 
 **Trigger manually:**
+
 ```bash
 # Set high missing count (for testing)
 # This would require modifying your ES data or mocking
@@ -404,6 +424,7 @@ curl http://localhost:3000/api/ruler/grafana/api/v1/rules \
 ### Panels show wrong values
 
 **Verify metric format:**
+
 ```bash
 # Check Prometheus metric
 curl http://localhost:8003/metrics | grep bills_
@@ -415,6 +436,7 @@ curl http://localhost:8003/metrics | grep bills_
 ```
 
 **Check query in panel:**
+
 - Dashboard → Panel → Edit
 - See query: `bills_missing_dates{instance=~"$instance"}`
 - Run query in Prometheus: `http://prometheus:9090/graph`
@@ -422,6 +444,7 @@ curl http://localhost:8003/metrics | grep bills_
 ### Instance variable is empty
 
 **Check label exists:**
+
 ```bash
 # Query label values
 curl 'http://prometheus:9090/api/v1/label/instance/values' | jq .
@@ -430,6 +453,7 @@ curl 'http://prometheus:9090/api/v1/label/instance/values' | jq .
 ```
 
 **Update query:**
+
 - Dashboard → Settings → Variables → instance
 - Query: `label_values(bills_missing_dates, instance)`
 - Click **Update**
@@ -518,12 +542,14 @@ Add navigation link:
 ### Update Dashboard
 
 **Method 1: UI**
+
 1. Make changes in Grafana
 2. Dashboard → Share → Export
 3. Save to `grafana/backfill-health-dashboard.json`
 4. Commit to Git
 
 **Method 2: JSON**
+
 1. Edit `grafana/backfill-health-dashboard.json`
 2. Re-import via UI or API
 3. Grafana will update existing dashboard (same UID)
@@ -542,6 +568,7 @@ curl -H "Authorization: Bearer ${GRAFANA_TOKEN}" \
 ### Version Control
 
 Add to `.gitignore`:
+
 ```
 # Grafana runtime
 grafana/data/
@@ -554,14 +581,15 @@ grafana/*.db
 
 ## Resources
 
-- **Grafana Docs**: https://grafana.com/docs/grafana/latest/
-- **Prometheus Docs**: https://prometheus.io/docs/
+- **Grafana Docs**: <https://grafana.com/docs/grafana/latest/>
+- **Prometheus Docs**: <https://prometheus.io/docs/>
 - **ApplyLens Monitoring**: `kibana/README_monitoring.md`
 - **API Metrics**: `services/api/app/routers/metrics.py`
 
 ## Support
 
 For issues or questions:
+
 - Check logs: `docker-compose logs grafana`
 - Verify Prometheus targets: `http://prometheus:9090/targets`
 - Test API metrics: `curl http://localhost:8003/metrics`

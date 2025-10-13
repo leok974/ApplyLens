@@ -50,6 +50,7 @@ There are some tools that will be helpful to you in developing locally. While th
 ### Tools
 
 These are the tools used in `dbt-utils` development and testing:
+
 - [`make`](https://users.cs.duke.edu/~ola/courses/programming/Makefiles/Makefiles.html) to run multiple setup or test steps in combination. Don't worry too much, nobody _really_ understands how `make` works, and our Makefile aims to be super simple.
 - [CircleCI](https://circleci.com/) for automating tests and checks, once a PR is pushed to the `dbt-utils` repository
 
@@ -58,6 +59,7 @@ A deep understanding of these tools in not required to effectively contribute to
 ## Implementation guidelines
 
 Ensure that changes will work on "non-core" adapters by:
+
 - dispatching any new macro(s) so non-core adapters can also use them (e.g. [the `star()` source](https://github.com/dbt-labs/dbt-utils/blob/main/macros/sql/star.sql))
 - using the `limit_zero()` macro in place of the literal string: `limit 0`
 - using [`type_*` macros](https://docs.getdbt.com/reference/dbt-jinja-functions/cross-database-macros#data-type-functions) instead of explicit datatypes (e.g. [`type_timestamp()`](https://docs.getdbt.com/reference/dbt-jinja-functions/cross-database-macros#type_timestamp) instead of `TIMESTAMP`
@@ -65,11 +67,13 @@ Ensure that changes will work on "non-core" adapters by:
 ## Testing
 
 Once you're able to manually test that your code change is working as expected, it's important to run existing automated tests, as well as adding some new ones. These tests will ensure that:
+
 - Your code changes do not unexpectedly break other established functionality
 - Your code changes can handle all known edge cases
 - The functionality you're adding will _keep_ working in the future
 
 See here for details for running existing integration tests and adding new ones:
+
 - [integration_tests/README.md](integration_tests/README.md)
 
 ## Adding CHANGELOG Entry

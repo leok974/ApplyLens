@@ -11,6 +11,7 @@
 The frontend was calling `/api/gmail/status` but the backend had registered the Gmail router without the `/api` prefix, making the route available at `/gmail/status` instead.
 
 **Error in browser console**:
+
 ```
 GET http://localhost:5175/api/gmail/status 404 (Not Found)
 Failed to fetch Gmail status
@@ -28,11 +29,13 @@ app.include_router(routes_gmail.router)
 ```
 
 This made the routes available at:
+
 - `/gmail/status`
 - `/gmail/inbox`
 - `/gmail/backfill`
 
 But the frontend expected them at:
+
 - `/api/gmail/status`
 - `/api/gmail/inbox`
 - `/api/gmail/backfill`
@@ -61,9 +64,11 @@ All Gmail endpoints are now accessible under `/api/gmail/`:
 **Description**: Check if user has connected their Gmail account
 
 **Query Parameters**:
+
 - `user_email` (optional) - User email (defaults to env `DEFAULT_USER_EMAIL`)
 
 **Response**:
+
 ```json
 {
   "connected": true,
@@ -75,6 +80,7 @@ All Gmail endpoints are now accessible under `/api/gmail/`:
 ```
 
 **Test**:
+
 ```bash
 curl "http://localhost:8003/api/gmail/status"
 ```
@@ -86,12 +92,14 @@ curl "http://localhost:8003/api/gmail/status"
 **Description**: Get paginated list of Gmail emails from database
 
 **Query Parameters**:
+
 - `page` (default: 1) - Page number (≥1)
 - `limit` (default: 50) - Results per page (1-200)
 - `label_filter` (optional) - Filter by label_heuristics
 - `user_email` (optional) - User email
 
 **Response**:
+
 ```json
 {
   "emails": [
@@ -119,6 +127,7 @@ curl "http://localhost:8003/api/gmail/status"
 ```
 
 **Test**:
+
 ```bash
 curl "http://localhost:8003/api/gmail/inbox?page=1&limit=10"
 ```
@@ -130,12 +139,14 @@ curl "http://localhost:8003/api/gmail/inbox?page=1&limit=10"
 **Description**: Backfill Gmail messages from the last N days
 
 **Query Parameters**:
+
 - `days` (default: 60) - Number of days to backfill (1-365)
 - `user_email` (optional) - User email
 
 **Rate Limit**: 60 seconds between requests
 
 **Response**:
+
 ```json
 {
   "inserted": 150,
@@ -145,6 +156,7 @@ curl "http://localhost:8003/api/gmail/inbox?page=1&limit=10"
 ```
 
 **Test**:
+
 ```bash
 curl -X POST "http://localhost:8003/api/gmail/backfill?days=30"
 ```
@@ -156,12 +168,14 @@ curl -X POST "http://localhost:8003/api/gmail/backfill?days=30"
 All endpoints tested and working:
 
 ✅ **Direct API access** (port 8003):
+
 ```bash
 curl "http://localhost:8003/api/gmail/status"
 curl "http://localhost:8003/api/gmail/inbox?page=1&limit=2"
 ```
 
 ✅ **Through Vite proxy** (port 5175):
+
 ```bash
 curl "http://localhost:5175/api/gmail/status"
 curl "http://localhost:5175/api/gmail/inbox?page=1&limit=2"
@@ -216,6 +230,7 @@ app.include_router(routes_gmail.router, prefix="/api")  # /api/gmail (fixed)
 ```
 
 **Routes without `/api` prefix** (intentional):
+
 - `auth_google.router` - OAuth endpoints at `/google/auth`, `/google/callback`
 - `oauth_google.router` - OAuth endpoints
 - `emails.router` - Legacy endpoints at `/emails`
@@ -228,6 +243,7 @@ app.include_router(routes_gmail.router, prefix="/api")  # /api/gmail (fixed)
 ## Deployment
 
 **1. API restart**:
+
 ```bash
 docker compose restart api
 ```
@@ -235,7 +251,8 @@ docker compose restart api
 **2. No frontend changes needed** - Already using correct paths
 
 **3. Verify in browser**:
-- Open http://localhost:5175/inbox
+
+- Open <http://localhost:5175/inbox>
 - Check console - no 404 errors for `/api/gmail/status`
 
 ---
@@ -252,4 +269,3 @@ docker compose restart api
 **Status**: ✅ Fixed and tested  
 **Impact**: Gmail status checks now work in Inbox page  
 **Breaking Changes**: None - frontend already expected `/api` prefix
-

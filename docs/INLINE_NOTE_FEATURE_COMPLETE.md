@@ -14,12 +14,14 @@ The InlineNote component replaces the modal-based note editing system with a mod
 ## What Changed
 
 ### Before: Modal Dialog Pattern
+
 - Click "Note" button to open dialog
 - Edit in isolated modal window
 - Click "Save Note" to commit
 - Loses visual context of application row
 
 ### After: Inline Editing Pattern
+
 - Click note preview to expand editor
 - Edit directly in table row
 - Auto-saves on blur
@@ -35,6 +37,7 @@ The InlineNote component replaces the modal-based note editing system with a mod
 **Purpose:** Reusable inline note editor with auto-save
 
 **Key Features:**
+
 - **Preview Mode:** Shows truncated note text (default 80 chars) with "Last updated" timestamp
 - **Editor Mode:** Full textarea that auto-focuses when opened
 - **Snippet Chips:** One-click insertion of common note phrases (customizable)
@@ -100,6 +103,7 @@ VITE_TRACKER_SNIPPETS="Custom 1|Custom 2|Custom 3"
 See `TRACKER_CONFIG_SYSTEM.md` for complete configuration documentation.
 
 **Default Snippets:**
+
 - "Sent thank-you"
 - "Follow-up scheduled"
 - "Left voicemail"
@@ -109,6 +113,7 @@ See `TRACKER_CONFIG_SYSTEM.md` for complete configuration documentation.
 - "Declined offer"
 
 **Behavior:**
+
 - Clicking a chip inserts the text into the note
 - If note is empty, snippet is set as the value
 - If note has content, snippet is appended on a new line
@@ -215,6 +220,7 @@ function insertSnippet(snippet: string) {
 **Changes Made:**
 
 1. **Import Added:**
+
    ```typescript
    import InlineNote from '../components/InlineNote'
    ```
@@ -267,6 +273,7 @@ function insertSnippet(snippet: string) {
 ```
 
 **Toast Integration:**
+
 - Success: `"Note saved — {Company Name}"` (green)
 - Error: `"Save failed"` (red)
 - Auto-dismiss after 3 seconds
@@ -279,6 +286,7 @@ function insertSnippet(snippet: string) {
 **Purpose:** Validate inline note editing behavior with hermetic tests
 
 **Test 1: Quick-edit saves on blur and shows toast**
+
 - Mock API to return empty notes initially
 - Mock PATCH endpoint to save notes
 - Click preview to expand editor
@@ -288,6 +296,7 @@ function insertSnippet(snippet: string) {
 - Verify preview shows persisted text after reload
 
 **Test 2: Cmd+Enter saves, Escape cancels**
+
 - Mock API with existing note: "Initial contact"
 - Test Escape key:
   - Click preview to edit
@@ -304,6 +313,7 @@ function insertSnippet(snippet: string) {
 **Purpose:** Validate snippet chip insertion with auto-save
 
 **Test: Click snippet chip inserts text, autosaves on blur, shows toast, persists preview**
+
 - Mock API to return empty notes initially
 - Mock PATCH endpoint to save "Sent thank-you" note
 - Click preview to expand editor
@@ -324,6 +334,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ```
 
 **Expected Results:**
+
 ```
 ✓ Tracker inline notes › quick-edit saves on blur and shows toast
 ✓ Tracker inline notes › Cmd+Enter saves, Escape cancels
@@ -348,6 +359,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 **Purpose:** Ensure consistent button hover behavior when placed on gray table rows. Provides subtle visual feedback without overwhelming the row hover effect.
 
 **Usage in Tracker:**
+
 ```tsx
 <a className="... bg-white border hover:bg-white ...">Thread</a>
 ```
@@ -357,21 +369,25 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ## UX Improvements
 
 ### 1. **Faster Interaction**
+
 - **Before:** 3 clicks (Note button → Edit → Save Note)
 - **After:** 1 click (Preview → Edit → Auto-save on blur)
 - **Time Savings:** ~50% reduction in interaction time
 
 ### 2. **Better Context**
+
 - Notes stay visible in table row
 - No modal overlay blocking view
 - Can reference other columns while editing
 
 ### 3. **Power User Support**
+
 - Keyboard shortcuts for fast workflow
 - Cmd/Ctrl+Enter to save without clicking away
 - Escape to quickly cancel changes
 
 ### 4. **Visual Feedback**
+
 - Truncated preview shows note content at a glance
 - Timestamp indicates recency
 - Toast notifications confirm save operations
@@ -398,6 +414,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 **PATCH** `/api/applications/:id`
 
 **Request Body:**
+
 ```json
 {
   "notes": "Updated note text"
@@ -405,6 +422,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ```
 
 **Response:**
+
 ```json
 {
   "id": 303,
@@ -419,6 +437,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ### Error Handling
 
 **Success Case:**
+
 ```typescript
 await updateApplication(r.id, { notes: next })
 showToast(`Note saved — ${r.company}`, 'success')
@@ -426,6 +445,7 @@ await fetchRows() // Reload to get updated timestamp
 ```
 
 **Error Case:**
+
 ```typescript
 catch (error) {
   console.error('Failed to save note:', error)
@@ -434,11 +454,13 @@ catch (error) {
 ```
 
 **Network Errors:**
+
 - User sees red error toast
 - Original value is preserved
 - User can retry save
 
 **Concurrent Edits:**
+
 - Last write wins (standard REST behavior)
 - Updated timestamp prevents stale data display
 - Consider adding optimistic locking if needed
@@ -498,6 +520,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ```
 
 **Coverage:**
+
 - ✅ Save on blur with toast verification
 - ✅ Preview text persistence after save
 - ✅ Cmd+Enter save shortcut
@@ -517,11 +540,13 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 **If adding to new pages:**
 
 1. Import component:
+
    ```typescript
    import InlineNote from '../components/InlineNote'
    ```
 
 2. Replace note button with InlineNote:
+
    ```tsx
    <InlineNote
      value={item.notes || ''}
@@ -540,12 +565,14 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ### For Users
 
 **No action required** - The feature is backward compatible:
+
 - Existing notes display correctly
 - All note data preserved
 - URL patterns unchanged
 - Same API endpoints used
 
 **New workflow:**
+
 1. Click note preview (shows "—" if empty)
 2. Type your note
 3. Click away to save automatically
@@ -580,6 +607,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ### Potential Improvements
 
 **Optimistic Updates:**
+
 ```typescript
 // Update UI immediately, rollback on error
 setText(next)
@@ -593,6 +621,7 @@ try {
 ```
 
 **Debouncing:**
+
 ```typescript
 // Save after 500ms of no typing (instead of blur)
 const debouncedSave = useDebouncedCallback(
@@ -616,6 +645,7 @@ const debouncedSave = useDebouncedCallback(
 ### Screen Readers
 
 **Preview Mode:**
+
 ```html
 <button aria-label="Edit note for Stripe">
   Followed up with recruiter…
@@ -624,6 +654,7 @@ const debouncedSave = useDebouncedCallback(
 ```
 
 **Editor Mode:**
+
 ```html
 <textarea
   aria-label="Note for Stripe"
@@ -649,6 +680,7 @@ const debouncedSave = useDebouncedCallback(
 **Symptoms:** Clicking away doesn't trigger save
 
 **Solutions:**
+
 1. Check `onMouseDown={e => e.preventDefault()}` on all nearby buttons
 2. Verify `onBlur` handler attached to textarea
 3. Check for JavaScript errors in console
@@ -658,6 +690,7 @@ const debouncedSave = useDebouncedCallback(
 **Symptoms:** Cmd+Enter or Escape do nothing
 
 **Solutions:**
+
 1. Verify `onKeyDown` handler attached
 2. Check for event propagation stoppage
 3. Test with both Cmd (Mac) and Ctrl (Windows)
@@ -667,6 +700,7 @@ const debouncedSave = useDebouncedCallback(
 **Symptoms:** Save happens but no feedback
 
 **Solutions:**
+
 1. Verify `showToast()` function available
 2. Check toast state management
 3. Ensure 3-second auto-dismiss working
@@ -676,6 +710,7 @@ const debouncedSave = useDebouncedCallback(
 **Symptoms:** Preview doesn't update after successful save
 
 **Solutions:**
+
 1. Ensure `fetchRows()` called after save
 2. Check API returning updated `updated_at`
 3. Verify React state updates propagating
@@ -697,6 +732,7 @@ const debouncedSave = useDebouncedCallback(
 ## Summary
 
 **What Was Built:**
+
 - ✅ InlineNote component (165 lines) with snippet chips
 - ✅ Tracker integration with API + toasts + custom snippets
 - ✅ 3 E2E test scenarios (basic editing + keyboard shortcuts + snippet insertion)
@@ -704,6 +740,7 @@ const debouncedSave = useDebouncedCallback(
 - ✅ Comprehensive documentation
 
 **Production Readiness:**
+
 - ✅ No TypeScript errors
 - ✅ Auto-save working
 - ✅ Keyboard shortcuts functional
@@ -713,6 +750,7 @@ const debouncedSave = useDebouncedCallback(
 - ✅ Backward compatible
 
 **Next Steps:**
+
 1. Deploy to staging environment
 2. Run full E2E test suite
 3. Monitor toast notification metrics

@@ -16,6 +16,7 @@ Successfully applied the applications tracker patch to the ApplyLens monorepo. T
 ### Backend Changes
 
 #### 1. **Updated Application Model** (`services/api/app/models.py`)
+
 - ✅ Updated `AppStatus` enum values:
   - Changed from: `applied`, `in_review`, `interview`, `offer`, `rejected`, `archived`
   - Changed to: `applied`, `hr_screen`, `interview`, `offer`, `rejected`, `on_hold`, `ghosted`
@@ -24,6 +25,7 @@ Successfully applied the applications tracker patch to the ApplyLens monorepo. T
   - `last_email_snippet`: Text field to store email preview
 
 #### 2. **Enhanced Applications Router** (`services/api/app/routes_applications.py`)
+
 - ✅ Added search functionality (`q` parameter) to list endpoint
   - Searches across both company and role fields
 - ✅ Added new `/from-email` endpoint (POST)
@@ -32,6 +34,7 @@ Successfully applied the applications tracker patch to the ApplyLens monorepo. T
   - Returns full application object
 
 **Existing Endpoints (already present):**
+
 - `GET /applications/` - List applications with filtering
 - `POST /applications/` - Create new application
 - `GET /applications/{id}` - Get single application
@@ -40,6 +43,7 @@ Successfully applied the applications tracker patch to the ApplyLens monorepo. T
 - `POST /applications/from-email/{email_id}` - Create from email ID (existing)
 
 #### 3. **Database Migration** (`alembic/versions/0003_applications.py`)
+
 - ✅ Added new enum values to `AppStatus`:
   - `hr_screen`, `on_hold`, `ghosted`
 - ✅ Added new columns to `applications` table:
@@ -50,14 +54,18 @@ Successfully applied the applications tracker patch to the ApplyLens monorepo. T
 ### Frontend Changes
 
 #### 4. **Updated Type Definitions** (`apps/web/src/lib/api.ts`)
+
 - ✅ Updated `AppStatus` type to match new enum values:
+
   ```typescript
   type AppStatus = "applied" | "hr_screen" | "interview" | 
                    "offer" | "rejected" | "on_hold" | "ghosted"
   ```
+
 - ✅ Added `q` search parameter to `listApplications()` function
 
 #### 5. **Updated Tracker UI** (`apps/web/src/pages/Tracker.tsx`)
+
 - ✅ Updated status color mappings:
   - `hr_screen`: Yellow (HR screening stage)
   - `on_hold`: Orange (application on hold)
@@ -65,6 +73,7 @@ Successfully applied the applications tracker patch to the ApplyLens monorepo. T
 - ✅ Updated status options dropdown to show new statuses
 
 #### 6. **Existing UI Components** (already present)
+
 - ✅ EmailCard component with "Create Application" button
 - ✅ Application detail view with notes
 - ✅ Filtering and search functionality
@@ -144,6 +153,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" -Method P
 ### Frontend Testing
 
 1. **Visit Tracker Page:**
+
    ```
    http://localhost:5175/tracker
    ```
@@ -167,11 +177,13 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" -Method P
 ## 📊 Data Migration
 
 The migration automatically runs when the API container starts. All existing applications have been preserved with:
+
 - Existing status values remain compatible (applied, interview, offer, rejected still work)
 - New columns added with NULL defaults (safe for existing data)
 - No data loss or corruption
 
 **Verification:**
+
 ```powershell
 # Check migration status
 docker compose -f infra/docker-compose.yml exec api alembic current
@@ -241,6 +253,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
 ### Recommended Enhancements
 
 1. **Add Metrics Dashboard**
+
    ```
    - Applications per status (pie chart)
    - Response rate by source
@@ -249,6 +262,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
    ```
 
 2. **Add Bulk Actions**
+
    ```
    - Bulk status updates
    - Bulk delete
@@ -257,6 +271,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
    ```
 
 3. **Add Reminders**
+
    ```
    - Follow-up reminders
    - Interview preparation alerts
@@ -264,6 +279,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
    ```
 
 4. **Add Timeline View**
+
    ```
    - Visual timeline of application journey
    - Status change history
@@ -271,6 +287,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
    ```
 
 5. **Add Analytics**
+
    ```
    - Response time analysis
    - Source effectiveness
@@ -287,6 +304,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
 **Problem:** `/applications/` returns `[]`
 
 **Solution:** Check if database has data:
+
 ```powershell
 docker compose -f infra/docker-compose.yml exec db psql -U ledger -d ledgerdb -c "SELECT COUNT(*) FROM applications;"
 ```
@@ -302,6 +320,7 @@ docker compose -f infra/docker-compose.yml exec db psql -U ledger -d ledgerdb -c
 **Problem:** New columns not in database
 
 **Solution:** Run migration manually:
+
 ```powershell
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 ```
@@ -311,6 +330,7 @@ docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 **Problem:** Search by company name returns nothing
 
 **Solution:** Verify search is case-insensitive:
+
 ```powershell
 # Should return results for "google", "Google", "GOOGLE"
 Invoke-RestMethod -Uri "http://localhost:8003/applications/?q=google"
@@ -323,6 +343,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/?q=google"
 ### GET /applications/
 
 **Query Parameters:**
+
 - `status` (optional): Filter by status (e.g., `applied`, `interview`)
 - `company` (optional): Filter by company name (partial match)
 - `q` (optional): Search across company and role fields
@@ -333,6 +354,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/?q=google"
 ### POST /applications/
 
 **Request Body:**
+
 ```json
 {
   "company": "string",
@@ -355,6 +377,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/?q=google"
 ### POST /applications/from-email
 
 **Request Body:**
+
 ```json
 {
   "thread_id": "string (required)",

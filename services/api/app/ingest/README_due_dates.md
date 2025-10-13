@@ -5,6 +5,7 @@
 This module provides robust date extraction from bill and payment emails using a Python-first approach with Elasticsearch fallback.
 
 **Features:**
+
 - 🎯 Multiple date format support (mm/dd/yyyy, Month dd yyyy, etc.)
 - 💰 Money amount extraction with currency detection
 - 🏷️ Bill classification heuristic
@@ -41,6 +42,7 @@ Email Ingestion Flow:
 ## Supported Date Formats
 
 ### 1. mm/dd or mm/dd/yyyy
+
 ```
 "Payment due by 10/15/2025" → 2025-10-15T00:00:00Z
 "Due: 10/15" → 2025-10-15T00:00:00Z (defaults to email received year)
@@ -48,6 +50,7 @@ Email Ingestion Flow:
 ```
 
 ### 2. Month dd, yyyy
+
 ```
 "Payment due Oct 15, 2025" → 2025-10-15T00:00:00Z
 "Due by December 25" → 2025-12-25T00:00:00Z (defaults to received year)
@@ -55,6 +58,7 @@ Email Ingestion Flow:
 ```
 
 ### 3. dd Month yyyy
+
 ```
 "Due on 15 Oct 2025" → 2025-10-15T00:00:00Z
 "Payment by 25 Dec" → 2025-12-25T00:00:00Z
@@ -122,6 +126,7 @@ python -m app.scripts.update_es_mapping
 ```
 
 This adds:
+
 - `dates`: date array field
 - `money_amounts`: nested object with amount/currency
 - `expires_at`: date field (already exists)
@@ -151,12 +156,14 @@ curl -X PUT "$ES_URL/emails_v1/_settings" `
 ### 3. Import Kibana Dashboard
 
 **Via UI:**
-1. Open Kibana: http://localhost:5601
+
+1. Open Kibana: <http://localhost:5601>
 2. Go to: Stack Management → Saved Objects → Import
 3. Select: `kibana/bills-due-next7d.ndjson`
 4. Import with "Overwrite conflicts" enabled
 
 **Via API:**
+
 ```bash
 curl -X POST "http://localhost:5601/api/saved_objects/_import" `
   -H "kbn-xsrf: true" `
@@ -182,6 +189,7 @@ pytest tests/unit/test_due_date_extractor.py -v
 ```
 
 **Coverage:**
+
 - Date format variations (mm/dd, Month dd, dd Month)
 - Year defaults and 2-digit year handling
 - Multiple dates sorting and deduplication
@@ -203,6 +211,7 @@ pytest tests/e2e/test_ingest_bill_dates.py -v
 ```
 
 **Coverage:**
+
 - Gmail API message format handling
 - ES document structure validation
 - Multipart email processing
@@ -228,6 +237,7 @@ DUE_SENTENCE_RX = re.compile(
 ```
 
 **Keywords matched:**
+
 - `due`
 - `payment due`, `payment is due`
 - `amount due`
@@ -244,6 +254,7 @@ DUE_SENTENCE_RX = re.compile(
 ### Elasticsearch Pipeline (Fallback)
 
 Painless script that:
+
 1. Checks if `dates[]` already populated by Python
 2. If empty, searches `body_text` for simple mm/dd patterns
 3. Normalizes to ISO 8601 format
@@ -251,6 +262,7 @@ Painless script that:
 5. Sets `expires_at` to earliest date
 
 **Pattern used:**
+
 ```javascript
 /due[^\n\r\.:]{0,80}?(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/
 ```
@@ -298,6 +310,7 @@ bills = find_bills_due_before(
 ### Dates not being extracted
 
 **Check:**
+
 1. Does text contain "due" or related keywords?
 2. Is date within 80 chars of "due" keyword?
 3. Is date format supported? (see Supported Date Formats)
@@ -306,6 +319,7 @@ bills = find_bills_due_before(
 ### ES pipeline not working
 
 **Check:**
+
 1. Pipeline deployed? `GET /_ingest/pipeline/emails_due_simple`
 2. Default pipeline set? `GET /emails_v1/_settings`
 3. Check pipeline errors: `GET /emails_v1/_search?q=pipeline_error:*`
@@ -313,6 +327,7 @@ bills = find_bills_due_before(
 ### Kibana dashboard empty
 
 **Check:**
+
 1. Index pattern exists: `GET /emails_v1/_count?q=category:bills`
 2. Dates field populated: `GET /emails_v1/_search?q=dates:*`
 3. Date range: Dashboard shows next 7 days only
@@ -323,6 +338,7 @@ bills = find_bills_due_before(
 ### Example 1: Utility Bill
 
 **Input:**
+
 ```
 Subject: Your Electric Bill is Ready
 Body:
@@ -335,6 +351,7 @@ Body:
 ```
 
 **Extracted:**
+
 ```json
 {
   "dates": ["2025-10-15T00:00:00Z"],
@@ -346,6 +363,7 @@ Body:
 ### Example 2: Credit Card Statement
 
 **Input:**
+
 ```
 Subject: Your Credit Card Statement
 Body:
@@ -357,6 +375,7 @@ Body:
 ```
 
 **Extracted:**
+
 ```json
 {
   "dates": ["2025-10-25T00:00:00Z"],
@@ -371,6 +390,7 @@ Body:
 ### Example 3: Multiple Payment Dates
 
 **Input:**
+
 ```
 Subject: Payment Plan Reminder
 Body:
@@ -382,6 +402,7 @@ Body:
 ```
 
 **Extracted:**
+
 ```json
 {
   "dates": [

@@ -54,6 +54,7 @@ curl "http://localhost:9200/actions_audit_v1/_settings"
 ## Alternative Retention Periods
 
 ### 30 Day Retention
+
 ```json
 {
   "policy": {
@@ -69,6 +70,7 @@ curl "http://localhost:9200/actions_audit_v1/_settings"
 ```
 
 ### 90 Day with Rollover
+
 ```json
 {
   "policy": {

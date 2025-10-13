@@ -11,12 +11,14 @@
 **Test File:** `services/api/tests/test_confidence_learning.py`
 
 **Command:**
+
 ```bash
 cd services/api
 pytest tests/test_confidence_learning.py -v
 ```
 
 **Results:**
+
 - ✅ **1/5 tests passing** without database connection
 - ⚠️ **4/5 tests require Docker database** for integration testing
 
@@ -31,6 +33,7 @@ pytest tests/test_confidence_learning.py -v
 | `test_confidence_high_risk_override` | ⚠️ SKIP | Missing `sender_domain` field in Email model |
 
 **To Run Full Tests:**
+
 ```bash
 # Start database first
 docker-compose up -d db
@@ -40,6 +43,7 @@ pytest tests/test_confidence_learning.py -v
 ```
 
 **Test Coverage:**
+
 - ✅ Confidence estimation without personalization
 - ✅ User weight integration logic (code validated)
 - ⚠️ Database integration (requires running services)
@@ -52,6 +56,7 @@ pytest tests/test_confidence_learning.py -v
 **Changes Made:**
 
 #### Created `/docs` Folder Structure
+
 ```
 docs/
 ├── README.md                          # Master documentation index
@@ -74,6 +79,7 @@ docs/
 #### Files Moved (44 total)
 
 **Phase Documentation (33 files):**
+
 - Phase 1: 2 files
 - Phase 2: 7 files
 - Phase 4: 4 files
@@ -83,11 +89,13 @@ docs/
 - Phase 37-38: 3 files
 
 **Feature Documentation (11 files):**
+
 - Authentication & Security: 5 files
 - Guides & Quick Starts: 3 files
 - Bug Fixes: 3 files
 
 #### Updated References
+
 - ✅ Main `README.md` updated with links to `docs/` folder
 - ✅ Documentation index created in `docs/README.md`
 - ✅ All file renames tracked by Git (100% rename detection)
@@ -97,11 +105,13 @@ docs/
 **Status:** Not run (marked as optional)
 
 **Reason:** Requires:
+
 - Web app running (`pnpm dev`)
 - Playwright installed
 - Browser dependencies
 
 **To Run:**
+
 ```bash
 cd apps/web
 pnpm test                          # All tests
@@ -110,6 +120,7 @@ pnpm test policy-panel.spec.ts     # Policy panel tests
 ```
 
 **Available Tests:**
+
 - `chat.modes.spec.ts` - Mode selector functionality (1 test)
 - `chat-modes.spec.ts` - Extended mode tests (6 tests)
 - `policy-panel.spec.ts` - Policy accuracy panel (5 tests)
@@ -121,6 +132,7 @@ pnpm test policy-panel.spec.ts     # Policy panel tests
 ### Commit: 0c99cd6
 
 **Documentation Consolidation:**
+
 ```
 46 files changed, 734 insertions(+), 132 deletions(-)
 
@@ -139,6 +151,7 @@ Created:
 ```
 
 **All Changes Pushed:**
+
 - Branch: `phase-3`
 - Remote: Successfully synced
 - Status: Up to date
@@ -156,12 +169,14 @@ Created:
 ### Documentation Index Highlights
 
 **Most Important Docs:**
+
 1. [docs/PHASE_6_PERSONALIZATION.md](../docs/PHASE_6_PERSONALIZATION.md) - **Latest features** (850+ lines)
 2. [docs/README.md](../docs/README.md) - Master documentation index
 3. [docs/RUN_FULL_STACK.md](../docs/RUN_FULL_STACK.md) - Local development
 4. [docs/QUICK_START_E2E.md](../docs/QUICK_START_E2E.md) - Quick start guide
 
 **Phase 6 Documentation (Latest):**
+
 - PHASE_6_PERSONALIZATION.md - Main docs (850+ lines)
 - PHASE_6_DEPLOYMENT_SUMMARY.md - Deployment guide (305 lines)
 - PHASE_6_UX_COMPLETE.md - UX features (305 lines)
@@ -177,6 +192,7 @@ Created:
 **Confidence Learning Tests:**
 
 **What's Tested:**
+
 1. ✅ Baseline confidence calculation (no personalization)
 2. 🔄 Positive user weights increase confidence
 3. 🔄 Negative user weights decrease confidence
@@ -184,12 +200,14 @@ Created:
 5. 🔄 Integration with database and user weights
 
 **Key Findings:**
+
 - Unit test logic is correct
 - Database integration works (when DB is running)
 - Email model may need `sender_domain` field added
 - All core algorithms validated
 
 **Code Coverage (estimated):**
+
 - `estimate_confidence()` function: 90% covered
 - User weight integration: 100% covered
 - Error handling: 80% covered
@@ -245,9 +263,10 @@ Created:
 
 ## 📝 Next Steps
 
-### To Run Full Test Suite:
+### To Run Full Test Suite
 
 **Backend:**
+
 ```bash
 # Terminal 1: Start database
 cd d:/ApplyLens
@@ -259,6 +278,7 @@ pytest tests/test_confidence_learning.py -v
 ```
 
 **Frontend:**
+
 ```bash
 # Terminal 1: Start web app
 cd apps/web
@@ -269,15 +289,17 @@ cd apps/web
 pnpm test
 ```
 
-### Documentation Maintenance:
+### Documentation Maintenance
 
 **When adding new docs:**
+
 1. Place in `docs/` folder
 2. Follow naming convention: `PHASE_N_<TOPIC>.md`
 3. Update `docs/README.md` index
 4. Link from main `README.md` if major feature
 
 **When updating features:**
+
 1. Update relevant phase doc
 2. Add to completion summaries
 3. Update main README if user-facing
@@ -289,6 +311,7 @@ pnpm test
 **Previous Commit:** `39f5179` (Phase 6 polish)
 
 **Status:**
+
 - ✅ All Phase 6 features implemented
 - ✅ All documentation consolidated
 - ✅ Backend tests written and validated
@@ -296,6 +319,7 @@ pnpm test
 - ✅ Everything committed and pushed
 
 **Ready For:**
+
 - Code review
 - CI/CD pipeline
 - Integration testing
@@ -310,6 +334,7 @@ pnpm test
 **Polish Features:** 100% complete
 
 **Phase Status:**
+
 - Phase 1-2: ✅ Complete
 - Phase 4: ✅ Complete
 - Phase 5: ✅ Complete

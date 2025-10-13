@@ -11,6 +11,7 @@ Successfully implemented a comprehensive automated risk scoring system for email
 ## Components Implemented
 
 ### 1. Risk Scoring Script (`scripts/analyze_risk.py`)
+
 - **Lines:** 286
 - **Algorithm:** Heuristic-based scoring (0-100 scale)
 - **Weights:**
@@ -25,16 +26,19 @@ Successfully implemented a comprehensive automated risk scoring system for email
 - **Performance:** ~4,400 emails/second
 
 ### 2. API Endpoints (`routers/automation.py`)
+
 - **Lines:** 273
 - **Endpoints:**
 
 #### POST `/automation/recompute`
+
 - Triggers risk score recomputation
 - Parameters: `dry_run` (bool), `batch_size` (int)
 - Timeout: 10 minutes
 - Subprocess execution with output capture
 
 #### GET `/automation/risk-summary`
+
 - Parameters: `category` (optional), `days` (default: 7)
 - Returns:
   - Statistics (total, avg, min, max, median)
@@ -42,15 +46,18 @@ Successfully implemented a comprehensive automated risk scoring system for email
   - Top 10 riskiest emails
 
 #### GET `/automation/risk-trends`
+
 - Parameters: `days` (default: 30), `granularity` (day/week)
 - Returns: Time series with count, avg_score, max_score
 - Uses PostgreSQL `date_trunc` for aggregation
 
 #### GET `/automation/health`
+
 - Returns: status, coverage %, last computed timestamp
 - Recommendations if scores not computed
 
 ### 3. Prometheus Metrics (`metrics.py`)
+
 - **Lines:** 4 new metrics
 - **Metrics:**
   - `applylens_risk_recompute_requests_total` (Counter)
@@ -59,6 +66,7 @@ Successfully implemented a comprehensive automated risk scoring system for email
   - `applylens_risk_score_avg` (Gauge)
 
 ### 4. Kibana Dashboard (`dashboards/automation-risk.json`)
+
 - **Lines:** 143
 - **Visualizations:**
   - Risk distribution by category (bar chart)
@@ -67,6 +75,7 @@ Successfully implemented a comprehensive automated risk scoring system for email
 - **Filter:** Only emails with `risk_score` populated
 
 ### 5. CI/CD Workflow (`.github/workflows/automation-risk-scoring.yml`)
+
 - **Lines:** 87
 - **Triggers:**
   - Nightly: 3 AM UTC (cron schedule)
@@ -81,12 +90,14 @@ Successfully implemented a comprehensive automated risk scoring system for email
   7. Create GitHub issue on failure
 
 ### 6. Integration (`main.py`)
+
 - Router registration with try/except for graceful degradation
 - Automatic import of metrics
 
 ## Testing Results
 
 ### Script Execution
+
 ```bash
 $ DRY_RUN=0 BATCH_SIZE=100 python scripts/analyze_risk.py
 
@@ -101,6 +112,7 @@ Rate: 2892.0 emails/sec
 ```
 
 ### Database Statistics
+
 ```sql
 SELECT COUNT(*), AVG(risk_score), MAX(risk_score) 
 FROM emails 
@@ -115,6 +127,7 @@ WHERE risk_score > 0;
 ### API Endpoint Tests
 
 #### Health Check
+
 ```json
 {
   "status": "healthy",
@@ -129,6 +142,7 @@ WHERE risk_score > 0;
 ```
 
 #### Risk Summary (365 days)
+
 ```json
 {
   "statistics": {
@@ -156,6 +170,7 @@ WHERE risk_score > 0;
 ```
 
 #### Risk Trends (30 days, weekly)
+
 ```json
 {
   "trends": [
@@ -176,6 +191,7 @@ WHERE risk_score > 0;
 ```
 
 #### Manual Recompute
+
 ```json
 {
   "status": "success",
@@ -190,6 +206,7 @@ WHERE risk_score > 0;
 ```
 
 ### Prometheus Metrics
+
 ```
 applylens_risk_recompute_requests_total 1.0
 applylens_risk_recompute_duration_seconds_sum 1.08
@@ -204,6 +221,7 @@ applylens_risk_score_avg 0.0
 - **High Risk (70-100):** 95 emails (5.1%)
 
 ### Top Risk Factors
+
 1. **Cloudflare verification email:** 100 points
    - Suspicious keyword: "verify"
    - Action required phrasing
@@ -217,12 +235,14 @@ applylens_risk_score_avg 0.0
 ## Files Changed
 
 ### Created
+
 - `services/api/scripts/analyze_risk.py` (286 lines)
 - `services/api/app/routers/automation.py` (273 lines)
 - `services/api/dashboards/automation-risk.json` (143 lines)
 - `.github/workflows/automation-risk-scoring.yml` (87 lines)
 
 ### Modified
+
 - `services/api/app/metrics.py` (+7 lines)
 - `services/api/app/main.py` (+6 lines)
 
@@ -231,7 +251,7 @@ applylens_risk_score_avg 0.0
 - **Batch Size:** Configurable (default: 500)
 - **Processing Rate:** ~4,400 emails/second (live mode)
 - **Memory Usage:** Minimal (batch processing)
-- **API Response Time:** 
+- **API Response Time:**
   - Health check: <50ms
   - Risk summary: ~100ms
   - Risk trends: ~150ms
@@ -270,6 +290,7 @@ applylens_risk_score_avg 0.0
 ## Conclusion
 
 Phase 12.1 is **fully complete and tested**. All components are working correctly:
+
 - ✅ Risk scoring algorithm computing accurate scores
 - ✅ API endpoints responding with correct data
 - ✅ Prometheus metrics being collected

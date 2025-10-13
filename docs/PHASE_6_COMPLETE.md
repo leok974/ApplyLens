@@ -12,6 +12,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 ## Features Delivered
 
 ### 1. ✅ Per-User Learning (Online Gradient Descent)
+
 - **Model**: `UserWeight` table with user_id + feature + weight
 - **Algorithm**: w ← w + η \* y \* x (η=0.2)
 - **Features**: category, sender_domain, listid, contains:token
@@ -19,25 +20,29 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 - **Metrics**: `user_weight_updates_total{user, sign}`
 
 ### 2. ✅ Policy Performance Analytics
+
 - **Model**: `PolicyStats` table with precision/recall per policy/user
 - **API**: `GET /policy/stats` returns sorted list by fired count
-- **Metrics**: 
+- **Metrics**:
   - `policy_fired_total{policy_id, user}`
   - `policy_approved_total{policy_id, user}`
   - `policy_rejected_total{policy_id, user}`
 
 ### 3. ✅ ATS Enrichment (Fivetran Integration)
+
 - **ES Mapping**: `ats.{system, application_id, stage, last_stage_change, interview_date, company, ghosting_risk}`
 - **Job**: `analytics/enrich/ats_enrich_emails.py`
 - **Schedule**: Daily cron at 2am
 - **Metric**: `ats_enriched_total`
 
 ### 4. ✅ RAG Boosting for Urgent Recruiter Emails
+
 - **Boosts**: `ats.ghosting_risk >= 0.6` OR `ats.stage IN [Onsite, Offer]`
 - **Location**: `core/rag.py` (should clause)
 - **Result**: Urgent emails ranked higher in search/chat
 
 ### 5. ✅ Money Mode (Receipt Tracking)
+
 - **API Endpoints**:
   - `GET /money/receipts.csv` - Export all receipts
   - `GET /money/duplicates` - Find duplicate charges
@@ -46,6 +51,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 - **Amount Extraction**: Regex `$XX.XX` or `USD XX.XX`
 
 ### 6. ✅ Mode Parameter (Networking/Money)
+
 - **Chat API**: `GET /chat/stream?mode=networking|money`
 - **RAG Boosts**:
   - `mode=networking` → Boost event/meetup/conference
@@ -53,6 +59,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 - **Frontend**: Add mode chips to EventSource URL
 
 ### 7. ✅ Cron Jobs
+
 - **ATS Enrichment**: `analytics/enrich/ats_enrich_emails.py` (2am daily)
 - **Policy Stats**: `app/cron/recompute_policy_stats.py` (2:15am daily)
 
@@ -63,6 +70,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 ### New Files (13)
 
 **Backend (8)**:
+
 1. `services/api/app/models/personalization.py` - UserWeight, PolicyStats models
 2. `services/api/alembic/versions/0017_phase6_personalization.py` - Migration
 3. `services/api/app/core/learner.py` - Feature extraction, weight updates
@@ -157,6 +165,7 @@ alembic upgrade head
 ```
 
 **Expected Output**:
+
 ```
 INFO  [alembic.runtime.migration] Running upgrade 0016_phase4_actions -> 0017_phase6_personalization
 ```
@@ -170,6 +179,7 @@ curl -X PUT "http://localhost:9200/emails/_mapping" \
 ```
 
 **Expected Output**:
+
 ```json
 {"acknowledged":true}
 ```
@@ -203,6 +213,7 @@ pwsh ./scripts/test-phase6.ps1
 ```
 
 **Expected Output**:
+
 ```
 ============================================
 Phase 6 Smoke Tests - Personalization & ATS
@@ -233,6 +244,7 @@ Phase 6 Smoke Tests - Personalization & ATS
 ### Manual Tests
 
 **Test Learning**:
+
 ```bash
 # Propose actions
 curl -X POST http://localhost:8003/actions/propose \
@@ -249,11 +261,13 @@ psql -c "SELECT * FROM user_weights ORDER BY ABS(weight) DESC LIMIT 5;"
 ```
 
 **Test Policy Stats**:
+
 ```bash
 curl http://localhost:8003/policy/stats | jq '.'
 ```
 
 **Test Money Mode**:
+
 ```bash
 # Export receipts
 curl -O http://localhost:8003/money/receipts.csv
@@ -266,6 +280,7 @@ curl http://localhost:8003/money/summary | jq '.total_amount'
 ```
 
 **Test ATS Enrichment**:
+
 ```bash
 # Run enrichment
 cd analytics/enrich
@@ -292,6 +307,7 @@ curl "http://localhost:9200/emails/_search?q=ats.system:*&size=0" | jq '.hits.to
 ```
 
 **Query Weights**:
+
 ```sql
 SELECT feature, weight
 FROM user_weights
@@ -329,6 +345,7 @@ curl -O http://localhost:8003/money/receipts.csv
 ```
 
 **CSV Output**:
+
 ```csv
 date,merchant,amount,email_id,subject,category
 2025-10-10,amazon.com,49.99,msg123,"Your Amazon order",commerce
@@ -399,6 +416,7 @@ curl http://localhost:8003/money/duplicates?window_days=7 | jq '.duplicates[0]'
 ### Issue: Weights not updating
 
 **Check**: Query user_weights table
+
 ```sql
 SELECT * FROM user_weights WHERE user_id = 'alice@example.com';
 ```
@@ -408,6 +426,7 @@ SELECT * FROM user_weights WHERE user_id = 'alice@example.com';
 ### Issue: Policy stats empty
 
 **Check**: Verify actions are being proposed
+
 ```bash
 curl http://localhost:8003/actions/tray | jq 'length'
 ```
@@ -417,11 +436,13 @@ curl http://localhost:8003/actions/tray | jq 'length'
 ### Issue: ATS enrichment not running
 
 **Check**: Verify cron is scheduled
+
 ```bash
 crontab -l | grep ats_enrich
 ```
 
 **Manual Run**:
+
 ```bash
 python analytics/enrich/ats_enrich_emails.py
 ```
@@ -429,6 +450,7 @@ python analytics/enrich/ats_enrich_emails.py
 ### Issue: Money endpoints return 0 results
 
 **Check**: Verify receipts exist in ES
+
 ```bash
 curl "http://localhost:9200/emails/_search?q=category:finance&size=1"
 ```

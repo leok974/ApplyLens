@@ -9,15 +9,18 @@
 ## 🎯 Objectives Achieved
 
 ✅ **Dependencies updated**
+
 - Added `python-json-logger` to core dependencies
 - Added OpenTelemetry packages to optional `[tracing]` group
 
 ✅ **Metrics enhanced**
+
 - Added histogram metrics for backfill and risk batch duration
 - Added outcome-based counter for risk requests
 - Proper bucket configuration for SLO tracking
 
 ✅ **Documentation expanded**
+
 - Updated README with comprehensive monitoring section
 - Created 450-line DEPLOYMENT.md with step-by-step checklist
 - All next steps from Phase 12.3 completed
@@ -29,6 +32,7 @@
 ### 1. Updated Dependencies (`pyproject.toml`)
 
 **Core Dependencies Added:**
+
 ```toml
 dependencies = [
   # ... existing deps ...
@@ -37,6 +41,7 @@ dependencies = [
 ```
 
 **Optional Tracing Group Added:**
+
 ```toml
 [project.optional-dependencies]
 tracing = [
@@ -49,6 +54,7 @@ tracing = [
 ```
 
 **Installation:**
+
 ```bash
 # Base + logging
 pip install -e .
@@ -76,6 +82,7 @@ backfill_duration_seconds = Histogram(
 ```
 
 **Bucket Design:**
+
 - 10s: Quick updates
 - 30s, 60s: Normal operations
 - 120s (2m), 300s (5m): SLO threshold
@@ -90,6 +97,7 @@ risk_batch_duration_seconds = Histogram(
 ```
 
 **Bucket Design:**
+
 - 1s, 5s, 10s: Optimal performance
 - 30s, 60s: Acceptable range
 - 120s (2m), 300s (5m): Approaching SLO violation
@@ -103,6 +111,7 @@ risk_requests_total = Counter(
 ```
 
 **Usage in Alert Rules:**
+
 ```yaml
 # BackfillDurationSLO alert
 expr: histogram_quantile(0.95, 
@@ -116,6 +125,7 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 ### 3. README Monitoring Section
 
 **Added 60+ lines covering:**
+
 - Prometheus metrics overview
 - Health endpoint documentation
 - Grafana dashboard import steps
@@ -124,6 +134,7 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 - OpenTelemetry tracing setup
 
 **Key Highlights:**
+
 ```markdown
 ## 🔧 Monitoring & Observability
 
@@ -150,11 +161,13 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 **450 lines covering:**
 
 **Pre-Deployment:**
+
 - Dependencies verification
 - Configuration file checklist
 - Code and environment setup
 
 **10 Deployment Steps:**
+
 1. Database migrations
 2. Load Prometheus alert rules
 3. Configure structured logging
@@ -167,6 +180,7 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 10. Test alert delivery
 
 **Post-Deployment:**
+
 - Health check matrix (5 endpoints)
 - Prometheus verification (4 checks)
 - Grafana verification (4 checks)
@@ -174,11 +188,13 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 - Logging verification (4 checks)
 
 **Security Checklist:**
+
 - Secrets management (4 items)
 - Access control (4 items)
 - Monitoring security (4 items)
 
 **Operations:**
+
 - Monitoring dashboard URLs (6 bookmarks)
 - Operational runbook links (4 guides)
 - Rollback procedure (7 steps)
@@ -195,17 +211,20 @@ curl http://localhost:9090/api/v1/rules | jq
 ```
 
 ### Step 7: Verify Health Endpoints
+
 ```bash
 curl http://localhost:8003/healthz
 curl http://localhost:8003/ready | jq .
 ```
 
 ### Rollback Procedure
+
 ```bash
 git checkout <previous-commit>
 docker-compose up -d --build api
 curl http://localhost:8003/ready
 ```
+
 ```
 
 ---
@@ -267,6 +286,7 @@ python -c "import opentelemetry; print('Tracing available')"
 ```
 
 ### Use New Histogram Metrics
+
 ```python
 from app.metrics import backfill_duration_seconds, risk_requests_total
 import time
@@ -285,6 +305,7 @@ finally:
 ```
 
 ### Query Histogram Metrics
+
 ```promql
 # p95 backfill duration (for alert)
 histogram_quantile(0.95, 
@@ -300,6 +321,7 @@ rate(applylens_risk_requests_total{outcome="failure"}[5m])
 ```
 
 ### Follow Deployment Checklist
+
 ```bash
 # Open DEPLOYMENT.md and follow step-by-step
 cat DEPLOYMENT.md
@@ -329,7 +351,9 @@ cat DEPLOYMENT.md
 ## 🔮 Remaining Next Steps
 
 ### Short-term (This Week)
+
 1. **Update analyze_risk.py to use new metrics:**
+
    ```python
    from app.metrics import risk_batch_duration_seconds, risk_requests_total
    
@@ -344,6 +368,7 @@ cat DEPLOYMENT.md
    - Severity-based routing
 
 3. **Add API endpoint for single-email recompute:**
+
    ```python
    @router.post("/automation/recompute/{email_id}")
    async def recompute_single_email(email_id: str):
@@ -351,6 +376,7 @@ cat DEPLOYMENT.md
    ```
 
 ### Medium-term (This Month)
+
 1. **Deploy to staging environment:**
    - Follow DEPLOYMENT.md checklist
    - Verify all monitoring features
@@ -370,6 +396,7 @@ cat DEPLOYMENT.md
    - Error budget tracking
 
 ### Long-term (This Quarter)
+
 1. **On-call rotation:**
    - PagerDuty integration
    - Escalation policies
@@ -394,26 +421,31 @@ cat DEPLOYMENT.md
 ### Total Phase 12 Deliverables
 
 **Phase 12.1: Risk Scoring**
+
 - Files: 3 new, 3 modified
 - Lines: ~500
 - Features: Risk scores, category, expires_at
 
 **Phase 12.2: Testing & Consistency**
+
 - Files: 9 new, 2 modified
 - Lines: 2,578
 - Features: 105+ tests, parity checks, CI workflow
 
 **Phase 12.3: Monitoring & Observability**
+
 - Files: 12 new, 1 modified
 - Lines: 1,466
 - Features: Alerts, health, logging, tracing, dashboard, runbooks
 
 **Phase 12.3 Next Steps:**
+
 - Files: 1 new, 3 modified
 - Lines: 605
 - Features: Dependencies, metrics, deployment guide
 
 **Combined Total:**
+
 - **Files:** 25 new, 9 modified
 - **Lines:** 5,149
 - **Tests:** 105+ test cases
@@ -427,6 +459,7 @@ cat DEPLOYMENT.md
 ## 🏆 Achievement Unlocked
 
 **Production-Ready Monitoring Stack:**
+
 - ✅ Comprehensive metric collection
 - ✅ Automated alerting with runbooks
 - ✅ Real-time dashboards
@@ -437,6 +470,7 @@ cat DEPLOYMENT.md
 - ✅ Complete deployment documentation
 
 **Time Investment:**
+
 - Phase 12.1: ~4 hours
 - Phase 12.2: ~6 hours
 - Phase 12.3: ~4 hours
@@ -444,6 +478,7 @@ cat DEPLOYMENT.md
 - **Total: ~16 hours** for complete observability stack
 
 **Business Value:**
+
 - **MTTR Reduction:** Runbooks reduce incident response time by 60%
 - **Proactive Alerting:** Catch issues before users report them
 - **Data-Driven Decisions:** Metrics inform optimization priorities

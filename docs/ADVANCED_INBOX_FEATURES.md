@@ -7,12 +7,14 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 ## ✨ New Features
 
 ### 1. Multi-Select with Checkboxes
+
 - Checkbox on each email row
 - Visual selection rail (indigo left border)
 - Select/deselect individual emails
 - Bulk selection support
 
 ### 2. Bulk Actions Bar
+
 - Appears when emails are selected
 - Shows selection count
 - Bulk Archive button
@@ -22,6 +24,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 - Sticky positioning below header
 
 ### 3. Date-Grouped Sections
+
 - Automatic grouping by date buckets:
   - **Today** - Emails from today
   - **This week** - Last 7 days
@@ -31,6 +34,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 - Maintains context while scrolling
 
 ### 4. Keyboard Shortcuts
+
 - **j** - Navigate to next email
 - **k** - Navigate to previous email
 - **x** - Toggle selection of active email
@@ -39,6 +43,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 - **?** - Show keyboard shortcuts help dialog
 
 ### 5. Active Row Highlighting
+
 - Visual indicator (indigo ring) for keyboard-focused row
 - Syncs with keyboard navigation
 - Independent of selection state
@@ -52,12 +57,14 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 **File**: `apps/web/src/components/ui/checkbox.tsx`
 
 **Features**:
+
 - Native HTML checkbox with custom styling
 - Indeterminate state support
 - Dark mode styling
 - Focus ring for accessibility
 
 **Usage**:
+
 ```tsx
 <Checkbox 
   checked={isChecked} 
@@ -78,11 +85,13 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 **File**: `apps/web/src/components/ui/kbd.tsx`
 
 **Features**:
+
 - Keyboard key visual representation
 - Matches native OS styling
 - Dark mode support
 
 **Usage**:
+
 ```tsx
 <span>Press <Kbd>j</Kbd> to navigate</span>
 <span>Use <Kbd>Ctrl</Kbd> + <Kbd>S</Kbd> to save</span>
@@ -95,6 +104,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 **File**: `apps/web/src/components/ui/dialog.tsx`
 
 **Features**:
+
 - Radix UI Dialog primitive
 - Backdrop overlay
 - Close button
@@ -105,6 +115,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 **Dependencies**: `@radix-ui/react-dialog`
 
 **Usage**:
+
 ```tsx
 <Dialog open={isOpen} onOpenChange={setIsOpen}>
   <DialogContent>
@@ -123,6 +134,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 **File**: `apps/web/src/components/inbox/BulkBar.tsx`
 
 **Features**:
+
 - Shows when emails are selected
 - Sticky positioning (top-[64px] to stay below header)
 - Backdrop blur effect
@@ -130,6 +142,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 - Action buttons with icons
 
 **Props**:
+
 ```typescript
 {
   count: number;         // Number of selected emails
@@ -141,6 +154,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 ```
 
 **Usage**:
+
 ```tsx
 <BulkBar
   count={selected.size}
@@ -158,12 +172,14 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 **File**: `apps/web/src/components/inbox/ShortcutsDialog.tsx`
 
 **Features**:
+
 - Lists all keyboard shortcuts
 - Uses Kbd component for visual keys
 - Centered modal dialog
 - Dark mode support
 
 **Props**:
+
 ```typescript
 {
   open: boolean;
@@ -172,6 +188,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 ```
 
 **Usage**:
+
 ```tsx
 const [showHelp, setShowHelp] = useState(false);
 
@@ -188,14 +205,17 @@ const [showHelp, setShowHelp] = useState(false);
 **Functions**:
 
 **bucketFor(date: Date): BucketKey**
+
 - Determines which bucket a date belongs to
 - Returns: "today" | "week" | "month" | "older"
 
 **bucketLabel(bucket: BucketKey): string**
+
 - Returns human-readable label for bucket
 - "Today", "This week", "This month", "Older"
 
 **Usage**:
+
 ```typescript
 import { bucketFor, bucketLabel } from "@/lib/dateBuckets";
 
@@ -213,6 +233,7 @@ const label = bucketLabel(bucket); // "Today"
 **File**: `apps/web/src/components/inbox/EmailRow.tsx`
 
 **New Props**:
+
 ```typescript
 {
   id: string;                      // NEW: Required for selection
@@ -225,12 +246,14 @@ const label = bucketLabel(bucket); // "Today"
 ```
 
 **Breaking Changes**:
+
 - Removed `selected` prop → Use `checked` instead
 - Removed `onSelect` prop → Use `onCheckChange` and `onOpen` instead
 - Added `id` prop (required)
 - Added `active` prop for keyboard focus
 
 **Visual Updates**:
+
 - Checkbox added to left side
 - Selection rail now indicates `checked` state
 - `active` state shows indigo ring (ring-2 ring-indigo-500/30)
@@ -243,6 +266,7 @@ const label = bucketLabel(bucket); // "Today"
 **File**: `apps/web/src/components/inbox/EmailList.tsx`
 
 **New Props**:
+
 ```typescript
 {
   items: Item[];                   // Updated type
@@ -257,6 +281,7 @@ const label = bucketLabel(bucket); // "Today"
 ```
 
 **Item Type Updated**:
+
 ```typescript
 type Item = {
   id: string;
@@ -270,11 +295,13 @@ type Item = {
 ```
 
 **Breaking Changes**:
+
 - `selectedId` (string) → `selected` (Set<string>)
 - `onSelect` → `onToggleSelect`
 - `receivedAt` → `receivedAtISO` (ISO string format)
 
 **New Features**:
+
 - Date-grouped sections with sticky headers
 - Section headers: "Today", "This week", "This month", "Older"
 - Headers stick below bulk bar (top-[106px])
@@ -287,6 +314,7 @@ type Item = {
 **File**: `apps/web/src/pages/InboxPolishedDemo.tsx`
 
 **New State**:
+
 ```typescript
 const [selected, setSelected] = useState<Set<string>>(new Set());
 const [activeId, setActiveId] = useState<string>("1");
@@ -296,6 +324,7 @@ const [showHelp, setShowHelp] = useState(false);
 **New Functions**:
 
 **Selection Management**:
+
 ```typescript
 const toggleSelect = (id: string, value?: boolean) => {
   setSelected((prev) => {
@@ -309,6 +338,7 @@ const clearSelection = () => setSelected(new Set());
 ```
 
 **Keyboard Shortcuts**:
+
 ```typescript
 React.useEffect(() => {
   function onKey(e: KeyboardEvent) {
@@ -330,6 +360,7 @@ React.useEffect(() => {
 ```
 
 **Bulk Actions**:
+
 ```typescript
 const bulkArchive = () => {
   const count = selected.size;
@@ -341,6 +372,7 @@ const bulkSus = () => { /* ... */ };
 ```
 
 **New Demo Data**:
+
 - 8 emails total (was 6)
 - Added email from "today" for Today section
 - Added 10-day-old email for Older section
@@ -353,14 +385,17 @@ const bulkSus = () => { /* ... */ };
 ### Selection States
 
 **Checked (selected)**:
+
 - Left rail: `bg-indigo-500`
 - Checkbox: checked state
 
 **Active (keyboard focus)**:
+
 - Ring: `ring-2 ring-indigo-500/30`
 - Independent of selection
 
 **Hover**:
+
 - Background: `hover:bg-slate-50 dark:hover:bg-slate-850/60`
 - Rail: `group-hover:bg-slate-200 dark:group-hover:bg-slate-700`
 - Action buttons appear
@@ -569,6 +604,7 @@ npm install @radix-ui/react-dialog
 ```
 
 **Already installed** (from previous work):
+
 - @radix-ui/react-label
 - @radix-ui/react-switch
 
@@ -577,6 +613,7 @@ npm install @radix-ui/react-dialog
 ## 🧪 Testing Checklist
 
 ### Multi-Select
+
 - [ ] Click checkbox to select email
 - [ ] Click again to deselect
 - [ ] Selection rail appears on selected emails
@@ -584,6 +621,7 @@ npm install @radix-ui/react-dialog
 - [ ] Bulk bar shows correct count
 
 ### Bulk Actions
+
 - [ ] Archive button archives all selected
 - [ ] Mark safe button works for all selected
 - [ ] Mark suspicious button works for all selected
@@ -591,6 +629,7 @@ npm install @radix-ui/react-dialog
 - [ ] Bulk bar hides when all cleared
 
 ### Keyboard Navigation
+
 - [ ] Press j to move down
 - [ ] Press k to move up
 - [ ] Active row has visible ring indicator
@@ -598,6 +637,7 @@ npm install @radix-ui/react-dialog
 - [ ] Navigation ignored when typing in input
 
 ### Keyboard Actions
+
 - [ ] Press x to toggle selection of active row
 - [ ] Press e to archive active row
 - [ ] Press Enter to explain/open active row
@@ -605,12 +645,14 @@ npm install @radix-ui/react-dialog
 - [ ] Help dialog shows all shortcuts
 
 ### Date Grouping
+
 - [ ] Emails grouped correctly (Today/This week/etc)
 - [ ] Section headers sticky while scrolling
 - [ ] Headers stay below bulk bar
 - [ ] Empty sections don't show headers
 
 ### Dark Mode
+
 - [ ] All components render correctly in dark mode
 - [ ] Checkbox visible in dark mode
 - [ ] Bulk bar has proper contrast
@@ -618,6 +660,7 @@ npm install @radix-ui/react-dialog
 - [ ] Dialog styled for dark mode
 
 ### Accessibility
+
 - [ ] All interactive elements keyboard accessible
 - [ ] Focus indicators visible
 - [ ] Checkbox has proper contrast
@@ -628,9 +671,10 @@ npm install @radix-ui/react-dialog
 
 ## 🔄 Migration Guide
 
-### If you're updating from the previous version:
+### If you're updating from the previous version
 
 **1. Update email data format**:
+
 ```typescript
 // Before
 const items = [{
@@ -648,6 +692,7 @@ const items = [{
 ```
 
 **2. Update selection state**:
+
 ```typescript
 // Before
 const [selected, setSelected] = useState<string>();  // ❌ Single ID
@@ -657,6 +702,7 @@ const [selected, setSelected] = useState<Set<string>>(new Set());  // ✅ Set of
 ```
 
 **3. Update EmailList props**:
+
 ```typescript
 // Before
 <EmailList
@@ -675,6 +721,7 @@ const [selected, setSelected] = useState<Set<string>>(new Set());  // ✅ Set of
 ```
 
 **4. Add bulk bar**:
+
 ```tsx
 <BulkBar
   count={selected.size}
@@ -686,6 +733,7 @@ const [selected, setSelected] = useState<Set<string>>(new Set());  // ✅ Set of
 ```
 
 **5. Add keyboard shortcuts**:
+
 ```typescript
 React.useEffect(() => {
   // See "Keyboard Navigation" section above
@@ -693,6 +741,7 @@ React.useEffect(() => {
 ```
 
 **6. Add help dialog**:
+
 ```tsx
 const [showHelp, setShowHelp] = useState(false);
 <ShortcutsDialog open={showHelp} onOpenChange={setShowHelp} />
@@ -703,6 +752,7 @@ const [showHelp, setShowHelp] = useState(false);
 ## 🎉 Summary
 
 ### New Capabilities
+
 - ✅ Multi-select emails with checkboxes
 - ✅ Bulk actions (archive, safe, suspicious)
 - ✅ Keyboard navigation (j/k)
@@ -713,6 +763,7 @@ const [showHelp, setShowHelp] = useState(false);
 - ✅ Active row indicator
 
 ### Components Added
+
 - ✅ Checkbox
 - ✅ Kbd
 - ✅ Dialog
@@ -721,10 +772,11 @@ const [showHelp, setShowHelp] = useState(false);
 - ✅ dateBuckets utilities
 
 ### Components Updated
+
 - ✅ EmailRow (selection, active state)
 - ✅ EmailList (grouping, multi-select)
 - ✅ InboxPolishedDemo (keyboard shortcuts, bulk actions)
 
-**Test the demo**: http://localhost:5175/inbox-polished-demo
+**Test the demo**: <http://localhost:5175/inbox-polished-demo>
 
 All features are fully functional with 8 demo emails spanning multiple date ranges! 🚀

@@ -25,12 +25,14 @@ Successfully implemented comprehensive test coverage and automated consistency c
 ### 1. Test Infrastructure
 
 **pytest.ini** (27 lines)
+
 - Markers: `unit`, `api`, `integration`, `slow`
 - Asyncio mode: auto-detection
 - Coverage: term-missing, HTML, LCOV reports
 - Warning filters for third-party libraries
 
 **pyproject.toml** (+9 lines)
+
 ```toml
 [project.optional-dependencies]
 test = [
@@ -47,6 +49,7 @@ test = [
 **File:** `tests/unit/test_risk_scoring.py`
 
 **Test Classes:**
+
 - `TestDomainExtraction` - Email parsing and subdomain handling
 - `TestSenderDomainRisk` - Trusted/recruiter/unknown classification
 - `TestSubjectKeywordRisk` - Suspicious keyword detection
@@ -56,6 +59,7 @@ test = [
 - `TestConfiguration` - Domain lists and keywords validation
 
 **Sample Tests:**
+
 ```python
 test_trusted_domain_gmail()           # 0 points for gmail.com
 test_recruiter_domain()                # 10 points for greenhouse.io
@@ -71,6 +75,7 @@ test_weights_sum_to_one()              # Validates normalization
 **File:** `tests/api/test_automation_endpoints.py`
 
 **Test Classes:**
+
 - `TestHealthEndpoint` - Status, schema, coverage validation
 - `TestRiskSummaryEndpoint` - Statistics, distribution, filtering
 - `TestRiskTrendsEndpoint` - Time series, granularity, sorting
@@ -79,6 +84,7 @@ test_weights_sum_to_one()              # Validates normalization
 - `TestEndpointIntegration` - Cross-endpoint consistency
 
 **Coverage:**
+
 - ✅ All 4 automation endpoints
 - ✅ Happy paths and error cases
 - ✅ Parameter validation
@@ -90,6 +96,7 @@ test_weights_sum_to_one()              # Validates normalization
 **File:** `scripts/check_parity.py`
 
 **Features:**
+
 - **Configurable Fields**: Compare any DB fields vs ES
 - **Sampling**: Random sample with configurable size
 - **Tolerance**: ±0.001 for float comparisons
@@ -100,6 +107,7 @@ test_weights_sum_to_one()              # Validates normalization
 - **Metrics**: Updates Prometheus gauges/counters
 
 **Usage:**
+
 ```bash
 python scripts/check_parity.py \
   --fields risk_score,expires_at,category \
@@ -110,6 +118,7 @@ python scripts/check_parity.py \
 ```
 
 **Report Example:**
+
 ```json
 {
   "summary": {
@@ -130,6 +139,7 @@ python scripts/check_parity.py \
 **File:** `tests/integration/test_parity_job.py`
 
 **Test Classes:**
+
 - `TestParityScriptExecution` - Script runs successfully
 - `TestParityReportSchema` - Report structure validation
 - `TestParityExitCodes` - Exit code behavior
@@ -143,18 +153,21 @@ python scripts/check_parity.py \
 **Jobs:**
 
 #### 1. Unit Tests
+
 - Python 3.11 environment
 - Coverage threshold: ≥90%
 - Artifacts: pytest-report.xml, htmlcov/
 - Codecov integration
 
 #### 2. API Tests
+
 - Services: PostgreSQL 15 + Elasticsearch 8.12
 - Database migrations
 - API health check waiting
 - Artifacts: api-test-results.xml
 
 #### 3. Parity Check
+
 - Runs after unit tests pass
 - **Main branch**: Fails if mismatches > 0
 - **PR branch**: Allows up to 3 mismatches
@@ -162,11 +175,13 @@ python scripts/check_parity.py \
 - Artifacts: parity.json, parity.csv
 
 #### 4. Integration Tests
+
 - Full stack with DB + ES
 - Data seeding before tests
 - Artifacts: integration-test-results.xml
 
 **Triggers:**
+
 - Pull requests (services/api/**)
 - Push to main branch
 - Manual dispatch with parameters
@@ -176,6 +191,7 @@ python scripts/check_parity.py \
 **File:** `app/metrics.py`
 
 **New Metrics:**
+
 ```python
 applylens_parity_checks_total            # Counter
 applylens_parity_mismatches_total        # Counter
@@ -184,6 +200,7 @@ applylens_parity_last_check_timestamp    # Gauge (Unix time)
 ```
 
 **Alerting Example:**
+
 ```promql
 # Alert if mismatch ratio > 0.5% for 10 minutes
 rate(applylens_parity_mismatches_total[5m]) / 
@@ -195,6 +212,7 @@ rate(applylens_parity_checks_total[5m]) > 0.005
 ## 📊 Test Statistics
 
 ### Code Metrics
+
 - **Unit Tests**: 305 lines, 50+ cases
 - **API Tests**: 450 lines, 40+ cases
 - **Integration Tests**: 200 lines, 15+ cases
@@ -204,6 +222,7 @@ rate(applylens_parity_checks_total[5m]) > 0.005
 - **Total New Code**: ~2,600 lines
 
 ### Execution Times
+
 - Unit tests: ~5 seconds
 - API tests: ~30 seconds (with services)
 - Parity check (100 samples): ~5 seconds
@@ -211,6 +230,7 @@ rate(applylens_parity_checks_total[5m]) > 0.005
 - **Full CI run**: ~5 minutes
 
 ### Coverage Targets
+
 - Risk scoring logic: >90%
 - API endpoints: 100%
 - Parity script: Integration tested
@@ -244,6 +264,7 @@ pytest -v
 ### Manual Parity Check
 
 **PowerShell:**
+
 ```powershell
 cd D:\ApplyLens\infra
 docker-compose exec api python scripts/check_parity.py `
@@ -253,6 +274,7 @@ docker-compose exec api python scripts/check_parity.py `
 ```
 
 **Bash:**
+
 ```bash
 cd infra
 docker-compose exec api python scripts/check_parity.py \
@@ -265,15 +287,19 @@ docker-compose exec api python scripts/check_parity.py \
 
 1. **Download parity report** from CI artifacts
 2. **Query DB side**:
+
    ```sql
    SELECT id, risk_score, expires_at, category 
    FROM emails WHERE id IN (123, 456);
    ```
+
 3. **Query ES side**:
+
    ```bash
    curl "$ES_URL/gmail_emails_v2/_mget" \
      -d '{"ids":["123","456"]}' | jq
    ```
+
 4. **Fix discrepancies**:
    - Recompute risk scores: `python scripts/analyze_risk.py`
    - Reindex to ES: `python scripts/sync_to_elasticsearch.py`
@@ -308,16 +334,19 @@ docker-compose exec api python scripts/check_parity.py \
 ## 🚀 Next Steps
 
 ### Immediate
+
 1. **Merge to main** and watch CI pipeline
 2. **Run baseline parity check** on production
 3. **Setup Grafana dashboard** for parity metrics
 
 ### Short-Term (Week 1)
+
 1. **Configure alerts** for high mismatch rates
 2. **Document common issues** in troubleshooting guide
 3. **Team training** on test infrastructure
 
 ### Medium-Term (Month 1)
+
 1. **Stratified sampling** by category/date
 2. **Historical tracking** of parity results
 3. **Auto-remediation** for common mismatches
@@ -328,6 +357,7 @@ docker-compose exec api python scripts/check_parity.py \
 ## 📝 Files Modified/Created
 
 ### Created (7 files)
+
 ```
 .github/workflows/automation-tests.yml               (450 lines)
 services/api/pytest.ini                              (27 lines)
@@ -339,6 +369,7 @@ services/api/docs/PHASE_12.2_PLAN.md                 (500+ lines)
 ```
 
 ### Modified (2 files)
+
 ```
 services/api/pyproject.toml                          (+9 lines)
 services/api/app/metrics.py                          (+21 lines)
@@ -363,6 +394,7 @@ services/api/app/metrics.py                          (+21 lines)
 ## 🎉 Achievement Summary
 
 **Phase 12.2 delivers:**
+
 - ✅ 105+ tests covering all critical paths
 - ✅ Automated DB-ES consistency checking
 - ✅ 4-job CI workflow with artifact uploads
@@ -372,6 +404,7 @@ services/api/app/metrics.py                          (+21 lines)
 - ✅ PR protection with automatic comments
 
 **Combined with Phase 12.1:**
+
 - Total lines of code: ~3,400
 - Total test cases: 105+
 - API endpoints: 4 (all tested)

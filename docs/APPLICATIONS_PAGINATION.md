@@ -34,6 +34,7 @@ Added cursor-based pagination and multi-field sorting to the `/api/applications`
 ### Response Format (CHANGED)
 
 **Before**:
+
 ```json
 [
   {"id": "app_1", "company": "OpenAI", ...},
@@ -42,6 +43,7 @@ Added cursor-based pagination and multi-field sorting to the `/api/applications`
 ```
 
 **After**:
+
 ```json
 {
   "items": [
@@ -74,11 +76,13 @@ Added cursor-based pagination and multi-field sorting to the `/api/applications`
 Cursors are base64-encoded JSON payloads:
 
 **BigQuery** (offset-based):
+
 ```json
 {"offset": 25}
 ```
 
 **Elasticsearch** (search_after):
+
 ```json
 {"sa": ["2025-10-05T00:00:00", "app_123"]}
 ```
@@ -99,6 +103,7 @@ def _decode_cursor(token: str) -> Dict[str, Any]:
 ### BigQuery Implementation
 
 **Query structure**:
+
 ```sql
 SELECT id, company, role, status, applied_at, updated_at, source
 FROM `project.dataset.table`
@@ -108,6 +113,7 @@ LIMIT @limit OFFSET @offset
 ```
 
 **Cursor logic**:
+
 ```python
 offset = 0
 if cursor:
@@ -121,6 +127,7 @@ if len(items) == limit and (offset + limit) < total:
 ```
 
 **Total count**:
+
 ```sql
 SELECT COUNT(1) AS c FROM `project.dataset.table` WHERE status = @status
 ```
@@ -128,6 +135,7 @@ SELECT COUNT(1) AS c FROM `project.dataset.table` WHERE status = @status
 ### Elasticsearch Implementation
 
 **Query structure**:
+
 ```python
 {
     "query": {"bool": {"must": [{"term": {"status.keyword": "interview"}}]}},
@@ -141,6 +149,7 @@ SELECT COUNT(1) AS c FROM `project.dataset.table` WHERE status = @status
 ```
 
 **Cursor logic**:
+
 ```python
 search_after = None
 if cursor:
@@ -162,6 +171,7 @@ if len(hits) == limit:
 ### Demo Fallback
 
 **Simple sorting**:
+
 ```python
 if sort == "updated_at":
     filtered = sorted(filtered, key=lambda x: x.updated_at or datetime.min, 
@@ -169,6 +179,7 @@ if sort == "updated_at":
 ```
 
 **No cursor pagination** (all results fit in one page):
+
 ```python
 return ApplicationListResponse(
     items=filtered[:limit],
@@ -270,11 +281,13 @@ React.useEffect(() => { load(true) }, [sort, order])
 ### 1. Initial Page Load
 
 **Request**:
+
 ```
 GET /api/applications?limit=25&sort=updated_at&order=desc
 ```
 
 **Response**:
+
 ```json
 {
   "items": [...],
@@ -288,11 +301,13 @@ GET /api/applications?limit=25&sort=updated_at&order=desc
 ### 2. Load Next Page
 
 **Request**:
+
 ```
 GET /api/applications?limit=25&sort=updated_at&order=desc&cursor=eyJvZmZzZXQiOjI1fQ==
 ```
 
 **Response**:
+
 ```json
 {
   "items": [...],
@@ -306,11 +321,13 @@ GET /api/applications?limit=25&sort=updated_at&order=desc&cursor=eyJvZmZzZXQiOjI
 ### 3. Change Sort (Reset Cursor)
 
 **Request**:
+
 ```
 GET /api/applications?limit=25&sort=company&order=asc
 ```
 
 **Response**:
+
 ```json
 {
   "items": [...],
@@ -324,11 +341,13 @@ GET /api/applications?limit=25&sort=company&order=asc
 ### 4. Filter by Status
 
 **Request**:
+
 ```
 GET /api/applications?limit=25&status=interview&sort=updated_at&order=desc
 ```
 
 **Response**:
+
 ```json
 {
   "items": [...],
@@ -346,6 +365,7 @@ GET /api/applications?limit=25&status=interview&sort=updated_at&order=desc
 ### Backend Tests
 
 **1. Basic pagination**:
+
 ```bash
 curl "http://localhost:8003/api/applications?limit=2"
 ```
@@ -353,6 +373,7 @@ curl "http://localhost:8003/api/applications?limit=2"
 **Expected**: 2 items, next_cursor present, total=4
 
 **2. Sorting by company ascending**:
+
 ```bash
 curl "http://localhost:8003/api/applications?limit=2&sort=company&order=asc"
 ```
@@ -360,6 +381,7 @@ curl "http://localhost:8003/api/applications?limit=2&sort=company&order=asc"
 **Expected**: Items sorted alphabetically (Acme, OpenAI), total=4
 
 **3. Sorting by updated_at descending**:
+
 ```bash
 curl "http://localhost:8003/api/applications?sort=updated_at&order=desc"
 ```
@@ -367,6 +389,7 @@ curl "http://localhost:8003/api/applications?sort=updated_at&order=desc"
 **Expected**: Most recently updated first (TechCorp, Acme, OpenAI, StartupXYZ)
 
 **4. Status filter**:
+
 ```bash
 curl "http://localhost:8003/api/applications?status=interview"
 ```
@@ -374,6 +397,7 @@ curl "http://localhost:8003/api/applications?status=interview"
 **Expected**: Only Acme Corp (interview status), total=1
 
 **5. Combined filter + sort**:
+
 ```bash
 curl "http://localhost:8003/api/applications?status=applied&sort=applied_at&order=desc"
 ```
@@ -381,11 +405,13 @@ curl "http://localhost:8003/api/applications?status=applied&sort=applied_at&orde
 ### Frontend Tests
 
 **1. Open Applications page**:
+
 ```
 http://localhost:5175/applications
 ```
 
 **Expected**:
+
 - 4 demo applications displayed
 - Sort dropdown (Updated, Applied, Company, Status)
 - Order dropdown (Desc, Asc)
@@ -396,17 +422,20 @@ http://localhost:5175/applications
 **2. Change sort to Company**:
 
 **Expected**:
+
 - Applications reordered: Acme, OpenAI, StartupXYZ, TechCorp (asc)
 - Total still shows 4
 
 **3. Change order to Desc**:
 
 **Expected**:
+
 - Applications reversed: TechCorp, StartupXYZ, OpenAI, Acme
 
 **4. Filter by Interview status**:
 
 **Expected**:
+
 - Only Acme Corp shown
 - Total: 1
 
@@ -417,6 +446,7 @@ http://localhost:5175/applications
 ### Backend
 
 **`services/api/app/routers/applications.py`** (complete rewrite):
+
 - Added `ApplicationListResponse` Pydantic model
 - Added `_encode_cursor()` and `_decode_cursor()` helpers
 - Added `ALLOWED_SORT`, `DEFAULT_SORT`, `DEFAULT_ORDER` constants
@@ -428,6 +458,7 @@ http://localhost:5175/applications
 ### Frontend
 
 **`apps/web/src/lib/api.ts`** (additions):
+
 - Added `AppsSort` and `AppsOrder` types
 - Added `ListApplicationsParams` interface
 - Added `ApplicationRow` interface
@@ -435,16 +466,19 @@ http://localhost:5175/applications
 - Added `listApplicationsPaged()` function
 
 **`apps/web/src/components/ApplicationsList.tsx`** (new):
+
 - React component with pagination state management
 - Sort/order/status controls
 - Load more button
 - Status badges with colors
 
 **`apps/web/src/pages/Applications.tsx`** (new):
+
 - Demo page for paginated applications
 - Wraps ApplicationsList component
 
 **`apps/web/src/App.tsx`** (route addition):
+
 - Added `/applications` route
 
 ---
@@ -454,11 +488,13 @@ http://localhost:5175/applications
 ### BigQuery
 
 **Cost**:
+
 - Count query: scans ~7 columns
 - Main query: scans same columns with LIMIT/OFFSET
 - 1000 pages/day ≈ 2 GB/month ≈ $0.01/month
 
 **Optimization**:
+
 - Use partitioned tables (by `applied_at` or `updated_at`)
 - Add clustering on `status`
 - Cache results for 5-10 minutes
@@ -466,10 +502,12 @@ http://localhost:5175/applications
 ### Elasticsearch
 
 **Performance**:
+
 - search_after: O(1) - constant time per page
 - OFFSET: O(N) - avoid for deep pagination
 
 **Optimization**:
+
 - Use keyword fields for sorting (company.keyword, status.keyword)
 - Enable doc_values for sort fields
 - Use `_source` filtering to reduce payload size
@@ -488,11 +526,13 @@ http://localhost:5175/applications
 **Response format changed** from `Application[]` to `ApplicationListResponse`:
 
 **Before**:
+
 ```typescript
 const apps: Application[] = await fetch('/api/applications').then(r => r.json())
 ```
 
 **After**:
+
 ```typescript
 const res: ApplicationListResponse = await fetch('/api/applications').then(r => r.json())
 const apps = res.items
@@ -505,6 +545,7 @@ const total = res.total
 For clients expecting the old format, you can:
 
 1. **Create a wrapper endpoint**:
+
 ```python
 @router.get("/applications/legacy", response_model=List[Application])
 def list_applications_legacy(limit: int = 100, status: Optional[str] = None):
@@ -513,6 +554,7 @@ def list_applications_legacy(limit: int = 100, status: Optional[str] = None):
 ```
 
 2. **Or handle in client**:
+
 ```typescript
 async function listApplicationsLegacy(params?: any): Promise<Application[]> {
   const res = await listApplicationsPaged(params)
@@ -629,6 +671,7 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
 **Cause**: Missing keyword field for sort
 
 **Solution**: Update mapping to include keyword subfield:
+
 ```json
 {
   "company": {
@@ -653,4 +696,3 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
 **Frontend**: ApplicationsList component with Load More  
 **Route**: `/applications` page available  
 **Tested**: ✅ API sorting, filtering, pagination working
-

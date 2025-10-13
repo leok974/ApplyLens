@@ -13,10 +13,12 @@ Successfully implemented comprehensive multi-user Gmail integration with enhance
 ## Files Created
 
 ### 1. **Migrations**
+
 - `alembic/versions/0004_add_source_confidence.py` - Adds `source_confidence` column to applications
 - `alembic/versions/0005_add_gmail_tokens.py` - Creates `gmail_tokens` table for per-user OAuth
 
 ### 2. **Core Services**
+
 - `app/email_extractor.py` (320 lines) - Enhanced extraction with confidence scoring
   - Company extraction from headers, signatures, domains
   - Role extraction from subject patterns
@@ -34,6 +36,7 @@ Successfully implemented comprehensive multi-user Gmail integration with enhance
   - Graceful error handling
 
 ### 3. **API Routers**
+
 - `app/oauth_google.py` (240 lines) - Multi-user OAuth flow
   - `GET /oauth/google/init` - Start OAuth for user
   - `GET /oauth/google/callback` - Handle OAuth callback
@@ -49,11 +52,13 @@ Successfully implemented comprehensive multi-user Gmail integration with enhance
   - Graceful fallback to request body
 
 ### 4. **Models & Config**
+
 - `app/models.py` - Added `GmailToken` SQLAlchemy model
 - `app/settings.py` - Added 9 new configuration options
 - `pyproject.toml` - Added `pdfminer.six` dependency
 
 ### 5. **Documentation**
+
 - `MULTI_USER_GMAIL.md` (1000+ lines) - Complete guide
   - Quick start (3 modes: multi-user, single-user, mock)
   - Migration instructions
@@ -73,6 +78,7 @@ Successfully implemented comprehensive multi-user Gmail integration with enhance
 ### Backend (Python)
 
 **New Files**:
+
 - ✅ `app/email_extractor.py`
 - ✅ `app/gmail_providers.py`
 - ✅ `app/oauth_google.py`
@@ -81,17 +87,20 @@ Successfully implemented comprehensive multi-user Gmail integration with enhance
 - ✅ `alembic/versions/0005_add_gmail_tokens.py`
 
 **Modified Files**:
+
 - ✅ `app/settings.py` - Added 9 new settings
 - ✅ `app/models.py` - Added `GmailToken` model
 - ✅ `app/main.py` - Wired OAuth router, extraction router
 - ✅ `pyproject.toml` - Added `pdfminer.six`
 
 **Backup Created**:
+
 - ✅ `app/routes_applications.py.backup` - Original extraction routes
 
 ### Database
 
 **New Tables**:
+
 ```sql
 gmail_tokens (
   user_email VARCHAR(255) PRIMARY KEY,
@@ -105,6 +114,7 @@ gmail_tokens (
 ```
 
 **New Columns**:
+
 ```sql
 applications.source_confidence REAL DEFAULT 0.5
 ```
@@ -162,6 +172,7 @@ POST /applications/backfill-from-email
 ```
 
 **New Features**:
+
 - Accept `user_email` in body or `X-User-Email` header
 - Support `attachments` array in request
 - Return enhanced `debug` object
@@ -247,6 +258,7 @@ python -m alembic upgrade head
 ```
 
 **Migrations applied**:
+
 - 0004: `source_confidence` column added
 - 0005: `gmail_tokens` table created
 
@@ -284,6 +296,7 @@ curl -X POST http://localhost:8003/applications/extract \
 ### If Issues Arise
 
 1. **Revert code**:
+
    ```bash
    cd services/api/app
    mv routes_applications.py.backup routes_applications.py
@@ -293,12 +306,14 @@ curl -X POST http://localhost:8003/applications/extract \
    ```
 
 2. **Revert migrations**:
+
    ```bash
    python -m alembic downgrade -1  # Undo 0005
    python -m alembic downgrade -1  # Undo 0004
    ```
 
 3. **Restart API**:
+
    ```bash
    uvicorn app.main:app --reload
    ```
@@ -308,6 +323,7 @@ curl -X POST http://localhost:8003/applications/extract \
 ## Production Checklist
 
 ### Security
+
 - [ ] Use HTTPS for OAuth callbacks
 - [ ] Encrypt `gmail_tokens` table at rest
 - [ ] Rate limit OAuth endpoints
@@ -315,6 +331,7 @@ curl -X POST http://localhost:8003/applications/extract \
 - [ ] Rotate tokens every 90 days
 
 ### Performance
+
 - [ ] Add Redis cache for Gmail responses (1hr TTL)
 - [ ] Enable database connection pooling
 - [ ] Index `user_email` in `gmail_tokens`
@@ -322,6 +339,7 @@ curl -X POST http://localhost:8003/applications/extract \
 - [ ] Monitor Gmail API quota
 
 ### Monitoring
+
 - [ ] Track `gmail_fetch_duration` metric
 - [ ] Track `gmail_fetch_errors` by type
 - [ ] Track `extraction_confidence` distribution
@@ -329,6 +347,7 @@ curl -X POST http://localhost:8003/applications/extract \
 - [ ] Alert on token refresh failures
 
 ### Scaling
+
 - [ ] Consider Google Workspace service account (>1000 users)
 - [ ] Use Celery for background Gmail fetches
 - [ ] Use DB read replicas for token lookups
@@ -404,18 +423,21 @@ async function extractFromGmail(threadId: string, userEmail: string) {
 ## Future Enhancements
 
 ### High Priority
+
 - [ ] Redis caching layer (reduce API calls)
 - [ ] Batch token refresh (background job)
 - [ ] Service account support (Google Workspace)
 - [ ] Webhook support (Gmail push notifications)
 
 ### Medium Priority
+
 - [ ] Full thread context (not just latest message)
 - [ ] Attachment download and storage
 - [ ] Advanced PDF parsing (tables, forms)
 - [ ] Custom extraction rules (user-configurable)
 
 ### Low Priority
+
 - [ ] Machine learning confidence scoring
 - [ ] Multi-language support
 - [ ] Email template detection
@@ -426,17 +448,20 @@ async function extractFromGmail(threadId: string, userEmail: string) {
 ## Support
 
 ### Documentation
+
 - **Complete Guide**: `MULTI_USER_GMAIL.md`
 - **Quick Ref**: `GMAIL_INTEGRATION_QUICKREF.md`
 - **Original Guide**: `GMAIL_INTEGRATION.md`
 
 ### Common Issues
+
 - OAuth not configured → Set CLIENT_ID, SECRET, REDIRECT_URI
 - Token refresh failed → User needs to reconnect
 - Low confidence → Check headers for ATS signals
 - PDF parsing failed → Check pdfminer.six installed
 
 ### Testing
+
 - Use `USE_MOCK_GMAIL=True` for local development
 - Seed mock data via `mock_provider({})`
 - Unit test extraction with sample emails

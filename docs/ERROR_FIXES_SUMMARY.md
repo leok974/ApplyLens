@@ -10,6 +10,7 @@
 ### 1. ✅ Playwright TypeScript Configuration
 
 **Problem**: TypeScript couldn't find Node.js types for Playwright test files
+
 ```
 Cannot find name 'process'. Do you need to install type definitions for node?
 Cannot find module 'node:url' or its corresponding type declarations.
@@ -19,6 +20,7 @@ Cannot find namespace 'NodeJS'.
 **Solution**: Updated `tsconfig.node.json` to include Playwright files and Node types
 
 **File**: `apps/web/tsconfig.node.json`
+
 ```json
 {
   "compilerOptions": {
@@ -28,7 +30,8 @@ Cannot find namespace 'NodeJS'.
 }
 ```
 
-**Impact**: 
+**Impact**:
+
 - ✅ All Playwright test files now properly typed
 - ✅ `process.env` recognized
 - ✅ `NodeJS.Timeout` recognized
@@ -39,6 +42,7 @@ Cannot find namespace 'NodeJS'.
 ### 2. ✅ Playwright Config - Invalid Option
 
 **Problem**: `reducedMotion` property doesn't exist in Playwright config
+
 ```
 'reducedMotion' does not exist in type 'UseOptions'
 ```
@@ -46,6 +50,7 @@ Cannot find namespace 'NodeJS'.
 **Solution**: Removed unsupported `reducedMotion` option
 
 **File**: `apps/web/playwright.config.ts`
+
 ```typescript
 // Before
 {
@@ -67,7 +72,8 @@ Cannot find namespace 'NodeJS'.
 }
 ```
 
-**Impact**: 
+**Impact**:
+
 - ✅ Playwright config is valid
 - ✅ Tests can run without errors
 
@@ -76,12 +82,15 @@ Cannot find namespace 'NodeJS'.
 ## Remaining Warnings (Non-Critical)
 
 ### Tailwind CSS Warnings (Cosmetic)
+
 **File**: `apps/web/src/index.css`
+
 ```css
 Unknown at rule @tailwind
 ```
 
 **Status**: ⚠️ Can be ignored
+
 - These are false positives from CSS linter
 - Tailwind directives work correctly at runtime
 - Not actual errors
@@ -91,18 +100,22 @@ Unknown at rule @tailwind
 ---
 
 ### Python Import Warnings (Expected)
+
 **Files**: Various Python files in `services/api/`
+
 ```python
 Import "elasticsearch" could not be resolved
 Import "google_auth_oauthlib.flow" could not be resolved
 ```
 
 **Status**: ⚠️ Expected behavior
+
 - Python packages are installed in Docker container
 - Local editor doesn't have Python venv activated
 - Code works correctly when run in Docker
 
-**Optional Fix**: 
+**Optional Fix**:
+
 ```bash
 cd services/api
 python -m venv venv
@@ -113,13 +126,16 @@ pip install -r requirements.txt
 ---
 
 ### TypeScript API Tests (Not in Scope)
+
 **File**: `apps/api/src/__tests__/emailExtractor.test.ts`
+
 ```typescript
 Cannot find name 'describe'
 Cannot find name 'expect'
 ```
 
 **Status**: ⚠️ Not in current scope
+
 - This is a Node.js API project (different from web project)
 - Would need separate Jest/Vitest setup
 - Not blocking current work
@@ -144,6 +160,7 @@ docker compose exec api python -c "from app.routers.search import LABEL_WEIGHTS;
 ```
 
 ### Expected Results
+
 - ✅ TypeScript: No errors in Playwright files
 - ✅ Playwright: Tests can run (may fail on assertions, but no TS errors)
 - ✅ Backend: Imports work in Docker
@@ -172,6 +189,7 @@ docker compose exec api python -c "from app.routers.search import LABEL_WEIGHTS;
 **Overall Status**: ✅ **All Critical Errors Resolved**
 
 The project is now ready to:
+
 - ✅ Run Playwright tests
 - ✅ Build frontend without TS errors
 - ✅ Run search API with smart scoring

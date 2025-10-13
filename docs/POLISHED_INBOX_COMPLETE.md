@@ -9,6 +9,7 @@ Created a modern, polished inbox interface with shadcn/ui components, Tailwind C
 ## What Was Installed
 
 ### Core Dependencies
+
 ```bash
 npm install -D tailwindcss postcss autoprefixer
 npm install lucide-react class-variance-authority clsx tailwind-merge
@@ -17,11 +18,13 @@ npm install @radix-ui/react-dropdown-menu @radix-ui/react-dialog
 ```
 
 ### Configuration Files Created
+
 - `tailwind.config.js` - Tailwind configuration with design tokens
 - `postcss.config.js` - PostCSS configuration
 - `apps/web/src/lib/utils.ts` - `cn()` utility for className merging
 
 ### UI Components Created (`apps/web/src/components/ui/`)
+
 1. **button.tsx** - Button with variants (default, destructive, outline, secondary, ghost, link)
 2. **badge.tsx** - Badge component for labels/tags
 3. **card.tsx** - Card, CardHeader, CardTitle, CardContent, CardFooter
@@ -41,18 +44,21 @@ npm install @radix-ui/react-dropdown-menu @radix-ui/react-dialog
 ### Features
 
 #### 🎨 **Modern Design**
+
 - Clean card-based layout with proper shadows and borders
 - Consistent spacing and typography
 - Professional color scheme with indigo accent
 - Smooth hover states and transitions
 
 #### 🔍 **Search & Filtering**
+
 - Global search bar in header
 - Sidebar with category filters (All, Applications, Interviews, Newsletters, Promos, Suspicious)
 - Quick filter dropdown menu
 - Real-time search with API integration
 
 #### 📧 **Email Cards**
+
 - Subject, sender, date, and snippet
 - Color-coded reason badges (Application, Interview, Promo, etc.)
 - Action buttons with tooltips:
@@ -64,6 +70,7 @@ npm install @radix-ui/react-dropdown-menu @radix-ui/react-dialog
   - **More** - Additional actions (Unsubscribe, etc.)
 
 #### 📱 **Preview Panel**
+
 - Slide-out drawer showing email details
 - AI explanation of why email was labeled
 - Evidence display (JSON formatted)
@@ -71,17 +78,20 @@ npm install @radix-ui/react-dropdown-menu @radix-ui/react-dialog
 - Loading states for async operations
 
 #### 🎯 **ML-Powered Features**
+
 - **Explain** button shows AI reasoning
 - Evidence panel displays detection signals
 - Reason badges visualize automatic categorization
 - Dry-run actions for safety
 
 #### 🎪 **Empty States**
+
 - Friendly messages when no emails match
 - Helpful actions (Clear filters, Retry)
 - Loading skeletons for better UX
 
 #### 🔔 **Toast Notifications**
+
 - Non-intrusive feedback for actions
 - Auto-dismiss after 3 seconds
 - Success/error variants
@@ -118,7 +128,9 @@ apps/web/
 ## Configuration Changes
 
 ### TypeScript Path Alias
+
 **File**: `tsconfig.json`
+
 ```json
 "paths": {
   "@/*": ["src/*"],
@@ -127,7 +139,9 @@ apps/web/
 ```
 
 ### Vite Path Alias
+
 **File**: `vite.config.ts`
+
 ```typescript
 resolve: {
   alias: {
@@ -137,16 +151,19 @@ resolve: {
 ```
 
 ### CSS Design Tokens
+
 **File**: `src/index.css`
+
 - Added CSS variables for colors (background, foreground, primary, secondary, etc.)
 - Dark mode support (via `.dark` class)
 - Consistent border radius via `--radius`
 
 ## Access the Polished Inbox
 
-**URL**: http://localhost:5175/inbox-polished
+**URL**: <http://localhost:5175/inbox-polished>
 
 Or add a link to your Nav component:
+
 ```tsx
 <a href="/inbox-polished">Polished Inbox</a>
 ```
@@ -188,6 +205,7 @@ The polished inbox uses these API endpoints:
 
 1. **Add Navigation**
    Update `Nav.tsx` to include link:
+
    ```tsx
    <a href="/inbox-polished" className="hover:underline">
      Polished Inbox
@@ -196,6 +214,7 @@ The polished inbox uses these API endpoints:
 
 2. **Make it Default**
    Change default route in `App.tsx`:
+
    ```tsx
    <Route path="/" element={<InboxPolished />} />
    ```
@@ -229,6 +248,7 @@ The polished inbox uses these API endpoints:
 ## Testing
 
 1. **Visit the Page**:
+
    ```
    http://localhost:5175/inbox-polished
    ```
@@ -278,4 +298,4 @@ The polished inbox uses these API endpoints:
 
 **Status**: ✅ Complete and ready to use!
 
-**Access**: http://localhost:5175/inbox-polished
+**Access**: <http://localhost:5175/inbox-polished>

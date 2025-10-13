@@ -12,12 +12,14 @@
 Successfully implemented a production-ready analytics pipeline integrating Fivetran, BigQuery, dbt, Elasticsearch, and Kibana. The system enables Ops teams to visualize email automation metrics (risk trends, parity drift, backfill SLOs) without leaving Kibana, while maintaining a robust data warehouse for ad-hoc analysis.
 
 **Architecture**:
+
 ```
 PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
   (Source)   (Sync)    (Warehouse) (Transform) (Store)     (Visualize)
 ```
 
 **Key Deliverables**:
+
 - ✅ Fivetran connector documentation (328 lines)
 - ✅ Complete dbt project with 5 models (207 lines)
 - ✅ Automated export script (292 lines)
@@ -39,6 +41,7 @@ PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
 **Purpose**: Complete setup guide for Fivetran connector
 
 **Key Sections**:
+
 - BigQuery dataset creation (console + CLI)
 - Fivetran destination setup (OAuth vs Service Account)
 - PostgreSQL connector configuration
@@ -50,6 +53,7 @@ PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
 - Troubleshooting guide
 
 **Configuration Highlights**:
+
 ```sql
 -- Read-only user for Fivetran
 CREATE USER fivetran_user WITH PASSWORD 'secure_password';
@@ -57,6 +61,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO fivetran_user;
 ```
 
 **Tables to Sync**:
+
 - `emails`: id, received_at, sender, subject, risk_score, category, expires_at, features_json
 - `applications`: id, company, role, source, created_at, status
 
@@ -68,12 +73,14 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO fivetran_user;
 ### 2. dbt Data Transformation
 
 **Files**:
+
 - `analytics/dbt/dbt_project.yml` (23 lines)
 - `analytics/dbt/profiles.yml` (22 lines)
 - `analytics/dbt/packages.yml` (2 lines)
 - `analytics/dbt/README.md` (160 lines)
 
 **Project Configuration**:
+
 ```yaml
 name: applylens_analytics
 version: 1.0.0
@@ -89,6 +96,7 @@ models:
 ```
 
 **BigQuery Connection**:
+
 - Method: Service Account JSON
 - Dataset: `applylens`
 - Location: US
@@ -96,6 +104,7 @@ models:
 - Budget: 1GB maximum_bytes_billed
 
 **Dependencies**:
+
 - `dbt_utils` version 1.1.1
 
 ---
@@ -107,12 +116,14 @@ models:
 **Purpose**: Clean and standardize raw email data from Fivetran
 
 **Transformations**:
+
 - Extract `sender_domain` from email address (REGEXP_EXTRACT)
 - Parse `features_json` fields (computed_at, source, confidence)
 - Add date dimensions (received_date, year, month, week, dayofweek)
 - Create `risk_bucket` categorical field (low/medium/high/critical/unscored)
 
 **risk_bucket Logic**:
+
 ```sql
 CASE
   WHEN risk_score IS NULL THEN 'unscored'
@@ -132,11 +143,13 @@ END
 **Purpose**: Clean and standardize application tracking data
 
 **Transformations**:
+
 - Add date dimensions (application_date, year, month, week)
 - Create `status_category` (success/closed/active/pending/other)
 - Filter invalid records (created_at IS NOT NULL)
 
 **status_category Logic**:
+
 ```sql
 CASE
   WHEN status IN ('accepted', 'offer') THEN 'success'
@@ -158,12 +171,14 @@ END
 **Purpose**: Daily risk score trends and distribution analysis
 
 **Aggregations**:
+
 - Email counts: total, scored, by risk bucket (5 categories)
 - Risk metrics: avg, min, max
 - Category counts: recruiter, interview, offer, rejection
 - Top 5 sender domains (ARRAY_AGG)
 
 **Derived Metrics**:
+
 ```sql
 coverage_pct = emails_scored * 100.0 / emails
 high_risk_pct = high_risk_count * 100.0 / emails
@@ -171,11 +186,13 @@ critical_risk_pct = critical_risk_count * 100.0 / emails
 ```
 
 **Optimization**:
+
 - Materialization: Table
 - Partitioning: Date field `d` (daily granularity)
 - Schema: marts
 
 **Sample Query**:
+
 ```sql
 SELECT d, emails, avg_risk, high_risk_pct, coverage_pct
 FROM applylens.marts.mrt_risk_daily
@@ -192,6 +209,7 @@ ORDER BY d DESC;
 **Current State**: Stub implementation (generates 0 mismatches for last 30 days)
 
 **Future Implementation**:
+
 ```sql
 -- TODO: Replace stub with actual parity check results
 -- Source: applylens.public_parity_checks (when implemented)
@@ -202,6 +220,7 @@ ORDER BY d DESC;
 ```
 
 **SLO Status Logic**:
+
 ```sql
 CASE
   WHEN mismatch_ratio = 0 THEN 'healthy'
@@ -212,6 +231,7 @@ END
 ```
 
 **Integration Path**:
+
 1. Export `parity.json` from `check_parity.py` to BigQuery
 2. Create table: `applylens.parity_checks`
 3. Update model to reference real data
@@ -227,6 +247,7 @@ END
 **Current State**: Stub implementation (generates 0 backfills for last 30 days)
 
 **Future Implementation**:
+
 ```sql
 -- TODO: Replace stub with actual job logs
 -- Source: applylens.public_backfill_jobs (when implemented)
@@ -239,6 +260,7 @@ END
 **SLO Definition**: p95 duration < 300 seconds (5 minutes)
 
 **SLO Status Logic**:
+
 ```sql
 CASE
   WHEN backfill_count = 0 THEN 'no_data'
@@ -249,6 +271,7 @@ END
 ```
 
 **Integration Path**:
+
 1. Instrument `analyze_risk.py` with Prometheus metrics
 2. Export metrics to BigQuery (or log directly to table)
 3. Calculate percentiles from actual durations
@@ -264,6 +287,7 @@ END
 **Purpose**: Read dbt marts from BigQuery and bulk upsert to Elasticsearch
 
 **Functionality**:
+
 - Connects to BigQuery using service account credentials
 - Queries 3 mart tables (risk_daily, parity_drift, backfill_slo)
 - Fetches last 90 days of data
@@ -274,23 +298,27 @@ END
 - Outputs JSON summary for CI parsing
 
 **Environment Variables**:
+
 - `BQ_PROJECT`: GCP project ID (required)
 - `BQ_DATASET`: Dataset name (default: applylens)
-- `ES_URL`: Elasticsearch URL (default: http://elasticsearch:9200)
+- `ES_URL`: Elasticsearch URL (default: <http://elasticsearch:9200>)
 - `ES_ANALYTICS_INDEX`: Index prefix (default: analytics_applylens)
 
 **Target Indices**:
+
 - `analytics_applylens_risk_daily`
 - `analytics_applylens_parity_drift`
 - `analytics_applylens_backfill_slo`
 
 **Error Handling**:
+
 - Tests connections before export
 - Retries failed documents
 - Logs errors without stopping
 - Exits with code 1 if any errors
 
 **Example Output**:
+
 ```json
 {
   "timestamp": "2024-12-15T03:25:42Z",
@@ -315,10 +343,12 @@ END
 **Purpose**: Automated nightly sync of analytics data
 
 **Triggers**:
+
 - Schedule: 3:15 AM UTC daily (cron: `15 3 * * *`)
 - Manual: `workflow_dispatch` for ad-hoc runs
 
 **Job Steps**:
+
 1. Checkout code
 2. Set up Python 3.11
 3. Install dependencies (dbt-bigquery, google-cloud-bigquery, elasticsearch)
@@ -331,6 +361,7 @@ END
 10. Notify on failure
 
 **Required Secrets**:
+
 - `BQ_PROJECT`: GCP project ID
 - `BQ_SA_JSON`: Service account JSON content
 - `ES_URL`: Elasticsearch endpoint (with credentials if auth enabled)
@@ -350,12 +381,14 @@ END
 **Index Pattern**: `analytics_applylens_*`
 
 **Settings**:
+
 - Shards: 1 (low volume data)
 - Replicas: 1 (redundancy)
 - Refresh interval: 30 seconds
 - ILM policy: `analytics_30day_retention` (optional)
 
 **Mappings**:
+
 - `d`: date (primary time field)
 - `id`: keyword (document ID = date string)
 - Numeric fields: integer (counts) + float (metrics, percentages)
@@ -363,6 +396,7 @@ END
 - `last_check_at`: date (parity check timestamp)
 
 **Loading**:
+
 ```bash
 curl -X PUT "http://localhost:9200/_index_template/analytics_applylens" \
   -H 'Content-Type: application/json' \
@@ -427,11 +461,13 @@ curl -X PUT "http://localhost:9200/_index_template/analytics_applylens" \
    - Purpose: Quick health check number
 
 **Index Patterns Required**:
+
 - `analytics_applylens_risk_daily`
 - `analytics_applylens_parity_drift`
 - `analytics_applylens_backfill_slo`
 
 **Import Instructions**:
+
 ```bash
 # Via Kibana UI:
 # 1. Management → Stack Management → Saved Objects
@@ -455,6 +491,7 @@ curl -X POST "http://localhost:5601/api/saved_objects/_import" \
 **Purpose**: Comprehensive operational guide for analytics infrastructure
 
 **Sections**:
+
 1. **Overview**: Architecture diagram and component responsibilities
 2. **Normal Operations**: Daily health checks and monitoring
 3. **Manual Operations**: Running dbt locally, manual exports, CI triggers
@@ -466,12 +503,14 @@ curl -X POST "http://localhost:5601/api/saved_objects/_import" \
 9. **Escalation**: Contact information and SLAs
 
 **Key Troubleshooting Guides**:
+
 - Fivetran sync failures (credentials, network, schema changes)
 - dbt run failures (SQL errors, permissions, timeouts)
 - Elasticsearch export failures (connectivity, schema mismatches)
 - Kibana dashboard issues (index patterns, time ranges, empty data)
 
 **Data Quality Queries**:
+
 ```sql
 -- Verify Fivetran sync completeness
 SELECT COUNT(*) FROM postgres.emails vs applylens.public_emails
@@ -481,6 +520,7 @@ SELECT raw vs mart counts with diff calculation
 ```
 
 **Backfill Example**:
+
 ```bash
 # Full historical refresh
 dbt run --full-refresh
@@ -533,6 +573,7 @@ python analytics/export/export_to_es.py  # (after modifying date range)
 ```
 
 **Data Flow Timing**:
+
 - **Hourly**: Fivetran syncs Postgres → BigQuery (minute 0)
 - **3:15 AM UTC**: GitHub Actions runs dbt + export
 - **3:25 AM UTC**: New data available in Kibana
@@ -545,11 +586,13 @@ python analytics/export/export_to_es.py  # (after modifying date range)
 ### 1. Fivetran Setup Validation
 
 **Prerequisites**:
+
 - BigQuery dataset created (`applylens`)
 - Fivetran account with PostgreSQL connector
 - Database credentials configured
 
 **Steps**:
+
 ```bash
 # 1. Create read-only user
 psql -h $DB_HOST -U postgres -d applylens -f analytics/fivetran/setup_user.sql
@@ -586,11 +629,13 @@ FROM applylens.public_applications
 ### 2. dbt Model Testing
 
 **Prerequisites**:
+
 - Fivetran sync completed
 - BigQuery service account with credentials
 - Python 3.11+ with dbt-bigquery
 
 **Steps**:
+
 ```bash
 # 1. Install dependencies
 pip install dbt-bigquery dbt-core==1.8.0
@@ -630,6 +675,7 @@ LIMIT 7
 ```
 
 **Expected Result**:
+
 - All models run successfully (green checkmarks)
 - No test failures
 - `mrt_risk_daily` contains data for last 7 days
@@ -640,11 +686,13 @@ LIMIT 7
 ### 3. Elasticsearch Export Testing
 
 **Prerequisites**:
+
 - dbt models run successfully
 - Elasticsearch running and accessible
 - Index template loaded
 
 **Steps**:
+
 ```bash
 # 1. Load ES index template
 curl -X PUT "http://localhost:9200/_index_template/analytics_applylens" \
@@ -677,6 +725,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&pretty
 ```
 
 **Expected Result**:
+
 - Export completes with 0 errors
 - 3 indices created (risk_daily, parity_drift, backfill_slo)
 - Document counts match BigQuery row counts
@@ -687,10 +736,12 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&pretty
 ### 4. Kibana Dashboard Testing
 
 **Prerequisites**:
+
 - Elasticsearch indices populated
 - Kibana running and accessible
 
 **Steps**:
+
 ```bash
 # 1. Create index pattern in Kibana
 # UI: Management → Stack Management → Index Patterns
@@ -719,6 +770,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&pretty
 ```
 
 **Expected Result**:
+
 - Dashboard loads without errors
 - All 8 visualizations show data
 - Time series charts span last 90 days (or available data range)
@@ -729,10 +781,12 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&pretty
 ### 5. CI Workflow Testing
 
 **Prerequisites**:
+
 - GitHub repository with all files committed
 - GitHub secrets configured (BQ_PROJECT, BQ_SA_JSON, ES_URL)
 
 **Steps**:
+
 ```bash
 # 1. Configure GitHub secrets
 gh secret set BQ_PROJECT --body "your-gcp-project-id"
@@ -762,6 +816,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search" \
 ```
 
 **Expected Result**:
+
 - Workflow completes successfully (green checkmark)
 - All steps pass (dbt deps, run, test, export)
 - Elasticsearch indices updated with yesterday's data
@@ -776,6 +831,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search" \
 **Requirement**: Fivetran syncs emails & applications to BigQuery hourly
 
 **Validation**:
+
 ```bash
 # Check Fivetran connector status
 # UI: https://fivetran.com/dashboard/connectors/<connector_id>
@@ -797,6 +853,7 @@ bq ls --project_id=your-project-id applylens | grep public_
 **Requirement**: `dbt run` materializes mrt_risk_daily (non-empty)
 
 **Validation**:
+
 ```bash
 # Run dbt
 cd analytics/dbt
@@ -826,6 +883,7 @@ LIMIT 5
 **Requirement**: CI job pushes daily rows to ES index `analytics_applylens_daily`
 
 **Validation**:
+
 ```bash
 # Check CI workflow succeeded
 gh run list --workflow=analytics-sync.yml --limit=1
@@ -854,6 +912,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&sort=d
 **Requirement**: Kibana dashboard shows Avg Risk and Email Count time series
 
 **Validation**:
+
 ```bash
 # Open dashboard
 # UI: http://localhost:5601/app/dashboards
@@ -908,6 +967,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&sort=d
 **Objective**: Replace stub with real DB↔ES consistency data
 
 **Implementation**:
+
 ```python
 # In check_parity.py (existing):
 # Add export_to_bigquery() function
@@ -929,6 +989,7 @@ def export_to_bigquery(parity_results):
 ```
 
 **Update mrt_parity_drift.sql**:
+
 ```sql
 -- Replace stub with:
 SELECT 
@@ -949,6 +1010,7 @@ ORDER BY 1 DESC
 **Objective**: Track actual backfill job performance
 
 **Implementation Option A - Prometheus Metrics**:
+
 ```python
 # In analyze_risk.py (existing):
 from prometheus_client import Histogram
@@ -966,12 +1028,14 @@ def backfill_emails(batch_size):
 ```
 
 **Export metrics to BigQuery**:
+
 ```python
 # New script: analytics/export/export_prometheus_metrics.py
 # Query Prometheus API, parse histogram buckets, calculate percentiles, insert to BQ
 ```
 
 **Implementation Option B - Direct Logging**:
+
 ```python
 # In analyze_risk.py:
 def log_backfill_metrics(duration, emails_processed, status):
@@ -990,6 +1054,7 @@ def log_backfill_metrics(duration, emails_processed, status):
 ```
 
 **Update mrt_backfill_slo.sql**:
+
 ```sql
 -- Replace stub with:
 SELECT 
@@ -1013,6 +1078,7 @@ ORDER BY 1 DESC
 **Objective**: Notify Ops team when SLOs breached
 
 **Implementation**:
+
 ```yaml
 # In Kibana UI: Management → Stack Management → Rules and Connectors
 # Rule: High Parity Drift Alert
@@ -1044,6 +1110,7 @@ actions:
 **Objective**: Auto-delete old analytics data to reduce ES storage costs
 
 **Implementation**:
+
 ```json
 // Create ILM policy
 PUT _ilm/policy/analytics_30day_retention
@@ -1078,6 +1145,7 @@ PUT _ilm/policy/analytics_30day_retention
 #### 5. Add More Visualizations
 
 **Potential Additions**:
+
 - **Category Heatmap**: Email categories by day of week
 - **Domain Table**: Top sender domains with avg risk score
 - **Trend Lines**: 7-day moving average for risk metrics
@@ -1228,6 +1296,7 @@ Phase 12.4 successfully delivers a production-ready analytics infrastructure con
 ✅ **Operational Readiness**: Runbook with health checks and troubleshooting
 
 **Next Steps**:
+
 1. Deploy to production (follow deployment checklist)
 2. Populate stub models (parity drift, backfill SLO)
 3. Add Kibana alerting for SLO breaches

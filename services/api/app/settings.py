@@ -59,6 +59,18 @@ class Settings(BaseSettings):
     
     # Testing/Mocking
     USE_MOCK_GMAIL: bool = False
+    
+    @property
+    def is_test_env(self) -> bool:
+        """Check if running in test environment."""
+        return self.ENV == "test"
+    
+    @property
+    def safe_es_url(self) -> str:
+        """Return ES URL, or unreachable URL in test mode to prevent accidental connections."""
+        if self.is_test_env and self.ES_ENABLED:
+            return "http://127.0.0.1:0"  # Unreachable on purpose
+        return self.ES_URL
 
     class Config:
         env_file = "../../infra/.env"

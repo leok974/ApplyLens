@@ -1,4 +1,5 @@
 # Phase 6 Deployment Summary
+
 **Date:** October 13, 2025  
 **Branch:** phase-3  
 **Commits:** 729665a (implementation), 8e84d84 (deployment fixes)
@@ -10,20 +11,24 @@ All Phase 6 features successfully deployed and tested.
 ## Deployment Steps Executed
 
 ### 1. Database Migration ✅
+
 ```bash
 docker-compose exec api alembic stamp 0017_phase6_personalization
 ```
+
 - **Status:** Tables already existed, marked migration as applied
 - **Tables Created:**
   - `user_weights` (per-user feature weights)
   - `policy_stats` (policy performance metrics)
 
 ### 2. Elasticsearch Mapping ✅
+
 ```bash
 curl -X PUT "http://localhost:9200/emails/_mapping" \
   -H "Content-Type: application/json" \
   -d @services/api/es/mappings/ats_fields.json
 ```
+
 - **Status:** ✅ Acknowledged
 - **Fields Added:**
   - ats.system (keyword)
@@ -35,7 +40,9 @@ curl -X PUT "http://localhost:9200/emails/_mapping" \
   - ats.ghosting_risk (float)
 
 ### 3. Code Fixes Applied ✅
+
 **Import Issues Resolved:**
+
 - Moved `UserWeight` and `PolicyStats` to `app/models.py` (main models file)
 - Fixed Base import in `models/actions.py` (from `..db` not `.base`)
 - Updated imports in:
@@ -45,20 +52,24 @@ curl -X PUT "http://localhost:9200/emails/_mapping" \
 - Removed problematic `models/__init__.py` that prevented package imports
 
 **Test Fixes:**
+
 - Updated `test-phase6.ps1` to use `/api` prefix for endpoints
 - Fixed metrics endpoint URL (root level, not under `/api`)
 
 ### 4. Services Started ✅
+
 ```bash
 docker-compose up -d db es
 docker-compose restart api
 ```
+
 - **Status:** All services running
 - PostgreSQL: ✅ Port 5433
 - Elasticsearch: ✅ Port 9200
 - API: ✅ Port 8003
 
 ### 5. Smoke Tests ✅
+
 ```powershell
 pwsh ./scripts/test-phase6.ps1
 ```
@@ -81,24 +92,28 @@ pwsh ./scripts/test-phase6.ps1
 ## Features Deployed
 
 ### 1. Per-User Learning ✅
+
 - **Endpoint:** Integrated into `/api/actions/{id}/approve` and `/api/actions/{id}/reject`
 - **Database:** `user_weights` table
 - **Algorithm:** Online gradient descent (η=0.2)
 - **Features:** category, sender_domain, listid, contains:token
 
 ### 2. Policy Performance Analytics ✅
+
 - **Endpoint:** `GET /api/policy/stats`
 - **Database:** `policy_stats` table
 - **Metrics:** Precision (approved/fired), Recall (estimated)
 - **Tracking:** Fired, approved, rejected counters per policy per user
 
 ### 3. ATS Enrichment ✅
+
 - **ES Mapping:** `ats.*` fields added
 - **Enrichment Job:** `analytics/enrich/ats_enrich_emails.py`
 - **Ghosting Risk:** Algorithm implemented (0.5 + 0.03 * days_stale)
 - **RAG Boost:** High-risk emails prioritized
 
 ### 4. Money Mode ✅
+
 - **Endpoints:**
   - `GET /api/money/receipts.csv` - CSV export
   - `GET /api/money/duplicates?window_days=7` - Find duplicates
@@ -107,11 +122,13 @@ pwsh ./scripts/test-phase6.ps1
 - **Features:** Amount extraction, duplicate detection
 
 ### 5. Mode Parameter ✅
+
 - **Endpoint:** `GET /api/chat/stream?mode=networking|money`
 - **Networking Mode:** Boosts event/meetup/conference
 - **Money Mode:** Boosts receipt/invoice/payment
 
 ### 6. Prometheus Metrics ✅
+
 - **Endpoint:** `GET /metrics`
 - **New Metrics:**
   - `policy_fired_total{policy_id, user}`
@@ -121,6 +138,7 @@ pwsh ./scripts/test-phase6.ps1
   - `ats_enriched_total`
 
 ### 7. Cron Jobs 📝
+
 - **ATS Enrichment:** `analytics/enrich/ats_enrich_emails.py` (Schedule: Daily 2am)
 - **Policy Stats:** `app/cron/recompute_policy_stats.py` (Schedule: Daily 2:15am)
 - **Status:** ⚠️ **TODO: Schedule in crontab**
@@ -128,6 +146,7 @@ pwsh ./scripts/test-phase6.ps1
 ## Production Readiness
 
 ### ✅ Complete
+
 - [x] Database schema migrated
 - [x] Elasticsearch mapping updated
 - [x] All code deployed
@@ -137,6 +156,7 @@ pwsh ./scripts/test-phase6.ps1
 - [x] All tests passing
 
 ### 📝 Pending
+
 - [ ] **Schedule cron jobs** (see below)
 - [ ] **Load test endpoints** under realistic traffic
 - [ ] **Monitor metrics** in production dashboard
@@ -144,6 +164,7 @@ pwsh ./scripts/test-phase6.ps1
 ## Next Steps
 
 ### 1. Schedule Cron Jobs
+
 ```bash
 crontab -e
 
@@ -153,7 +174,9 @@ crontab -e
 ```
 
 ### 2. Generate Test Data
+
 To see learning in action:
+
 1. Create some policies in `/api/policy`
 2. Generate proposals via `/api/actions/propose`
 3. Approve/reject actions to trigger learning
@@ -161,6 +184,7 @@ To see learning in action:
 5. Query `user_weights` table to see learned preferences
 
 ### 3. Test ATS Enrichment
+
 ```bash
 # Run enrichment manually
 python analytics/enrich/ats_enrich_emails.py
@@ -170,6 +194,7 @@ curl "http://localhost:9200/emails/_search?q=ats.system:*" | jq '.hits.total.val
 ```
 
 ### 4. Monitor Metrics
+
 ```bash
 # Check Prometheus metrics
 curl http://localhost:8003/metrics | grep policy_fired_total
@@ -177,6 +202,7 @@ curl http://localhost:8003/metrics | grep user_weight_updates
 ```
 
 ### 5. Test Money Mode
+
 ```bash
 # Export receipts
 curl -O http://localhost:8003/api/money/receipts.csv
@@ -191,21 +217,26 @@ curl http://localhost:8003/api/money/summary | jq .
 ## Troubleshooting
 
 ### Issue: No actions proposed
+
 **Cause:** No policies configured or no matching emails  
 **Fix:** Create policies via `/api/policy` endpoint
 
 ### Issue: No policy stats
+
 **Cause:** Haven't approved/rejected any actions yet  
 **Fix:** Approve or reject some proposals to generate stats
 
 ### Issue: No ATS enriched emails
+
 **Cause:** ATS enrichment job hasn't run or no matching emails  
-**Fix:** 
+**Fix:**
+
 1. Check warehouse has data: `SELECT COUNT(*) FROM vw_applications_enriched`
 2. Run enrichment: `python analytics/enrich/ats_enrich_emails.py`
 3. Verify ES: `curl localhost:9200/emails/_search?q=ats.system:*`
 
 ### Issue: Money endpoints return empty results
+
 **Cause:** No emails categorized as receipts  
 **Fix:** Ensure emails have category:finance or payment-related keywords
 
@@ -231,6 +262,7 @@ GET /metrics
 ## Database Schema
 
 ### user_weights
+
 ```sql
 CREATE TABLE user_weights (
     id SERIAL PRIMARY KEY,
@@ -243,6 +275,7 @@ CREATE TABLE user_weights (
 ```
 
 ### policy_stats
+
 ```sql
 CREATE TABLE policy_stats (
     id SERIAL PRIMARY KEY,
@@ -262,6 +295,7 @@ CREATE TABLE policy_stats (
 ## Commit History
 
 ### Phase 6 Implementation (729665a)
+
 - Added UserWeight and PolicyStats models
 - Created Alembic migration 0017_phase6_personalization
 - Implemented online learner with gradient descent
@@ -275,9 +309,10 @@ CREATE TABLE policy_stats (
 - Created comprehensive documentation
 
 ### Deployment Fixes (8e84d84)
+
 - Moved Phase 6 models to main models.py
 - Fixed all import paths
-- Removed problematic models/__init__.py
+- Removed problematic models/**init**.py
 - Fixed test script API paths
 - All 10 smoke tests passing
 
@@ -295,6 +330,7 @@ CREATE TABLE policy_stats (
 ## Conclusion
 
 Phase 6 has been successfully deployed and is production-ready. All core features are functional:
+
 - ✅ Per-user learning operational
 - ✅ Policy analytics tracking started
 - ✅ ATS enrichment pipeline ready

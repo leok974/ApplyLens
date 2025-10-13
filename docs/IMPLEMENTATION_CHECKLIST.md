@@ -3,6 +3,7 @@
 ## ✅ Completed Features
 
 ### Backend API
+
 - [x] Extended Email model with `company`, `role`, `source`, `source_confidence`, `application_id`
 - [x] Created Application model with status enum (applied, in_review, interview, offer, rejected, archived)
 - [x] Created database migration script with ALTER TABLE statements
@@ -19,6 +20,7 @@
 - [x] All tests passing (3/3)
 
 ### Frontend
+
 - [x] Updated `Email` type with `body_preview`, `company`, `role`, `source`, `application_id`
 - [x] Added `AppOut` and `AppStatus` types
 - [x] Created `listApplications()`, `createApplication()`, `updateApplication()`, `deleteApplication()`, `createApplicationFromEmail()` API functions
@@ -35,12 +37,14 @@
 - [x] Restart services to apply changes
 
 ### Database
+
 - [x] `emails` table has 11 new columns
 - [x] `applications` table created with 11 columns
 - [x] 13 indexes created for performance
 - [x] Foreign key relationships established
 
 ### Documentation
+
 - [x] APPLICATION_TRACKER_SUMMARY.md - Full technical docs
 - [x] APPLICATION_TRACKER_QUICKSTART.md - User guide
 - [x] API automatically documented at `/docs`
@@ -97,6 +101,7 @@ open http://localhost:5175/inbox
 ## 📋 Verification Checklist
 
 ### Database Schema
+
 - [ ] Run: `docker compose exec db psql -U postgres -d applylens -c "\d emails"`
   - Verify columns: gmail_id, sender, recipient, company, role, source, source_confidence, application_id
 - [ ] Run: `docker compose exec db psql -U postgres -d applylens -c "\d applications"`
@@ -105,6 +110,7 @@ open http://localhost:5175/inbox
   - Check application count
 
 ### API Endpoints
+
 - [ ] `/gmail/status` → Returns `{"connected": bool, "total": number}`
 - [ ] `/gmail/inbox` → Returns emails with body_preview, company, role, source
 - [ ] `/applications` → Returns empty array initially
@@ -113,6 +119,7 @@ open http://localhost:5175/inbox
 - [ ] `/search?q=test&company=...&source=...` → New filters work
 
 ### Frontend
+
 - [ ] `/inbox` → EmailCard shows company/role if extracted
 - [ ] `/inbox` → "Create Application" button visible when company exists
 - [ ] `/inbox` → "View Application" link visible when application_id exists
@@ -125,6 +132,7 @@ open http://localhost:5175/inbox
 - [ ] `/tracker` → Delete button works, confirms first
 
 ### Integration
+
 - [ ] Gmail backfill → Creates applications automatically
 - [ ] Application creation → Emails link to application
 - [ ] Thread grouping → Multiple emails link to same application
@@ -132,6 +140,7 @@ open http://localhost:5175/inbox
 - [ ] Navigation → `/inbox` → Create Application → `/tracker?selected=X`
 
 ### Elasticsearch
+
 - [ ] Index deleted: `curl -X DELETE http://localhost:9200/gmail_emails`
 - [ ] Will recreate on next backfill with new fields
 - [ ] After backfill: Check mapping has company, role, source, source_confidence
@@ -139,6 +148,7 @@ open http://localhost:5175/inbox
 ## 🚀 Next Steps (Ready to Implement)
 
 ### Production Hardening
+
 - [ ] Add error boundaries in React components
 - [ ] Add loading states for all async operations
 - [ ] Add proper error messages (not just alert())
@@ -149,6 +159,7 @@ open http://localhost:5175/inbox
 - [ ] Add bulk actions (mark multiple as archived)
 
 ### User Authentication
+
 - [ ] Add `user_id` column to applications table
 - [ ] Add `user_email` to emails table
 - [ ] Filter queries by current user
@@ -156,6 +167,7 @@ open http://localhost:5175/inbox
 - [ ] Add per-user OAuth tokens
 
 ### Enhanced Features
+
 - [ ] Add notes editor to application detail view
 - [ ] Add email threading view (see all emails for an application)
 - [ ] Add file attachments (store resume PDFs)
@@ -166,6 +178,7 @@ open http://localhost:5175/inbox
 - [ ] Add scheduled sync (cron job)
 
 ### Testing
+
 - [ ] Write Playwright E2E tests (inbox → create → tracker flow)
 - [ ] Write unit tests for extraction functions
 - [ ] Write integration tests for application linking
@@ -175,6 +188,7 @@ open http://localhost:5175/inbox
 ## 🐛 Known Limitations
 
 ### Current Constraints
+
 - **No user auth** - All users see all applications
 - **Single user** - OAuth token shared across users
 - **No pagination** - Applications list loads 500 max
@@ -185,12 +199,14 @@ open http://localhost:5175/inbox
 - **No reminders** - No notification system
 
 ### Extraction Accuracy
+
 - **Company detection** - ~70% accuracy, works best with corporate emails
 - **Role detection** - ~60% accuracy, depends on subject line format
 - **Source detection** - ~90% for known ATS, ~40% for generic
 - **May create duplicates** - If thread_id missing and company/role don't match exactly
 
 ### Performance
+
 - **Backfill** - ~30 seconds for 100 emails
 - **No streaming** - Backfill is synchronous, blocks request
 - **No retry** - Gmail API failures not retried
@@ -199,6 +215,7 @@ open http://localhost:5175/inbox
 ## 📊 Success Metrics
 
 ### Backend
+
 - ✅ 11 new columns in emails table
 - ✅ 1 new table (applications) with 11 columns
 - ✅ 13 indexes created
@@ -208,6 +225,7 @@ open http://localhost:5175/inbox
 - ✅ All tests passing (3/3)
 
 ### Frontend
+
 - ✅ 5 new API client functions
 - ✅ 2 new TypeScript types (AppOut, AppStatus)
 - ✅ 1 updated component (EmailCard)
@@ -217,6 +235,7 @@ open http://localhost:5175/inbox
 - ✅ CRUD operations working
 
 ### Code Metrics
+
 - **Backend**: ~1,500 lines added/modified
 - **Frontend**: ~400 lines added/modified
 - **Tests**: 3 tests, all passing
@@ -225,6 +244,7 @@ open http://localhost:5175/inbox
 ## 🎯 Testing Commands
 
 ### Database Verification
+
 ```bash
 # Check emails table structure
 docker compose exec db psql -U postgres -d applylens -c "\d emails"
@@ -240,6 +260,7 @@ docker compose exec db psql -U postgres -d applylens -c "SELECT COUNT(*) FROM em
 ```
 
 ### API Testing
+
 ```bash
 # Health check
 curl http://localhost:8003/health
@@ -261,6 +282,7 @@ curl http://localhost:8003/docs | grep -o "<title>.*</title>"
 ```
 
 ### Frontend Testing
+
 ```bash
 # Check web server running
 curl http://localhost:5175
@@ -271,6 +293,7 @@ open http://localhost:5175/inbox
 ```
 
 ### Integration Testing
+
 ```bash
 # Run backend tests
 docker compose exec api python -m tests.test_applications
@@ -288,24 +311,28 @@ curl "http://localhost:9200/gmail_emails/_mapping" | jq '.gmail_emails.mappings.
 ## 🔍 Debugging Tips
 
 ### If applications aren't created during backfill
+
 1. Check email extraction: Look at `emails` table, verify `company` and `role` columns populated
 2. Check logs: `docker compose logs api --tail=50`
 3. Run extraction manually: Use test functions to debug regex patterns
 4. Check thread_id: Emails need thread_id OR company+role to group
 
 ### If "Create Application" button doesn't work
+
 1. Check console errors: Open browser dev tools
 2. Verify email has `company`: EmailCard only shows button if `e.company` exists
 3. Check API response: `/gmail/inbox` should include `company`, `role`, `source`
 4. Test endpoint: `curl -X POST http://localhost:8003/applications/from-email/1`
 
 ### If tracker page is empty
+
 1. Check applications exist: `curl http://localhost:8003/applications`
 2. Check filters: Try clicking "Clear Filters"
 3. Check browser console: Look for fetch errors
 4. Verify API running: `curl http://localhost:8003/health`
 
 ### If status updates don't save
+
 1. Check network tab: See if PATCH request succeeds
 2. Check API logs: `docker compose logs api --tail=20`
 3. Test directly: `curl -X PATCH http://localhost:8003/applications/1 -H "Content-Type: application/json" -d '{"status":"interview"}'`
@@ -315,13 +342,14 @@ curl "http://localhost:9200/gmail_emails/_mapping" | jq '.gmail_emails.mappings.
 
 - **Technical Details**: See `APPLICATION_TRACKER_SUMMARY.md`
 - **User Guide**: See `APPLICATION_TRACKER_QUICKSTART.md`
-- **API Docs**: http://localhost:8003/docs
+- **API Docs**: <http://localhost:8003/docs>
 - **Gmail Setup**: See `GMAIL_SETUP.md`
 - **Quick Commands**: See `QUICKREF.md`
 
-## ✨ Ready to Use!
+## ✨ Ready to Use
 
 All systems are operational and ready for testing. The application tracker is now fully integrated with:
+
 - ✅ Automatic email metadata extraction
 - ✅ Smart application grouping by thread
 - ✅ Full CRUD API with filtering

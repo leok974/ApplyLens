@@ -1,7 +1,8 @@
 # Bug Fixes: Duplicate Keys & Applications API
 
 **Date**: October 11, 2025  
-**Issues Fixed**: 
+**Issues Fixed**:
+
 1. React duplicate key warnings in Search.tsx
 2. Missing /api/applications endpoint (404 errors)
 3. Frontend tolerance for empty API responses
@@ -14,7 +15,8 @@
 
 React console warning: **"Two children with the same key, null"**
 
-**Root Cause**: 
+**Root Cause**:
+
 - `.map()` iterations using `key={h.id}` where some documents had `null` or `undefined` ids
 - Multiple nested `.map()` calls without stable keys (suggestions, "did you mean", labels)
 
@@ -23,6 +25,7 @@ React console warning: **"Two children with the same key, null"**
 #### A. Main Results List
 
 **Before**:
+
 ```tsx
 {hits.map(h => {
   return (
@@ -32,6 +35,7 @@ React console warning: **"Two children with the same key, null"**
 ```
 
 **After**:
+
 ```tsx
 {hits.map((h: any, i: number) => {
   // Ensure unique key even when id is missing/null
@@ -45,6 +49,7 @@ React console warning: **"Two children with the same key, null"**
 ```
 
 **Why this works**:
+
 - Checks multiple possible id fields (handles both direct docs and ES hit format)
 - Falls back to `row-${index}` when no id exists
 - Guarantees uniqueness even with null/undefined ids
@@ -52,6 +57,7 @@ React console warning: **"Two children with the same key, null"**
 #### B. Autocomplete Suggestions
 
 **Before**:
+
 ```tsx
 {sugs.map((s, i) => (
   <div key={i}>...</div>
@@ -59,6 +65,7 @@ React console warning: **"Two children with the same key, null"**
 ```
 
 **After**:
+
 ```tsx
 {sugs.map((s: string, i: number) => (
   <div key={`sug-${i}-${s}`}>...</div>
@@ -66,6 +73,7 @@ React console warning: **"Two children with the same key, null"**
 ```
 
 **Why this works**:
+
 - Combines index + text content for stability
 - Handles duplicate suggestions (same text appearing twice)
 - More descriptive than bare index
@@ -73,6 +81,7 @@ React console warning: **"Two children with the same key, null"**
 #### C. "Did You Mean" Buttons
 
 **Before**:
+
 ```tsx
 {dym.map((d, i) => (
   <button key={i}>...</button>
@@ -80,6 +89,7 @@ React console warning: **"Two children with the same key, null"**
 ```
 
 **After**:
+
 ```tsx
 {dym.map((d: string, i: number) => (
   <button key={`dym-${i}-${d}`}>...</button>
@@ -89,6 +99,7 @@ React console warning: **"Two children with the same key, null"**
 #### D. EmailLabels Component
 
 **Before**:
+
 ```tsx
 {ordered.map((l: string) => (
   <span key={l}>...</span>
@@ -96,6 +107,7 @@ React console warning: **"Two children with the same key, null"**
 ```
 
 **After**:
+
 ```tsx
 {ordered.map((l: string, idx: number) => (
   <span key={`${l}-${idx}`}>...</span>
@@ -103,6 +115,7 @@ React console warning: **"Two children with the same key, null"**
 ```
 
 **Why this matters**:
+
 - Labels array can contain duplicates
 - Same label appearing twice would create duplicate keys
 - Index ensures uniqueness
@@ -116,11 +129,13 @@ React console warning: **"Two children with the same key, null"**
 **Error**: `GET /api/applications → 404 Not Found`
 
 **Symptoms**:
+
 - Tracker page failing to load
 - Console errors in frontend
 - Empty application list
 
-**Root Cause**: 
+**Root Cause**:
+
 - Applications router existed (`services/api/app/routers/applications.py`)
 - But was never imported or included in `main.py`
 - Vite proxy forwarding to API, but endpoint not registered
@@ -132,11 +147,13 @@ React console warning: **"Two children with the same key, null"**
 **File**: `services/api/app/main.py`
 
 **Before**:
+
 ```python
 from .routers import emails, search, suggest
 ```
 
 **After**:
+
 ```python
 from .routers import emails, search, suggest, applications
 ```
@@ -144,6 +161,7 @@ from .routers import emails, search, suggest, applications
 #### Step 2: Include the Router
 
 **Before**:
+
 ```python
 # Include routers
 app.include_router(emails.router)
@@ -153,6 +171,7 @@ app.include_router(auth_google.router)
 ```
 
 **After**:
+
 ```python
 # Include routers
 app.include_router(emails.router)
@@ -170,17 +189,17 @@ app.include_router(auth_google.router)
 
 1. `GET /api/applications/` - List all applications
    - Query params: `status`, `q` (search company/role)
-   
+
 2. `POST /api/applications/` - Create new application
    - Body: `{ company, role, status, source }`
-   
+
 3. `GET /api/applications/{app_id}` - Get single application
-   
+
 4. `PATCH /api/applications/{app_id}` - Update application
    - Body: Partial fields to update
-   
+
 5. `DELETE /api/applications/{app_id}` - Delete application
-   
+
 6. `POST /api/applications/from-email` - Create from Gmail thread
    - Body: `{ thread_id, company?, role?, snippet?, sender?, subject?, body_text?, headers?, source? }`
 
@@ -193,6 +212,7 @@ app.include_router(auth_google.router)
 **Crash risk**: If API returns `null`, `undefined`, or throws error, frontend could break
 
 **Symptoms**:
+
 - Page crashes when backend is down
 - TypeError when iterating over non-array response
 - Poor error handling
@@ -202,6 +222,7 @@ app.include_router(auth_google.router)
 **File**: `apps/web/src/pages/Tracker.tsx`
 
 **Before**:
+
 ```tsx
 const fetchRows = async () => {
   setLoading(true)
@@ -221,6 +242,7 @@ const fetchRows = async () => {
 ```
 
 **After**:
+
 ```tsx
 const fetchRows = async () => {
   setLoading(true)
@@ -243,6 +265,7 @@ const fetchRows = async () => {
 ```
 
 **Improvements**:
+
 1. ✅ **Validate response**: `Array.isArray(data) ? data : []`
 2. ✅ **Graceful failure**: Set empty array in catch block
 3. ✅ **User feedback**: Toast notification shows error
@@ -281,6 +304,7 @@ const fetchRows = async () => {
 ### Test 1: Search Results Keys
 
 **Steps**:
+
 1. Open browser console
 2. Navigate to `/search`
 3. Search for "Interview"
@@ -291,27 +315,32 @@ const fetchRows = async () => {
 ### Test 2: Applications API
 
 **Steps**:
+
 1. Open browser dev tools → Network tab
 2. Navigate to `/tracker`
 3. Verify `GET /api/applications` returns 200 OK
 
-**Expected**: 
+**Expected**:
+
 - Status 200
 - JSON array response (empty or with demo data)
 
 ### Test 3: Empty Response Handling
 
 **Steps**:
+
 1. Stop API container: `docker stop infra-api-1`
 2. Navigate to `/tracker`
 3. Verify page doesn't crash
 
 **Expected**:
+
 - Error toast appears
 - Page shows empty state (not crash)
 - "Failed to load applications" message
 
 **Cleanup**:
+
 ```bash
 docker start infra-api-1
 ```
@@ -319,6 +348,7 @@ docker start infra-api-1
 ### Test 4: Autocomplete Keys
 
 **Steps**:
+
 1. Navigate to `/search`
 2. Type "int" in search box
 3. Wait for suggestions to appear
@@ -333,6 +363,7 @@ docker start infra-api-1
 ### Docker Build
 
 **Command**:
+
 ```bash
 cd D:\ApplyLens\infra
 docker compose up -d --build api web
@@ -342,6 +373,7 @@ docker compose up -d --build api web
 **Status**: ✅ Successful
 
 **Containers**:
+
 - `infra-api-1`: Running on port 8003
 - `infra-web-1`: Running on port 5175
 
@@ -352,6 +384,7 @@ docker ps --filter "name=infra-" --format "table {{.Names}}\t{{.Status}}\t{{.Por
 ```
 
 **Expected Output**:
+
 ```
 NAMES                 STATUS                    PORTS
 infra-web-1           Up X seconds              0.0.0.0:5175->5175/tcp
@@ -366,12 +399,14 @@ infra-api-1           Up X seconds              0.0.0.0:8003->8003/tcp
 ### 1. Defensive Key Generation
 
 **Pattern**:
+
 ```tsx
 const rawId = doc?.id ?? doc?._id ?? doc?._source?.id ?? null;
 const safeKey = rawId ? String(rawId) : `row-${index}`;
 ```
 
 **Benefits**:
+
 - Handles multiple data shapes (direct docs, ES hits)
 - Always produces unique key
 - Stable across re-renders
@@ -379,6 +414,7 @@ const safeKey = rawId ? String(rawId) : `row-${index}`;
 ### 2. Compound Keys for Duplicates
 
 **Pattern**:
+
 ```tsx
 {items.map((item, idx) => (
   <div key={`${item.id}-${idx}`}>
@@ -386,6 +422,7 @@ const safeKey = rawId ? String(rawId) : `row-${index}`;
 ```
 
 **When to use**:
+
 - Arrays can contain duplicates
 - Same value appearing multiple times
 - Need guaranteed uniqueness
@@ -393,12 +430,14 @@ const safeKey = rawId ? String(rawId) : `row-${index}`;
 ### 3. Array Validation
 
 **Pattern**:
+
 ```tsx
 const data = await fetchData()
 setState(Array.isArray(data) ? data : [])
 ```
 
 **Benefits**:
+
 - Prevents TypeErrors on `.map()`, `.filter()`, etc.
 - Graceful degradation
 - No user-facing crashes
@@ -406,6 +445,7 @@ setState(Array.isArray(data) ? data : [])
 ### 4. Error Recovery
 
 **Pattern**:
+
 ```tsx
 try {
   const data = await riskyOperation()
@@ -418,6 +458,7 @@ try {
 ```
 
 **Benefits**:
+
 - User sees error message
 - Page remains functional
 - Logs help debugging
@@ -461,6 +502,7 @@ export function safeKey(obj: any, index: number, prefix = 'item'): string {
 ```
 
 **Usage**:
+
 ```tsx
 {items.map((item, i) => (
   <div key={safeKey(item, i, 'email')}>
@@ -486,6 +528,7 @@ const validated = z.array(ApplicationSchema).parse(data);
 ```
 
 **Benefits**:
+
 - Runtime type checking
 - Catches API contract changes
 - Better error messages
@@ -525,4 +568,3 @@ export async function listApplications() {
 **Impact**: High (prevents crashes, fixes console spam)  
 **Priority**: Critical (user-facing bugs)  
 **Backward Compatible**: Yes
-

@@ -9,16 +9,19 @@
 ## 🎯 Objectives Achieved
 
 ✅ **Production-grade monitoring infrastructure**
+
 - Prometheus alert rules for critical failures
 - Enhanced health/readiness endpoints
 - Automated synthetic probes
 
 ✅ **Observability tooling**
+
 - Structured JSON logging configuration
 - Optional OpenTelemetry tracing
 - Grafana operational dashboard
 
 ✅ **Operational documentation**
+
 - 4 comprehensive runbooks for incident response
 - Step-by-step troubleshooting guides
 - Post-incident checklists
@@ -28,7 +31,9 @@
 ## 📦 Components Delivered
 
 ### 1. Prometheus Alert Rules
+
 **File:** `infra/alerts/prometheus-rules.yml`
+
 - **Lines:** 54
 - **Alerts:** 4 production-critical rules
 
@@ -42,16 +47,20 @@
 | BackfillDurationSLO | p95 duration > 5 min for 30m | Ticket | 4 hours |
 
 **Key Features:**
+
 - Runbook URLs in annotations
 - Team and service labels for routing
 - Tuned thresholds based on Phase 12.2 metrics
 
 ### 2. Enhanced Health Endpoints
+
 **File:** `services/api/app/health.py`
+
 - **Lines:** 105
 - **Endpoints:** 3 (/healthz, /live, /ready)
 
 **Improvements over previous implementation:**
+
 - Kubernetes-compatible liveness/readiness separation
 - Migration version reporting
 - Structured error responses (503 when not ready)
@@ -59,6 +68,7 @@
 - Graceful handling of missing dependencies
 
 **Example Response:**
+
 ```json
 {
   "status": "ready",
@@ -69,17 +79,21 @@
 ```
 
 **Integration:**
+
 - Replaced inline endpoints in `main.py`
 - Imported as dedicated module
 - Uses existing `schema_guard.get_current_migration()`
 
 ### 3. Synthetic Probes
+
 **File:** `.github/workflows/synthetic-probes.yml`
+
 - **Lines:** 79
 - **Frequency:** Hourly (configurable)
 - **Checks:** 5 critical endpoints
 
 **Probe Sequence:**
+
 1. `/healthz` - Basic liveness
 2. `/live` - Liveness alias
 3. `/ready` - DB & ES readiness with validation
@@ -87,6 +101,7 @@
 5. `/automation/health` - Risk scoring health
 
 **Features:**
+
 - Exit on first failure (fail-fast)
 - JSON validation with jq
 - Metric presence verification
@@ -94,17 +109,21 @@
 - Manual dispatch support
 
 **Usage:**
+
 ```bash
 # Requires GitHub secret: APPLYLENS_BASE_URL
 # Example: https://api.applylens.com
 ```
 
 ### 4. Structured Logging
+
 **File:** `services/api/app/logging.yaml`
+
 - **Lines:** 55
 - **Format:** JSON for production, simple for dev
 
 **Configuration:**
+
 - JSON formatter using `pythonjsonlogger`
 - Console handler for Docker stdout
 - Optional file handler (logs/api.log, 10MB rotation)
@@ -112,6 +131,7 @@
 - Configurable log levels by component
 
 **Activation:**
+
 ```bash
 # Set environment variable
 UVICORN_LOG_CONFIG=services/api/app/logging.yaml
@@ -122,6 +142,7 @@ environment:
 ```
 
 **Log Format Example:**
+
 ```json
 {
   "ts": "2025-01-10T14:23:45.123Z",
@@ -132,17 +153,21 @@ environment:
 ```
 
 ### 5. OpenTelemetry Tracing
+
 **File:** `services/api/app/tracing.py`
+
 - **Lines:** 75
 - **Status:** Optional (disabled by default)
 
 **Instrumentation:**
+
 - FastAPI automatic tracing
 - SQLAlchemy query tracing
 - HTTP client request tracing
 - OTLP exporter (Jaeger/Tempo compatible)
 
 **Activation:**
+
 ```bash
 OTEL_ENABLED=1
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
@@ -152,37 +177,45 @@ ENV=production
 ```
 
 **Resource Attributes:**
+
 - service.name
 - service.version
 - deployment.environment
 
 **Graceful Degradation:**
+
 - Logs warning if libraries not installed
 - Doesn't block app startup
 - Production-ready error handling
 
 ### 6. Grafana Ops Dashboard
+
 **File:** `services/api/dashboards/ops-overview.json`
+
 - **Lines:** 278
 - **Panels:** 8 key metrics
 
 **Dashboard Layout:**
 
 **Row 1: Critical Metrics**
+
 - Panel 1: 5xx Error Rate (stat, red/yellow/green)
 - Panel 2: API Latency p50/p95/p99 (timeseries)
 - Panel 3: Parity Mismatch Ratio (stat)
 
 **Row 2: Performance & Health**
+
 - Panel 4: Risk Batch Duration (timeseries with thresholds)
 - Panel 5: Request Rate by Status (stacked timeseries)
 
 **Row 3: Infrastructure & Jobs**
+
 - Panel 6: DB & ES Health (timeseries, 0/1 binary)
 - Panel 7: Risk Job Failures (stat, 30m window)
 - Panel 8: Backfill p95 Duration (stat with SLO threshold)
 
 **Features:**
+
 - 30-second auto-refresh
 - 6-hour default time range
 - Color-coded thresholds
@@ -190,6 +223,7 @@ ENV=production
 - Drill-down compatible
 
 **Import Instructions:**
+
 ```bash
 # In Grafana UI:
 # 1. Dashboards → Import
@@ -199,12 +233,15 @@ ENV=production
 ```
 
 ### 7. Operational Runbooks
+
 **Location:** `services/api/docs/runbooks/`
+
 - **Files:** 4 runbooks
 - **Total Lines:** ~800
 - **Format:** Markdown with code blocks
 
 **Runbook 1: api-errors.md**
+
 - **Lines:** 194
 - **Scope:** 5xx error rate alerts
 - **Sections:**
@@ -216,6 +253,7 @@ ENV=production
   - Useful PromQL and SQL queries
 
 **Runbook 2: risk-job.md**
+
 - **Lines:** 205
 - **Scope:** Risk computation failures
 - **Sections:**
@@ -228,6 +266,7 @@ ENV=production
   - Manual recompute steps
 
 **Runbook 3: parity.md**
+
 - **Lines:** 219
 - **Scope:** DB↔ES data drift
 - **Sections:**
@@ -240,6 +279,7 @@ ENV=production
   - Alert thresholds
 
 **Runbook 4: backfill.md**
+
 - **Lines:** 202
 - **Scope:** Slow backfill jobs (SLO violation)
 - **Sections:**
@@ -251,6 +291,7 @@ ENV=production
   - Database performance queries
 
 **Common Features Across Runbooks:**
+
 - Copy-pasteable commands (PowerShell & Bash)
 - Severity and response time guidance
 - Step-by-step troubleshooting
@@ -263,6 +304,7 @@ ENV=production
 ## 🔧 File Changes Summary
 
 ### Created Files (10)
+
 1. `infra/alerts/prometheus-rules.yml` (54 lines)
 2. `services/api/app/health.py` (105 lines)
 3. `.github/workflows/synthetic-probes.yml` (79 lines)
@@ -275,6 +317,7 @@ ENV=production
 10. `services/api/docs/runbooks/backfill.md` (202 lines)
 
 ### Modified Files (1)
+
 11. `services/api/app/main.py` (+4 lines, -28 lines)
     - Imported `health` as module (instead of inline endpoints)
     - Added `tracing` import and initialization
@@ -282,6 +325,7 @@ ENV=production
     - Replaced with `app.include_router(health.router)`
 
 **Total Statistics:**
+
 - **New lines:** 1,466
 - **Files changed:** 11
 - **Runbook pages:** 4 comprehensive guides
@@ -291,6 +335,7 @@ ENV=production
 ## 🚀 Operational Procedures
 
 ### 1. Load Prometheus Alerts
+
 ```bash
 # Copy alert rules to Prometheus config directory
 cp infra/alerts/prometheus-rules.yml /path/to/prometheus/rules/
@@ -307,6 +352,7 @@ curl http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[].name'
 ```
 
 ### 2. Enable Structured Logging
+
 ```yaml
 # infra/docker-compose.yml
 services:
@@ -326,6 +372,7 @@ docker-compose logs api | tail -n 20
 ```
 
 ### 3. Configure Synthetic Probes
+
 ```bash
 # Add GitHub secret in repo settings
 # Name: APPLYLENS_BASE_URL
@@ -342,7 +389,8 @@ curl -X POST \
 ```
 
 ### 4. Import Grafana Dashboard
-1. Open Grafana: http://localhost:3000
+
+1. Open Grafana: <http://localhost:3000>
 2. Navigate to: Dashboards → Import
 3. Upload: `services/api/dashboards/ops-overview.json`
 4. Select Prometheus data source
@@ -351,6 +399,7 @@ curl -X POST \
 7. Bookmark for operations team
 
 ### 5. Enable OpenTelemetry (Optional)
+
 ```bash
 # Install dependencies
 pip install opentelemetry-distro opentelemetry-exporter-otlp
@@ -367,6 +416,7 @@ docker-compose restart api
 ```
 
 ### 6. Test Health Endpoints
+
 ```bash
 # Liveness
 curl http://localhost:8003/healthz
@@ -388,7 +438,7 @@ curl http://localhost:8003/ready | jq .
 |----------|--------|----------|
 | 4 Prometheus alerts defined | ✅ | `infra/alerts/prometheus-rules.yml` |
 | Health endpoints return migration version | ✅ | `/ready` response includes "migration" field |
-| Synthetic probes run hourly | ✅ | `.github/workflows/synthetic-probes.yml` (cron: "0 * * * *") |
+| Synthetic probes run hourly | ✅ | `.github/workflows/synthetic-probes.yml` (cron: "0 ** **") |
 | Structured JSON logging configured | ✅ | `app/logging.yaml` with pythonjsonlogger |
 | OpenTelemetry optional and working | ✅ | `app/tracing.py` with OTEL_ENABLED flag |
 | Grafana dashboard has 8 panels | ✅ | `dashboards/ops-overview.json` with all metrics |
@@ -401,24 +451,28 @@ curl http://localhost:8003/ready | jq .
 ## 🛡️ Guardrails & Best Practices
 
 ### Alert Fatigue Prevention
+
 - **Severity levels:** Page (immediate) vs Ticket (hours)
 - **Appropriate thresholds:** Tuned based on Phase 12.2 baseline
 - **Runbook URLs:** Every alert has troubleshooting link
 - **Annotations:** Clear summary with actionable context
 
 ### Observability Guidelines
+
 - **Structured logs:** Machine-parseable JSON in production
 - **Trace sampling:** Optional (disabled by default to reduce overhead)
 - **Metrics cardinality:** Limited labels to prevent explosion
 - **Dashboard refresh:** 30s to balance freshness vs load
 
 ### Runbook Standards
+
 - **Response times:** Defined SLA per incident severity
 - **Copy-paste ready:** All commands tested and working
 - **Platform coverage:** PowerShell (Windows) and Bash (Linux/Mac)
 - **Post-incident:** Templates for documentation and learning
 
 ### Health Checks
+
 - **Liveness vs Readiness:** Proper Kubernetes semantics
 - **Dependency checks:** Only in /ready, not /healthz
 - **Graceful degradation:** Returns 503 when not ready (not 500)
@@ -429,6 +483,7 @@ curl http://localhost:8003/ready | jq .
 ## 🔮 Next Steps
 
 ### Immediate (Next PR)
+
 1. **Test alert delivery:**
    - Configure Alertmanager routing
    - Set up Slack webhook
@@ -446,7 +501,9 @@ curl http://localhost:8003/ready | jq .
    - Document in README
 
 ### Short-term (This Week)
+
 1. **Add backfill histogram metric:**
+
    ```python
    backfill_duration_seconds = Histogram(
        "applylens_backfill_duration_seconds",
@@ -460,6 +517,7 @@ curl http://localhost:8003/ready | jq .
    - Rich formatting with runbook links
 
 3. **Add API endpoint for single-email recompute:**
+
    ```python
    @router.post("/automation/recompute/{email_id}")
    async def recompute_single_email(email_id: str):
@@ -467,6 +525,7 @@ curl http://localhost:8003/ready | jq .
    ```
 
 ### Medium-term (This Month)
+
 1. **Implement distributed tracing:**
    - Deploy Jaeger/Tempo
    - Enable OTEL in production
@@ -483,6 +542,7 @@ curl http://localhost:8003/ready | jq .
    - Quarterly runbook drills
 
 ### Long-term (This Quarter)
+
 1. **On-call rotation:**
    - PagerDuty integration
    - Escalation policies
@@ -503,22 +563,26 @@ curl http://localhost:8003/ready | jq .
 ## 📚 Documentation Index
 
 ### Monitoring Infrastructure
+
 - **Alert Rules:** `infra/alerts/prometheus-rules.yml`
 - **Grafana Dashboard:** `services/api/dashboards/ops-overview.json`
 - **Synthetic Probes:** `.github/workflows/synthetic-probes.yml`
 
 ### Application Code
+
 - **Health Module:** `services/api/app/health.py`
 - **Tracing Module:** `services/api/app/tracing.py`
 - **Logging Config:** `services/api/app/logging.yaml`
 
 ### Operational Guides
+
 - **API Errors:** `services/api/docs/runbooks/api-errors.md`
 - **Risk Job Failures:** `services/api/docs/runbooks/risk-job.md`
 - **Parity Drift:** `services/api/docs/runbooks/parity.md`
 - **Backfill Performance:** `services/api/docs/runbooks/backfill.md`
 
 ### Related Documentation
+
 - **Phase 12.1:** Risk scoring implementation
 - **Phase 12.2:** Testing & parity checking (`PHASE_12.2_PLAN.md`)
 - **Phase 12.3:** This document
@@ -528,18 +592,21 @@ curl http://localhost:8003/ready | jq .
 ## 🎓 Training Materials
 
 ### For Developers
+
 1. **Read:** All 4 runbooks (30 minutes)
 2. **Test:** Trigger each alert manually
 3. **Follow:** Runbook procedures step-by-step
 4. **Document:** What worked, what didn't
 
 ### For On-Call Engineers
+
 1. **Access:** Grafana dashboard URL
 2. **Bookmark:** All runbooks
 3. **Test:** Alert notifications (Slack/email)
 4. **Practice:** Simulated incidents
 
 ### For SREs
+
 1. **Review:** Prometheus alert rules
 2. **Tune:** Thresholds based on production data
 3. **Extend:** Add new alerts as needed
@@ -550,18 +617,21 @@ curl http://localhost:8003/ready | jq .
 ## 🏆 Combined Achievement (Phases 12.1 + 12.2 + 12.3)
 
 ### Phase 12.1: Risk Scoring System
+
 - Email automation with risk scores
 - Category classification
 - Expiration date extraction
 - Backfill scripts with metrics
 
 ### Phase 12.2: Testing & Consistency
+
 - 105+ test cases (unit, API, integration)
 - DB↔ES parity checking
 - 4-job CI workflow
 - Prometheus parity metrics
 
 ### Phase 12.3: Monitoring & Observability
+
 - 4 production alerts
 - Enhanced health endpoints
 - Structured logging & tracing
@@ -569,6 +639,7 @@ curl http://localhost:8003/ready | jq .
 - 4 operational runbooks
 
 **Total Deliverables:**
+
 - **Code:** ~5,000 lines
 - **Tests:** 105+ test cases
 - **Metrics:** 12 Prometheus metrics
@@ -577,6 +648,7 @@ curl http://localhost:8003/ready | jq .
 - **Infrastructure:** 2 CI workflows, 1 Grafana dashboard
 
 **Time Investment:**
+
 - Phase 12.1: ~4 hours (automation core)
 - Phase 12.2: ~6 hours (testing & parity)
 - Phase 12.3: ~4 hours (monitoring & runbooks)

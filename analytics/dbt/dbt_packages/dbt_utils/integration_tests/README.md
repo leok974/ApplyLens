@@ -1,4 +1,5 @@
 ### Overview
+
 1. Prerequisites
 1. Configure credentials
 1. Setup Postgres (optional)
@@ -9,18 +10,22 @@
 1. Creating a new integration test
 
 ### Prerequisites
+
 - python3
 - Docker
 
 ### Configure credentials
+
 Edit the env file for your TARGET in `integration_tests/.env/[TARGET].env`.
 
 Load the environment variables:
+
 ```shell
 set -a; source integration_tests/.env/[TARGET].env; set +a
 ```
 
 or more specific:
+
 ```shell
 set -a; source integration_tests/.env/postgres.env; set +a
 ```
@@ -34,7 +39,9 @@ Postgres offers the easiest way to test most `dbt-utils` functionality today. It
 ```shell
 make setup-db
 ```
+
 or, alternatively:
+
 ```shell
 docker-compose up --detach postgres
 ```
@@ -43,6 +50,7 @@ docker-compose up --detach postgres
 
 We strongly recommend using virtual environments when developing code in `dbt-utils`. We recommend creating this virtualenv
 in the root of the `dbt-utils` repository. To create a new virtualenv, run:
+
 ```shell
 python3 -m venv env
 source env/bin/activate
@@ -77,6 +85,7 @@ make test target=postgres
 ```
 
 or, to run tests for a single model:
+
 ```shell
 make test target=[postgres|redshift|...]
 ```
@@ -92,16 +101,21 @@ Where possible, targets are being run in docker containers (this works for Postg
 ### Creating a new integration test
 
 #### Set up profiles
+
 Do either one of the following:
+
 1. Use `DBT_PROFILES_DIR`
+
     ```shell
     cp integration_tests/ci/sample.profiles.yml integration_tests/profiles.yml
     export DBT_PROFILES_DIR=$(cd integration_tests && pwd)
     ```
+
 2. Use `~/.dbt/profiles.yml`
     - Copy contents from `integration_tests/ci/sample.profiles.yml` into `~/.dbt/profiles.yml`.
 
 #### Add your integration test
+
 This directory contains an example dbt project which tests the macros in the `dbt-utils` package. An integration test typically involves making 1) a new seed file 2) a new model file 3) a generic test to assert anticipated behaviour.
 
 For an example integration tests, check out the tests for the `get_url_parameter` macro:
@@ -114,6 +128,7 @@ For an example integration tests, check out the tests for the `get_url_parameter
 Once you've added all of these files, you should be able to run:
 
 Assuming you are in the `integration_tests` folder,
+
 ```shell
 dbt deps --target {your_target}
 dbt seed --target {your_target}
@@ -122,6 +137,7 @@ dbt test --target {your_target} --model {your_model_name}
 ```
 
 Alternatively:
+
 ```shell
 dbt deps --target {your_target}
 dbt build --target {your_target} --select +{your_model_name}

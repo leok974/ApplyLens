@@ -3,6 +3,7 @@
 ## 🚀 Quick Start Commands
 
 ### Initial Setup
+
 ```bash
 # 1. Copy environment file
 cp infra/.env.example infra/.env
@@ -18,6 +19,7 @@ docker compose -f infra/docker-compose.yml ps
 ```
 
 ### Gmail Integration
+
 ```bash
 # 1. Get OAuth credentials from Google Cloud Console
 # 2. Save as infra/secrets/google.json
@@ -30,15 +32,16 @@ curl -X POST "http://localhost:8003/gmail/backfill?days=60&user_email=your@gmail
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| **Web App** | http://localhost:5175 | Main UI |
-| **API Docs** | http://localhost:8003/docs | Swagger UI |
-| **Elasticsearch** | http://localhost:9200 | Search engine |
-| **Kibana** | http://localhost:5601 | Analytics dashboard |
-| **Gmail Auth** | http://localhost:8003/auth/google/login | OAuth flow |
+| **Web App** | <http://localhost:5175> | Main UI |
+| **API Docs** | <http://localhost:8003/docs> | Swagger UI |
+| **Elasticsearch** | <http://localhost:9200> | Search engine |
+| **Kibana** | <http://localhost:5601> | Analytics dashboard |
+| **Gmail Auth** | <http://localhost:8003/auth/google/login> | OAuth flow |
 
 ## 🔧 Common Commands
 
 ### Docker Management
+
 ```bash
 # View logs
 docker compose -f infra/docker-compose.yml logs api --tail=50
@@ -57,6 +60,7 @@ docker compose -f infra/docker-compose.yml up -d api
 ```
 
 ### Database
+
 ```bash
 # Run migrations
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
@@ -72,6 +76,7 @@ docker compose -f infra/docker-compose.yml exec db psql -U postgres -d applylens
 ```
 
 ### Elasticsearch
+
 ```bash
 # Check index
 curl http://localhost:9200/gmail_emails/_count
@@ -85,6 +90,7 @@ docker compose -f infra/docker-compose.yml restart api
 ```
 
 ### Testing
+
 ```bash
 # Run unit tests
 docker compose -f infra/docker-compose.yml exec api pytest tests/ -v
@@ -135,6 +141,7 @@ curl "http://localhost:8003/suggest/?q=Interv"
 ## 🐛 Troubleshooting
 
 ### Port Already in Use
+
 ```bash
 # Check what's using the port
 netstat -ano | findstr :8003
@@ -144,6 +151,7 @@ API_PORT=8004
 ```
 
 ### API Won't Start
+
 ```bash
 # Check logs
 docker compose -f infra/docker-compose.yml logs api --tail=100
@@ -156,6 +164,7 @@ docker compose -f infra/docker-compose.yml up -d api
 ```
 
 ### Gmail Auth Not Working
+
 ```bash
 # Verify secrets file exists
 ls infra/secrets/google.json
@@ -168,6 +177,7 @@ docker compose -f infra/docker-compose.yml exec api env | grep GOOGLE
 ```
 
 ### No Emails Showing
+
 ```bash
 # Check connection status
 curl http://localhost:8003/gmail/status
@@ -180,6 +190,7 @@ curl -X POST "http://localhost:8003/gmail/backfill?days=7&user_email=your@gmail.
 ```
 
 ### Elasticsearch Issues
+
 ```bash
 # Check ES health
 curl http://localhost:9200/_cluster/health
@@ -207,12 +218,12 @@ docker compose -f infra/docker-compose.yml restart api
 
 - Full Gmail setup guide: [`GMAIL_SETUP.md`](./GMAIL_SETUP.md)
 - Main README: [`README.md`](./README.md)
-- API documentation: http://localhost:8003/docs
-- Google OAuth guide: https://developers.google.com/identity/protocols/oauth2
+- API documentation: <http://localhost:8003/docs>
+- Google OAuth guide: <https://developers.google.com/identity/protocols/oauth2>
 
 ## 🆘 Getting Help
 
 1. Check the logs: `docker compose -f infra/docker-compose.yml logs api web`
-2. View API docs: http://localhost:8003/docs
+2. View API docs: <http://localhost:8003/docs>
 3. Test endpoints with Swagger UI
 4. Review the setup guides in the repository

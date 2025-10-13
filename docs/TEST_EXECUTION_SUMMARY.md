@@ -21,11 +21,13 @@ All confidence estimation tests now pass with database connectivity:
 ### Test Configuration
 
 **Environment**:
+
 - Python 3.13.7 with pytest 8.4.2 and pytest-cov 7.0.0
 - PostgreSQL 16 on localhost:5433 (Docker container: infra-db-1)
 - Database: `applylens` with user `postgres`
 
 **Command**:
+
 ```powershell
 $env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@localhost:5433/applylens"
 pytest tests/test_confidence_learning.py -v
@@ -57,6 +59,7 @@ pytest tests/test_confidence_learning.py -v
 **Overall**: 7% (baseline for unit test file)
 
 **Key Files Tested**:
+
 - `app/routers/actions.py`: 24% coverage (estimate_confidence function)
 - `app/core/learner.py`: 20% coverage (score_ctx_with_user function)
 - `app/models.py`: 98% coverage
@@ -72,6 +75,7 @@ pytest tests/test_confidence_learning.py -v
 **Status**: Not yet executed (requires web app running)
 
 **Available Tests**:
+
 - `apps/web/e2e/chat.modes.spec.ts`: Chat mode selector (networking/money/off)
 - Additional Playwright tests can be run with `cd apps/web && pnpm test`
 
@@ -128,12 +132,14 @@ Result: 17 tables found including:
 ## Git History
 
 **Commits in This Session**:
+
 1. `39f5179`: Phase 6 polish implementation (confidence learning, metrics, UI)
 2. `0c99cd6`: Consolidate documentation into /docs folder (44 files)
 3. `c59c8f8`: Add test and documentation summary
 4. `a15d8ae`: Fix confidence learning tests (5/5 passing) ✅ **LATEST**
 
 **Total Changes**:
+
 - 4 commits pushed to `phase-3` branch
 - 50+ files modified across commits
 - ~15,000+ lines of documentation consolidated
@@ -144,11 +150,13 @@ Result: 17 tables found including:
 **Immediate**: Test execution complete ✅
 
 **Optional Follow-ups**:
+
 1. Run frontend E2E tests if web app needs validation
 2. Execute production smoke test if deploying confidence learning
 3. Monitor Prometheus metrics (`policy_approved_total`, `user_weight_updates`)
 
 **Ready for**:
+
 - ✅ Merge to main branch
 - ✅ Production deployment
 - ✅ User acceptance testing

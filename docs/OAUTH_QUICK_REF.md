@@ -9,12 +9,14 @@ One-page cheat sheet for OAuth configuration to fix `redirect_uri_mismatch`.
 ### 1. Google Cloud Console
 
 **Add these Authorized redirect URIs:**
+
 ```
 https://api.applylens.app/auth/google/callback
 http://localhost:8003/auth/google/callback
 ```
 
 **Add these Authorized JavaScript origins:**
+
 ```
 https://applylens.app
 http://localhost:5175
@@ -23,6 +25,7 @@ http://localhost:5175
 ### 2. Environment Variables
 
 **Local (.env):**
+
 ```bash
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
@@ -30,6 +33,7 @@ GOOGLE_REDIRECT_URI_DEV=http://localhost:8003/auth/google/callback
 ```
 
 **Production (.env.prod):**
+
 ```bash
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
@@ -48,22 +52,25 @@ docker compose restart api nginx
 ## 📋 Configuration URLs
 
 ### Local Development
-- **API**: http://localhost:8003
-- **Web**: http://localhost:5175
-- **Login**: http://localhost:8003/auth/google/login
-- **Callback**: http://localhost:8003/auth/google/callback
+
+- **API**: <http://localhost:8003>
+- **Web**: <http://localhost:5175>
+- **Login**: <http://localhost:8003/auth/google/login>
+- **Callback**: <http://localhost:8003/auth/google/callback>
 
 ### Production
-- **API**: https://api.applylens.app
-- **Web**: https://applylens.app
-- **Login**: https://api.applylens.app/auth/google/login
-- **Callback**: https://api.applylens.app/auth/google/callback
+
+- **API**: <https://api.applylens.app>
+- **Web**: <https://applylens.app>
+- **Login**: <https://api.applylens.app/auth/google/login>
+- **Callback**: <https://api.applylens.app/auth/google/callback>
 
 ---
 
 ## 🧪 Testing
 
 ### Manual Test
+
 ```bash
 # 1. Start services
 docker compose up -d
@@ -79,6 +86,7 @@ open http://localhost:8003/auth/google/login
 ```
 
 ### Automated Test
+
 ```powershell
 # Run smoke tests
 .\scripts\smoke-applylens.ps1
@@ -95,22 +103,26 @@ open http://localhost:8003/auth/google/login
 ### Still seeing redirect_uri_mismatch?
 
 **1. Check Google Cloud Console:**
+
 - URI must match **exactly** (no trailing slash)
 - Check for http vs https
 - Check for correct port
 
 **2. Check environment variables:**
+
 ```bash
 docker compose exec api env | grep GOOGLE
 ```
 
 **3. Check logs:**
+
 ```bash
 docker compose logs api | grep OAuth
 # Should show: [OAuth] Initiating login flow with redirect_uri: ...
 ```
 
 **4. Verify Nginx:**
+
 ```bash
 docker compose exec nginx nginx -t
 docker compose restart nginx
@@ -137,6 +149,7 @@ See `infra/docs/OAUTH_SETUP.md` for complete guide.
 ## ✅ Checklist
 
 Setup:
+
 - [ ] OAuth client created in Google Cloud Console
 - [ ] Redirect URIs added (prod + dev)
 - [ ] Client ID and Secret copied
@@ -145,6 +158,7 @@ Setup:
 - [ ] Services restarted
 
 Testing:
+
 - [ ] Manual OAuth flow works
 - [ ] Smoke tests pass
 - [ ] Logs show correct redirect_uri

@@ -1,34 +1,40 @@
 # 🎯 Your PromQL Quick Recipes - Ready to Use
 
-These are the exact queries you provided. Copy and paste into Prometheus (http://localhost:9090/graph).
+These are the exact queries you provided. Copy and paste into Prometheus (<http://localhost:9090/graph>).
 
 ---
 
 ## HTTP Metrics
 
 ### Request Rate
+
 ```promql
 sum by (method,status) (rate(applylens_http_requests_total[5m]))
 ```
 
 ### Error Rate (5m)
+
 ```promql
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))
 ```
 
 ### Latency Percentiles
+
 **p50:**
+
 ```promql
 histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
 ```
 
 **p90:**
+
 ```promql
 histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
 ```
 
 **p99:**
+
 ```promql
 histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
 ```
@@ -38,16 +44,19 @@ histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_secon
 ## Backfill Metrics
 
 ### Rate-Limited Spikes
+
 ```promql
 increase(applylens_backfill_requests_total{result="rate_limited"}[15m])
 ```
 
 ### Emails Inserted Per Minute
+
 ```promql
 rate(applylens_backfill_inserted_total[1m]) * 60
 ```
 
 ### Backfill Outcomes
+
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ```
@@ -57,16 +66,19 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ## System Health
 
 ### Gmail Connected (Per User)
+
 ```promql
 applylens_gmail_connected
 ```
 
 ### Count of Connected Users
+
 ```promql
 sum(max_over_time(applylens_gmail_connected[10m]))
 ```
 
 ### Readiness - All Green
+
 ```promql
 min(applylens_db_up) and min(applylens_es_up)
 ```
@@ -78,11 +90,13 @@ min(applylens_db_up) and min(applylens_es_up)
 The dashboard JSON includes these exact panel configurations:
 
 ### Panel 1: HTTP req/s
+
 ```promql
 sum by (method,status_code) (rate(applylens_http_requests_total[5m]))
 ```
 
 ### Panel 2: HTTP Latency
+
 ```promql
 # p50
 histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
@@ -95,28 +109,36 @@ histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_secon
 ```
 
 ### Panel 3: Backfill Outcomes
+
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ```
+
 **Display:** Bar gauge (horizontal)
 
 ### Panel 4: Emails Inserted Rate
+
 ```promql
 rate(applylens_backfill_inserted_total[5m]) * 60
 ```
+
 **Unit:** emails/min
 
 ### Panel 5: Subsystem Health
+
 ```promql
 max(applylens_db_up)    # Database
 max(applylens_es_up)    # Elasticsearch
 ```
+
 **Display:** Stat panel with thresholds (0=red, 1=green)
 
 ### Panel 6: Gmail Connected
+
 ```promql
 applylens_gmail_connected
 ```
+
 **Display:** Table showing user_email and connection status
 
 ---
@@ -126,38 +148,48 @@ applylens_gmail_connected
 These are active in `infra/prometheus/alerts.yml`:
 
 ### 1. ApplyLensApiDown
+
 ```promql
 (1 - (up{job="applylens-api"})) == 1
 ```
+
 **Duration:** 1 minute  
 **Severity:** Critical
 
 ### 2. HighHttpErrorRate
+
 ```promql
 (sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m]))
  / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))) > 0.05
 ```
+
 **Duration:** 5 minutes  
 **Severity:** Warning
 
 ### 3. BackfillFailing
+
 ```promql
 increase(applylens_backfill_requests_total{result="error"}[10m]) > 0
 ```
+
 **Duration:** 10 minutes  
 **Severity:** Warning
 
 ### 4. GmailDisconnected
+
 ```promql
 max_over_time(applylens_gmail_connected[15m]) < 1
 ```
+
 **Duration:** 15 minutes  
 **Severity:** Warning
 
 ### 5. DependenciesDown
+
 ```promql
 (min(applylens_db_up) == 0) or (min(applylens_es_up) == 0)
 ```
+
 **Duration:** 2 minutes  
 **Severity:** Critical
 
@@ -167,7 +199,7 @@ max_over_time(applylens_gmail_connected[15m]) < 1
 
 ✅ **Already Implemented:**
 
-1. **Low cardinality on user_email** - Single user system (leoklemet.pa@gmail.com)
+1. **Low cardinality on user_email** - Single user system (<leoklemet.pa@gmail.com>)
 2. **group_paths=True** - Prevents path explosion from dynamic parameters
 3. **Limited histogram buckets** - 13 buckets (5ms to 10s)
 4. **Meaningful labels** - `result` (ok/error/rate_limited/bad_request)
@@ -184,6 +216,7 @@ max_over_time(applylens_gmail_connected[15m]) < 1
 ## 🧪 Sanity Pings
 
 ### Open in Browser
+
 ```powershell
 # Prometheus Graph UI
 start http://localhost:9090/graph
@@ -196,6 +229,7 @@ start http://localhost:8003/metrics
 ```
 
 ### Quick PowerShell Tests
+
 ```powershell
 # Check Prometheus targets
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/targets"
@@ -223,7 +257,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query"
 
 ## 📊 Dashboard Import Instructions
 
-1. **Open Grafana:** http://localhost:3000
+1. **Open Grafana:** <http://localhost:3000>
 2. **Login:** admin / admin
 3. **Import Dashboard:**
    - Click **+** (left sidebar)
@@ -254,13 +288,14 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 ## 📈 Live Monitoring Workflow
 
-1. **Open Prometheus Graph UI:** http://localhost:9090/graph
+1. **Open Prometheus Graph UI:** <http://localhost:9090/graph>
 2. **Paste query** (e.g., `rate(applylens_http_requests_total[5m])`)
 3. **Click Execute**
 4. **Switch to Graph tab**
 5. **Set time range:** Last 1h (top-right)
 6. **Enable auto-refresh:** 5s or 10s (dropdown)
 7. **Generate traffic:**
+
    ```powershell
    # In another terminal
    while ($true) {
@@ -268,6 +303,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
        Start-Sleep -Milliseconds 500
    }
    ```
+
 8. **Watch graph update in real-time!**
 
 ---
@@ -276,12 +312,12 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 Your setup is working when:
 
-✅ **Prometheus UI loads** at http://localhost:9090  
-✅ **Target shows "UP"** at http://localhost:9090/targets  
+✅ **Prometheus UI loads** at <http://localhost:9090>  
+✅ **Target shows "UP"** at <http://localhost:9090/targets>  
 ✅ **Queries return data** in Graph UI  
-✅ **Grafana loads** at http://localhost:3000  
+✅ **Grafana loads** at <http://localhost:3000>  
 ✅ **Dashboard shows metrics** (after import)  
-✅ **Alerts show as inactive** at http://localhost:9090/alerts  
+✅ **Alerts show as inactive** at <http://localhost:9090/alerts>  
 
 ---
 

@@ -7,6 +7,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:update": "playwright test -u",
+    "docs:organize": "node scripts/docs/organize-docs.mjs",
+    "docs:lint": "markdownlint **/*.md --ignore node_modules --ignore .git",
     "phase2:export": "cross-env ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 python services/api/app/labeling/export_weak_labels.py --days 60 --limit 40000 --limit-per-cat 8000 --out /tmp/weak_labels.jsonl",
     "phase2:train": "python services/api/app/labeling/train_ml.py /tmp/weak_labels.jsonl services/api/app/labeling/label_model.joblib",
     "phase2:apply": "curl -s -X POST \"http://localhost:8003/labels/apply\" -H \"Content-Type: application/json\" -d \"{}\"",
@@ -19,7 +21,8 @@
   "devDependencies": {
     "@playwright/test": "^1.56.0",
     "@types/node": "^24.7.2",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "markdownlint-cli": "^0.41.0"
   },
   "engines": {
     "node": ">=18.0.0",

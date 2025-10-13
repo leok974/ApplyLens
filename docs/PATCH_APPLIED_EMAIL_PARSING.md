@@ -13,7 +13,9 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 ### Backend Changes
 
 #### 1. ✅ Email Parsing Service Module
+
 **File:** `services/api/app/services/email_parse.py` (NEW)
+
 - `extract_company(sender, body_text, subject)` - 20 lines
 - `extract_role(subject, body_text)` - 18 lines  
 - `extract_source(headers, sender, subject, body_text)` - 13 lines
@@ -21,7 +23,9 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 - No external dependencies (uses Python stdlib only)
 
 #### 2. ✅ Enhanced Applications Router
+
 **File:** `services/api/app/routers/applications.py` (MODIFIED)
+
 - Added import: `from app.services.email_parse import extract_company, extract_role, extract_source`
 - Updated `/applications/from-email` endpoint:
   - Added parameters: `sender`, `subject`, `body_text`, `headers`, `source`
@@ -31,7 +35,9 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 ### Frontend Changes
 
 #### 3. ✅ CreateFromEmailButton Component
+
 **File:** `apps/web/src/components/CreateFromEmailButton.tsx` (MODIFIED)
+
 - Added props: `sender`, `subject`, `bodyText`, `headers`, `source`
 - Uses `/api/applications/from-email` endpoint (Vite proxy to port 8003)
 - Router-based navigation with query parameters
@@ -40,7 +46,9 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 - Improved error handling and logging
 
 #### 4. ✅ Tracker Page Toast Notification
+
 **File:** `apps/web/src/pages/Tracker.tsx` (MODIFIED)
+
 - Added toast state and useEffect hook
 - Detects `?created=1&label={company}` query params
 - Displays success message: "{Company} added to tracker"
@@ -51,11 +59,14 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 ### Test Coverage
 
 #### 5. ✅ Email Parsing Unit Tests
+
 **File:** `services/api/tests/test_email_parse.py` (CREATED)
+
 - 9 comprehensive tests covering all extraction functions
 - All tests passing ✅
 
 **Test Results:**
+
 ```
 ✅ Extracted company from sender: Careers
 ✅ Extracted company from body: Anthropic
@@ -69,11 +80,14 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 ```
 
 #### 6. ✅ Integration Tests
+
 **File:** `services/api/tests/test_applications.py` (MODIFIED)
+
 - 4 integration tests including `test_from_email_endpoint_autofill`
 - All tests passing ✅
 
 **Test Results:**
+
 ```
 ✅ Test passed: Application 1 created and linked to email
 ✅ Test passed: Both emails linked to same application
@@ -84,7 +98,9 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 ### Documentation
 
 #### 7. ✅ Comprehensive Documentation
+
 **File:** `docs/EMAIL_PARSING_ENHANCEMENT.md` (NEW)
+
 - Architecture overview
 - API documentation
 - Usage examples
@@ -106,16 +122,19 @@ The original patch was designed for a Next.js application, but ApplyLens uses Re
 ## Features Implemented
 
 ### ✅ Auto-Extraction
+
 - **Company:** From sender domain, sender name, or body mentions
 - **Role:** From subject patterns or body text
 - **Source:** ATS detection (Lever, Greenhouse, LinkedIn, Workday, Indeed)
 
 ### ✅ Manual Override Support
+
 - All fields accept manual values
 - Auto-extraction only runs when values not provided
 - Flexible hybrid approach
 
 ### ✅ User Experience
+
 - Toast notification confirms creation
 - Shows extracted company name
 - Auto-hides after 3 seconds
@@ -123,6 +142,7 @@ The original patch was designed for a Next.js application, but ApplyLens uses Re
 - Loading state during creation
 
 ### ✅ Test Coverage
+
 - 9 unit tests (email parsing logic)
 - 4 integration tests (API endpoints)
 - 100% test pass rate
@@ -130,11 +150,13 @@ The original patch was designed for a Next.js application, but ApplyLens uses Re
 ## Files Modified/Created
 
 ### Created (3 files)
+
 1. `services/api/app/services/email_parse.py` - Email parsing service (115 lines)
 2. `services/api/tests/test_email_parse.py` - Unit tests (98 lines)
 3. `docs/EMAIL_PARSING_ENHANCEMENT.md` - Documentation (250+ lines)
 
 ### Modified (4 files)
+
 1. `services/api/app/routers/applications.py` - Enhanced endpoint (added 7 params + extraction logic)
 2. `apps/web/src/components/CreateFromEmailButton.tsx` - Updated with all new props and API path
 3. `apps/web/src/pages/Tracker.tsx` - Added toast notification (state + useEffect + JSX)
@@ -165,6 +187,7 @@ The following parts of the patch were **NOT** implemented as they are Next.js-sp
 ## Verification
 
 ### Backend Tests
+
 ```bash
 cd D:\ApplyLens\infra
 docker compose exec api sh -c 'PYTHONPATH=/app python tests/test_email_parse.py'
@@ -175,6 +198,7 @@ docker compose exec api sh -c 'PYTHONPATH=/app python tests/test_applications.py
 ```
 
 ### Frontend
+
 - Component uses `/api/applications/from-email` (proxied by Vite)
 - Toast notification working with query params
 - Navigation integrated with React Router
@@ -220,6 +244,7 @@ server: {
 ```
 
 This means:
+
 - Frontend calls: `/api/applications/from-email`
 - Vite proxies to: `http://localhost:8003/applications/from-email`
 - No CORS issues in development
@@ -269,6 +294,7 @@ The `/applications/from-email` endpoint follows this logic:
 ### Extraction Heuristics
 
 **Company Extraction:**
+
 - Parses email domain (e.g., `careers@openai.com` → `openai`)
 - Uses sender name from email header
 - Searches for "at [Company]" in body text
@@ -276,12 +302,14 @@ The `/applications/from-email` endpoint follows this logic:
 - Prefers longer names over shorter ones
 
 **Role Extraction:**
+
 - Regex patterns: "for X role", "Position: X", "Job: X"
 - Case-insensitive matching
 - Searches subject line first, then body
 - Fallback: "Application for X" pattern
 
 **Source Detection:**
+
 - Keyword matching in subject, body, sender
 - Detects: Lever, Greenhouse, LinkedIn, Workday, Indeed
 - Case-insensitive search

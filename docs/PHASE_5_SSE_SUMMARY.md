@@ -3,18 +3,21 @@
 ## What We Built
 
 ### 1. ✅ Server-Sent Events (SSE) Streaming
+
 - **Backend**: New `GET /api/chat/stream` endpoint
 - **Events**: `intent`, `tool`, `answer`, `filed`, `done`, `error`
 - **Real-time**: Progressive UI updates as assistant works
 - **Performance**: ~100ms latency per event
 
 ### 2. ✅ Auto-Propose Toggle
+
 - **Wired to**: Send button + Enter key
 - **Behavior**: When checked, automatically files actions with `propose=1`
 - **Confirmation**: Shows "✅ Filed X actions to Approvals tray."
 - **Integration**: Uses Phase 4 Approvals system
 
 ### 3. ✅ "Run actions now" Button
+
 - **Function**: Replays last query with `propose=true`
 - **State**: Tracks `lastQuery` for replay
 - **Disabled**: When no last query or busy
@@ -22,21 +25,24 @@
 
 ## Files Created/Modified
 
-### Frontend (1 file modified):
+### Frontend (1 file modified)
+
 - ✅ `apps/web/src/components/MailChat.tsx` (+180 lines, -70 lines)
   - EventSource streaming implementation
   - `filed` event listener with confirmation message
   - Toggle wired to `propose` parameter
   - Progressive UI updates
 
-### Backend (1 file modified):
+### Backend (1 file modified)
+
 - ✅ `services/api/app/routers/chat.py` (+128 lines)
   - New `GET /stream` endpoint
   - 6 SSE event types
   - Integration with `approvals_bulk_insert()`
   - Safety cap at 100 actions
 
-### Tests (2 files created):
+### Tests (2 files created)
+
 - ✅ `scripts/test-chat-streaming.ps1` (160 lines)
   - 7 backend streaming tests
   - All tests passing
@@ -44,13 +50,15 @@
   - 4 Playwright e2e tests
   - Mocked SSE responses
 
-### Documentation (2 files created):
+### Documentation (2 files created)
+
 - ✅ `PHASE_5_STREAMING_ACTIONS.md` (previous version)
 - ✅ `PHASE_5_SSE_COMPLETE.md` (comprehensive guide)
 
 ## Test Results
 
-### Backend Streaming Tests:
+### Backend Streaming Tests
+
 ```
 === Phase 5 Chat Streaming - API Tests ===
 
@@ -61,6 +69,7 @@ Failed: 0/7
 ```
 
 **Tests**:
+
 1. ✅ Health Check
 2. ✅ List Intents
 3. ✅ Streaming: Intent Event
@@ -69,7 +78,8 @@ Failed: 0/7
 6. ✅ Streaming: Done Event
 7. ✅ Streaming with propose=1
 
-### Comprehensive Phase 5 Tests:
+### Comprehensive Phase 5 Tests
+
 ```
 === Phase 5 Chat Assistant - API Tests ===
 
@@ -83,7 +93,7 @@ Total: 12/12 PASSED
 1. **User**: Types "Clean up promos older than a week"
 2. **User**: ✅ Checks "file actions to Approvals"
 3. **User**: Clicks "Send" or presses Enter
-4. **System**: 
+4. **System**:
    - Shows intent: "Searching for promotional emails..."
    - Shows tool result: "Found 42 matches"
    - Shows answer: "Found 42 promotional emails..."
@@ -114,7 +124,8 @@ Total: 12/12 PASSED
 
 ## Technical Architecture
 
-### Frontend Flow:
+### Frontend Flow
+
 ```
 User Input → EventSource → SSE Events → Progressive UI Updates
                 ↓
@@ -123,7 +134,8 @@ User Input → EventSource → SSE Events → Progressive UI Updates
     "✅ Filed X actions" confirmation
 ```
 
-### Backend Flow:
+### Backend Flow
+
 ```
 GET /chat/stream?q=...&propose=1
          ↓
@@ -139,7 +151,8 @@ GET /chat/stream?q=...&propose=1
    Close Stream → emit 'done'
 ```
 
-### Database Integration:
+### Database Integration
+
 ```
 chat.py → approvals_bulk_insert() → approvals_proposed table
                                             ↓
@@ -154,27 +167,31 @@ chat.py → approvals_bulk_insert() → approvals_proposed table
 
 ## Key Features
 
-### Real-Time Streaming:
+### Real-Time Streaming
+
 - ✅ EventSource SSE with 6 event types
 - ✅ Progressive UI updates during processing
 - ✅ Instant feedback on intent detection
 - ✅ Tool execution progress
 - ✅ Action filing confirmation
 
-### Auto-Propose Toggle:
+### Auto-Propose Toggle
+
 - ✅ One checkbox for all future queries
 - ✅ Wired to Enter key + Send button
 - ✅ Visual indicator of filing mode
 - ✅ No need for "Run actions now" button
 
-### Safety & Robustness:
+### Safety & Robustness
+
 - ✅ Action cap at 100 per query
 - ✅ User approval required (Phase 4)
 - ✅ Error event for failures
 - ✅ EventSource auto-retry on network errors
 - ✅ Graceful fallback to legacy POST endpoint
 
-### Phase 4 Integration:
+### Phase 4 Integration
+
 - ✅ Uses existing `approvals_bulk_insert()`
 - ✅ Tags with `policy_id: "chat_assistant"`
 - ✅ High confidence score (0.8)
@@ -183,7 +200,8 @@ chat.py → approvals_bulk_insert() → approvals_proposed table
 
 ## Performance Metrics
 
-### Latency:
+### Latency
+
 - **Intent Detection**: ~50ms
 - **RAG Search**: ~200-500ms (depends on index size)
 - **Tool Execution**: ~100-300ms
@@ -191,7 +209,8 @@ chat.py → approvals_bulk_insert() → approvals_proposed table
 - **Total (typical query)**: ~500-1000ms
 - **Progressive Updates**: Every ~100ms
 
-### Throughput:
+### Throughput
+
 - **Concurrent Streams**: Unlimited (EventSource per client)
 - **Actions per Query**: Capped at 100 for safety
 - **Queries per Minute**: No rate limit (add if needed)
@@ -201,6 +220,7 @@ chat.py → approvals_bulk_insert() → approvals_proposed table
 ### Endpoint: GET /api/chat/stream
 
 **Query Parameters**:
+
 - `q` (string, required): User query text
 - `propose` (int, optional): Set to 1 to file actions
 
@@ -218,6 +238,7 @@ chat.py → approvals_bulk_insert() → approvals_proposed table
 | `error` | `{"error": "message"}` | On any error |
 
 **Example**:
+
 ```bash
 curl -N "http://localhost:8003/api/chat/stream?q=Clean%20up%20promos&propose=1"
 
@@ -239,7 +260,8 @@ data: {"ok":true}
 
 ## Running the App
 
-### Start Services:
+### Start Services
+
 ```powershell
 # Backend
 cd d:\ApplyLens\infra
@@ -250,13 +272,15 @@ cd d:\ApplyLens\apps\web
 npm run dev
 ```
 
-### Access:
-- **Chat UI**: http://localhost:5176/chat
-- **Approvals Tray**: http://localhost:5176/actions
-- **API Docs**: http://localhost:8003/docs
-- **Health Check**: http://localhost:8003/api/chat/health
+### Access
 
-### Run Tests:
+- **Chat UI**: <http://localhost:5176/chat>
+- **Approvals Tray**: <http://localhost:5176/actions>
+- **API Docs**: <http://localhost:8003/docs>
+- **Health Check**: <http://localhost:8003/api/chat/health>
+
+### Run Tests
+
 ```powershell
 # Backend streaming tests
 cd d:\ApplyLens
@@ -272,12 +296,14 @@ npx playwright test tests/chat-run-actions.spec.ts
 
 ## What's Next
 
-### Immediate:
+### Immediate
+
 1. ✅ **Deploy to production** - Streaming is production-ready
 2. ✅ **Monitor usage** - Track filed actions via `policy_id: "chat_assistant"`
 3. ✅ **User feedback** - Gather input on auto-propose toggle UX
 
-### Future Enhancements:
+### Future Enhancements
+
 1. **Token-by-Token Streaming** - When integrating LLM (GPT-4)
 2. **Batch Confirmation Dialog** - For >20 actions
 3. **Action Preview Modal** - Show details before filing
@@ -286,16 +312,19 @@ npx playwright test tests/chat-run-actions.spec.ts
 
 ## Migration & Compatibility
 
-### Backward Compatible:
+### Backward Compatible
+
 - ✅ POST `/api/chat` still available
 - ✅ Old "Run actions now" button still works
 - ✅ Existing Phase 4 Approvals unchanged
 - ✅ Database schema unchanged
 
-### Breaking Changes:
+### Breaking Changes
+
 - ❌ None
 
-### Recommended Upgrade Path:
+### Recommended Upgrade Path
+
 1. Deploy new backend with `/stream` endpoint
 2. Update frontend to use EventSource
 3. Test with toggle unchecked first
@@ -304,9 +333,10 @@ npx playwright test tests/chat-run-actions.spec.ts
 
 ## Conclusion
 
-Phase 5 Streaming SSE + Auto-Propose is **complete and production-ready**. 
+Phase 5 Streaming SSE + Auto-Propose is **complete and production-ready**.
 
-### Achievements:
+### Achievements
+
 - ✅ Real-time streaming with 6 SSE event types
 - ✅ Auto-propose toggle wired to Send + Enter
 - ✅ "Run actions now" button for quick replay
@@ -316,14 +346,16 @@ Phase 5 Streaming SSE + Auto-Propose is **complete and production-ready**.
 - ✅ Playwright e2e tests created
 - ✅ Full documentation (2,000+ lines)
 
-### Key Metrics:
+### Key Metrics
+
 - **Backend**: +128 lines (chat.py)
 - **Frontend**: +180 lines (MailChat.tsx)
 - **Tests**: +340 lines (2 new test files)
 - **Docs**: +2,000 lines (2 comprehensive guides)
 - **Total**: ~2,650 lines of production code + tests + docs
 
-### Status:
+### Status
+
 🎉 **Ready for production deployment**
 
 **Tested on**: October 12, 2025  

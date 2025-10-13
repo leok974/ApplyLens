@@ -385,20 +385,24 @@ groups:
 ## Troubleshooting
 
 **Metrics endpoint returns 404:**
+
 - Check that router is imported in `app/main.py`
 - Verify API is running: `curl http://localhost:8000/healthz`
 
 **Metrics show 0.0 for all values:**
+
 - Check ES connectivity: `curl http://localhost:9200`
 - Verify ES_EMAIL_INDEX exists: `curl http://localhost:9200/gmail_emails_v2`
 - Check ES_URL environment variable
 
 **Health emission fails:**
+
 - Verify backfill_health_v1 index exists
 - Check ES authentication (ES_API_KEY)
 - Test with: `python scripts/emit_backfill_health.py`
 
 **Kibana dashboard import fails:**
+
 - Check Kibana version (8.x required for ES|QL)
 - Verify index pattern creation
 - Try manual import via Kibana UI: Stack Management → Saved Objects

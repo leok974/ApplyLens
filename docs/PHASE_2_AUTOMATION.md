@@ -13,6 +13,7 @@ Phase-2 provides three automation options for running the complete email categor
 3. **PowerShell** - Windows-native automation with rich output
 
 All three options run the same underlying workflow:
+
 ```
 ES → export_weak_labels.py → weak_labels.jsonl
   → train_ml.py → label_model.joblib
@@ -24,11 +25,13 @@ ES → export_weak_labels.py → weak_labels.jsonl
 ## Option 1: Makefile (Unix/Linux/Mac)
 
 ### Prerequisites
+
 - GNU Make installed
 - Python 3.11+
 - curl and jq (for API calls)
 
 ### Quick Start
+
 ```bash
 # Run complete pipeline
 make phase2-all
@@ -43,6 +46,7 @@ make help
 ```
 
 ### Configuration (Override Defaults)
+
 ```bash
 # Export more data
 make export-weak EXPORT_DAYS=90 EXPORT_LIMIT=50000
@@ -56,6 +60,7 @@ make train-labels MODEL_OUT=/models/my_model.joblib
 ```
 
 ### Available Targets
+
 - `make help` - Display all targets with descriptions
 - `make export-weak` - Export weak labels from ES to JSONL
 - `make train-labels` - Train ML model from JSONL
@@ -64,6 +69,7 @@ make train-labels MODEL_OUT=/models/my_model.joblib
 - `make clean-weak` - Remove exported JSONL file
 
 ### Default Configuration
+
 ```makefile
 ES_URL        = http://localhost:9200
 ES_INDEX      = emails_v1-000001
@@ -80,11 +86,13 @@ API_BASE      = http://localhost:8003
 ## Option 2: npm Scripts (Cross-Platform)
 
 ### Prerequisites
+
 - Node.js 18+ and npm 9+
 - Python 3.11+
 - curl and jq (for stats)
 
 ### Quick Start
+
 ```bash
 # Install dependencies
 npm install
@@ -102,6 +110,7 @@ npm run phase2:help
 ```
 
 ### Available Scripts
+
 - `npm run phase2:export` - Export weak labels from ES
 - `npm run phase2:train` - Train ML model from JSONL
 - `npm run phase2:apply` - Apply labels to ES docs
@@ -112,6 +121,7 @@ npm run phase2:help
 - `npm run phase2:help` - Display all available scripts
 
 ### Configuration (via Environment Variables)
+
 ```bash
 # Windows PowerShell
 $env:ES_URL="http://localhost:9200"
@@ -123,6 +133,7 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ```
 
 ### Default Configuration
+
 - ES_URL: `http://localhost:9200`
 - ES_EMAIL_INDEX: `emails_v1-000001`
 - Export days: `60`
@@ -137,11 +148,13 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ## Option 3: PowerShell (Windows)
 
 ### Prerequisites
+
 - PowerShell 5.1+ or PowerShell Core 7+
 - Python 3.11+
 - Invoke-RestMethod (built-in)
 
 ### Quick Start
+
 ```powershell
 # Run complete pipeline with default settings
 .\scripts\phase2-all.ps1
@@ -157,6 +170,7 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ```
 
 ### Available Parameters
+
 ```powershell
 -EsUrl      # Elasticsearch URL (default: http://localhost:9200)
 -EsIndex    # ES index name (default: emails_v1-000001)
@@ -169,6 +183,7 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ```
 
 ### Examples
+
 ```powershell
 # Export last 30 days
 .\scripts\phase2-all.ps1 -Days 30
@@ -184,6 +199,7 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ```
 
 ### Output Features
+
 - 🎨 Color-coded progress indicators
 - 📊 Real-time statistics display
 - ✅ Post-workflow verification
@@ -211,7 +227,9 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ## 🚀 Recommended Usage
 
 ### First-Time Setup
+
 Use **PowerShell** (Windows) or **npm** (Mac/Linux) for rich output and verification:
+
 ```powershell
 # Windows
 .\scripts\phase2-all.ps1
@@ -221,7 +239,9 @@ npm run phase2:all
 ```
 
 ### Automated CI/CD Pipelines
+
 Use **Makefile** or **npm** for simplicity and portability:
+
 ```bash
 # CI/CD with Makefile
 make phase2-all
@@ -231,7 +251,9 @@ npm run phase2:all
 ```
 
 ### Development Iteration
+
 Use **Makefile** targets for quick experimentation:
+
 ```bash
 # Just retrain model
 make train-labels
@@ -241,7 +263,9 @@ make apply-labels
 ```
 
 ### Production Deployment
+
 Use **PowerShell** with custom parameters:
+
 ```powershell
 .\scripts\phase2-all.ps1 `
   -EsUrl https://es.prod.applylens.app `
@@ -255,6 +279,7 @@ Use **PowerShell** with custom parameters:
 ## 📊 Expected Output
 
 ### Makefile
+
 ```
 >> Exporting weak labels to /tmp/weak_labels.jsonl
 {"seen":15234,"written":12500,"by_category":{"promo":3201,"newsletter":4892,...}}
@@ -274,6 +299,7 @@ Use **PowerShell** with custom parameters:
 ```
 
 ### npm Scripts
+
 ```
 > npm run phase2:all
 
@@ -301,6 +327,7 @@ Use **PowerShell** with custom parameters:
 ```
 
 ### PowerShell
+
 ```
 🎯 Phase 2 - Email Categorization Pipeline
 ==========================================
@@ -350,37 +377,49 @@ Profile Summary:
 ## 🛠️ Troubleshooting
 
 ### Issue: `make: command not found`
+
 **Solution:** Use npm scripts or PowerShell instead:
+
 ```bash
 npm run phase2:all
 ```
 
 ### Issue: `curl: command not found`
-**Solution:** 
+
+**Solution:**
+
 - **Windows**: Use PowerShell option (uses Invoke-RestMethod)
 - **Mac**: Install curl: `brew install curl`
 - **Linux**: Install curl: `apt install curl` or `yum install curl`
 
 ### Issue: `jq: command not found`
-**Solution:** 
+
+**Solution:**
+
 - **Windows**: Use PowerShell option (parses JSON natively)
 - **Mac**: Install jq: `brew install jq`
 - **Linux**: Install jq: `apt install jq` or `yum install jq`
 
 ### Issue: `cross-env: command not found`
+
 **Solution:** Install npm dependencies:
+
 ```bash
 npm install
 ```
 
 ### Issue: PowerShell execution policy error
+
 **Solution:** Allow script execution:
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ### Issue: Python module not found
+
 **Solution:** Install Python dependencies:
+
 ```bash
 cd services/api
 pip install -e .
@@ -389,13 +428,17 @@ poetry install
 ```
 
 ### Issue: ES connection refused
+
 **Solution:** Start Elasticsearch:
+
 ```bash
 docker-compose up -d elasticsearch
 ```
 
 ### Issue: API returns 404
+
 **Solution:** Ensure API is running on correct port:
+
 ```bash
 # Check if API is running
 curl http://localhost:8003/health
@@ -421,6 +464,7 @@ Before running Phase-2 automation, verify:
 ### Quick Verification Commands
 
 **Makefile:**
+
 ```bash
 make -v                # Check GNU Make version
 python --version       # Check Python version
@@ -429,6 +473,7 @@ jq --version          # Check jq
 ```
 
 **npm:**
+
 ```bash
 node --version         # Check Node.js version
 npm --version          # Check npm version
@@ -436,6 +481,7 @@ python --version       # Check Python version
 ```
 
 **PowerShell:**
+
 ```powershell
 $PSVersionTable        # Check PowerShell version
 python --version       # Check Python version
@@ -450,6 +496,7 @@ Test-NetConnection -ComputerName localhost -Port 8003  # Check API
 After running Phase-2 automation:
 
 1. **Verify Results**
+
    ```bash
    # Makefile/npm
    curl "http://localhost:8003/labels/stats" | jq
@@ -459,12 +506,13 @@ After running Phase-2 automation:
    ```
 
 2. **Inspect Categorized Emails**
+
    ```bash
    curl "http://localhost:9200/emails_v1-000001/_search?q=category:promo" | jq
    ```
 
 3. **View in Kibana**
-   - Open: http://localhost:5601
+   - Open: <http://localhost:5601>
    - Query: `category:promo AND expires_at:>now`
 
 4. **Integrate with UI**

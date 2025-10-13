@@ -3,6 +3,7 @@
 ## 🎯 Quick Reference
 
 ### Prerequisites
+
 ✅ Gmail backfill completed (`analytics/ingest/gmail_backfill_to_es_bq.py`)  
 ✅ Elasticsearch index `emails_v1-000001` exists and has data  
 ✅ API running on port 8003  
@@ -29,6 +30,7 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
 ```
 
 **Expected Results**:
+
 - High confidence (0.95) for rule matches
 - Low confidence (0.01) for "other" category
 - Fast processing (~100-200 emails/sec)
@@ -98,6 +100,7 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
 ```
 
 **Expected Results**:
+
 - High confidence (0.95) for rule matches
 - Probabilistic confidence (0.5-0.95) for ML predictions
 - Better coverage (fewer "other" labels)
@@ -108,6 +111,7 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
 ## 🔧 Export Options
 
 ### Balanced Export (Recommended)
+
 ```bash
 python export_weak_labels.py \
     --days 60 \
@@ -117,6 +121,7 @@ python export_weak_labels.py \
 ```
 
 ### All Data (No Time Filter)
+
 ```bash
 python export_weak_labels.py \
     --days 0 \
@@ -124,6 +129,7 @@ python export_weak_labels.py \
 ```
 
 ### Include Unlabeled (for "other" category)
+
 ```bash
 python export_weak_labels.py \
     --days 60 \
@@ -132,6 +138,7 @@ python export_weak_labels.py \
 ```
 
 ### Small Test Export
+
 ```bash
 python export_weak_labels.py \
     --days 7 \
@@ -141,6 +148,7 @@ python export_weak_labels.py \
 ```
 
 ### Custom Elasticsearch Connection
+
 ```bash
 ES_URL=http://elasticsearch:9200 \
 ES_EMAIL_INDEX=emails_v1-000001 \
@@ -154,11 +162,13 @@ python export_weak_labels.py \
 ## 📊 Profile Analytics Endpoints
 
 ### Summary (Category Breakdown)
+
 ```bash
 curl "http://localhost:8003/profile/summary?days=60" | jq
 ```
 
 **Response**:
+
 ```json
 {
   "total": 1234,
@@ -178,6 +188,7 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
 ```
 
 ### Senders by Category
+
 ```bash
 # All senders
 curl "http://localhost:8003/profile/senders?days=60&size=20" | jq
@@ -190,11 +201,13 @@ curl "http://localhost:8003/profile/senders?category=promo&days=60" | jq
 ```
 
 ### Category Details
+
 ```bash
 curl "http://localhost:8003/profile/categories/newsletter?days=30" | jq
 ```
 
 **Response**:
+
 ```json
 {
   "category": "newsletter",
@@ -215,6 +228,7 @@ curl "http://localhost:8003/profile/categories/newsletter?days=30" | jq
 ```
 
 ### Time Series
+
 ```bash
 # Daily for last 30 days
 curl "http://localhost:8003/profile/time-series?days=30&interval=1d" | jq
@@ -231,6 +245,7 @@ curl "http://localhost:8003/profile/time-series?days=90&interval=1w" | jq
 ## 🐛 Troubleshooting
 
 ### Export: "No documents found"
+
 ```bash
 # Check if index exists
 curl "http://localhost:9200/emails_v1-000001/_count"
@@ -241,6 +256,7 @@ python gmail_backfill_to_es_bq.py
 ```
 
 ### Training: "No valid training examples"
+
 ```bash
 # Check JSONL file
 head -n 5 /tmp/weak_labels.jsonl | jq
@@ -250,6 +266,7 @@ jq -r '.weak_label' /tmp/weak_labels.jsonl | sort | uniq -c
 ```
 
 ### Labels: "Model not found"
+
 ```bash
 # Check if model file exists
 ls -lh services/api/app/labeling/label_model.joblib
@@ -260,6 +277,7 @@ docker compose restart api
 ```
 
 ### API: "404 Not Found on ES"
+
 ```bash
 # Check Elasticsearch is running
 curl "http://localhost:9200/_cluster/health"
@@ -278,17 +296,20 @@ curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
 ## 📈 Performance Tips
 
 ### Faster Exports
+
 - Use `--limit` to cap total rows
 - Use `--limit-per-cat` for balanced classes
 - Use `--days` to filter recent emails only
 
 ### Better ML Model
+
 - Export 10k+ examples (aim for 2k+ per category)
 - Balance classes with `--limit-per-cat`
 - Retrain periodically as data grows
 - Tune hyperparameters in `train_ml.py`
 
 ### Faster Labeling
+
 - Use `batch_size=200` (default) for balanced speed
 - Rules-only mode is 2x faster than ML
 - Process in batches (filter by date range)
@@ -311,4 +332,4 @@ curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
 - **Full Guide**: `PHASE_2_IMPLEMENTATION.md`
 - **Completion Summary**: `PHASE_2_COMPLETE.md`
 - **Test Script**: `scripts/test-phase2-endpoints.ps1`
-- **API Docs**: http://localhost:8003/docs
+- **API Docs**: <http://localhost:8003/docs>

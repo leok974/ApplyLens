@@ -13,12 +13,12 @@ docker compose up -d prometheus grafana
 
 Wait ~10 seconds for services to start, then access:
 
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: <http://localhost:9090>
+- **Grafana**: <http://localhost:3000> (admin/admin)
 
 ### 2. Import Grafana Dashboard
 
-1. Open Grafana at http://localhost:3000
+1. Open Grafana at <http://localhost:3000>
 2. Login with username: `admin`, password: `admin`
 3. Click **+** → **Import dashboard**
 4. Click **Upload JSON file** and select: `D:\ApplyLens\infra\prometheus\grafana-dashboard.json`
@@ -54,17 +54,20 @@ The imported dashboard includes:
 ### HTTP Metrics
 
 **Request rate (per second):**
+
 ```promql
 sum by (method,status_code) (rate(applylens_http_requests_total[5m]))
 ```
 
 **Error rate (5xx as percentage):**
+
 ```promql
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))
 ```
 
 **Latency percentiles:**
+
 ```promql
 # p50
 histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
@@ -79,16 +82,19 @@ histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_secon
 ### Backfill Metrics
 
 **Rate-limited spikes (last 15m):**
+
 ```promql
 increase(applylens_backfill_requests_total{result="rate_limited"}[15m])
 ```
 
 **Emails inserted per minute:**
+
 ```promql
 rate(applylens_backfill_inserted_total[1m]) * 60
 ```
 
 **Backfill outcomes (last hour):**
+
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ```
@@ -96,21 +102,25 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ### System Health
 
 **Gmail connection status:**
+
 ```promql
 applylens_gmail_connected
 ```
 
 **Count of connected users:**
+
 ```promql
 sum(max_over_time(applylens_gmail_connected[10m]))
 ```
 
 **All systems operational (DB + ES):**
+
 ```promql
 min(applylens_db_up) and min(applylens_es_up)
 ```
 
 **Any system down:**
+
 ```promql
 (min(applylens_db_up) == 0) or (min(applylens_es_up) == 0)
 ```
@@ -143,7 +153,7 @@ Alerts are configured in `infra/prometheus/alerts.yml`:
 
 ### View Alerts
 
-1. Open Prometheus: http://localhost:9090/alerts
+1. Open Prometheus: <http://localhost:9090/alerts>
 2. See active alerts and their status (pending, firing, resolved)
 
 ### Configure Alert Notifications
@@ -151,6 +161,7 @@ Alerts are configured in `infra/prometheus/alerts.yml`:
 To send alerts to Slack, email, or other channels:
 
 1. Create `infra/prometheus/alertmanager.yml`:
+
 ```yaml
 global:
   resolve_timeout: 5m
@@ -172,6 +183,7 @@ receivers:
 ```
 
 2. Add Alertmanager to `docker-compose.yml`:
+
 ```yaml
 alertmanager:
   image: prom/alertmanager:v0.27.0
@@ -182,6 +194,7 @@ alertmanager:
 ```
 
 3. Update `prometheus.yml`:
+
 ```yaml
 alerting:
   alertmanagers:
@@ -192,6 +205,7 @@ alerting:
 ## Testing Queries in Prometheus
 
 ### 1. Open Prometheus Graph UI
+
 ```powershell
 start http://localhost:9090/graph
 ```
@@ -199,27 +213,32 @@ start http://localhost:9090/graph
 ### 2. Try These Queries
 
 **All ApplyLens metrics:**
+
 ```promql
 {__name__=~"applylens_.*"}
 ```
 
 **HTTP requests in last 5 minutes:**
+
 ```promql
 rate(applylens_http_requests_total[5m])
 ```
 
 **Current system health:**
+
 ```promql
 applylens_db_up
 applylens_es_up
 ```
 
 **Backfill activity:**
+
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ```
 
 ### 3. Switch to Graph View
+
 - Click the **Graph** tab to see time-series visualization
 - Adjust time range with the dropdown (Last 1h, Last 6h, etc.)
 - Enable auto-refresh for live updates
@@ -249,6 +268,7 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 ```
 
 ### File Structure
+
 ```
 infra/
 ├── docker-compose.yml           # Added prometheus + grafana services
@@ -263,7 +283,8 @@ infra/
 ### Current Label Cardinality (Low Risk)
 
 ✅ **Good cardinality:**
-- `user_email` label: Single user (leoklemet.pa@gmail.com)
+
+- `user_email` label: Single user (<leoklemet.pa@gmail.com>)
 - `result` label: 4 values (ok, error, rate_limited, bad_request)
 - `method` label: ~5 HTTP methods
 - `path` label: ~10 API paths (grouped by `group_paths=True`)
@@ -289,6 +310,7 @@ infra/
 ### Memory Usage
 
 Prometheus memory scales with:
+
 - **Active time series**: ~100 currently
 - **Retention period**: 15 days (default)
 - **Scrape interval**: 30 seconds
@@ -300,6 +322,7 @@ Estimated memory: **~200MB** for ApplyLens metrics alone.
 ### 1. Secure Metrics Endpoint
 
 Add nginx rule to restrict `/metrics`:
+
 ```nginx
 location /metrics {
     # Only allow Prometheus server
@@ -311,6 +334,7 @@ location /metrics {
 ```
 
 Or add basic auth in FastAPI:
+
 ```python
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from secrets import compare_digest
@@ -328,6 +352,7 @@ def metrics(credentials: HTTPBasicCredentials = Depends(security)):
 ### 2. Persistent Storage
 
 Add volumes to docker-compose.yml:
+
 ```yaml
 prometheus:
   volumes:
@@ -346,6 +371,7 @@ volumes:
 ### 3. Configure Retention
 
 Update Prometheus command in docker-compose.yml:
+
 ```yaml
 prometheus:
   command:
@@ -357,6 +383,7 @@ prometheus:
 ### 4. External Access
 
 Update Grafana environment for production:
+
 ```yaml
 grafana:
   environment:
@@ -370,9 +397,10 @@ grafana:
 
 ### Prometheus Can't Scrape API
 
-**Symptom:** Target shows as "DOWN" in http://localhost:9090/targets
+**Symptom:** Target shows as "DOWN" in <http://localhost:9090/targets>
 
 **Check:**
+
 ```powershell
 # 1. Verify API /metrics endpoint
 curl http://localhost:8003/metrics
@@ -391,6 +419,7 @@ docker logs infra-prometheus
 **Symptom:** Dashboard panels show "No data"
 
 **Check:**
+
 ```powershell
 # 1. Test Prometheus data source in Grafana
 # Settings → Data Sources → Prometheus → Save & Test
@@ -409,6 +438,7 @@ start http://localhost:9090/graph
 **Symptom:** Gauges not updating (e.g., `applylens_db_up` stuck at 0)
 
 **Trigger metric updates:**
+
 ```powershell
 # Call readiness endpoint to update DB_UP and ES_UP
 curl http://localhost:8003/readiness
@@ -423,6 +453,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
 ### Alerts Not Firing
 
 **Check alert evaluation:**
+
 ```powershell
 # 1. Open Prometheus alerts page
 start http://localhost:9090/alerts
@@ -439,6 +470,7 @@ docker logs infra-prometheus --tail 50
 ## Useful Commands
 
 ### Start/Stop Services
+
 ```powershell
 # Start monitoring stack
 docker compose -f D:\ApplyLens\infra\docker-compose.yml up -d prometheus grafana
@@ -455,6 +487,7 @@ docker logs infra-grafana --tail 50
 ```
 
 ### Validate Configuration
+
 ```powershell
 # Check Prometheus config syntax
 docker exec infra-prometheus promtool check config /etc/prometheus/prometheus.yml
@@ -467,6 +500,7 @@ curl http://localhost:9090/api/v1/targets | ConvertFrom-Json
 ```
 
 ### Query Metrics via API
+
 ```powershell
 # Instant query
 $query = "applylens_http_requests_total"
@@ -477,6 +511,7 @@ curl "http://localhost:9090/api/v1/query_range?query=$query&start=$(Get-Date -UF
 ```
 
 ### Export/Import Dashboards
+
 ```powershell
 # Export current dashboard from Grafana UI
 # Dashboard → Share → Export → Save to file
@@ -507,8 +542,8 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/dashboards/db" -Method POST -H
 
 ## Resources
 
-- **Prometheus Documentation**: https://prometheus.io/docs/
-- **Grafana Documentation**: https://grafana.com/docs/
-- **PromQL Tutorial**: https://prometheus.io/docs/prometheus/latest/querying/basics/
-- **Grafana Dashboard Gallery**: https://grafana.com/grafana/dashboards/
+- **Prometheus Documentation**: <https://prometheus.io/docs/>
+- **Grafana Documentation**: <https://grafana.com/docs/>
+- **PromQL Tutorial**: <https://prometheus.io/docs/prometheus/latest/querying/basics/>
+- **Grafana Dashboard Gallery**: <https://grafana.com/grafana/dashboards/>
 - **ApplyLens Metrics Guide**: `D:\ApplyLens\docs\PROMETHEUS_METRICS.md`

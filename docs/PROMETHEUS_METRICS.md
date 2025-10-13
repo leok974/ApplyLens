@@ -5,6 +5,7 @@ ApplyLens exposes Prometheus metrics at `/metrics` endpoint for monitoring and o
 ## Quick Start
 
 ### Access Metrics
+
 ```bash
 curl http://localhost:8003/metrics
 ```
@@ -12,6 +13,7 @@ curl http://localhost:8003/metrics
 ### Available Metrics
 
 #### HTTP Request Metrics (Automatic)
+
 These are automatically collected by the `starlette-exporter` middleware:
 
 - **`applylens_http_requests_total`** (Counter)
@@ -53,6 +55,7 @@ These are automatically collected by the `starlette-exporter` middleware:
 ## Prometheus Server Configuration
 
 ### prometheus.yml Example
+
 ```yaml
 global:
   scrape_interval: 15s
@@ -67,6 +70,7 @@ scrape_configs:
 ```
 
 ### Docker Compose Example
+
 To add Prometheus to your stack:
 
 ```yaml
@@ -96,32 +100,38 @@ volumes:
 ### Example PromQL Queries
 
 **Request Rate (requests per minute):**
+
 ```promql
 rate(applylens_http_requests_total[1m]) * 60
 ```
 
 **Request Latency (p95):**
+
 ```promql
 histogram_quantile(0.95, sum(rate(applylens_http_request_duration_seconds_bucket[5m])) by (le, path))
 ```
 
 **Backfill Success Rate:**
+
 ```promql
 rate(applylens_backfill_requests_total{result="ok"}[5m]) / 
 rate(applylens_backfill_requests_total[5m])
 ```
 
 **System Health:**
+
 ```promql
 applylens_db_up + applylens_es_up  # Should be 2 when both healthy
 ```
 
 **Gmail Connection Status:**
+
 ```promql
 applylens_gmail_connected
 ```
 
 **Emails Inserted Over Time:**
+
 ```promql
 increase(applylens_backfill_inserted_total[1h])
 ```
@@ -187,6 +197,7 @@ Create a new dashboard in Grafana and import this configuration:
 ## Alerting Rules
 
 ### prometheus/alerts.yml Example
+
 ```yaml
 groups:
   - name: applylens_alerts
@@ -244,6 +255,7 @@ groups:
 ## Testing Metrics
 
 ### PowerShell Commands
+
 ```powershell
 # 1. Check metrics endpoint
 $metrics = (Invoke-WebRequest -Uri http://localhost:8003/metrics).Content
@@ -259,6 +271,7 @@ $metrics -split "`n" | Where-Object { $_ -match "applylens_backfill" }
 ```
 
 ### Bash Commands
+
 ```bash
 # Check metrics endpoint
 curl http://localhost:8003/metrics | grep "^applylens_"
@@ -278,12 +291,13 @@ curl -s http://localhost:8003/metrics | grep "applylens_backfill"
 
 1. **Middleware**: `starlette-exporter` provides automatic HTTP metrics
 2. **Custom Metrics**: Defined in `services/api/app/metrics.py`
-3. **Instrumentation**: 
+3. **Instrumentation**:
    - `routes_gmail.py`: Backfill and connection status
    - `main.py`: Database and Elasticsearch health
 4. **Export Format**: Prometheus text format (OpenMetrics compatible)
 
 ### File Structure
+
 ```
 services/api/app/
 ├── metrics.py          # Centralized metric definitions
@@ -296,6 +310,7 @@ services/api/app/
 To add a new metric:
 
 1. Define in `metrics.py`:
+
 ```python
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -307,6 +322,7 @@ MY_METRIC = Counter(
 ```
 
 2. Import in your route file:
+
 ```python
 from .metrics import MY_METRIC
 
@@ -323,6 +339,7 @@ def my_endpoint():
 ### Security Considerations
 
 1. **Restrict Access**: Metrics may contain sensitive information
+
    ```nginx
    # Nginx example - restrict /metrics to internal network
    location /metrics {
@@ -355,16 +372,19 @@ def my_endpoint():
 ### Metrics Not Appearing
 
 1. Check if API is running:
+
    ```bash
    curl http://localhost:8003/healthz
    ```
 
 2. Check container logs:
+
    ```bash
    docker logs infra-api-1
    ```
 
 3. Verify dependencies installed:
+
    ```bash
    docker exec infra-api-1 pip list | grep -E "prometheus|starlette-exporter"
    ```
@@ -372,6 +392,7 @@ def my_endpoint():
 ### Stale Metrics
 
 Gauges may show stale values if not updated. Call `/readiness` or relevant endpoints to refresh:
+
 ```bash
 curl http://localhost:8003/readiness
 curl http://localhost:8003/gmail/status
@@ -380,6 +401,7 @@ curl http://localhost:8003/gmail/status
 ### Missing Labels
 
 If labels show as "unknown", ensure the instrumentation code provides all label values:
+
 ```python
 # BAD - missing required label
 GMAIL_CONNECTED.set(1)

@@ -395,6 +395,7 @@ function SmartSuggestion({ email }: { email: Email }) {
 ### Problem: Company extraction returns "(Unknown)"
 
 **Solution:**
+
 ```typescript
 // Provide more context in body_text
 const payload = {
@@ -409,6 +410,7 @@ const payload = {
 ### Problem: Role extraction returns "(Unknown Role)"
 
 **Solution:**
+
 ```typescript
 // Check if role is mentioned in subject
 if (!email.subject.includes('position') && !email.subject.includes('role')) {
@@ -420,6 +422,7 @@ if (!email.subject.includes('position') && !email.subject.includes('role')) {
 ### Problem: Source detection always returns "Email"
 
 **Solution:**
+
 ```typescript
 // Make sure sender/subject/body are provided
 const payload = {
@@ -436,7 +439,7 @@ const payload = {
 
 | Field | Accuracy | When High | When Low |
 |-------|----------|-----------|----------|
-| Company | 75-90% | careers@company.com | Generic @gmail.com |
+| Company | 75-90% | <careers@company.com> | Generic @gmail.com |
 | Role | 85-95% | Subject mentions role | Free-form text |
 | Source | 95-100% | Recognized ATS | Unknown sender |
 
@@ -454,11 +457,12 @@ const payload = {
 
 ---
 
-## 🎉 You're Ready!
+## 🎉 You're Ready
 
 The email parsing API is production-ready and tested. Start using it to automatically create applications from emails with minimal manual data entry!
 
 **Quick start:**
+
 ```typescript
 await createApplicationFromEmail({
   thread_id: email.thread_id,

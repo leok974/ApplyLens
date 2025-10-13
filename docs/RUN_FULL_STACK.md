@@ -23,6 +23,7 @@ docker compose up -d
 ```
 
 **Services started:**
+
 - ✅ API (FastAPI) - Port 8003
 - ✅ Database (PostgreSQL) - Port 5433
 - ✅ Elasticsearch - Port 9200
@@ -30,6 +31,7 @@ docker compose up -d
 - ✅ pgvector - Port 5432
 
 **Verify:**
+
 ```powershell
 docker compose ps
 ```
@@ -42,15 +44,17 @@ npm run dev
 ```
 
 **Service started:**
+
 - ✅ Web UI (Vite) - Port 5175
 
-**Access:** http://localhost:5175
+**Access:** <http://localhost:5175>
 
 ---
 
 ## Check Status
 
 ### All Services
+
 ```powershell
 # Backend
 cd d:/ApplyLens/infra
@@ -61,6 +65,7 @@ Get-Process -Name node -ErrorAction SilentlyContinue
 ```
 
 ### Health Checks
+
 ```powershell
 # API
 curl http://localhost:8003/docs
@@ -80,6 +85,7 @@ curl http://localhost:5175
 ## Stop Services
 
 ### Stop Frontend
+
 ```powershell
 # Press Ctrl+C in terminal where npm run dev is running
 # Or kill process:
@@ -87,12 +93,14 @@ Get-Process -Name node | Stop-Process -Force
 ```
 
 ### Stop Backend
+
 ```powershell
 cd d:/ApplyLens/infra
 docker compose down
 ```
 
 ### Stop All (Clean Shutdown)
+
 ```powershell
 # Stop frontend first
 Get-Process -Name node | Stop-Process -Force
@@ -107,18 +115,21 @@ docker compose down
 ## Restart Services
 
 ### Restart API Only
+
 ```powershell
 cd d:/ApplyLens/infra
 docker compose restart api
 ```
 
 ### Restart All Backend
+
 ```powershell
 cd d:/ApplyLens/infra
 docker compose restart
 ```
 
 ### Restart Frontend
+
 ```powershell
 # Stop frontend (Ctrl+C or kill process)
 # Then restart:
@@ -131,6 +142,7 @@ npm run dev
 ## View Logs
 
 ### Backend Logs
+
 ```powershell
 cd d:/ApplyLens/infra
 
@@ -144,6 +156,7 @@ docker compose logs -f es
 ```
 
 ### Frontend Logs
+
 Check the terminal where `npm run dev` is running.
 
 ---
@@ -155,6 +168,7 @@ Check the terminal where `npm run dev` is running.
 **Problem:** `Port 8003 is already allocated`
 
 **Solution:**
+
 ```powershell
 # Find process using port
 Get-NetTCPConnection -LocalPort 8003 | Select-Object OwningProcess
@@ -169,6 +183,7 @@ docker compose restart api
 **Problem:** `Connection refused: db:5432`
 
 **Solution:**
+
 ```powershell
 # Check if db is running
 docker compose ps db
@@ -186,6 +201,7 @@ docker compose restart api
 **Problem:** `http proxy error: /api/...`
 
 **Solution:**
+
 ```powershell
 # Check API is running
 curl http://localhost:8003/docs
@@ -202,6 +218,7 @@ docker compose up -d api
 **Problem:** ES container keeps restarting
 
 **Solution:**
+
 ```powershell
 # Check logs
 docker compose logs es
@@ -218,16 +235,19 @@ docker compose -f docker-compose.minimal.yml up -d
 ## Access Points
 
 ### Web Applications
-- 🌐 **Web UI:** http://localhost:5175
-- 📚 **API Docs:** http://localhost:8003/docs
-- 🔍 **OpenAPI:** http://localhost:8003/openapi.json
+
+- 🌐 **Web UI:** <http://localhost:5175>
+- 📚 **API Docs:** <http://localhost:8003/docs>
+- 🔍 **OpenAPI:** <http://localhost:8003/openapi.json>
 
 ### Monitoring
-- 📊 **Metrics:** http://localhost:8003/metrics
-- 🔎 **Elasticsearch:** http://localhost:9200
-- 🧠 **Ollama:** http://localhost:11434
+
+- 📊 **Metrics:** <http://localhost:8003/metrics>
+- 🔎 **Elasticsearch:** <http://localhost:9200>
+- 🧠 **Ollama:** <http://localhost:11434>
 
 ### Database
+
 - 🐘 **PostgreSQL:** localhost:5433
   - User: `applylens`
   - Database: `applylens`
@@ -240,12 +260,13 @@ docker compose -f docker-compose.minimal.yml up -d
 ### Test "Always Do This"
 
 1. **Create test policy:**
+
 ```powershell
 cd d:/ApplyLens
 pwsh ./scripts/create-test-policy.ps1
 ```
 
-2. **Open UI:** http://localhost:5175
+2. **Open UI:** <http://localhost:5175>
 
 3. **Click "Actions" button** (top-right)
 
@@ -269,6 +290,7 @@ pwsh ./scripts/test-always-feature.ps1
 ## Development Workflow
 
 ### 1. Morning Startup
+
 ```powershell
 # Start backend
 cd d:/ApplyLens/infra
@@ -285,6 +307,7 @@ start http://localhost:5175
 ### 2. Code Changes
 
 **Backend changes:**
+
 ```powershell
 # Changes are auto-reloaded (uvicorn --reload)
 # If not, restart:
@@ -292,12 +315,14 @@ docker compose restart api
 ```
 
 **Frontend changes:**
+
 ```powershell
 # Changes are auto-reloaded (HMR)
 # Already running in terminal
 ```
 
 ### 3. Testing
+
 ```powershell
 # Backend tests
 cd d:/ApplyLens/services/api
@@ -309,6 +334,7 @@ npm test
 ```
 
 ### 4. End of Day
+
 ```powershell
 # Stop frontend (Ctrl+C)
 
@@ -322,6 +348,7 @@ docker compose down
 ## Production Deployment
 
 ### Build Frontend
+
 ```powershell
 cd d:/ApplyLens/apps/web
 npm run build
@@ -330,12 +357,14 @@ npm run build
 ```
 
 ### Run Production Stack
+
 ```powershell
 cd d:/ApplyLens/infra
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### Health Check
+
 ```powershell
 # Check all services healthy
 docker compose ps
@@ -385,6 +414,7 @@ cd d:/ApplyLens && pwsh ./scripts/test-always-feature.ps1
 ## Monitoring Dashboard
 
 ### Service Status
+
 ```powershell
 # Show all service URLs
 Write-Host "Services:" -ForegroundColor Cyan
@@ -397,6 +427,7 @@ Write-Host "  Ollama:    http://localhost:11434" -ForegroundColor Green
 ```
 
 ### Phase 4 Status
+
 ```powershell
 # Show Phase 4 stats
 $policies = curl -s http://localhost:8003/api/actions/policies | jq '. | length'
@@ -429,15 +460,18 @@ Write-Host "  Pending:   $pending" -ForegroundColor Yellow
 ✅ Phase 4 Features - Always do this + Metrics  
 
 **Quick Start:**
+
 ```powershell
 cd d:/ApplyLens/infra && docker compose up -d && cd ../apps/web && npm run dev
 ```
 
 **Access:**
-- Web UI: http://localhost:5175
-- API Docs: http://localhost:8003/docs
+
+- Web UI: <http://localhost:5175>
+- API Docs: <http://localhost:8003/docs>
 
 **Test:**
+
 ```powershell
 cd d:/ApplyLens && pwsh ./scripts/test-always-feature.ps1
 ```

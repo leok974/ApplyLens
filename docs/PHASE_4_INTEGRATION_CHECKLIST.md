@@ -30,6 +30,7 @@ docker exec infra-api-1 alembic upgrade head
 ```
 
 Expected output:
+
 ```
 INFO  [alembic.runtime.migration] Running upgrade 0015 -> 0016, phase4 actions
 ```
@@ -51,6 +52,7 @@ finally:
 ```
 
 Or using the module runner:
+
 ```powershell
 docker exec infra-api-1 python -m app.seeds.policies
 ```
@@ -87,12 +89,13 @@ curl http://localhost:8003/api/actions/tray | jq .
 ### 7. Test Frontend (Manual)
 
 1. Start the web app:
+
    ```powershell
    cd d:/ApplyLens/apps/web
    npm run dev
    ```
 
-2. Open browser to http://localhost:5175
+2. Open browser to <http://localhost:5175>
 
 3. Click the "Actions" button in the header (with Sparkles icon)
 
@@ -114,6 +117,7 @@ curl http://localhost:8003/api/actions/tray | jq .
    - Application emails with job keywords → Should trigger label
 
 2. **Propose actions:**
+
    ```powershell
    curl -X POST http://localhost:8003/api/actions/propose -d '{"limit":50}'
    ```
@@ -130,6 +134,7 @@ curl http://localhost:8003/api/actions/tray | jq .
    - Verify action removed from tray
 
 5. **Check audit trail:**
+
    ```powershell
    docker exec -it infra-db-1 psql -U postgres -d lens -c "
    SELECT id, email_id, action, outcome, actor, created_at 
@@ -139,6 +144,7 @@ curl http://localhost:8003/api/actions/tray | jq .
    ```
 
 6. **Verify screenshot saved:**
+
    ```powershell
    docker exec infra-api-1 ls -lh /data/audit/2025-10/
    ```
@@ -148,11 +154,13 @@ curl http://localhost:8003/api/actions/tray | jq .
 ### Check Prometheus Metrics (Future)
 
 Once metrics are added:
+
 ```powershell
 curl http://localhost:8003/metrics | grep actions
 ```
 
 Expected metrics:
+
 - `actions_proposed_total{policy="..."}`
 - `actions_executed_total{action="...", outcome="..."}`
 - `actions_failed_total{action="...", error_type="..."}`
@@ -218,10 +226,13 @@ print(evaluate_policy(policy, ctx))
 
 1. Check browser console for errors
 2. Verify API endpoint is accessible:
+
    ```powershell
    curl http://localhost:8003/api/actions/tray
    ```
+
 3. Check CORS headers:
+
    ```powershell
    curl -i -H "Origin: http://localhost:5175" http://localhost:8003/api/actions/tray
    ```
@@ -230,15 +241,18 @@ print(evaluate_policy(policy, ctx))
 
 1. Check browser console for html2canvas errors
 2. Verify package is installed:
+
    ```powershell
    cd d:/ApplyLens/apps/web
    npm list html2canvas
    ```
+
 3. Screenshot failure is non-blocking - action will still execute
 
 ## 📝 Remaining Work
 
 ### Backend
+
 - [ ] Integrate executors with Gmail/Calendar/Tasks services
 - [ ] Add ES aggregations to rationale builder
 - [ ] Implement KNN neighbors in rationale
@@ -247,6 +261,7 @@ print(evaluate_policy(policy, ctx))
 - [ ] Write unit tests (Yardstick, propose, approve)
 
 ### Frontend
+
 - [ ] Add "Always do this" button (policy creation)
 - [ ] Add policy management UI (CRUD)
 - [ ] Add policy testing UI
@@ -254,6 +269,7 @@ print(evaluate_policy(policy, ctx))
 - [ ] Write Playwright E2E tests
 
 ### Infrastructure
+
 - [ ] Screenshot cleanup job (delete > 90 days)
 - [ ] Audit log retention policy
 - [ ] Rate limiting on policy creation

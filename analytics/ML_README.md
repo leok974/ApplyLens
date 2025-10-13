@@ -30,24 +30,28 @@ Kibana Visualization + Prometheus Alerts
 ## Metrics
 
 ### 1. Average Risk Score (`avg_risk`)
+
 - **Source**: `mrt_risk_daily.avg_risk`
 - **Model**: `ml.m_avg_risk_arima`
 - **Predictions**: `ml.pred_avg_risk`
 - **Use Case**: Detect unusual shifts in risk calculation patterns
 
 ### 2. Email Volume (`email_count`)
+
 - **Source**: `mrt_risk_daily.emails`
 - **Model**: `ml.m_email_count_arima`
 - **Predictions**: `ml.pred_email_count`
 - **Use Case**: Capacity planning, traffic anomaly detection
 
 ### 3. Parity Drift Ratio (`parity_ratio`)
+
 - **Source**: `mrt_parity_drift.mismatch_ratio`
 - **Model**: `ml.m_parity_ratio_arima`
 - **Predictions**: `ml.pred_parity_ratio`
 - **Use Case**: Predict data quality degradation before critical thresholds
 
 ### 4. Backfill P95 Duration (`backfill_p95`)
+
 - **Source**: `mrt_backfill_slo.p95_duration_seconds`
 - **Model**: `ml.m_backfill_p95_arima`
 - **Predictions**: `ml.pred_backfill_p95`
@@ -105,6 +109,7 @@ Anomaly detection analyzes the past **60 days** of data, comparing actuals to pr
 **Trigger**: Sundays at 4:00 AM UTC (cron: `0 4 * * 0`)
 
 **Steps**:
+
 1. Train all 4 ARIMA models on historical data
 2. Models stored in BigQuery `ml.*` schema
 
@@ -117,6 +122,7 @@ dbt run --select ml:m_* --target prod
 **Trigger**: Every day at 4:45 AM UTC (cron: `45 4 * * *`)
 
 **Steps**:
+
 1. Generate 7-day forecasts using trained models
 2. Detect anomalies (compare actuals to predictions)
 3. Export high/low severity anomalies to Elasticsearch
@@ -130,6 +136,7 @@ python analytics/export/export_anomalies_to_es.py
 ### Manual Trigger
 
 You can manually trigger the workflow with a choice of:
+
 - `train`: Train models only
 - `forecast`: Forecast and detect anomalies only
 - `both`: Full training + forecasting pipeline
@@ -174,6 +181,7 @@ anomaly_detection (high/low only) → analytics_applylens_anomalies index
 ### Index: `analytics_applylens_anomalies`
 
 **Document Structure**:
+
 ```json
 {
   "_id": "avg_risk:2024-01-15",
@@ -198,6 +206,7 @@ anomaly_detection (high/low only) → analytics_applylens_anomalies index
 **Location**: `monitoring/kibana/anomalies.ndjson`
 
 **Panels**:
+
 1. **Total Anomalies (Last 7 Days)** - Metric visualization
 2. **Anomalies by Severity** - Pie chart (high/low breakdown)
 3. **Anomalies Timeline (All Metrics)** - Line chart over 30 days
@@ -255,6 +264,7 @@ applylens_ml_anomalies_total{metric="backfill_p95", severity="high"}
 ### When Alerts Fire
 
 #### 1. Check Kibana Dashboard
+
 - Navigate to **ApplyLens - ML Anomaly Detection** dashboard
 - Review the specific metric's visualization
 - Identify when anomaly started and severity
@@ -295,6 +305,7 @@ ORDER BY d;
 #### 5. Adjust if Necessary
 
 If anomalies are due to expected changes (e.g., new feature launch):
+
 - Manually retrain models: Run `analytics-ml.yml` workflow with `train` option
 - Update will incorporate new baseline in next weekly training
 
@@ -377,11 +388,13 @@ curl -X GET "$ES_URL/analytics_applylens_anomalies/_search?pretty" \
 **Symptom**: `dbt run --select ml:m_*` fails
 
 **Possible Causes**:
+
 - BigQuery ML API not enabled
 - Service account lacks permissions
 - Insufficient historical data (<30 days)
 
 **Resolution**:
+
 ```bash
 # Enable BigQuery ML API
 gcloud services enable bigquerystorage.googleapis.com
@@ -397,10 +410,12 @@ gcloud projects add-iam-policy-binding $BQ_PROJECT \
 **Symptom**: `dbt run --select ml:pred_*` fails
 
 **Possible Causes**:
+
 - Models not trained yet
 - Model training incomplete
 
 **Resolution**:
+
 ```bash
 # Check model status
 bq query --use_legacy_sql=false '
@@ -416,11 +431,13 @@ dbt run --select ml:m_* --target prod
 **Symptom**: `anomaly_detection` table empty or all severity='normal'
 
 **Possible Causes**:
+
 - Predictions very accurate (good!)
 - Insufficient actual data
 - Forecast period doesn't overlap with actuals
 
 **Resolution**:
+
 - This is expected if predictions are accurate
 - Check `mrt_*` tables for recent data
 - Anomalies only detected when forecasts overlap with actuals
@@ -430,11 +447,13 @@ dbt run --select ml:m_* --target prod
 **Symptom**: `export_anomalies_to_es.py` errors
 
 **Possible Causes**:
+
 - Elasticsearch connection issues
 - BigQuery authentication issues
 - No high/low severity anomalies to export
 
 **Resolution**:
+
 ```bash
 # Test ES connectivity
 curl $ES_URL
@@ -516,6 +535,7 @@ SELECT * FROM ML.ARIMA_COEFFICIENTS(MODEL `applylens.ml.m_avg_risk_arima`);
 ### Additional Metrics
 
 Consider adding ARIMA models for:
+
 - API response time percentiles
 - Database query durations
 - Cache hit rates

@@ -3,7 +3,8 @@
 ## 🎯 Quick Start
 
 ### In the UI
-1. Go to http://localhost:5175/search
+
+1. Go to <http://localhost:5175/search>
 2. Search for emails (e.g., "interview")
 3. Open "Sort results" dropdown
 4. Choose your sort option
@@ -23,25 +24,31 @@
 ## 🔍 Common Workflows
 
 ### Find Emails Needing Replies
+
 ```
 Filter: "Not replied"
 Sort: "Slowest / no-reply first"
 ```
+
 → All unreplied emails, oldest first
 
 ### Analyze Response Times
+
 ```
 Filter: "Replied"
 Sort: "Fastest response"
 ```
+
 → See your quickest responses
 
 ### Recent Offers
+
 ```
 Query: "offer"
 Label: "offer"
 Sort: "Newest"
 ```
+
 → Most recent offers at top
 
 ---

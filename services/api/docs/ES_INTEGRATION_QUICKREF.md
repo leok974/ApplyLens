@@ -3,6 +3,7 @@
 ## Quick Start
 
 ### 1. Environment Setup
+
 ```bash
 export ES_URL=http://localhost:9200
 export ES_API_KEY=your_key_here  # optional
@@ -10,11 +11,13 @@ export ES_EMAIL_INDEX=emails_v1
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 pip install elasticsearch
 ```
 
 ### 3. Test It
+
 ```bash
 # Unit tests (no ES cluster needed)
 pytest tests/unit/test_search_es.py -v
@@ -56,6 +59,7 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
 **POST** `/policies/run`
 
 **Request:**
+
 ```json
 {
   "policy_set": {
@@ -68,6 +72,7 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
 ```
 
 **Response:**
+
 ```json
 {
   "policy_set_id": "cleanup-promos",
@@ -87,6 +92,7 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
 ## Common ES Filters
 
 ### Expired Promos
+
 ```json
 {
   "bool": {
@@ -99,11 +105,13 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
 ```
 
 ### High Risk
+
 ```json
 {"range": {"risk_score": {"gte": 80}}}
 ```
 
 ### Stale Newsletters
+
 ```json
 {
   "bool": {
@@ -126,6 +134,7 @@ E2E Tests: 19 created (require Docker)
 ## cURL Examples
 
 ### Find Expired Promos
+
 ```bash
 curl -X POST http://localhost:8000/policies/run \
   -H "Content-Type: application/json" \
@@ -149,6 +158,7 @@ curl -X POST http://localhost:8000/policies/run \
 ```
 
 ### Flag High-Risk
+
 ```bash
 curl -X POST http://localhost:8000/policies/run \
   -H "Content-Type: application/json" \
@@ -186,19 +196,24 @@ docker-compose restart api
 ## Troubleshooting
 
 ### Issue: E2E tests fail with "could not translate host name 'db'"
+
 **Solution:** E2E tests require Docker environment. Run unit tests instead:
+
 ```bash
 pytest tests/unit/test_search_es.py -v
 ```
 
 ### Issue: Elasticsearch connection error
+
 **Solution:** Check ES_URL environment variable:
+
 ```bash
 echo $ES_URL
 # Should be: http://localhost:9200 or http://es:9200 (in Docker)
 ```
 
 ### Issue: Import error for policy_exec router
+
 **Solution:** Router uses try/except - this is expected if not deployed yet.
 
 ## Quick Validation

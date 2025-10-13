@@ -7,6 +7,7 @@ This guide walks you through setting up Fivetran to sync ApplyLens PostgreSQL da
 ## 🎯 Overview
 
 **Data Flow:**
+
 ```
 Postgres (ApplyLens DB) → Fivetran Connector → BigQuery (dataset: applylens)
 ```
@@ -38,7 +39,8 @@ Postgres (ApplyLens DB) → Fivetran Connector → BigQuery (dataset: applylens)
 ## 🚀 Step 1: Create BigQuery Dataset
 
 ### Via Console
-1. Go to https://console.cloud.google.com/bigquery
+
+1. Go to <https://console.cloud.google.com/bigquery>
 2. Select your project
 3. Click **Create Dataset**
    - Dataset ID: `applylens`
@@ -48,6 +50,7 @@ Postgres (ApplyLens DB) → Fivetran Connector → BigQuery (dataset: applylens)
 4. Click **Create Dataset**
 
 ### Via gcloud CLI
+
 ```bash
 # Authenticate
 gcloud auth login
@@ -64,7 +67,8 @@ bq mk --location=US --dataset applylens
 ## 🔌 Step 2: Set Up Fivetran Destination
 
 ### 1. Create BigQuery Destination
-1. Log in to https://fivetran.com/dashboard
+
+1. Log in to <https://fivetran.com/dashboard>
 2. Navigate to **Destinations** → **Add Destination**
 3. Select **Google BigQuery**
 4. Configure:
@@ -77,6 +81,7 @@ bq mk --location=US --dataset applylens
 6. Verify connection successful
 
 ### 2. Service Account Method (Alternative)
+
 ```bash
 # Create service account
 gcloud iam service-accounts create fivetran-applylens \
@@ -103,6 +108,7 @@ gcloud iam service-accounts keys create fivetran-key.json \
 ## 🗄️ Step 3: Configure PostgreSQL Connector
 
 ### 1. Prepare Database User
+
 ```sql
 -- Create read-only user for Fivetran
 CREATE USER fivetran_user WITH PASSWORD 'your_secure_password';
@@ -124,9 +130,11 @@ SELECT count(*) FROM applications;
 ```
 
 ### 2. Optional: IP Allowlist for Security
+
 If using Cloudflare or database firewall, allowlist Fivetran IPs:
 
 **Fivetran IP Ranges (as of 2025):**
+
 ```
 52.0.2.4/32
 35.234.176.144/29
@@ -135,6 +143,7 @@ If using Cloudflare or database firewall, allowlist Fivetran IPs:
 ```
 
 **PostgreSQL pg_hba.conf:**
+
 ```conf
 # Fivetran access
 host    applylens    fivetran_user    52.0.2.4/32    md5
@@ -143,6 +152,7 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 ```
 
 ### 3. Create Connector in Fivetran
+
 1. In Fivetran dashboard: **Connectors** → **Add Connector**
 2. Search for **PostgreSQL**
 3. Select destination: `ApplyLens Analytics`
@@ -152,7 +162,7 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
    - **Database:** `applylens`
    - **User:** `fivetran_user`
    - **Password:** Your secure password
-   - **Connection Method:** 
+   - **Connection Method:**
      - **Direct** (if publicly accessible)
      - **SSH Tunnel** (recommended for security)
      - **Reverse SSH Tunnel** (for private networks)
@@ -160,17 +170,21 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 5. **Test Connection** → Should show green checkmark
 
 ### 4. Select Tables to Sync
+
 **Minimal Required Tables:**
+
 - ✅ `emails` - Core email data with risk scores
 - ✅ `applications` - Job application tracking (if present)
 
 **Optional Tables for Enhanced Analytics:**
+
 - `users` - User information
 - `oauth_google` - Gmail connection metadata
 - `gmail_tokens` - Token refresh timing
 - `reply_metrics` - Time-to-reply data
 
 **Column Selection for `emails`:**
+
 ```
 ✅ id (PK)
 ✅ received_at (timestamp)
@@ -186,6 +200,7 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 ```
 
 **Column Selection for `applications`:**
+
 ```
 ✅ id (PK)
 ✅ company (text)
@@ -197,7 +212,8 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 ```
 
 ### 5. Configure Sync Settings
-- **Sync Frequency:** 
+
+- **Sync Frequency:**
   - Development: Every 6 hours
   - Production: Every 1 hour (or 30 minutes)
 - **HVR (High Volume Replication):** **Disabled** (to reduce costs)
@@ -205,12 +221,14 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 - **Historical Sync:** Full table on first run
 
 ### 6. Start Initial Sync
+
 1. Click **Save & Test**
 2. Fivetran validates connection and begins initial sync
 3. Monitor progress in **Connector Dashboard**
 4. First sync may take 10-60 minutes depending on data volume
 
 **Verify Sync:**
+
 ```sql
 -- In BigQuery, check synced tables
 SELECT table_name, row_count, size_bytes
@@ -243,6 +261,7 @@ ORDER BY risk_bucket;
 ## 📊 Optional: Add Google Search Console Connector
 
 ### 1. Set Up GSC in Fivetran
+
 1. **Connectors** → **Add Connector** → **Google Search Console**
 2. Authenticate with Google account that has GSC access
 3. Select property: `https://applylens.com`
@@ -253,6 +272,7 @@ ORDER BY risk_bucket;
    - `search_analytics_by_country`
 
 ### 2. Join GSC with Email Data (dbt)
+
 ```sql
 -- Example: emails from recruiters at companies we rank for
 WITH gsc_domains AS (
@@ -282,6 +302,7 @@ ORDER BY g.total_clicks DESC;
 ## 📈 Optional: Add Google Analytics 4 Connector
 
 ### 1. Set Up GA4 in Fivetran
+
 1. **Connectors** → **Add Connector** → **Google Analytics 4**
 2. Authenticate and select property
 3. Destination: `ApplyLens Analytics`
@@ -291,6 +312,7 @@ ORDER BY g.total_clicks DESC;
    - `items` - E-commerce (if applicable)
 
 ### 2. Join GA4 with Applications (dbt)
+
 ```sql
 -- Track application page views → actual applications
 WITH application_events AS (
@@ -320,18 +342,21 @@ ORDER BY ae.event_date DESC;
 ## 🔐 Security Best Practices
 
 ### Database Credentials
+
 - ✅ Use read-only user (`fivetran_user`)
 - ✅ Rotate password quarterly
 - ✅ Restrict to specific tables (GRANT SELECT only)
 - ✅ Monitor query logs for anomalies
 
 ### Network Security
+
 - ✅ IP allowlist Fivetran egress IPs
 - ✅ Use SSL/TLS for database connections
 - ✅ SSH tunnel for private networks
 - ❌ Avoid exposing database publicly
 
 ### BigQuery Access
+
 - ✅ Least privilege IAM roles
 - ✅ Service account for automation
 - ✅ Audit logs enabled
@@ -342,6 +367,7 @@ ORDER BY ae.event_date DESC;
 ## 🔧 Troubleshooting
 
 ### Connection Failed
+
 ```bash
 # Test database connectivity
 psql -h YOUR_HOST -U fivetran_user -d applylens -c "SELECT version();"
@@ -354,6 +380,7 @@ psql -U fivetran_user -d applylens -c "\dt"
 ```
 
 ### Sync Stalled
+
 1. Check **Connector Logs** in Fivetran dashboard
 2. Common issues:
    - Table schema changes (Fivetran auto-detects)
@@ -362,12 +389,14 @@ psql -U fivetran_user -d applylens -c "\dt"
 3. **Manual Resync:** Connector → **Re-sync** → Select tables
 
 ### Slow Sync Performance
+
 - Reduce sync frequency (6h instead of 1h)
 - Exclude large columns (e.g., `body` field)
 - Enable HVR for large tables (increases cost)
 - Contact Fivetran support for optimization
 
 ### BigQuery Quota Exceeded
+
 ```bash
 # Check quota usage
 gcloud alpha billing quotas list \
@@ -383,11 +412,13 @@ gcloud alpha billing quotas list \
 ## 📊 Monitoring Sync Health
 
 ### Fivetran Dashboard
+
 - **Last Successful Sync:** Should be < 2 hours ago
 - **Rows Synced:** Should match table counts
 - **Errors:** Should be 0
 
 ### BigQuery Monitoring
+
 ```sql
 -- Check last updated timestamp
 SELECT 

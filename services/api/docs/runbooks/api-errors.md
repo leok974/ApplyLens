@@ -11,6 +11,7 @@
 ## Initial Response (5 minutes)
 
 ### 1. Verify Alert is Real
+
 ```bash
 # Check current error rate
 curl -s http://localhost:8003/metrics | grep http_requests_total | grep "status=\"5"
@@ -21,6 +22,7 @@ curl http://localhost:8003/ready
 ```
 
 ### 2. Check System Status
+
 - Database: Is PostgreSQL responding?
 - Elasticsearch: Is ES cluster healthy?
 - API Server: Are all instances running?
@@ -35,6 +37,7 @@ docker-compose logs --tail=100 api
 ```
 
 ### 3. Identify Error Pattern
+
 ```bash
 # Query logs for specific errors
 docker-compose logs api | grep "ERROR" | tail -n 50
@@ -48,11 +51,14 @@ curl -s http://localhost:8003/metrics | grep http_requests_total | grep status=\
 ## Common Causes & Fixes
 
 ### Database Connection Issues
-**Symptoms:** 
+
+**Symptoms:**
+
 - `/ready` returns 503
 - Logs show "connection refused" or "too many connections"
 
 **Fix:**
+
 ```bash
 # Restart PostgreSQL
 docker-compose restart db
@@ -68,11 +74,14 @@ docker-compose exec db psql -U postgres -c "
 ```
 
 ### Elasticsearch Timeouts
+
 **Symptoms:**
+
 - Slow response times on search endpoints
 - Logs show "elasticsearch.exceptions.ConnectionTimeout"
 
 **Fix:**
+
 ```bash
 # Check ES health
 curl http://localhost:9200/_cluster/health?pretty
@@ -85,11 +94,14 @@ docker-compose restart elasticsearch
 ```
 
 ### Migration Issues
+
 **Symptoms:**
+
 - Errors mention missing columns or tables
 - `/ready` shows old migration version
 
 **Fix:**
+
 ```bash
 # Check current migration
 curl http://localhost:8003/ready | jq .migration
@@ -102,11 +114,14 @@ curl http://localhost:8003/ready | jq .
 ```
 
 ### Code Bugs (Recent Deploy)
+
 **Symptoms:**
+
 - Errors started after recent deployment
 - Specific endpoint consistently failing
 
 **Fix:**
+
 ```bash
 # Rollback to previous version
 git log --oneline -n 5
@@ -137,6 +152,7 @@ If errors persist after 15 minutes:
 ## Post-Incident
 
 After resolution:
+
 1. Document root cause in incident report
 2. Add regression test if applicable
 3. Update this runbook with new learnings
@@ -147,6 +163,7 @@ After resolution:
 ## Useful Queries
 
 ### Grafana (PromQL)
+
 ```promql
 # Error rate by endpoint
 sum(rate(http_requests_total{status=~"5.."}[5m])) by (route)
@@ -160,6 +177,7 @@ sum(rate(http_requests_total{status=~"5.."}[5m]))
 ```
 
 ### Database Diagnostics
+
 ```sql
 -- Long-running queries
 SELECT pid, now() - pg_stat_activity.query_start AS duration, query
@@ -178,6 +196,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 ---
 
 ## Related Links
+
 - [Grafana Ops Dashboard](http://localhost:3000/d/applylens-ops-overview)
 - [Prometheus Alerts](http://localhost:9090/alerts)
 - [API Metrics](http://localhost:8003/metrics)

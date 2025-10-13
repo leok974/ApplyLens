@@ -42,6 +42,7 @@ npm run test:e2e:smoke:locked  # Unix/macOS/Linux only
 ### How It Works
 
 When `PW_LOCK_NET=1` is set, a global `beforeEach` hook enforces a deny-by-default network policy that:
+
 - Blocks all external network requests (returns HTTP 418)
 - Allows localhost requests (your dev server)
 - Allows WebSocket connections (for HMR)
@@ -79,6 +80,7 @@ await assertToast(page, {
 ```
 
 **Benefits:**
+
 - Type-safe assertions
 - Consistent error messages
 - Automatic visibility checks
@@ -119,6 +121,7 @@ await withMockedNet([
 - `patchResponse(prev, patch)` - Creates an updated row with new `updated_at`
 
 **Benefits:**
+
 - Less boilerplate in tests
 - Consistent test data structure
 - Easy to update defaults globally
@@ -138,6 +141,7 @@ npm run test:e2e:auth:refresh
 ```
 
 Set these environment variables to configure login:
+
 - `RUN_LOGIN=1` - Enable login bootstrap test
 - `LOGIN_USER` - Username selector
 - `LOGIN_PASS` - Password selector
@@ -227,12 +231,14 @@ tests/e2e/
 ### Tests failing with network errors
 
 If you see "Blocked outbound network request" errors:
+
 - Add the URL to your mocks with `withMockedNet([...])`
 - Or temporarily allow network with `PW_ALLOW_NET=1`
 
 ### TypeScript errors with process.env
 
 Install `@types/node`:
+
 ```bash
 npm install --save-dev @types/node
 ```

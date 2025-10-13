@@ -238,6 +238,7 @@ Gmail integration fetches the **latest message** in the thread (sorted by `inter
 | Backfill (Gmail) | ~400-600ms | 5 units |
 
 **Gmail API Quotas**:
+
 - 250 units/user/second
 - 1 billion units/day
 - `threads.get` = 5 units
@@ -245,15 +246,18 @@ Gmail integration fetches the **latest message** in the thread (sorted by `inter
 ## 🔐 Security
 
 ### Scope
+
 - `https://www.googleapis.com/auth/gmail.readonly`
 - **Cannot send or delete emails**
 
 ### Token Storage
+
 - ✅ Environment variable (`.env`)
 - ❌ Never in code or version control
 - ✅ Can be revoked anytime
 
 ### Production
+
 - Consider service account instead of user OAuth
 - Rotate refresh tokens periodically
 - Monitor API usage in Google Cloud Console
@@ -261,17 +265,20 @@ Gmail integration fetches the **latest message** in the thread (sorted by `inter
 ## 📦 Files Modified
 
 ### Backend
+
 - ✅ `services/api/app/gmail.py` - Gmail client (new)
 - ✅ `services/api/app/routes_applications.py` - Updated endpoints
 - ✅ Environment variables required
 
 ### Frontend
+
 - ✅ `apps/web/src/components/CreateFromEmailButton.tsx` - Sends `gmail_thread_id`
 - No other changes needed
 
 ## 🚀 What's Different
 
 ### Before
+
 ```typescript
 // Frontend had to pass full email content
 {
@@ -283,6 +290,7 @@ Gmail integration fetches the **latest message** in the thread (sorted by `inter
 ```
 
 ### After
+
 ```typescript
 // Just pass thread ID (backend fetches automatically)
 {

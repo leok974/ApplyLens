@@ -2,14 +2,14 @@
 
 **Feature**: Responsive split panel that adapts to screen size  
 **Status**: Ready for testing  
-**URL**: http://localhost:5175/inbox-polished-demo
+**URL**: <http://localhost:5175/inbox-polished-demo>
 
 ---
 
 ## Pre-Testing Setup
 
 - [ ] Docker container running (`infra-web-1` up)
-- [ ] Web app accessible at http://localhost:5175
+- [ ] Web app accessible at <http://localhost:5175>
 - [ ] Browser dev tools ready (for viewport testing)
 - [ ] localStorage cleared (or note existing values)
 
@@ -19,7 +19,7 @@
 
 ### Initial Load - Overlay Mode (Default)
 
-- [ ] Open http://localhost:5175/inbox-polished-demo
+- [ ] Open <http://localhost:5175/inbox-polished-demo>
 - [ ] Viewport set to ≥1024px (e.g., 1280px)
 - [ ] Page loads without errors
 - [ ] Email list visible on left
@@ -82,7 +82,7 @@
 ### Initial Load - Mobile Size
 
 - [ ] Set viewport to <1024px (e.g., 375px mobile)
-- [ ] Open http://localhost:5175/inbox-polished-demo
+- [ ] Open <http://localhost:5175/inbox-polished-demo>
 - [ ] Email list takes full width
 - [ ] No panel visible initially
 - [ ] Toggle button HIDDEN on small screens (<768px)
@@ -222,12 +222,14 @@
 ### Keyboard Shortcuts (Both Modes)
 
 **Overlay Mode**:
+
 - [ ] Select email
 - [ ] Press `[` → previous in thread
 - [ ] Press `]` → next in thread
 - [ ] Press `Esc` → panel closes
 
 **Split Mode**:
+
 - [ ] Select email
 - [ ] Press `[` → previous in thread
 - [ ] Press `]` → next in thread
@@ -412,12 +414,14 @@ If you find an issue, report with:
 **Bug Title**: [Concise description]
 
 **Environment**:
+
 - Browser: [Chrome/Firefox/Safari/etc.]
 - OS: [Windows/macOS/iOS/Android]
 - Viewport: [Width x Height]
 - Device: [Desktop/Mobile/Tablet]
 
 **Steps to Reproduce**:
+
 1. [First step]
 2. [Second step]
 3. [Third step]
@@ -491,4 +495,3 @@ If you find an issue, report with:
 **Status**: ✅ Ready for Testing
 
 **Next Step**: Start with Section 1 (Desktop Testing) and work through sequentially.
-
