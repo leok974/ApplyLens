@@ -35,25 +35,30 @@ const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant> = {
 ### 3. Enhanced User Feedback
 
 **Status Updates:**
+
 - Shows: `"Status: [Status Label] — [Company Name]"`
 - Example: `"Status: Interview — OpenAI"`
 - Color matches the status transition type
 
 **Application Creation:**
+
 - Shows: `"[Company Name] added to tracker"`
 - Always uses success variant (green)
 
 **Delete Operations:**
+
 - Shows: `"Deleted [Company Name]"`
 - Uses default variant (gray)
 
 **Error Handling:**
+
 - Shows: `"Failed to update status"` or `"Failed to delete application"`
 - Uses error variant (red)
 
 ### 4. Visual Improvements
 
 **Toast Appearance:**
+
 - Fixed position in top-right corner
 - Auto-dismisses after 3 seconds
 - Icon prefix based on variant:
@@ -64,6 +69,7 @@ const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant> = {
   - • for default
 
 **Color Schemes:**
+
 - Success: `bg-green-600 text-white`
 - Error: `bg-red-600 text-white`
 - Warning: `bg-yellow-500 text-white`
@@ -75,22 +81,26 @@ const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant> = {
 ### File: `apps/web/src/pages/Tracker.tsx`
 
 **Added Types:**
+
 ```typescript
 type ToastVariant = 'default' | 'success' | 'warning' | 'error' | 'info'
 ```
 
 **Added Constants:**
+
 ```typescript
 const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant>
 const STATUS_LABELS: Record<AppStatus, string>
 ```
 
 **Enhanced State:**
+
 ```typescript
 const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null)
 ```
 
 **Added Helper:**
+
 ```typescript
 const showToast = (message: string, variant: ToastVariant = 'default') => {
   setToast({ message, variant })
@@ -99,6 +109,7 @@ const showToast = (message: string, variant: ToastVariant = 'default') => {
 ```
 
 **Updated Functions:**
+
 - `handleStatusChange()` - Now shows contextual toast with company name
 - `handleDelete()` - Shows deletion confirmation toast
 - Toast render logic - Supports all 5 variants with icons
@@ -153,6 +164,7 @@ Test the enhancement by:
 ## Future Enhancements
 
 Potential improvements:
+
 - Toast queue (multiple toasts at once)
 - Dismiss button (manual close)
 - Action buttons in toasts (e.g., "Undo")

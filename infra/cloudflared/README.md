@@ -25,6 +25,7 @@ cloudflared tunnel login
 ```
 
 This creates a certificate file at:
+
 - **Windows**: `%USERPROFILE%\.cloudflared\cert.pem`
 - **Linux**: `~/.cloudflared/cert.pem`
 
@@ -57,6 +58,7 @@ cloudflared tunnel list
    - Replace `<YOUR_TUNNEL_UUID>` with your actual UUID (2 places)
 
 3. **Copy credentials file**:
+
    ```bash
    # Copy the generated credentials file to this directory
    # Replace <YOUR_TUNNEL_UUID> with your actual UUID
@@ -149,6 +151,7 @@ api:8003 (internal network)
 ```
 
 **Key Benefits**:
+
 - ✅ No public IP required
 - ✅ No port forwarding needed
 - ✅ Encrypted tunnel (TLS)
@@ -196,6 +199,7 @@ docker compose logs api
 ### Credentials File Issues
 
 The credentials file must be:
+
 - Named exactly: `<YOUR_TUNNEL_UUID>.json`
 - Located in: `infra/cloudflared/`
 - Referenced in `config.yml` with same UUID
@@ -225,6 +229,7 @@ Add authentication in front of your tunnel:
 ### Rate Limiting
 
 Configure rate limiting in Cloudflare dashboard:
+
 - Security → WAF → Rate limiting rules
 - Protect API endpoints from abuse
 
@@ -275,6 +280,7 @@ Both replicas will connect to the same tunnel automatically.
 ### Monitoring
 
 View tunnel metrics:
+
 - Cloudflare dashboard → Zero Trust → Access → Tunnels
 - Click on your tunnel to see:
   - Connection status

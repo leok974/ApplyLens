@@ -20,11 +20,13 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 **Purpose:** Shows time elapsed since the most recent firing alert
 
 **Query:**
+
 ```promql
 (time() - max_over_time(timestamp(ALERTS{alertstate="firing"}[30d])))/60
 ```
 
 **How It Works:**
+
 - `ALERTS{alertstate="firing"}` - Prometheus meta-metric showing active alerts
 - `timestamp()` - Get the timestamp when alert fired
 - `max_over_time(...[30d])` - Find most recent alert in last 30 days
@@ -32,11 +34,13 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 - `/ 60` - Convert seconds to minutes
 
 **Display:**
+
 - Unit: minutes (m)
 - Shows single stat value
 - If no alerts have fired, may show NaN or empty
 
 **Use Cases:**
+
 - Quick visibility into recent alerting activity
 - Verify alerting system is working
 - Track time since last incident
@@ -50,17 +54,20 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 **Purpose:** Fast-moving burn rate for quick incident detection
 
 **Query:**
+
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[1h])) / 
  sum(rate(applylens_http_requests_total[1h]))) / 0.001
 ```
 
 **Thresholds:**
+
 - 🟢 **Green:** < 1× (within error budget)
 - 🟠 **Orange:** 1× - 10× (consuming error budget faster than expected)
 - 🔴 **Red:** > 10× (burning through error budget rapidly)
 
 **How It Works:**
+
 - Calculates error rate over 1 hour window
 - Divides by allowed error rate (0.001 for 99.9% SLO)
 - Burn rate = 1× means you're using error budget at exactly the expected rate
@@ -68,6 +75,7 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 - Burn rate > 10× means you're depleting it very rapidly (urgent action needed)
 
 **SRE Context:**
+
 - 1h window provides **fast detection** of incidents
 - Catches problems within an hour
 - More sensitive to noise/spikes
@@ -81,27 +89,32 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 **Purpose:** Slower-moving burn rate that resists noise
 
 **Query:**
+
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[6h])) / 
  sum(rate(applylens_http_requests_total[6h]))) / 0.001
 ```
 
 **Thresholds:**
+
 - 🟢 **Green:** < 1× (within error budget)
 - 🟠 **Orange:** 1× - 6× (elevated burn rate)
 - 🔴 **Red:** > 6× (critical burn rate)
 
 **How It Works:**
+
 - Same calculation as 1h window, but over 6 hours
 - Smoother, more stable view
 - Less sensitive to temporary spikes
 
 **SRE Context:**
+
 - 6h window provides **stability** against false alarms
 - Better for sustained issues
 - Multi-window strategy: Use both 1h (fast) + 6h (stable)
 
 **Multi-Window Alerting Pattern:**
+
 ```
 If (1h burn > 14.4×) OR (6h burn > 6×):
   → Page on-call (critical SLO threat)
@@ -119,26 +132,31 @@ If (1h burn > 10×) AND (6h burn > 3×):
 **Purpose:** Real-time uptime percentage for immediate health check
 
 **Query:**
+
 ```promql
 avg_over_time(up{job="applylens-api"}[1h]) * 100
 ```
 
 **Thresholds:**
+
 - 🔴 **Red:** < 95% (poor uptime)
 - 🟠 **Orange:** 95% - 99.9% (acceptable)
 - 🟢 **Green:** > 99.9% (excellent)
 
 **How It Works:**
+
 - `up` metric = 1 when Prometheus can scrape target
 - Average over 1 hour window
 - Multiply by 100 for percentage
 
 **Use Cases:**
+
 - **Immediate visibility** into current health
 - Complements 30-day SLO gauge (long-term vs short-term)
 - Quickly spot recent downtime
 
 **Comparison with 30-day gauge:**
+
 - **1h gauge:** "How are we doing right now?"
 - **30d gauge:** "Did we meet our monthly SLO?"
 
@@ -149,6 +167,7 @@ avg_over_time(up{job="applylens-api"}[1h]) * 100
 ### All 11 Panels
 
 **Row 1 - Traffic & Performance:**
+
 1. HTTP req/s (by method & status)
 2. HTTP latency (p50/p90/p99)
 
@@ -178,6 +197,7 @@ avg_over_time(up{job="applylens-api"}[1h]) * 100
 ### What is Error Budget?
 
 For a **99.9% SLO:**
+
 - Allowed downtime: 0.1% = 43.2 minutes per 30 days
 - This is your **error budget**
 
@@ -240,6 +260,7 @@ Best Practice: Use BOTH
 ```
 
 **Burn rate thresholds explained:**
+
 - **14.4× (1h):** If sustained, depletes 30-day budget in 2 days
 - **6× (6h):** If sustained, depletes 30-day budget in 5 days
 
@@ -247,17 +268,20 @@ Best Practice: Use BOTH
 
 ## 🧮 Burn Rate Math
 
-### For 99.9% SLO (0.1% error budget):
+### For 99.9% SLO (0.1% error budget)
 
 **1× Burn Rate:**
+
 - Error rate = 0.1% = 0.001
 - Budget lasts: 30 days
 
 **10× Burn Rate:**
+
 - Error rate = 1% = 0.010
 - Budget depleted in: 30 / 10 = 3 days
 
 **100× Burn Rate:**
+
 - Error rate = 10% = 0.100
 - Budget depleted in: 30 / 100 = 0.3 days = 7.2 hours
 
@@ -353,17 +377,20 @@ Write-Host "   Should show ~1-2 minutes ago" -ForegroundColor Gray
 ## 🔗 Resources & References
 
 ### Google SRE Books
+
 - **The Site Reliability Workbook:** Chapter on SLOs and Error Budgets
 - **Implementing SLOs:** Multi-window, multi-burn-rate alerting
 
 ### Alerting on SLOs
-- https://sre.google/workbook/alerting-on-slos/
+
+- <https://sre.google/workbook/alerting-on-slos/>
 - Multi-window alerting strategy
 - Burn rate thresholds
 
 ### PromQL for SLOs
-- https://prometheus.io/docs/practices/histograms/
-- https://grafana.com/blog/2022/05/10/how-to-visualize-prometheus-histograms-in-grafana/
+
+- <https://prometheus.io/docs/practices/histograms/>
+- <https://grafana.com/blog/2022/05/10/how-to-visualize-prometheus-histograms-in-grafana/>
 
 ---
 
@@ -423,6 +450,7 @@ Add latency-based SLO (e.g., p99 < 500ms):
 ## 📚 Files Modified
 
 **1. infra/grafana/provisioning/dashboards/json/applylens-overview.json**
+
 - Added 4 new panels (total now: 11 panels)
 - Added SLO burn rate monitoring (1h + 6h windows)
 - Added last alert fired tracking

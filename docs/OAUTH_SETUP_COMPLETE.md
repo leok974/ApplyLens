@@ -3,42 +3,48 @@
 ## ✅ What's Been Set Up
 
 ### Credentials
+
 - ✅ Google OAuth credentials copied to `infra/secrets/google.json`
 - ✅ Client ID: `536865845228-betfsiucr0c454ks4t0n9v44g54j3kgo.apps.googleusercontent.com`
 - ✅ Redirect URI: `http://localhost:8003/auth/google/callback`
 
 ### Configuration
+
 - ✅ `.env` file updated with:
   - GOOGLE_CREDENTIALS=/secrets/google.json
   - OAUTH_STATE_SECRET (random 64-char string)
-  - OAUTH_REDIRECT_URI=http://localhost:8003/auth/google/callback
+  - OAUTH_REDIRECT_URI=<http://localhost:8003/auth/google/callback>
   - Correct API_PORT=8003
 
 ### Services
+
 - ✅ All Docker containers running
 - ✅ Secrets mounted at `/secrets` in API container
 - ✅ Database migration completed
-- ✅ API accessible at http://localhost:8003
+- ✅ API accessible at <http://localhost:8003>
 
 ## 🔐 OAuth Authentication Steps
 
-### You should now see:
+### You should now see
+
 1. Browser opened to Google OAuth consent screen
 2. Sign in with your Google account
 3. Grant permissions for:
    - Read Gmail messages
    - View email address
-4. Redirected back to http://localhost:8003/auth/google/callback
+4. Redirected back to <http://localhost:8003/auth/google/callback>
 5. See success message or redirect to web app
 
 ### After Authentication
 
 Check connection status:
+
 ```powershell
 curl http://localhost:8003/gmail/status
 ```
 
 Should return:
+
 ```json
 {
   "connected": true,
@@ -52,11 +58,13 @@ Should return:
 ## 📧 Next Steps: Backfill Emails
 
 ### 1. Small Test (7 days)
+
 ```powershell
 curl -Method POST "http://localhost:8003/gmail/backfill?days=7"
 ```
 
 This will:
+
 - Fetch emails from last 7 days
 - Extract company, role, source from each
 - Create Application records automatically
@@ -64,6 +72,7 @@ This will:
 - Index in Elasticsearch
 
 Expected output:
+
 ```json
 {
   "inserted": 50,
@@ -73,23 +82,27 @@ Expected output:
 ```
 
 ### 2. Check Applications Created
+
 ```powershell
 curl http://localhost:8003/applications | ConvertFrom-Json | Format-Table company, role, status, source
 ```
 
 ### 3. View in UI
+
 ```powershell
 start http://localhost:5175/inbox
 start http://localhost:5175/tracker
 ```
 
-**Inbox** (http://localhost:5175/inbox):
+**Inbox** (<http://localhost:5175/inbox>):
+
 - See all your emails
 - Company/role extracted and displayed
 - Click "Create Application" button on emails
 - Click "View Application" on linked emails
 
-**Tracker** (http://localhost:5175/tracker):
+**Tracker** (<http://localhost:5175/tracker>):
+
 - See all job applications
 - Filter by status (applied, interview, offer, etc.)
 - Search by company
@@ -99,6 +112,7 @@ start http://localhost:5175/tracker
 ## 🧪 Test Commands
 
 ### Check Connection
+
 ```powershell
 # Status check
 curl http://localhost:8003/gmail/status | ConvertFrom-Json
@@ -111,6 +125,7 @@ curl http://localhost:8003/applications | ConvertFrom-Json
 ```
 
 ### Search Examples
+
 ```powershell
 # Search for "interview"
 curl "http://localhost:8003/search?q=interview" | ConvertFrom-Json
@@ -123,6 +138,7 @@ curl "http://localhost:8003/search?q=application&source=lever" | ConvertFrom-Jso
 ```
 
 ### Full Backfill (60 days)
+
 ```powershell
 # This may take 30-60 seconds for 100-200 emails
 curl -Method POST "http://localhost:8003/gmail/backfill?days=60"
@@ -130,7 +146,8 @@ curl -Method POST "http://localhost:8003/gmail/backfill?days=60"
 
 ## 🔧 Troubleshooting
 
-### If OAuth fails:
+### If OAuth fails
+
 ```powershell
 # Check API logs
 docker compose -f D:\ApplyLens\infra\docker-compose.yml logs api --tail=50
@@ -142,7 +159,8 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart api
 start http://localhost:8003/auth/google/login
 ```
 
-### If credentials not found:
+### If credentials not found
+
 ```powershell
 # Verify file exists in container
 docker compose -f D:\ApplyLens\infra\docker-compose.yml exec api ls -la /secrets/
@@ -151,7 +169,8 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml exec api ls -la /secrets
 Get-Content D:\ApplyLens\infra\.env | Select-String "GOOGLE"
 ```
 
-### If backfill fails:
+### If backfill fails
+
 ```powershell
 # Check if authenticated
 curl http://localhost:8003/gmail/status
@@ -160,7 +179,8 @@ curl http://localhost:8003/gmail/status
 docker compose -f D:\ApplyLens\infra\docker-compose.yml logs api --tail=100 | Select-String "error"
 ```
 
-### Reset ES index (if needed):
+### Reset ES index (if needed)
+
 ```powershell
 # Delete index to recreate with new mappings
 curl -Method DELETE http://localhost:9200/gmail_emails
@@ -170,27 +190,31 @@ curl -Method DELETE http://localhost:9200/gmail_emails
 
 ## 📊 What to Expect
 
-### After 7-day backfill:
+### After 7-day backfill
+
 - **~20-50 emails** imported (varies by inbox activity)
 - **~5-15 applications** created (based on job-related emails)
 - **Companies detected**: ~70% accuracy
 - **Roles detected**: ~60% accuracy  
 - **ATS sources**: ~90% for Lever/Greenhouse/Workday
 
-### Application Status Auto-Detection:
+### Application Status Auto-Detection
+
 - Contains "interview" → status = `interview`
 - Contains "offer" → status = `offer` (if detected)
 - Contains "rejection" → status = `rejected`
 - Default → status = `applied`
 
-### Email Grouping:
+### Email Grouping
+
 - Emails with same `thread_id` → linked to same application
 - Emails with same `company + role` → linked to same application
 - Creates new application if no match found
 
 ## 🎨 Using the UI
 
-### Inbox Page Features:
+### Inbox Page Features
+
 - 📧 Email list with Gmail sync
 - 🏢 Company/role displayed (auto-extracted)
 - ➕ "Create Application" button (if company detected)
@@ -198,7 +222,8 @@ curl -Method DELETE http://localhost:9200/gmail_emails
 - 🏷️ Labels: interview, offer, rejection, receipt, newsletter
 - 🔍 Filter by label (tabs at top)
 
-### Tracker Page Features:
+### Tracker Page Features
+
 - 📊 Statistics cards (counts by status)
 - 🔍 Filter by status dropdown
 - 🔎 Search by company name
@@ -209,7 +234,8 @@ curl -Method DELETE http://localhost:9200/gmail_emails
 
 ## 🚀 Advanced Usage
 
-### Create Application Manually:
+### Create Application Manually
+
 ```powershell
 $body = @{
   company = "Acme Corp"
@@ -223,7 +249,8 @@ curl -Method POST http://localhost:8003/applications `
   -Body $body
 ```
 
-### Update Application Status:
+### Update Application Status
+
 ```powershell
 $update = @{ status = "interview" } | ConvertTo-Json
 
@@ -232,7 +259,8 @@ curl -Method PATCH http://localhost:8003/applications/1 `
   -Body $update
 ```
 
-### Link Email to Application:
+### Link Email to Application
+
 ```powershell
 # Get email ID from inbox
 $email_id = 5
@@ -244,9 +272,10 @@ curl -Method POST "http://localhost:8003/applications/from-email/$email_id"
 ## 📝 API Documentation
 
 Interactive API docs available at:
-**http://localhost:8003/docs**
+**<http://localhost:8003/docs>**
 
 Features:
+
 - Try all endpoints directly in browser
 - See request/response schemas
 - Test authentication flow
@@ -255,6 +284,7 @@ Features:
 ## ✅ Success Checklist
 
 After OAuth completes:
+
 - [ ] `/gmail/status` shows `"connected": true`
 - [ ] Can see your email in `/gmail/inbox`
 - [ ] Backfill creates applications
@@ -265,11 +295,12 @@ After OAuth completes:
 - [ ] Can update application status
 - [ ] Can filter by status and company
 
-## 🎉 You're All Set!
+## 🎉 You're All Set
 
 The Application Tracker is now fully operational with your Gmail account connected!
 
 **Recommended first steps:**
+
 1. ✅ Run 7-day backfill to test
 2. ✅ Visit tracker page to see applications
 3. ✅ Try creating an application from inbox

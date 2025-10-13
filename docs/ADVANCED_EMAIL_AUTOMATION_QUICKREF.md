@@ -36,6 +36,7 @@ actions = apply_policies(email, [policy], now_iso="2025-10-02T00:00:00Z")
 ### 2. Unsubscribe Automation
 
 **Preview** (no execution):
+
 ```bash
 curl -X POST http://localhost:8003/unsubscribe/preview \
   -H "Content-Type: application/json" \
@@ -43,6 +44,7 @@ curl -X POST http://localhost:8003/unsubscribe/preview \
 ```
 
 **Execute**:
+
 ```bash
 curl -X POST http://localhost:8003/unsubscribe/execute \
   -H "Content-Type: application/json" \
@@ -60,6 +62,7 @@ curl -X POST http://localhost:8003/nl/run \
 ```
 
 **Supported Commands**:
+
 - `"clean my promos older than 7 days"` → Archive expired promos
 - `"unsubscribe from newsletters I haven't opened in 60 days"` → Unsubscribe from stale senders
 - `"show me suspicious emails"` → List high-risk emails
@@ -70,6 +73,7 @@ curl -X POST http://localhost:8003/nl/run \
 ## 📦 Files Created
 
 ### Production Code (6 files)
+
 - `app/logic/policy_engine.py` - JSON policy evaluation (183 lines)
 - `app/logic/unsubscribe.py` - RFC-2369 unsubscribe support (150 lines)
 - `app/routers/unsubscribe.py` - Unsubscribe API endpoints (135 lines)
@@ -78,6 +82,7 @@ curl -X POST http://localhost:8003/nl/run \
 - `app/db.py` - Added audit_action() function (60 lines)
 
 ### Test Code (5 files, 48 tests)
+
 - `tests/unit/test_policy_engine.py` - 11 tests
 - `tests/unit/test_unsubscribe.py` - 9 tests
 - `tests/e2e/test_unsubscribe_execute.py` - 7 tests
@@ -85,6 +90,7 @@ curl -X POST http://localhost:8003/nl/run \
 - `tests/e2e/test_nl_unsubscribe.py` - 8 tests
 
 ### Documentation (2 files)
+
 - `docs/ADVANCED_EMAIL_AUTOMATION.md` - Complete guide (400+ lines)
 - `docs/README.md` - Updated index
 
@@ -137,6 +143,7 @@ pytest services/api/tests/e2e/ -v
 ## 🎯 Use Cases
 
 ### 1. Automated Cleanup
+
 ```python
 # Find expired promos
 emails = await find_expired_promos(days=7)
@@ -149,6 +156,7 @@ actions = apply_policies(email, [policy], now_iso=now)
 ```
 
 ### 2. Bulk Unsubscribe
+
 ```python
 # Find stale senders
 candidates = await find_unsubscribe_candidates(days=60)
@@ -160,6 +168,7 @@ for email in candidates:
 ```
 
 ### 3. User-Friendly Commands
+
 ```
 User: "clean my promos older than 7 days"
   → NL Agent parses intent

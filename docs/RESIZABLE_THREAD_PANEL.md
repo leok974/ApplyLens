@@ -18,12 +18,14 @@ The email details panel has been upgraded with powerful new features:
 ### 1. Resizable Panel
 
 **Interaction**:
+
 - Hover over the left edge of the panel to see the resize handle (grip icon)
 - Click and drag left/right to adjust width
 - Width constraints: 420px minimum, 1000px maximum
 - Width persists across sessions via `localStorage`
 
 **Implementation**:
+
 ```tsx
 const [width, setWidth] = React.useState<number>(() => {
   const saved = Number(localStorage.getItem("inbox:detailsPanelWidth"));
@@ -32,6 +34,7 @@ const [width, setWidth] = React.useState<number>(() => {
 ```
 
 **Visual Indicator**:
+
 - Small grip icon (3 vertical dots) appears on hover
 - Cursor changes to `col-resize` when hovering resize area
 - Smooth transition during drag
@@ -39,17 +42,20 @@ const [width, setWidth] = React.useState<number>(() => {
 ### 2. Thread Navigation
 
 **UI Elements**:
+
 - **Previous/Next buttons** - ChevronLeft/ChevronRight icons in header
 - **Thread counter** - Shows "2 / 5" (current position / total messages)
 - **Thread list** - All messages displayed below email body
 - **Active message** - Highlighted with muted background
 
 **Keyboard Shortcuts**:
+
 - `[` - Navigate to previous message in thread
 - `]` - Navigate to next message in thread
 - `Esc` - Close panel
 
 **Thread List**:
+
 ```tsx
 {thread && thread.length > 1 && (
   <>
@@ -69,6 +75,7 @@ const [width, setWidth] = React.useState<number>(() => {
 ### 3. State Management
 
 **Panel State**:
+
 ```tsx
 const [selectedDetailId, setSelectedDetailId] = React.useState<string | null>(null);
 const [openPanel, setOpenPanel] = React.useState(false);
@@ -79,6 +86,7 @@ const [indexInThread, setIndexInThread] = React.useState<number | null>(null);
 ```
 
 **Navigation Functions**:
+
 ```tsx
 function jumpThread(i: number) {
   if (!thread) return;
@@ -112,6 +120,7 @@ function nextInThread() {
 ### New API Endpoints
 
 **Get Thread by Thread ID**:
+
 ```typescript
 export async function getThread(threadId: string) {
   const r = await fetch(`/api/threads/${encodeURIComponent(threadId)}?limit=20`);
@@ -122,6 +131,7 @@ export async function getThread(threadId: string) {
 ```
 
 **Expected Response Format**:
+
 ```json
 {
   "messages": [
@@ -148,6 +158,7 @@ export async function getThread(threadId: string) {
 ### Production Implementation
 
 **In `openDetails` function**:
+
 ```tsx
 async function openDetails(id: string) {
   setSelectedDetailId(id);
@@ -273,9 +284,11 @@ type ThreadItem = {
 **Route**: `GET /api/threads/:threadId`
 
 **Query Parameters**:
+
 - `limit` (optional) - Maximum number of messages (default: 20)
 
 **Response**:
+
 ```json
 {
   "messages": [
@@ -294,6 +307,7 @@ type ThreadItem = {
 ```
 
 **Implementation Notes**:
+
 - Query Elasticsearch by `thread_id` field
 - Sort by `received_at` ascending (oldest first)
 - Limit to 20 messages to prevent performance issues
@@ -304,6 +318,7 @@ type ThreadItem = {
 **Already Exists**: `GET /api/search/by_id/:id`
 
 **Ensure Response Includes**:
+
 - `thread_id` field
 - All email metadata
 - `body_html` and `body_text`
@@ -342,6 +357,7 @@ type ThreadItem = {
 | `]` | Next message | Has next message |
 
 **Implementation**:
+
 ```tsx
 React.useEffect(() => {
   if (!open) return;
@@ -466,4 +482,3 @@ React.useEffect(() => {
 **Backend Required**: ⚠️ Partial (thread endpoint needed)  
 **Testing**: ⏳ Pending  
 **Documentation**: ✅ Complete
-

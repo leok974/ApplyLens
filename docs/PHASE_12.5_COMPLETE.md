@@ -50,6 +50,7 @@ Kibana Visualization + Prometheus Alerting
 | `m_backfill_p95_arima.sql` | `ml.m_backfill_p95_arima` | Forecast backfill SLO performance |
 
 **Configuration**:
+
 - Model Type: `ARIMA_PLUS` (automatic ARIMA with seasonality)
 - Parameters: `AUTO_ARIMA=TRUE`, `HOLIDAY_REGION='US'`
 - Frequency: `DATA_FREQUENCY='DAILY'`
@@ -67,6 +68,7 @@ Kibana Visualization + Prometheus Alerting
 | `pred_backfill_p95.sql` | `ml.pred_backfill_p95` | 7 days ahead |
 
 **Configuration**:
+
 - Confidence Level: 90% prediction intervals
 - Generation: Daily at 4:45 AM UTC
 - Output: Predicted value, upper bound, lower bound per day
@@ -76,6 +78,7 @@ Kibana Visualization + Prometheus Alerting
 **Location**: `analytics/dbt/models/ml/anomaly_detection.sql`
 
 **Features**:
+
 - Compares actual values to predicted values
 - Flags values outside 90% prediction intervals
 - Severity levels: `high`, `low`, `normal`, `unknown`
@@ -83,6 +86,7 @@ Kibana Visualization + Prometheus Alerting
 - Calculates residuals for magnitude of deviation
 
 **Schema**:
+
 ```sql
 CREATE TABLE ml.anomaly_detection (
   d DATE,
@@ -101,6 +105,7 @@ CREATE TABLE ml.anomaly_detection (
 **Location**: `analytics/export/export_anomalies_to_es.py`
 
 **Features**:
+
 - Queries BigQuery `ml.anomaly_detection` table
 - Filters for `high` and `low` severity only
 - Bulk indexes to Elasticsearch
@@ -108,6 +113,7 @@ CREATE TABLE ml.anomaly_detection (
 - Index: `analytics_applylens_anomalies`
 
 **Output Format**:
+
 ```json
 {
   "total_anomalies": 15,
@@ -136,6 +142,7 @@ CREATE TABLE ml.anomaly_detection (
    - Duration: ~5 minutes
 
 **Manual Triggers**:
+
 - `train`: Train models only
 - `forecast`: Forecast and detect only
 - `both`: Full pipeline
@@ -147,6 +154,7 @@ CREATE TABLE ml.anomaly_detection (
 **Dashboard**: `applylens-anomalies-dashboard`
 
 **Panels** (7 total):
+
 1. **Total Anomalies (Last 7 Days)** - Metric card
 2. **Anomalies by Severity** - Pie chart (high/low breakdown)
 3. **Anomalies Timeline (All Metrics)** - 30-day trend line
@@ -156,6 +164,7 @@ CREATE TABLE ml.anomaly_detection (
 7. **Backfill P95 Duration Anomalies** - Actual vs predicted with bounds
 
 **Loading**:
+
 ```bash
 curl -X POST "http://localhost:5601/api/saved_objects/_import" \
   -H "kbn-xsrf: true" \
@@ -177,6 +186,7 @@ curl -X POST "http://localhost:5601/api/saved_objects/_import" \
 
 **Integration**:
 Alerts require Prometheus metrics exporter for Elasticsearch:
+
 ```
 applylens_ml_anomalies_total{metric, severity}
 ```
@@ -186,6 +196,7 @@ applylens_ml_anomalies_total{metric, severity}
 **Location**: `analytics/ML_README.md`
 
 **Sections**:
+
 - Overview and architecture
 - Model configuration and metrics
 - Anomaly detection logic
@@ -205,6 +216,7 @@ applylens_ml_anomalies_total{metric, severity}
 **Location**: `analytics/dbt/dbt_project.yml`
 
 **Added**:
+
 ```yaml
 ml:
   +schema: ml
@@ -293,6 +305,7 @@ ml:
 ### Local Testing (Dev Environment)
 
 #### Prerequisites
+
 ```bash
 export BQ_PROJECT="applylens-dev"
 export GOOGLE_APPLICATION_CREDENTIALS="path/to/sa.json"
@@ -302,31 +315,40 @@ export ES_URL="http://localhost:9200"
 #### Test Sequence
 
 1. **Train Models**:
+
    ```bash
    cd analytics/dbt
    dbt run --select ml:m_* --target dev
    ```
+
    Expected: 4 models created in `applylens-dev.ml` schema
 
 2. **Generate Forecasts**:
+
    ```bash
    dbt run --select ml:pred_* --target dev
    ```
+
    Expected: 4 tables with 7 rows each (7-day forecasts)
 
 3. **Detect Anomalies**:
+
    ```bash
    dbt run --select ml:anomaly_detection --target dev
    ```
+
    Expected: Table with 60 days × 4 metrics = ~240 rows
 
 4. **Export to ES**:
+
    ```bash
    python analytics/export/export_anomalies_to_es.py
    ```
+
    Expected: JSON output with indexed anomaly count
 
 5. **Verify Results**:
+
    ```bash
    # BigQuery verification
    bq query --use_legacy_sql=false '
@@ -419,6 +441,7 @@ ES_URL=https://es.applylens.example.com:9200
 ### Deployment Steps
 
 1. **Merge Phase 12.5 Branch**:
+
    ```bash
    git checkout main
    git merge phase-12.5
@@ -431,6 +454,7 @@ ES_URL=https://es.applylens.example.com:9200
    - Daily forecasting starts next day at 4:45 AM UTC
 
 3. **Load Kibana Dashboard**:
+
    ```bash
    curl -X POST "https://kibana.applylens.example.com/api/saved_objects/_import" \
      -H "kbn-xsrf: true" \
@@ -438,6 +462,7 @@ ES_URL=https://es.applylens.example.com:9200
    ```
 
 4. **Verify Prometheus Rules**:
+
    ```bash
    # If using kubectl + PrometheusRule CRD
    kubectl apply -f infra/alerts/prometheus-rules.yml
@@ -610,10 +635,12 @@ ORDER BY week DESC, metric;
 #### Issue 1: Models Not Training
 
 **Symptoms**:
+
 - `dbt run --select ml:m_*` fails
 - Error: "BigQuery ML API not enabled"
 
 **Resolution**:
+
 ```bash
 gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
 ```
@@ -621,10 +648,12 @@ gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
 #### Issue 2: Insufficient Historical Data
 
 **Symptoms**:
+
 - Training succeeds but forecasts are poor
 - Error: "Insufficient data for ARIMA modeling"
 
 **Resolution**:
+
 - Ensure ≥30 days of data in `mrt_*` tables
 - Check for NULL values in time series columns
 - Run Phase 12.4 analytics sync to backfill data
@@ -632,9 +661,11 @@ gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
 #### Issue 3: Forecasts Not Overlapping with Actuals
 
 **Symptoms**:
+
 - `anomaly_detection` table empty or all NULL predicted values
 
 **Resolution**:
+
 - Forecasts are for **future dates** (next 7 days)
 - Anomalies only detected when forecasts become past (actuals available)
 - Wait 1-2 days after first forecast for anomalies to appear
@@ -642,27 +673,35 @@ gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
 #### Issue 4: No Anomalies Exported to ES
 
 **Symptoms**:
+
 - `export_anomalies_to_es.py` returns `{"total_anomalies": 0}`
 
 **Resolution**:
+
 - Check if any high/low severity anomalies exist:
+
   ```sql
   SELECT COUNT(*) FROM `applylens.ml.anomaly_detection`
   WHERE severity IN ('high', 'low')
   ```
+
 - If count is 0, predictions are accurate (expected behavior)
 - If count > 0, check ES connectivity and credentials
 
 #### Issue 5: Kibana Dashboard Empty
 
 **Symptoms**:
+
 - Dashboard panels show "No results found"
 
 **Resolution**:
+
 - Verify Elasticsearch index exists:
+
   ```bash
   curl $ES_URL/analytics_applylens_anomalies
   ```
+
 - Check date range in Kibana (default: last 7 days)
 - Run `export_anomalies_to_es.py` manually to populate initial data
 - Refresh Kibana index pattern
@@ -736,16 +775,19 @@ gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
 ### For Data Engineers
 
 **Training**:
+
 - Review `ML_README.md` for architecture and data flow
 - Understand ARIMA model configuration in `m_*_arima.sql` files
 - Know how to trigger manual training/forecasting workflows
 
 **Responsibilities**:
+
 - Monitor weekly training job success rate
 - Investigate model performance degradation
 - Add new metrics to forecasting system as needed
 
 **Escalation**:
+
 - Training failures >2 consecutive weeks
 - Forecast accuracy MAE increases >50% from baseline
 - BigQuery ML API quota exceeded
@@ -753,16 +795,19 @@ gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
 ### For SREs
 
 **Training**:
+
 - Review Prometheus alert rules in `infra/alerts/prometheus-rules.yml`
 - Understand anomaly severity levels and response procedures
 - Familiarize with Kibana anomaly dashboard
 
 **Responsibilities**:
+
 - Respond to ML anomaly alerts (see ML_README.md § Anomaly Response)
 - Monitor Elasticsearch index health
 - Ensure CI workflows have necessary secrets configured
 
 **Escalation**:
+
 - Multiple high-severity anomalies across metrics (system-wide issue)
 - Elasticsearch index unavailable >1 hour
 - CI workflow consistently failing
@@ -770,16 +815,19 @@ gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
 ### For Product/Analytics Teams
 
 **Training**:
+
 - Access Kibana dashboard: `applylens-anomalies-dashboard`
 - Understand metric definitions and business impact
 - Know how to interpret prediction intervals
 
 **Usage**:
+
 - Weekly review of anomaly trends
 - Capacity planning using email volume forecasts
 - Data quality monitoring via parity drift predictions
 
 **Escalation**:
+
 - Unexpected anomaly patterns requiring business context
 - Requests for new metrics to forecast
 - Changes to alert thresholds

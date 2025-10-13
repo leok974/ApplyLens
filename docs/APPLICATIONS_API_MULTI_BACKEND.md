@@ -72,6 +72,7 @@ class Application(BaseModel):
 ```
 
 **Field descriptions**:
+
 - `id`: Unique application identifier (string for compatibility)
 - `company`: Company name
 - `role`: Job title/role
@@ -87,13 +88,16 @@ class Application(BaseModel):
 ### Environment Variables
 
 **Required**:
+
 - `BQ_PROJECT` - Google Cloud project ID (e.g., `applylens-gmail-1759983601`)
 
 **Credentials** (one of):
+
 - `GOOGLE_APPLICATION_CREDENTIALS` - Path to service account JSON file
 - `BQ_SA_JSON` - Inline JSON content (automatically written to temp file)
 
 **Optional**:
+
 - `BQ_DATASET` - Dataset name (default: `applylens`)
 - `BQ_TABLE` - Table name (default: `public_applications`)
 
@@ -148,6 +152,7 @@ LIMIT @limit
 ```
 
 **Query features**:
+
 - Parameterized queries (prevents SQL injection)
 - Safe timestamp conversion
 - NULL-safe sorting
@@ -173,14 +178,17 @@ except Exception as e:
 ### Environment Variables
 
 **Connection**:
+
 - `ELASTICSEARCH_URL` - Full URL (e.g., `http://elasticsearch:9200`)
 - **OR** `ES_HOST` + `ES_PORT` - Host and port separately
 
 **Authentication** (optional):
+
 - `ES_USER` - Username for basic auth
 - `ES_PASS` - Password for basic auth
 
 **Configuration**:
+
 - `ES_APPS_INDEX` - Index name (default: `applications_v1`)
 
 ### docker-compose.yml Configuration
@@ -217,6 +225,7 @@ services:
 ```
 
 **Features**:
+
 - Keyword field for exact status matching
 - Multi-field sorting
 - Source filtering (only requested fields)
@@ -339,16 +348,19 @@ def list_applications(
 ### Request Examples
 
 **List all applications (limit 5)**:
+
 ```bash
 GET /api/applications?limit=5
 ```
 
 **Filter by status**:
+
 ```bash
 GET /api/applications?status=interview&limit=10
 ```
 
 **Default (100 results)**:
+
 ```bash
 GET /api/applications
 ```
@@ -356,6 +368,7 @@ GET /api/applications
 ### Response Format
 
 **Success (200 OK)**:
+
 ```json
 [
   {
@@ -371,6 +384,7 @@ GET /api/applications
 ```
 
 **Error (503 Service Unavailable)**:
+
 ```json
 {
   "detail": "BigQuery error: Table not found"
@@ -393,10 +407,12 @@ dependencies = [
 ```
 
 **Package versions**:
+
 - `google-auth>=2.30.0` - Already present, version constraint updated
 - `google-cloud-bigquery>=3.25.0` - **NEW** - BigQuery Python client
 
 **Installation**:
+
 ```bash
 pip install google-cloud-bigquery>=3.25.0 google-auth>=2.30.0
 ```
@@ -426,6 +442,7 @@ app.include_router(applications.router, prefix="/api")
 ### File: `apps/web/vite.config.ts`
 
 **Before** (broken):
+
 ```typescript
 proxy: {
   '/api': {
@@ -439,6 +456,7 @@ proxy: {
 **Problem**: Frontend calls `/api/applications`, proxy rewrites to `/applications`, backend expects `/api/applications`
 
 **After** (fixed):
+
 ```typescript
 proxy: {
   '/api': {
@@ -469,6 +487,7 @@ curl "http://localhost:8003/api/applications?limit=3" | python -m json.tool
 ```
 
 **Expected response**:
+
 ```json
 [
   {
@@ -494,6 +513,7 @@ curl "http://localhost:5175/api/applications?limit=2"
 ### 3. Frontend Integration
 
 **JavaScript/TypeScript**:
+
 ```typescript
 // apps/web/src/lib/api.ts
 export async function listApplications(params?: {
@@ -511,6 +531,7 @@ export async function listApplications(params?: {
 ```
 
 **Usage**:
+
 ```typescript
 // Tracker.tsx
 const data = await listApplications({ limit: 50, status: 'interview' });
@@ -524,22 +545,26 @@ setApplications(Array.isArray(data) ? data : []);
 ### Build Process
 
 **1. API Container Build** (57.3s):
+
 ```bash
 cd D:\ApplyLens\infra
 docker compose build api
 ```
 
 **Changes**:
+
 - Installed `google-cloud-bigquery>=3.25.0`
 - Installed `google-auth>=2.30.0`
 - Layer 4/5: `pip install` took 38.1s
 
 **2. Restart API**:
+
 ```bash
 docker compose up -d api
 ```
 
 **3. Restart Web** (to apply Vite config):
+
 ```bash
 docker compose restart web
 ```
@@ -551,6 +576,7 @@ docker ps --filter "name=infra-" --format "table {{.Names}}\t{{.Status}}\t{{.Por
 ```
 
 **Expected**:
+
 ```
 NAMES                 STATUS                    PORTS
 infra-web-1           Up X seconds              0.0.0.0:5175->5175/tcp
@@ -564,12 +590,14 @@ infra-api-1           Up X seconds              0.0.0.0:8003->8003/tcp
 ### BigQuery Configuration
 
 **1. Create service account**:
+
 ```bash
 gcloud iam service-accounts create applylens-api \
   --display-name="ApplyLens API Service Account"
 ```
 
 **2. Grant permissions**:
+
 ```bash
 gcloud projects add-iam-policy-binding applylens-gmail-1759983601 \
   --member="serviceAccount:applylens-api@applylens-gmail-1759983601.iam.gserviceaccount.com" \
@@ -577,12 +605,14 @@ gcloud projects add-iam-policy-binding applylens-gmail-1759983601 \
 ```
 
 **3. Generate key**:
+
 ```bash
 gcloud iam service-accounts keys create applylens-ci.json \
   --iam-account=applylens-api@applylens-gmail-1759983601.iam.gserviceaccount.com
 ```
 
 **4. Add to docker-compose.yml**:
+
 ```yaml
 secrets:
   bq_sa:
@@ -592,6 +622,7 @@ secrets:
 ### Elasticsearch Configuration
 
 **1. Create index**:
+
 ```bash
 curl -X PUT "http://localhost:9200/applications_v1" -H 'Content-Type: application/json' -d'
 {
@@ -611,6 +642,7 @@ curl -X PUT "http://localhost:9200/applications_v1" -H 'Content-Type: applicatio
 ```
 
 **2. Index sample document**:
+
 ```bash
 curl -X POST "http://localhost:9200/applications_v1/_doc" -H 'Content-Type: application/json' -d'
 {
@@ -633,6 +665,7 @@ curl -X POST "http://localhost:9200/applications_v1/_doc" -H 'Content-Type: appl
 **Cause**: Missing or invalid credentials
 
 **Solution**:
+
 ```bash
 # Check environment variables
 docker compose exec api env | grep BQ
@@ -649,6 +682,7 @@ docker compose exec api python -c "from google.cloud import bigquery; print(bigq
 **Cause**: ES not running or wrong URL
 
 **Solution**:
+
 ```bash
 # Check ES is running
 docker ps | grep elasticsearch
@@ -665,6 +699,7 @@ docker compose exec api env | grep ES
 **Cause**: Router not registered or Vite proxy rewriting
 
 **Solution**:
+
 ```bash
 # Check router registration
 docker compose exec api grep "applications.router" /app/app/main.py
@@ -681,6 +716,7 @@ grep -A 5 "proxy" apps/web/vite.config.ts
 **Cause**: No data in backend, filters too restrictive
 
 **Solution**:
+
 ```bash
 # Check BigQuery table
 bq query --use_legacy_sql=false "SELECT COUNT(*) FROM applylens.public_applications"
@@ -699,12 +735,14 @@ curl "http://localhost:8003/api/applications?limit=100"
 ### BigQuery
 
 **Costs**:
+
 - $5 per TB scanned
 - This query scans ~7 columns
 - 1000 rows ≈ 100 KB
 - 10,000 requests/day ≈ 1 GB/month ≈ $0.005/month
 
 **Optimization**:
+
 - Use partitioned tables (`applied_at`, `updated_at`)
 - Add clustering on `status`
 - Cache results in Redis
@@ -712,10 +750,12 @@ curl "http://localhost:8003/api/applications?limit=100"
 ### Elasticsearch
 
 **Performance**:
+
 - Sub-second queries for 1M+ documents
 - Scales horizontally
 
 **Optimization**:
+
 - Use `size: 100` max
 - Disable `_source` for count-only queries
 - Use `filter` context instead of `must` for better caching
@@ -794,4 +834,3 @@ def application_stats():
 **Endpoint**: `/api/applications`  
 **Default**: Demo data (no config needed)  
 **Backward compatible**: Yes
-

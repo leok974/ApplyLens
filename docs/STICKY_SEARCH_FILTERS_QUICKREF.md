@@ -3,6 +3,7 @@
 ## 🎯 What It Does
 
 Your search filters, sort preferences, and date ranges now:
+
 - ✅ **Persist** across page refreshes (localStorage)
 - ✅ **Sync** to URL for easy sharing
 - ✅ **Reset** with one-click "Clear all" button
@@ -14,16 +15,19 @@ Your search filters, sort preferences, and date ranges now:
 ### For Users
 
 **1. Filters Persist Automatically**
+
 ```
 Set filters → Leave page → Come back → Filters still there!
 ```
 
 **2. Share Your Search**
+
 ```
 Set filters → Copy URL → Send to colleague → They see same results
 ```
 
 **3. Quick Reset**
+
 ```
 Multiple filters active → Click "Clear all filters" → Back to defaults
 ```
@@ -47,15 +51,18 @@ Multiple filters active → Click "Clear all filters" → Back to defaults
 ## 🔧 Technical Quick Facts
 
 ### Files Modified
+
 1. **`apps/web/src/state/searchUi.ts`** (NEW) - localStorage module
 2. **`apps/web/src/pages/Search.tsx`** - Integration
 
 ### localStorage Key
+
 ```
 "search.ui"
 ```
 
 ### Default Values
+
 ```json
 {
   "labels": [],
@@ -65,6 +72,7 @@ Multiple filters active → Click "Clear all filters" → Back to defaults
 ```
 
 ### Example Shareable URL
+
 ```
 /search?q=interview&scale=7d&labels=offer&replied=false&sort=ttr_desc
 ```
@@ -74,17 +82,20 @@ Multiple filters active → Click "Clear all filters" → Back to defaults
 ## 🧪 Quick Test
 
 ### Test Sticky Filters
+
 1. Set some filters
 2. Refresh page (F5)
 3. ✅ Filters should restore
 
 ### Test URL Sharing
+
 1. Set filters
 2. Copy URL
 3. Open in incognito window
 4. ✅ Same search loads
 
 ### Test Clear All
+
 1. Set multiple filters
 2. Click "Clear all filters"
 3. ✅ Everything resets
@@ -94,12 +105,14 @@ Multiple filters active → Click "Clear all filters" → Back to defaults
 ## 🎨 UI Reference
 
 **Clear All Button**
+
 - **When shown**: Any filter/sort active
 - **Location**: Bottom-right of filter panel
 - **Style**: Small, underlined, muted gray
 - **Action**: Resets all to defaults
 
 **Behavior Flow**
+
 ```
 User changes filter
     ↓
@@ -117,18 +130,21 @@ Next page load → State restores
 ## 🔍 Common Scenarios
 
 ### Daily Email Triage
+
 ```
 First time: Set "Not replied" + "Oldest"
 Every day after: Just open /search → Already filtered!
 ```
 
 ### Team Collaboration
+
 ```
 You: Find important pattern → Copy URL
 Colleague: Click URL → Sees exact same results
 ```
 
 ### Demo Preparation
+
 ```
 Setup: Configure perfect search → Save URL
 Demo: Click URL → Perfect state loads
@@ -140,14 +156,17 @@ Reset: Click "Clear all" → Default view
 ## 🛡️ Privacy & Errors
 
 **Private Browsing**
+
 - localStorage disabled → Uses defaults
 - URL params still work! (shareable)
 
 **Parse Errors**
+
 - Corrupted localStorage → Fallback to defaults
 - Silent failure, no user errors
 
 **SSR Safe**
+
 - Checks for `window` object
 - Server-side rendering compatible
 
@@ -177,11 +196,13 @@ Reset: Click "Clear all" → Default view
 ## 📝 Code Snippets
 
 ### Load State
+
 ```typescript
 const init = useMemo(() => loadUiState(), [])
 ```
 
 ### Save State
+
 ```typescript
 useEffect(() => {
   saveUiState({ labels, date_from, date_to, replied, sort })
@@ -189,6 +210,7 @@ useEffect(() => {
 ```
 
 ### Update URL
+
 ```typescript
 useEffect(() => {
   const url = `/search?${params.toString()}`
@@ -197,6 +219,7 @@ useEffect(() => {
 ```
 
 ### Clear All
+
 ```typescript
 onClick={() => {
   setLabels([])

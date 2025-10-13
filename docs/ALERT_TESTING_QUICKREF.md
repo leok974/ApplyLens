@@ -25,11 +25,13 @@ Write-Host "`n✅ All systems ready for testing!`n" -ForegroundColor Green
 ## 🎧 Start Webhook Listener (NEW)
 
 **In a separate terminal:**
+
 ```powershell
 python D:\ApplyLens\tools\grafana_webhook.py
 ```
 
 **What it does:**
+
 - Listens on port 9000
 - Receives alert notifications from Grafana
 - Pretty-prints alert payloads to console

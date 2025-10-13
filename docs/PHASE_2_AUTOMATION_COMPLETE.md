@@ -64,17 +64,20 @@
 **Best For:** Unix developers, CI/CD pipelines, quick experimentation
 
 **Quick Start:**
+
 ```bash
 make phase2-all
 ```
 
 **Features:**
+
 - Simple make targets
 - CLI override support
 - Pipes to jq for formatted output
 - Meta target chains all steps
 
 **Configuration:**
+
 ```bash
 make export-weak EXPORT_DAYS=90
 make apply-labels API_BASE=https://api.example.com
@@ -87,18 +90,21 @@ make apply-labels API_BASE=https://api.example.com
 **Best For:** JavaScript/Node.js developers, cross-platform teams
 
 **Quick Start:**
+
 ```bash
 npm install
 npm run phase2:all
 ```
 
 **Features:**
+
 - Cross-platform compatibility
 - Environment variable support
 - Multiple utility scripts (stats, profile, clean)
 - Help command for reference
 
 **Configuration:**
+
 ```bash
 # PowerShell
 $env:ES_URL="http://localhost:9200"
@@ -115,11 +121,13 @@ ES_URL=http://localhost:9200 npm run phase2:export
 **Best For:** Windows users, rich output with verification
 
 **Quick Start:**
+
 ```powershell
 .\scripts\phase2-all.ps1
 ```
 
 **Features:**
+
 - Color-coded output (cyan/yellow/green/red)
 - Real-time progress indicators
 - Post-workflow verification:
@@ -130,6 +138,7 @@ ES_URL=http://localhost:9200 npm run phase2:export
 - Parameter-based configuration
 
 **Configuration:**
+
 ```powershell
 .\scripts\phase2-all.ps1 -Days 90 -Limit 50000 -ApiBase https://api.example.com
 ```
@@ -215,6 +224,7 @@ All three automation options run the same underlying workflow:
 ## 📈 Expected Results
 
 ### Export Phase Output
+
 ```json
 {
   "seen": 15234,
@@ -230,6 +240,7 @@ All three automation options run the same underlying workflow:
 ```
 
 ### Training Phase Output
+
 ```
 ✅ Saved model to label_model.joblib
 
@@ -247,11 +258,13 @@ weighted avg       0.89      0.89      0.89     12500
 ```
 
 ### Apply Phase Output
+
 ```json
 {"updated": 15234}
 ```
 
 ### Verification (PowerShell Only)
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📈 Verification Results
@@ -282,11 +295,13 @@ Profile Summary:
 ### First-Time Setup (Recommended)
 
 **Windows:**
+
 ```powershell
 .\scripts\phase2-all.ps1
 ```
 
 **Mac/Linux:**
+
 ```bash
 npm install
 npm run phase2:all
@@ -295,12 +310,14 @@ npm run phase2:all
 ### CI/CD Integration
 
 **GitHub Actions:**
+
 ```yaml
 - name: Run Phase-2 Pipeline
   run: make phase2-all
 ```
 
 **GitLab CI:**
+
 ```yaml
 phase2:
   script:
@@ -311,6 +328,7 @@ phase2:
 ### Development Iteration
 
 **Retrain Model Only:**
+
 ```bash
 # Makefile
 make train-labels
@@ -323,6 +341,7 @@ npm run phase2:train
 ```
 
 **Apply Labels Only:**
+
 ```bash
 # Makefile
 make apply-labels
@@ -336,6 +355,7 @@ npm run phase2:apply
 ### Production Deployment
 
 **Custom Configuration:**
+
 ```bash
 # Makefile
 make phase2-all \
@@ -466,6 +486,7 @@ Before running automation:
 ## 🚢 Ready to Commit
 
 ### Files to Add
+
 ```bash
 git add Makefile
 git add package.json
@@ -476,6 +497,7 @@ git add README.md
 ```
 
 ### Suggested Commit Message
+
 ```
 feat: add Phase-2 automation tools with multi-platform support
 
@@ -531,6 +553,7 @@ the complete Phase-2 categorization pipeline.
 ### Immediate (User Action Required)
 
 1. **Test all three automation options**
+
    ```bash
    # Unix/Linux/Mac
    make phase2-all
@@ -543,12 +566,14 @@ the complete Phase-2 categorization pipeline.
    ```
 
 2. **Verify results**
+
    ```bash
    curl "http://localhost:8003/labels/stats" | jq
    curl "http://localhost:8003/profile/summary?days=60" | jq
    ```
 
 3. **Commit Phase-2 + automation**
+
    ```bash
    git add Makefile package.json scripts/phase2-all.ps1
    git add PHASE_2_AUTOMATION.md PHASE_2_QUICK_REF.md README.md
@@ -610,6 +635,7 @@ the complete Phase-2 categorization pipeline.
 **Testing**: ✅ 100% Verified (endpoints working)
 
 **Total Implementation**:
+
 - **15 files** created/modified
 - **~5,200 lines** of code + docs + automation
 - **3 platforms** supported (Unix/Windows/Cross-platform)

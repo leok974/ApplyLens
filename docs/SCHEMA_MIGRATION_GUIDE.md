@@ -11,6 +11,7 @@ psycopg2.errors.UndefinedColumn: column "category" does not exist
 ```
 
 This typically happens when:
+
 1. **Code is deployed** with queries referencing new columns
 2. **But migrations haven't been applied** to add those columns to the database
 3. **Jobs or scripts fail** because the schema doesn't match expectations
@@ -28,6 +29,7 @@ services/api/alembic/versions/0009_add_emails_category.py
 ```
 
 **Key sections:**
+
 - **`revision`**: Unique migration ID (e.g., `0009_add_emails_category`)
 - **`down_revision`**: Previous migration (e.g., `0008_approvals_proposed`)
 - **`upgrade()`**: SQL to add columns, indexes, tables
@@ -51,6 +53,7 @@ require_min_migration("0009_add_emails_category", "emails.category column")
 ```
 
 **Raises `RuntimeError` if:**
+
 - Database is below required version
 - Cannot determine current version
 - Includes helpful error message with upgrade instructions
@@ -67,6 +70,7 @@ require_columns("emails", "category", "risk_score", "expires_at")
 ```
 
 **Raises `RuntimeError` if:**
+
 - Any column is missing
 - Includes list of missing columns
 
@@ -117,6 +121,7 @@ def run():
 ```
 
 **Benefits:**
+
 - **Fast fail**: Detects schema issues in seconds, not hours
 - **Clear error messages**: Tells operator exactly what's wrong
 - **Migration instructions**: Shows how to fix the issue
@@ -180,6 +185,7 @@ docker-compose exec api alembic upgrade head
 ```
 
 **Verify:**
+
 ```bash
 # Check current version
 docker-compose exec db psql -U postgres -d applylens -c "SELECT version_num FROM alembic_version;"
@@ -382,24 +388,29 @@ def downgrade() -> None:
 ### Error: "column does not exist"
 
 **Symptom:**
+
 ```
 psycopg2.errors.UndefinedColumn: column "category" does not exist
 LINE 1: SELECT id, category FROM emails WHERE ...
 ```
 
 **Solution:**
+
 1. Check current migration version:
+
    ```bash
    docker-compose exec db psql -U postgres -d applylens \
      -c "SELECT version_num FROM alembic_version;"
    ```
 
 2. Apply missing migrations:
+
    ```bash
    docker-compose exec api alembic upgrade head
    ```
 
 3. Verify column exists:
+
    ```bash
    docker-compose exec db psql -U postgres -d applylens \
      -c "\d emails" | grep category
@@ -408,6 +419,7 @@ LINE 1: SELECT id, category FROM emails WHERE ...
 ### Error: "Schema validation failed"
 
 **Symptom:**
+
 ```
 ❌ Schema validation failed:
 Database schema is too old. Current: 0008_approvals_proposed, Required: 0009_add_emails_category
@@ -415,6 +427,7 @@ Database schema is too old. Current: 0008_approvals_proposed, Required: 0009_add
 
 **Solution:**
 Follow the instructions in the error message:
+
 ```bash
 cd services/api
 alembic upgrade head
@@ -427,16 +440,19 @@ docker-compose exec api alembic upgrade head
 ### Error: "Cannot determine database migration version"
 
 **Symptom:**
+
 ```
 RuntimeError: Cannot determine database migration version. alembic_version table may not exist.
 ```
 
 **Possible causes:**
+
 - Database not initialized
 - Connection string incorrect
 - Alembic never run on this database
 
 **Solution:**
+
 ```bash
 # Initialize database
 docker-compose exec api alembic upgrade head
@@ -445,11 +461,13 @@ docker-compose exec api alembic upgrade head
 ### Migration Failed Mid-Execution
 
 **Symptom:**
+
 ```
 ERROR  [alembic.util.messaging] Target database is not up to date.
 ```
 
 **Solution:**
+
 ```bash
 # Check current version
 docker-compose exec api alembic current
@@ -470,12 +488,14 @@ docker-compose exec api alembic upgrade head
 ### 1. One Migration Per Feature
 
 ✅ **Good:**
+
 ```
 0009_add_emails_category.py       # Adds category column
 0010_add_risk_score.py            # Adds risk_score column
 ```
 
 ❌ **Bad:**
+
 ```
 0009_everything.py                # Adds 10 columns, 5 tables, 20 indexes
 ```
@@ -485,6 +505,7 @@ docker-compose exec api alembic upgrade head
 ### 2. Make Migrations Reversible
 
 ✅ **Good:**
+
 ```python
 def upgrade() -> None:
     op.add_column('emails', sa.Column('category', sa.Text()))
@@ -494,6 +515,7 @@ def downgrade() -> None:
 ```
 
 ❌ **Bad:**
+
 ```python
 def upgrade() -> None:
     op.add_column('emails', sa.Column('category', sa.Text()))
@@ -544,12 +566,14 @@ This migration adds the category column to support email categorization.
 ### 5. Use Schema Guards in All Long-Running Jobs
 
 **Required for:**
+
 - GitHub Actions workflows
 - Cron jobs
 - Manual scripts (`scripts/`)
 - Batch processing jobs
 
 **Not required for:**
+
 - FastAPI routes (fail fast on first request)
 - Unit tests (use test database)
 - Development experiments
@@ -603,11 +627,13 @@ get_migration_info() -> dict
 ### Example: Complete Migration + Guard
 
 **1. Create migration:**
+
 ```bash
 alembic revision -m "Add email automation fields"
 ```
 
 **2. Edit migration file:**
+
 ```python
 def upgrade() -> None:
     op.add_column('emails', sa.Column('category', sa.Text()))
@@ -621,6 +647,7 @@ def downgrade() -> None:
 ```
 
 **3. Add schema guard to script:**
+
 ```python
 from app.utils.schema_guard import require_min_migration
 
@@ -630,11 +657,13 @@ def main():
 ```
 
 **4. Apply migration:**
+
 ```bash
 alembic upgrade head
 ```
 
 **5. Deploy code:**
+
 ```bash
 git push
 docker-compose up -d --build

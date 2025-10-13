@@ -112,6 +112,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 | **Critical** | **80-100** | **Auto-quarantine** |
 
 **Indicators**:
+
 - Urgent language: +10
 - Suspicious links (bit.ly): +15
 - Money requests: +20
@@ -123,6 +124,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 ## 🎯 Default Policies
 
 ### 1. Expired Promo Archive
+
 ```json
 {
   "if": {"category": "promotions", "expires_at": "<now"},
@@ -131,6 +133,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 ```
 
 ### 2. High-Risk Quarantine
+
 ```json
 {
   "if": {"risk_score": ">=80"},
@@ -139,6 +142,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 ```
 
 ### 3. Bill Reminder
+
 ```json
 {
   "if": {"category": "bills", "labels": "not_in paid"},
@@ -147,6 +151,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 ```
 
 ### 4. Application Priority
+
 ```json
 {
   "if": {"category": "applications"},
@@ -182,16 +187,19 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 pytest services/api/tests/unit/test_classifier.py -v
 ```
 
 ### E2E Tests
+
 ```bash
 pytest services/api/tests/e2e/ -v
 ```
 
 ### Test Coverage
+
 - ✅ 37 unit tests
 - ✅ 16 E2E tests
 - ✅ All safety checks tested
@@ -234,24 +242,28 @@ emails (
 ## 💡 Common Use Cases
 
 ### Auto-Archive Expired Promos
+
 ```python
 # Automatically runs via policy engine
 # No manual intervention needed
 ```
 
 ### Quarantine Phishing
+
 ```python
 # High risk_score (>=80) triggers quarantine
 # User notified for review
 ```
 
 ### Priority Job Emails
+
 ```python
 # ATS domains auto-labeled "important"
 # Never miss an interview
 ```
 
 ### Bill Reminders
+
 ```python
 # Unpaid bills get "needs_attention" label
 # Visual reminder in inbox
@@ -262,15 +274,19 @@ emails (
 ## 🔍 Troubleshooting
 
 ### Issue: Classification wrong
+
 **Fix**: Adjust regex patterns in `app/logic/classify.py`
 
 ### Issue: Actions not executing
+
 **Fix**: Check Gmail API integration (currently stubbed)
 
 ### Issue: Migration fails
+
 **Fix**: `alembic downgrade -1` then `alembic upgrade head`
 
 ### Issue: Low confidence
+
 **Fix**: Improve classification logic or lower threshold
 
 ---
@@ -278,6 +294,7 @@ emails (
 ## 📚 Full Documentation
 
 See [EMAIL_AUTOMATION_SYSTEM_COMPLETE.md](./EMAIL_AUTOMATION_SYSTEM_COMPLETE.md) for:
+
 - Complete architecture
 - Detailed API docs
 - Policy engine guide
@@ -297,6 +314,7 @@ See [EMAIL_AUTOMATION_SYSTEM_COMPLETE.md](./EMAIL_AUTOMATION_SYSTEM_COMPLETE.md)
 ---
 
 **Quick Links**:
+
 - [Complete Guide](./EMAIL_AUTOMATION_SYSTEM_COMPLETE.md)
 - [API Docs](http://localhost:8000/docs#/mail-tools)
 - [GitHub](https://github.com/leok974/ApplyLens)

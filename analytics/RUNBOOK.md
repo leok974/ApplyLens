@@ -15,6 +15,7 @@ PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
 ```
 
 **Components**:
+
 - **Fivetran**: Syncs `emails` and `applications` from Postgres to BigQuery hourly
 - **BigQuery**: Data warehouse with `applylens` dataset
 - **dbt**: Transforms raw data into staging models and mart aggregates
@@ -22,6 +23,7 @@ PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
 - **Kibana**: Visualizes risk trends, parity drift, and backfill SLOs
 
 **Automation**:
+
 - CI workflow runs daily at 3:15 AM UTC (`analytics-sync.yml`)
 - Job steps: `dbt deps → dbt run → dbt test → export_to_es.py`
 
@@ -32,6 +34,7 @@ PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
 ### Daily Health Check
 
 **What to Monitor**:
+
 1. Fivetran sync status (should complete within 15 minutes of hourly schedule)
 2. GitHub Actions workflow success (analytics-sync.yml)
 3. Kibana dashboard showing recent data (last 24 hours visible)
@@ -56,6 +59,7 @@ curl -s "http://localhost:9200/analytics_applylens_risk_daily/_search" \
 ```
 
 **Expected Results**:
+
 - Fivetran: Synced within last hour
 - GitHub Actions: Latest run succeeded (green checkmark)
 - Elasticsearch: Indices exist with recent data (yesterday's date visible)
@@ -168,6 +172,7 @@ print(df)
 **Symptoms**: Fivetran dashboard shows "Failed" or "Paused", data not updating in BigQuery
 
 **Diagnosis**:
+
 1. Check connector status in Fivetran UI
 2. Review sync logs for error messages
 3. Test database connection from Fivetran
@@ -183,6 +188,7 @@ print(df)
 | BigQuery quota exceeded | Check GCP billing, increase quota limits |
 
 **Resolution Steps**:
+
 ```bash
 # 1. Test database connectivity
 psql -h your-db-host -U fivetran_user -d applylens -c "SELECT COUNT(*) FROM emails;"
@@ -202,6 +208,7 @@ psql -h your-db-host -U fivetran_user -d applylens -c "SELECT COUNT(*) FROM emai
 **Symptoms**: GitHub Actions workflow fails at "Run dbt models" step, red X in Actions tab
 
 **Diagnosis**:
+
 1. Check workflow logs in GitHub Actions
 2. Look for SQL errors in dbt output
 3. Identify failing model(s)
@@ -217,6 +224,7 @@ psql -h your-db-host -U fivetran_user -d applylens -c "SELECT COUNT(*) FROM emai
 | `Timeout` | Query too slow | Add partition pruning, optimize JOIN |
 
 **Resolution Steps**:
+
 ```bash
 # 1. Download workflow logs
 gh run view <run-id> --log
@@ -241,6 +249,7 @@ gh workflow run analytics-sync.yml
 **Symptoms**: dbt succeeds, but export script fails with connection/indexing errors
 
 **Diagnosis**:
+
 1. Check export script output in workflow logs
 2. Test ES connectivity manually
 3. Check ES cluster health
@@ -256,6 +265,7 @@ gh workflow run analytics-sync.yml
 | `BQ_PROJECT not set` | Missing env var | Add `BQ_PROJECT` to GitHub secrets |
 
 **Resolution Steps**:
+
 ```bash
 # 1. Test ES connectivity
 curl -I http://localhost:9200
@@ -282,6 +292,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_count?pretty"
 **Symptoms**: Dashboard loads but charts are empty or show "No results found"
 
 **Diagnosis**:
+
 1. Check if indices exist in Elasticsearch
 2. Verify index pattern in Kibana
 3. Check time range filter
@@ -297,6 +308,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_count?pretty"
 | Wrong index name in dashboard | Update dashboard JSON with correct index |
 
 **Resolution Steps**:
+
 ```bash
 # 1. Verify indices exist
 curl "http://localhost:9200/_cat/indices/analytics_applylens_*?v"
@@ -446,6 +458,7 @@ python analytics/export/export_to_es.py
 ### GitHub Secrets
 
 Required secrets for CI workflow:
+
 - `BQ_PROJECT`: GCP project ID
 - `BQ_SA_JSON`: Service account JSON content (not path)
 - `ES_URL`: Elasticsearch URL (with credentials if auth enabled)
@@ -453,6 +466,7 @@ Required secrets for CI workflow:
 ### Service Account Permissions
 
 BigQuery service account needs:
+
 - **BigQuery Data Editor**: Read/write access to `applylens` dataset
 - **BigQuery Job User**: Run queries
 
@@ -472,16 +486,19 @@ gcloud projects add-iam-policy-binding your-project-id \
 ## Maintenance
 
 ### Weekly Tasks
+
 - [ ] Review Fivetran sync logs for warnings
 - [ ] Check dbt test results in CI logs
 - [ ] Verify Kibana dashboard metrics match expectations
 
 ### Monthly Tasks
+
 - [ ] Review BigQuery storage costs (check `applylens` dataset size)
 - [ ] Audit Elasticsearch index sizes (consider ILM policy)
 - [ ] Rotate database credentials (fivetran_user password)
 
 ### Quarterly Tasks
+
 - [ ] Update dbt packages: `dbt deps --upgrade`
 - [ ] Review and optimize slow dbt models
 - [ ] Archive old Elasticsearch indices (>90 days)
@@ -510,6 +527,7 @@ gcloud projects add-iam-policy-binding your-project-id \
 - [Kibana Lens Tutorial](https://www.elastic.co/guide/en/kibana/current/lens.html)
 
 **Internal**:
+
 - [Fivetran Setup Guide](analytics/fivetran/README.md)
 - [dbt Project README](analytics/dbt/README.md)
 - [Phase 12.4 Summary](PHASE_12.4_COMPLETE.md)

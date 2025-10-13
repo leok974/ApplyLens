@@ -13,24 +13,31 @@ Phase 5 transforms ApplyLens into a conversational mailbox assistant. Users can 
 ### Key Features
 
 ✅ **8 Specialized Intents**
+
 - Summarize, Find, Clean, Unsubscribe, Flag, Follow-up, Calendar, Task
 
 ✅ **Hybrid RAG Search**
+
 - Keyword (BM25) + Semantic (vector) search over Elasticsearch
 
 ✅ **Smart Intent Detection**
+
 - Rule-based pattern matching with fallback heuristics
 
 ✅ **Action Proposals**
+
 - Non-destructive by default; can integrate with Phase 4 approval system
 
 ✅ **Citation Tracking**
+
 - Every response cites source emails (subject, sender, date, ID)
 
 ✅ **Quick-Action Chips**
+
 - Pre-configured queries for common tasks
 
 ✅ **Conversational UI**
+
 - Dark-themed chat interface with message history
 
 ---
@@ -86,6 +93,7 @@ Phase 5 transforms ApplyLens into a conversational mailbox assistant. Users can 
 **Rule-based pattern matching** to detect user intent from text.
 
 **Supported Intents:**
+
 - `summarize` - Provide concise bullet-point summary
 - `find` - List specific emails with reasons
 - `clean` - Propose archiving old promos
@@ -96,6 +104,7 @@ Phase 5 transforms ApplyLens into a conversational mailbox assistant. Users can 
 - `task` - Create tasks from actionable emails
 
 **Example Patterns:**
+
 ```python
 INTENTS = {
     "clean": [r"\bclean( up)?\b", r"\barchive\b", r"\bdeclutter\b"],
@@ -112,12 +121,14 @@ INTENTS = {
 **Hybrid keyword + semantic search** over Elasticsearch emails index.
 
 **Features:**
+
 - **Keyword Search:** Multi-field BM25 across subject, body, sender, labels
 - **Semantic Search:** KNN vector search using embeddings (optional)
 - **Structured Filters:** category, risk_score, sender_domain, date ranges, labels
 - **Multi-tenant:** Supports user_id filtering
 
 **Example Query:**
+
 ```python
 rag_search(
     es,
@@ -132,6 +143,7 @@ rag_search(
 ```
 
 **Returns:**
+
 ```python
 {
     "docs": [{"id": "...", "subject": "...", "sender": "...", ...}, ...],
@@ -147,10 +159,12 @@ rag_search(
 **Text-to-vector conversion** for semantic search.
 
 **Current Implementation:**
+
 - Deterministic random fallback (for development)
 - Same text always produces same vector
 
 **Future Integration:**
+
 ```python
 # Option 1: OpenAI
 from openai import OpenAI
@@ -175,6 +189,7 @@ return response['embedding']
 **8 specialized functions** that take RAG results and return `(answer, actions)` tuples.
 
 #### `summarize_emails(rag, user_text)`
+
 Returns concise bullet-point summary of top matching emails.
 
 ```
@@ -185,6 +200,7 @@ Found 127 emails. Top matches:
 ```
 
 #### `find_emails(rag, user_text)`
+
 Lists emails with match reasons (category, risk score, labels).
 
 ```
@@ -195,14 +211,17 @@ Found 45 matching emails:
 ```
 
 #### `clean_promos(rag, user_text)`
+
 Proposes archiving old promotional emails (>7 days) with **exception handling**.
 
 **Example:**
+
 - Query: "Clean up promos older than a week unless they're from Best Buy"
 - Extracts exception: "best buy"
 - Filters out Best Buy emails before proposing archive actions
 
 **Actions:**
+
 ```json
 [
   {
@@ -214,11 +233,13 @@ Proposes archiving old promotional emails (>7 days) with **exception handling**.
 ```
 
 #### `unsubscribe_inactive(rag, user_text)`
+
 Proposes unsubscribing from newsletters not engaged with in 60+ days.
 
 **Heuristic:** Checks `received_at` age (in production, would check engagement metrics).
 
 #### `flag_suspicious(rag, user_text)`
+
 Surfaces high-risk emails from last 7 days with explanations.
 
 ```
@@ -229,22 +250,27 @@ Surfaces high-risk emails from last 7 days with explanations.
 ```
 
 #### `follow_up(rag, user_text)`
+
 Identifies emails needing follow-up and suggests draft replies.
 
 Looks for:
+
 - `needs_reply` label
 - `opportunity` category
 - Keywords: "recruiter", "hiring", "interview"
 
 #### `create_calendar_events(rag, user_text)`
+
 Creates calendar reminders from emails.
 
 **Date Extraction:**
+
 - "before Friday" → calculates days until Friday
 - "in 3 days" → adds 3 days from now
 - Default: 3 days ahead
 
 **Actions:**
+
 ```json
 [
   {
@@ -260,6 +286,7 @@ Creates calendar reminders from emails.
 ```
 
 #### `create_tasks(rag, user_text)`
+
 Creates tasks from actionable email content.
 
 ### 5. Chat Router (`app/routers/chat.py`)
@@ -271,6 +298,7 @@ Creates tasks from actionable email content.
 Main conversational endpoint.
 
 **Request:**
+
 ```json
 {
   "messages": [
@@ -285,6 +313,7 @@ Main conversational endpoint.
 ```
 
 **Response:**
+
 ```json
 {
   "intent": "calendar",
@@ -314,6 +343,7 @@ Main conversational endpoint.
 Lists all available intents with descriptions.
 
 **Response:**
+
 ```json
 {
   "summarize": {
@@ -341,11 +371,13 @@ Health check endpoint.
 TypeScript client for chat API with type-safe interfaces.
 
 **Functions:**
+
 - `sendChatMessage(request)` - Send chat request
 - `listIntents()` - Fetch available intents
 - `chatHealth()` - Health check
 
 **Types:**
+
 ```typescript
 interface ChatRequest {
   messages: Message[]
@@ -372,6 +404,7 @@ interface ChatResponse {
 ### 2. MailChat Component (`components/MailChat.tsx`)
 
 **Main chat interface** with:
+
 - Quick-action chips (8 pre-configured queries)
 - Message history (user/assistant bubbles)
 - Input field with Enter-to-send
@@ -381,6 +414,7 @@ interface ChatResponse {
 - Markdown-style formatting (**bold**, *italic*)
 
 **Quick Actions:**
+
 ```typescript
 const QUICK_ACTIONS = [
   {label: 'Summarize', text: 'Summarize recent emails about my job applications.', icon: '📧'},
@@ -397,10 +431,12 @@ Simple page wrapper rendering `<MailChat />`.
 ### 4. Navigation
 
 **Updated `AppHeader.tsx`:**
+
 - Added "Chat" link in navigation menu
 - Accessible at `/chat`
 
 **Updated `App.tsx`:**
+
 - Added `<Route path="/chat" element={<ChatPage />} />`
 
 ---
@@ -410,6 +446,7 @@ Simple page wrapper rendering `<MailChat />`.
 ### Example 1: Summarize Recent Emails
 
 **Query:**
+
 ```
 Summarize recent emails about my job applications.
 ```
@@ -417,6 +454,7 @@ Summarize recent emails about my job applications.
 **Intent:** `summarize`
 
 **Response:**
+
 ```
 Found 23 emails. Top matches:
 • [Interview invitation] — recruiter@tech.com — Oct 10, 2025 (#45678)
@@ -433,6 +471,7 @@ Sources:
 ### Example 2: Bills with Calendar Reminders
 
 **Query:**
+
 ```
 What bills are due before Friday? Create calendar reminders.
 ```
@@ -440,6 +479,7 @@ What bills are due before Friday? Create calendar reminders.
 **Intent:** `calendar`
 
 **Response:**
+
 ```
 *Create calendar event reminders from email content*
 
@@ -459,6 +499,7 @@ What bills are due before Friday? Create calendar reminders.
 ### Example 3: Clean Promos with Exception
 
 **Query:**
+
 ```
 Clean up promos older than a week unless they're from Best Buy.
 ```
@@ -466,6 +507,7 @@ Clean up promos older than a week unless they're from Best Buy.
 **Intent:** `clean`
 
 **Response:**
+
 ```
 Found 47 promotional emails older than a week (respecting exceptions: best buy). Proposing to archive 47.
 
@@ -473,6 +515,7 @@ Found 47 promotional emails older than a week (respecting exceptions: best buy).
 ```
 
 **Actions:**
+
 ```json
 [
   {"action": "archive_email", "email_id": "11111", "params": {"reason": "Old promotional email"}},
@@ -484,6 +527,7 @@ Found 47 promotional emails older than a week (respecting exceptions: best buy).
 ### Example 4: Suspicious Emails
 
 **Query:**
+
 ```
 Show suspicious emails from new domains this week and explain why.
 ```
@@ -491,6 +535,7 @@ Show suspicious emails from new domains this week and explain why.
 **Intent:** `flag`
 
 **Response:**
+
 ```
 ⚠️ Found 2 suspicious emails this week:
 • [Urgent: verify your account] — noreply@suspicious-domain.com — Oct 10, 2025 (#99999)
@@ -506,6 +551,7 @@ Show suspicious emails from new domains this week and explain why.
 ### Example 5: Unsubscribe from Inactive Newsletters
 
 **Query:**
+
 ```
 Unsubscribe from newsletters I haven't opened in 60 days.
 ```
@@ -513,6 +559,7 @@ Unsubscribe from newsletters I haven't opened in 60 days.
 **Intent:** `unsubscribe`
 
 **Response:**
+
 ```
 Found 12 inactive newsletters. Proposing 12 unsubscribe actions.
 
@@ -527,6 +574,7 @@ Examples:
 ### Example 6: Find Specific Emails
 
 **Query:**
+
 ```
 Find interviews from August with confirmed times.
 ```
@@ -534,6 +582,7 @@ Find interviews from August with confirmed times.
 **Intent:** `find`
 
 **Response:**
+
 ```
 Found 5 matching emails:
 • [Interview scheduled: Aug 15 at 2pm] — recruiter@tech.com — Aug 10, 2025
@@ -546,6 +595,7 @@ Found 5 matching emails:
 ### Example 7: Follow-up Suggestions
 
 **Query:**
+
 ```
 Which recruiters haven't replied in 5 days? Draft follow-ups.
 ```
@@ -553,6 +603,7 @@ Which recruiters haven't replied in 5 days? Draft follow-ups.
 **Intent:** `follow-up`
 
 **Response:**
+
 ```
 💬 Emails needing follow-up:
 
@@ -566,6 +617,7 @@ Which recruiters haven't replied in 5 days? Draft follow-ups.
 ### Example 8: Create Tasks
 
 **Query:**
+
 ```
 Create tasks from emails about pending action items.
 ```
@@ -573,6 +625,7 @@ Create tasks from emails about pending action items.
 **Intent:** `task`
 
 **Response:**
+
 ```
 ✅ Prepared 4 tasks from emails:
 • [Complete onboarding documents] — hr@company.com — Oct 10, 2025 (#88888)
@@ -590,6 +643,7 @@ Create tasks from emails about pending action items.
 Phase 5 can be integrated with Phase 4 (Agentic Actions & Approval Loop) by **posting proposed actions to `/api/actions/propose`**.
 
 **Modification in `chat.py`:**
+
 ```python
 # After tool execution
 if actions:
@@ -609,6 +663,7 @@ if actions:
 ```
 
 This allows users to:
+
 1. Ask chat assistant for recommendations
 2. Review proposed actions in Actions Tray
 3. Approve, reject, or create policies ("Always do this")
@@ -620,6 +675,7 @@ This allows users to:
 ### Backend Tests (`services/api/tests/test_chat.py`)
 
 **Test Coverage:**
+
 - ✅ Intent detection (all 8 intents)
 - ✅ Intent explanations
 - ✅ Chat endpoint health
@@ -634,6 +690,7 @@ This allows users to:
 - ✅ Calendar date extraction
 
 **Run Tests:**
+
 ```bash
 cd services/api
 pytest tests/test_chat.py -v
@@ -642,6 +699,7 @@ pytest tests/test_chat.py -v
 ### PowerShell Smoke Test (`scripts/test-chat.ps1`)
 
 **Comprehensive API validation:**
+
 1. Health check
 2. List intents
 3-10. Test all 8 intent types
@@ -649,12 +707,14 @@ pytest tests/test_chat.py -v
 12. Multi-turn conversation
 
 **Run Test:**
+
 ```powershell
 cd d:/ApplyLens
 pwsh ./scripts/test-chat.ps1
 ```
 
 **Expected Output:**
+
 ```
 === Phase 5 Chat Assistant - API Tests ===
 
@@ -694,7 +754,8 @@ Testing: Summarize Intent
 ### Frontend Testing
 
 **Manual UI Testing:**
-1. Navigate to http://localhost:5175/chat
+
+1. Navigate to <http://localhost:5175/chat>
 2. Click quick-action chips
 3. Type custom queries
 4. Verify:
@@ -711,6 +772,7 @@ Testing: Summarize Intent
 ### Elasticsearch Index
 
 **Required fields in `emails` index:**
+
 - `subject` (text)
 - `body_text` (text)
 - `sender` (keyword)
@@ -725,10 +787,12 @@ Testing: Summarize Intent
 ### Environment Variables
 
 **Backend:**
-- `ELASTICSEARCH_URL` - ES connection string (default: http://localhost:9200)
-- `CORS_ALLOW_ORIGINS` - Allowed origins (default: http://localhost:5175)
+
+- `ELASTICSEARCH_URL` - ES connection string (default: <http://localhost:9200>)
+- `CORS_ALLOW_ORIGINS` - Allowed origins (default: <http://localhost:5175>)
 
 **Frontend:**
+
 - `VITE_API_BASE` - API base URL (default: /api, uses proxy)
 
 ---
@@ -740,6 +804,7 @@ Testing: Summarize Intent
 **Description:** Main chat endpoint for conversational queries.
 
 **Request Body:**
+
 ```json
 {
   "messages": [
@@ -759,6 +824,7 @@ Testing: Summarize Intent
 ```
 
 **Response:**
+
 ```json
 {
   "intent": "string",
@@ -795,6 +861,7 @@ Testing: Summarize Intent
 **Description:** List all available intents with patterns and descriptions.
 
 **Response:**
+
 ```json
 {
   "intent_name": {
@@ -809,6 +876,7 @@ Testing: Summarize Intent
 **Description:** Health check for chat service.
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -823,11 +891,13 @@ Testing: Summarize Intent
 ### Issue: Chat endpoint returns 500 error
 
 **Possible Causes:**
+
 1. Elasticsearch not running
 2. `emails` index doesn't exist
 3. Missing required fields in ES documents
 
 **Solution:**
+
 ```bash
 # Check ES health
 curl http://localhost:9200/_cluster/health
@@ -842,11 +912,13 @@ docker compose logs api
 ### Issue: No search results returned
 
 **Possible Causes:**
+
 1. No emails indexed in Elasticsearch
 2. Query doesn't match any documents
 3. Filters too restrictive
 
 **Solution:**
+
 ```bash
 # Check email count
 curl http://localhost:9200/emails/_search?size=0
@@ -864,6 +936,7 @@ curl -X POST http://localhost:9200/emails/_search \
 **Cause:** `body_vector` field not indexed.
 
 **Solution:**
+
 ```python
 # Embeddings are optional - system works with keyword-only
 # To enable semantic search:
@@ -877,6 +950,7 @@ curl -X POST http://localhost:9200/emails/_search \
 **Symptom:** User says "find" but gets "summarize" intent.
 
 **Solution:**
+
 - Check intent patterns in `intent.py`
 - Add more specific patterns for your use case
 - Consider adding LLM-based intent classification
@@ -884,11 +958,13 @@ curl -X POST http://localhost:9200/emails/_search \
 ### Issue: Frontend shows "Failed to get response"
 
 **Possible Causes:**
+
 1. API not running
 2. CORS issues
 3. Network error
 
 **Solution:**
+
 ```powershell
 # Check API health
 curl http://localhost:8003/api/chat/health
@@ -1000,6 +1076,7 @@ recognition.onresult = (event) => {
 ✅ **Phase 5 Complete**
 
 **Backend (5 modules):**
+
 - `intent.py` - Rule-based intent detection
 - `rag.py` - Hybrid keyword + semantic search
 - `text.py` - Embedding utilities (with fallback)
@@ -1007,16 +1084,19 @@ recognition.onresult = (event) => {
 - `chat.py` - FastAPI router with 3 endpoints
 
 **Frontend (4 components):**
+
 - `chatClient.ts` - Type-safe API client
 - `MailChat.tsx` - Conversational UI component
 - `ChatPage.tsx` - Page wrapper
 - Navigation updates (AppHeader, App.tsx)
 
 **Testing:**
+
 - 40+ pytest tests (intent detection, endpoint validation)
 - PowerShell smoke test (12 test cases)
 
 **Documentation:**
+
 - Complete architecture guide
 - 8 usage examples
 - API reference
@@ -1024,8 +1104,9 @@ recognition.onresult = (event) => {
 - Integration notes (Phase 4)
 
 **Next Steps:**
+
 1. Run full stack: `docker compose up -d && npm run dev`
-2. Navigate to: http://localhost:5175/chat
+2. Navigate to: <http://localhost:5175/chat>
 3. Try quick-action chips
 4. Test natural language queries
 5. Review citations and proposed actions

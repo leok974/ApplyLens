@@ -20,12 +20,14 @@
 ### 1. Test Infrastructure
 
 #### pytest Configuration (`pytest.ini`)
+
 - **Markers**: `unit`, `api`, `integration`, `slow`
 - **Asyncio Mode**: Auto-detection
 - **Coverage**: Term, HTML, and LCOV reports
 - **Warning Filters**: Suppress third-party deprecation warnings
 
 #### Dependencies (`pyproject.toml`)
+
 ```toml
 [project.optional-dependencies]
 test = [
@@ -42,6 +44,7 @@ test = [
 **Coverage**: 305 lines, 15 test classes, 50+ test cases
 
 **Test Categories**:
+
 - **Domain Extraction**: Email parsing, subdomain handling
 - **Sender Domain Risk**: Trusted/recruiter/unknown classification
 - **Subject Keywords**: Suspicious keyword detection, case sensitivity
@@ -50,6 +53,7 @@ test = [
 - **Configuration Validation**: Weight normalization, domain lists
 
 **Key Tests**:
+
 ```python
 test_trusted_domain_gmail()           # 0 points for gmail.com
 test_recruiter_domain()                # 10 points for greenhouse.io
@@ -66,12 +70,14 @@ test_maximum_risk_email()              # 100 points total
 **Endpoints Tested**:
 
 #### GET `/automation/health`
+
 - Status code 200
 - Response schema validation
 - Coverage percentage bounds (0-100%)
 - Timestamp format validation
 
 #### GET `/automation/risk-summary`
+
 - Default and custom `days` parameter
 - Category filtering
 - Statistics schema
@@ -80,12 +86,14 @@ test_maximum_risk_email()              # 100 points total
 - Error handling (negative days, invalid category)
 
 #### GET `/automation/risk-trends`
+
 - Daily and weekly granularity
 - Chronological sorting
 - Response schema validation
 - Error handling (invalid granularity)
 
 #### POST `/automation/recompute`
+
 - Dry run idempotency
 - Custom batch sizes
 - Response statistics
@@ -94,6 +102,7 @@ test_maximum_risk_email()              # 100 points total
 ### 4. Parity Check Script (`scripts/check_parity.py`)
 
 **Features**:
+
 - **Configurable Fields**: Compare any set of fields
 - **Sampling**: Random or stratified (TODO: implement stratification)
 - **Tolerance**: Float comparison with ±0.001 tolerance
@@ -104,6 +113,7 @@ test_maximum_risk_email()              # 100 points total
 - **Metrics Integration**: Updates Prometheus gauges/counters
 
 **Command-Line Interface**:
+
 ```bash
 python scripts/check_parity.py \
   --fields risk_score,expires_at,category \
@@ -114,6 +124,7 @@ python scripts/check_parity.py \
 ```
 
 **Report Schema**:
+
 ```json
 {
   "timestamp": "2025-10-10T12:00:00Z",
@@ -145,6 +156,7 @@ python scripts/check_parity.py \
 **Coverage**: 200 lines, 6 test classes, 15+ test cases
 
 **Test Scenarios**:
+
 - Script execution without errors
 - Schema version validation
 - Report structure verification
@@ -158,18 +170,21 @@ python scripts/check_parity.py \
 **Jobs**:
 
 #### 1. Unit Tests
+
 - Python 3.11 environment
 - Coverage reporting (Codecov integration)
 - **Coverage Threshold**: ≥90% lines
 - Artifacts: `pytest-report.xml`, `htmlcov/`
 
 #### 2. API Tests
+
 - PostgreSQL 15 + Elasticsearch 8.12 services
 - Database migration before tests
 - API server startup with health check
 - Artifacts: `api-test-results.xml`
 
 #### 3. Parity Check
+
 - Runs after unit tests pass
 - Configurable sample size and allow threshold
 - **Main Branch**: Fails if mismatches > 0
@@ -178,11 +193,13 @@ python scripts/check_parity.py \
 - Artifacts: `parity.json`, `parity.csv`
 
 #### 4. Integration Tests
+
 - Full stack with DB + ES
 - Database migration and data seeding
 - Artifacts: `integration-test-results.xml`
 
 **Trigger Conditions**:
+
 - Pull requests affecting `services/api/**`
 - Pushes to `main` branch
 - Manual workflow dispatch with parameters
@@ -190,6 +207,7 @@ python scripts/check_parity.py \
 ### 7. Prometheus Metrics (`app/metrics.py`)
 
 **New Metrics**:
+
 ```python
 applylens_parity_checks_total            # Counter
 applylens_parity_mismatches_total        # Counter
@@ -198,6 +216,7 @@ applylens_parity_last_check_timestamp    # Gauge (Unix time)
 ```
 
 **Usage Example**:
+
 ```promql
 # Alert when mismatch ratio > 0.5% for 10 minutes
 rate(applylens_parity_mismatches_total[5m]) / 
@@ -211,6 +230,7 @@ rate(applylens_parity_checks_total[5m]) > 0.005
 ### Manual Parity Check
 
 #### PowerShell (Windows)
+
 ```powershell
 $env:SAMPLE=2000
 $env:FIELDS="risk_score,expires_at,category"
@@ -222,6 +242,7 @@ docker-compose exec api python scripts/check_parity.py `
 ```
 
 #### Bash (Linux/Mac)
+
 ```bash
 SAMPLE=2000 FIELDS="risk_score,expires_at,category" \
 docker-compose exec api python scripts/check_parity.py \
@@ -234,9 +255,11 @@ docker-compose exec api python scripts/check_parity.py \
 ### Investigating Mismatches
 
 #### 1. Download Parity Report
+
 From CI artifacts or manual run output
 
 #### 2. Query DB Side
+
 ```sql
 SELECT id, risk_score, expires_at, category 
 FROM emails 
@@ -244,6 +267,7 @@ WHERE id IN (123, 456, 789);
 ```
 
 #### 3. Query ES Side
+
 ```bash
 curl -s "$ES_URL/gmail_emails_v2/_mget" \
   -H 'Content-Type: application/json' \
@@ -259,12 +283,14 @@ curl -s "$ES_URL/gmail_emails_v2/_mget" \
 #### 4. Common Fixes
 
 **Missing ES Documents**:
+
 ```bash
 # Reindex specific emails
 python scripts/backfill_elasticsearch.py --ids 123,456,789
 ```
 
 **Stale Risk Scores**:
+
 ```bash
 # Recompute and sync
 python scripts/analyze_risk.py
@@ -272,6 +298,7 @@ python scripts/sync_to_elasticsearch.py --fields risk_score
 ```
 
 **Category Mismatch**:
+
 ```sql
 -- Check classification rules
 SELECT id, sender, subject, category, classification_confidence
@@ -282,6 +309,7 @@ WHERE id IN (123, 456, 789);
 ### Monitoring Alerts
 
 #### Grafana Alert Rule (JSON)
+
 ```json
 {
   "alert": "HighParityMismatchRate",
@@ -325,6 +353,7 @@ WHERE id IN (123, 456, 789);
 ## 📊 Test Statistics
 
 ### Lines of Code
+
 - **Unit Tests**: 305 lines
 - **API Tests**: 450 lines
 - **Integration Tests**: 200 lines
@@ -332,12 +361,14 @@ WHERE id IN (123, 456, 789);
 - **Total New Code**: ~1,400 lines
 
 ### Test Counts
+
 - **Unit Test Cases**: 50+
 - **API Test Cases**: 40+
 - **Integration Test Cases**: 15+
 - **Total Tests**: 105+
 
 ### Execution Times (Estimated)
+
 - **Unit Tests**: ~5 seconds
 - **API Tests**: ~30 seconds
 - **Parity Check (sample=100)**: ~5 seconds
@@ -349,13 +380,16 @@ WHERE id IN (123, 456, 789);
 ## 🚀 Next Steps
 
 ### Immediate (Post-Merge)
+
 1. **Install Test Dependencies**:
+
    ```bash
    cd services/api
    pip install -e .[test]
    ```
 
 2. **Run Tests Locally**:
+
    ```bash
    # Unit tests only
    pytest -m unit -v
@@ -370,6 +404,7 @@ WHERE id IN (123, 456, 789);
 3. **Verify CI Pipeline**: Watch first PR run complete
 
 ### Short-Term (Week 1)
+
 1. **Setup Monitoring**:
    - Add Grafana dashboard for parity metrics
    - Configure alerting rules
@@ -386,6 +421,7 @@ WHERE id IN (123, 456, 789);
    - Create video walkthrough for team
 
 ### Medium-Term (Month 1)
+
 1. **Stratified Sampling**: Implement category-based stratification
 2. **Historical Tracking**: Store parity results in time-series DB
 3. **Auto-Remediation**: Create script to fix common mismatches
@@ -396,6 +432,7 @@ WHERE id IN (123, 456, 789);
 ## 📝 Files Modified/Created
 
 ### Created Files
+
 ```
 services/api/pytest.ini                                    (27 lines)
 services/api/tests/unit/test_risk_scoring.py              (305 lines)
@@ -407,6 +444,7 @@ services/api/docs/PHASE_12.2_PLAN.md                      (this file)
 ```
 
 ### Modified Files
+
 ```
 services/api/pyproject.toml                               (+9 lines)
 services/api/app/metrics.py                               (+21 lines)

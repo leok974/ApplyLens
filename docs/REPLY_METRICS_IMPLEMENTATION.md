@@ -1,6 +1,7 @@
 # Reply Metrics Implementation - Complete
 
 ## Overview
+
 Implemented end-to-end reply-metrics tracking to power "Time to response" analytics and replied/not-replied filtering. The system now tracks first/last user reply timestamps and reply count per thread.
 
 ## Features Implemented
@@ -10,11 +11,13 @@ Implemented end-to-end reply-metrics tracking to power "Time to response" analyt
 **File**: `services/api/alembic/versions/0006_reply_metrics.py`
 
 **New columns added to `emails` table**:
+
 - `first_user_reply_at` - DateTime(timezone=True) - Timestamp of first user reply in thread
 - `last_user_reply_at` - DateTime(timezone=True) - Timestamp of most recent user reply
 - `user_reply_count` - Integer (default=0) - Number of user replies in thread
 
 **Migration command**:
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 ```
@@ -24,6 +27,7 @@ docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 **File**: `services/api/app/models.py`
 
 Updated `Email` model with reply metric fields:
+
 ```python
 # Reply metrics
 first_user_reply_at = Column(DateTime(timezone=True), nullable=True)
@@ -36,6 +40,7 @@ user_reply_count = Column(Integer, default=0)
 **File**: `services/api/scripts/es_reindex_with_ats.py`
 
 **New fields in ES mapping**:
+
 ```python
 "first_user_reply_at": {"type": "date"},
 "last_user_reply_at":  {"type": "date"},
@@ -44,6 +49,7 @@ user_reply_count = Column(Integer, default=0)
 ```
 
 **Reindex command**:
+
 ```bash
 python -m services.api.scripts.es_reindex_with_ats
 ```
@@ -53,11 +59,13 @@ python -m services.api.scripts.es_reindex_with_ats
 **File**: `services/api/app/ingest/gmail_metrics.py` (NEW)
 
 Core functions:
+
 - `classify_direction(raw_msg, user_email)` - Returns 'outbound' or 'inbound'
 - `msg_received_at(raw_msg)` - Extracts timestamp from internalDate or Date header
 - `compute_thread_reply_metrics(raw_messages, user_email)` - Main computation function
 
 **Algorithm**:
+
 1. Groups all messages in a thread
 2. Sorts by received timestamp
 3. Identifies outbound messages (From == user_email)
@@ -69,6 +77,7 @@ Core functions:
 **File**: `services/api/app/gmail_service.py`
 
 **Key changes**:
+
 - Changed from `messages().list()` to `threads().list()` API
 - Fetches full thread with all messages via `threads().get()`
 - Computes reply metrics once per thread
@@ -76,6 +85,7 @@ Core functions:
 - Indexes metrics to Elasticsearch
 
 **Workflow**:
+
 ```python
 # Get threads instead of individual messages
 threads = svc.users().threads().list(userId="me", q=q).execute()
@@ -102,6 +112,7 @@ for thread_meta in threads:
 **Purpose**: Computes reply metrics for all existing emails using stored `raw` JSON.
 
 **Process**:
+
 1. Loads all emails from database with `raw` field
 2. Groups by `thread_id`
 3. Computes metrics per thread using stored Gmail API payloads
@@ -109,12 +120,14 @@ for thread_meta in threads:
 5. Updates Elasticsearch via `update_by_query` with Painless script
 
 **Environment variables required**:
+
 - `DATABASE_URL` - PostgreSQL connection string
-- `ES_URL` - Elasticsearch URL (default: http://localhost:9200)
+- `ES_URL` - Elasticsearch URL (default: <http://localhost:9200>)
 - `ES_ALIAS` - Index alias (default: gmail_emails)
 - `GMAIL_PRIMARY_ADDRESS` or `DEFAULT_USER_EMAIL` - User's email address
 
 **Run command**:
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.backfill_reply_metrics
 ```
@@ -124,17 +137,20 @@ docker compose -f infra/docker-compose.yml exec api python -m services.api.scrip
 **File**: `services/api/app/routers/search.py`
 
 **New query parameter**:
+
 ```python
 replied: Optional[bool] = Query(None, description="Filter replied threads: true|false")
 ```
 
 **Filter logic**:
+
 ```python
 if replied is not None:
     filters.append({"term": {"replied": replied}})
 ```
 
 **Usage examples**:
+
 ```bash
 # Find all threads you've replied to
 curl "http://localhost:8003/search?q=interview&replied=true"
@@ -149,21 +165,25 @@ curl "http://localhost:8003/search?q=application&replied=false&labels=interview&
 ## Deployment Steps
 
 ### Step 1: Run Database Migration
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 ```
 
 **Expected output**:
+
 ```
 INFO  [alembic.runtime.migration] Running upgrade 0005_add_gmail_tokens -> 0006_reply_metrics, add reply metrics columns to emails
 ```
 
 ### Step 2: Update Elasticsearch Mapping
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.es_reindex_with_ats
 ```
 
 **Expected output**:
+
 ```
 Creating new index: gmail_emails_v2
 Reindexing from gmail_emails to gmail_emails_v2...
@@ -172,11 +192,13 @@ Done!
 ```
 
 ### Step 3: Backfill Existing Data
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.backfill_reply_metrics
 ```
 
 **Expected output**:
+
 ```
 Backfilling reply metrics for user: leoklemet.pa@gmail.com
 Database: postgresql://postgres:***@db:5432/applylens
@@ -212,6 +234,7 @@ Summary:
 ```
 
 ### Step 4: Restart API (if needed)
+
 ```bash
 docker compose -f infra/docker-compose.yml restart api
 ```
@@ -225,6 +248,7 @@ docker compose -f infra/docker-compose.yml restart api
 **Type**: Number
 
 **Painless script**:
+
 ```painless
 if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
   def start = doc['received_at'].value.toInstant().toEpochMilli();
@@ -236,21 +260,25 @@ if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
 ### Lens Visualization Setup
 
 **1. Average Response Time Chart**:
+
 - **Metric**: Average of `time_to_response_hours`
 - **X-axis**: `received_at` (Date histogram, daily/weekly)
 - **Y-axis label**: "Avg Response Time (hours)"
 
 **2. Response Time by Label**:
+
 - **Metric**: Average of `time_to_response_hours`
 - **Break down by**: `labels` (terms, top 3)
 - **X-axis**: `received_at` (Date histogram)
 
 **3. Response Time Distribution**:
+
 - **Chart type**: Histogram
 - **X-axis**: `time_to_response_hours` (bins of 12 hours)
 - **Y-axis**: Count
 
 **Recommended filters**:
+
 - `time_to_response_hours >= 0` (filter out negative values)
 - `time_to_response_hours <= 168` (filter out responses after 1 week)
 - `replied: true` (only include threads with replies)
@@ -258,6 +286,7 @@ if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
 ## Verification
 
 ### Database Check
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api psql "$DATABASE_URL" -c "
 SELECT 
@@ -270,6 +299,7 @@ FROM emails;
 ```
 
 **Expected output**:
+
 ```
  total_emails | with_first_reply | with_last_reply | avg_reply_count 
 --------------+------------------+-----------------+-----------------
@@ -277,12 +307,14 @@ FROM emails;
 ```
 
 ### Elasticsearch Check
+
 ```bash
 # Check mapping
 curl -s "http://localhost:9200/gmail_emails/_mapping" | jq '.gmail_emails.mappings.properties | {first_user_reply_at, last_user_reply_at, user_reply_count, replied}'
 ```
 
 **Expected output**:
+
 ```json
 {
   "first_user_reply_at": {"type": "date"},
@@ -302,6 +334,7 @@ curl -s "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: applicati
 ```
 
 **Expected output**:
+
 ```json
 {
   "subject": "Re: Interview Confirmation",
@@ -313,6 +346,7 @@ curl -s "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: applicati
 ```
 
 ### Search API Check
+
 ```bash
 # Test replied filter
 curl "http://localhost:8003/search?q=interview&replied=true&size=5" | jq '.hits | length'
@@ -324,18 +358,23 @@ curl "http://localhost:8003/search?q=application&replied=false&date_from=2025-10
 ## Use Cases
 
 ### 1. Find Unanswered Threads
+
 ```bash
 GET /search?q=interview&replied=false
 ```
+
 Shows all interview-related threads you haven't replied to yet.
 
 ### 2. Track Response Times
+
 Use Kibana Lens with `time_to_response_hours` runtime field to visualize:
+
 - Average response time over time
 - Response time by label (offer/interview/rejection)
 - Distribution of response times
 
 ### 3. Filter by Response Activity
+
 ```bash
 # Recent unanswered offers
 GET /search?q=offer&replied=false&date_from=2025-10-01&scale=3d
@@ -345,7 +384,9 @@ GET /search?q=offer&replied=false&date_from=2025-10-01&scale=3d
 ```
 
 ### 4. Analyze Thread Engagement
+
 Query Elasticsearch directly:
+
 ```bash
 curl "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: application/json' -d '{
   "size": 0,
@@ -369,21 +410,27 @@ curl "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: application/
 ## Architecture Notes
 
 ### Denormalization Strategy
+
 Reply metrics are **denormalized** to each message row (same values for all messages in a thread) for:
+
 - ✅ Simple filtering in search queries
 - ✅ No need for thread-level joins
 - ✅ Consistent with existing data model
 
 **Trade-offs**:
+
 - Slightly increased storage (3 fields × messages per thread)
 - Must update all messages when metrics change
 - Simpler queries and faster filtering
 
 ### User Email Detection
+
 Current implementation uses environment variable:
+
 - `GMAIL_PRIMARY_ADDRESS` or `DEFAULT_USER_EMAIL`
 
 **Future enhancement**: Resolve per-user from `gmail_tokens` table:
+
 ```python
 def resolve_user_email(db: Session, user_email: str) -> str:
     token = db.query(GmailToken).filter_by(user_email=user_email).first()
@@ -391,7 +438,9 @@ def resolve_user_email(db: Session, user_email: str) -> str:
 ```
 
 ### Thread vs Message API
+
 Changed from `messages().list()` to `threads().list()` API:
+
 - **Pro**: Gets all messages in thread in one call
 - **Pro**: Easier to compute thread-level metrics
 - **Con**: More API calls if only need message list
@@ -400,6 +449,7 @@ Changed from `messages().list()` to `threads().list()` API:
 ### Metrics Computation Edge Cases
 
 **Case 1: No outbound messages**
+
 ```python
 {
   "first_user_reply_at": None,
@@ -410,6 +460,7 @@ Changed from `messages().list()` to `threads().list()` API:
 ```
 
 **Case 2: User initiated thread**
+
 ```python
 # First message is from user
 {
@@ -421,6 +472,7 @@ Changed from `messages().list()` to `threads().list()` API:
 ```
 
 **Case 3: Multiple replies**
+
 ```python
 # User replied 3 times
 {
@@ -434,7 +486,9 @@ Changed from `messages().list()` to `threads().list()` API:
 ## Future Enhancements
 
 ### 1. Frontend UI
+
 Add filter controls to search page:
+
 ```tsx
 <label>
   <input
@@ -447,7 +501,9 @@ Add filter controls to search page:
 ```
 
 ### 2. Response Time Indicators
+
 Show response time badges in email list:
+
 ```tsx
 {email.first_user_reply_at && email.received_at && (
   <span className="badge">
@@ -457,7 +513,9 @@ Show response time badges in email list:
 ```
 
 ### 3. Analytics Dashboard
+
 Create dedicated Lens dashboard with:
+
 - Average response time trend
 - Response time by company
 - Reply rate by label
@@ -465,13 +523,17 @@ Create dedicated Lens dashboard with:
 - Response time distribution
 
 ### 4. Alerting
+
 Set up alerts for:
+
 - Threads unanswered for > 24 hours
 - Response time exceeding threshold
 - Spike in unanswered threads
 
 ### 5. Per-User Metrics
+
 Support multi-user scenarios:
+
 - Store metrics per user in separate table
 - Resolve user_email from OAuth tokens
 - Allow filtering by assignee
@@ -479,6 +541,7 @@ Support multi-user scenarios:
 ## Files Modified
 
 ### Backend
+
 1. **`services/api/alembic/versions/0006_reply_metrics.py`** - NEW migration
 2. **`services/api/app/models.py`** - Added reply metric columns to Email model
 3. **`services/api/app/ingest/gmail_metrics.py`** - NEW metrics computation module
@@ -489,6 +552,7 @@ Support multi-user scenarios:
 8. **`services/api/scripts/backfill_reply_metrics.py`** - NEW backfill script
 
 ### Documentation
+
 9. **`REPLY_METRICS_IMPLEMENTATION.md`** - This file
 
 ## Success Criteria
@@ -505,13 +569,17 @@ Support multi-user scenarios:
 ## Troubleshooting
 
 ### Issue: Migration fails with "column already exists"
+
 **Solution**: The migration was already applied. Check with:
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic current
 ```
 
 ### Issue: Backfill script shows "GMAIL_PRIMARY_ADDRESS not set"
+
 **Solution**: Set environment variable:
+
 ```bash
 export GMAIL_PRIMARY_ADDRESS=your.email@gmail.com
 # OR
@@ -519,21 +587,28 @@ export DEFAULT_USER_EMAIL=your.email@gmail.com
 ```
 
 ### Issue: Elasticsearch update_by_query fails
+
 **Solution**: Check index exists and has correct mapping:
+
 ```bash
 curl "http://localhost:9200/gmail_emails/_mapping"
 ```
 
 ### Issue: replied filter returns no results
-**Solution**: 
+
+**Solution**:
+
 1. Check if backfill script ran successfully
 2. Verify Elasticsearch has replied field:
+
 ```bash
 curl "http://localhost:9200/gmail_emails/_search?q=replied:*&size=1"
 ```
 
 ### Issue: Time to response shows negative values
+
 **Solution**: Add filter in Kibana Lens:
+
 ```
 time_to_response_hours >= 0
 ```
@@ -541,6 +616,7 @@ time_to_response_hours >= 0
 ## Summary
 
 Reply metrics are now fully integrated into the system:
+
 - ✅ **Database**: Stores first/last reply timestamps and count
 - ✅ **Elasticsearch**: Indexes metrics for fast filtering
 - ✅ **Gmail Backfill**: Automatically computes metrics on ingest

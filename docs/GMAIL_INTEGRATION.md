@@ -118,6 +118,7 @@ GMAIL_USER=your-email@gmail.com
 **New Field**: `gmail_thread_id` (optional)
 
 **Behavior**:
+
 - If `gmail_thread_id` provided + Gmail configured → Fetches latest message from thread
 - If `gmail_thread_id` missing or Gmail not configured → Uses request body fields
 
@@ -167,6 +168,7 @@ GMAIL_USER=your-email@gmail.com
 **New Field**: `gmail_thread_id` (optional)
 
 **Behavior**:
+
 - If `gmail_thread_id` provided + Gmail configured → Fetches content + creates/updates application
 - Links application to thread for future reference
 - Falls back to request body if Gmail not configured
@@ -227,12 +229,14 @@ GMAIL_USER=your-email@gmail.com
 - `sync_fetch_thread_latest(thread_id)` - Synchronous wrapper for FastAPI
 
 **MIME Parsing**:
+
 - Flattens nested multipart messages
 - Prefers `text/plain` over `text/html`
 - Decodes base64url-encoded content (Gmail format)
 - Extracts all headers for heuristic analysis
 
 **Error Handling**:
+
 - Returns `None` if thread not found
 - Returns `None` if Gmail not configured
 - Logs errors but doesn't crash the API
@@ -240,12 +244,14 @@ GMAIL_USER=your-email@gmail.com
 ### Integration Points
 
 **Routes Modified** (`services/api/app/routes_applications.py`):
+
 1. `ExtractPayload` - Added `gmail_thread_id` field
 2. `BackfillPayload` - Added `gmail_thread_id` field
 3. Both endpoints check `gmail_is_configured()` before attempting fetch
 4. Merged Gmail content with request body (request body wins for non-empty fields)
 
 **Graceful Degradation**:
+
 ```python
 if payload.gmail_thread_id and gmail_is_configured():
     gmail_content = sync_fetch_thread_latest(payload.gmail_thread_id)
@@ -306,11 +312,13 @@ curl -X POST http://localhost:8003/api/applications/extract \
 ### Finding Thread IDs
 
 **From Gmail Web UI**:
+
 1. Open an email
 2. Look at URL: `https://mail.google.com/mail/u/0/#inbox/18f2a3b4c5d6e7f8`
 3. The part after `#inbox/` is the thread ID
 
 **From Gmail API**:
+
 ```python
 from googleapiclient.discovery import build
 
@@ -325,6 +333,7 @@ print(thread_id)
 No changes needed! The existing `CreateFromEmailButton` component already passes `thread_id`, which now works as `gmail_thread_id` in the backend.
 
 **Current Flow**:
+
 ```typescript
 // CreateFromEmailButton.tsx
 const payload = {
@@ -341,12 +350,14 @@ await fetch("/api/applications/extract", {
 ## Security Considerations
 
 ### OAuth Refresh Token
+
 - **Single-user setup**: One refresh token for the entire backend
 - **Scope**: `gmail.readonly` (cannot send/delete emails)
 - **Storage**: Environment variable (never in code)
 - **Rotation**: Refresh tokens can be revoked in Google Account settings
 
 ### Best Practices
+
 1. ✅ Use service account for production (better than user OAuth)
 2. ✅ Rotate refresh tokens periodically
 3. ✅ Monitor API usage in Google Cloud Console
@@ -356,6 +367,7 @@ await fetch("/api/applications/extract", {
 ### Production Recommendations
 
 **Service Account Approach** (more secure):
+
 ```python
 from google.oauth2 import service_account
 
@@ -378,6 +390,7 @@ service = build('gmail', 'v1', credentials=credentials)
 **Cause**: Missing environment variables
 
 **Fix**:
+
 ```bash
 # Check which vars are set
 env | grep GMAIL
@@ -394,6 +407,7 @@ export GMAIL_USER="your-email@gmail.com"
 **Cause**: Refresh token expired or revoked
 
 **Fix**:
+
 1. Revoke old token in [Google Account Settings](https://myaccount.google.com/permissions)
 2. Generate new refresh token (see setup steps above)
 3. Update `GMAIL_REFRESH_TOKEN` in `.env`
@@ -403,6 +417,7 @@ export GMAIL_USER="your-email@gmail.com"
 **Cause**: Invalid thread ID or no access
 
 **Fix**:
+
 - Verify thread ID is correct
 - Ensure the Gmail account has access to the thread
 - Check thread still exists (not deleted)
@@ -410,11 +425,13 @@ export GMAIL_USER="your-email@gmail.com"
 ### Rate Limiting
 
 Gmail API has quotas:
+
 - **250 quota units per user per second**
 - **1 billion quota units per day**
 - `threads.get` = 5 quota units
 
 **Mitigation**:
+
 - Cache thread content locally
 - Implement exponential backoff
 - Use batch requests for multiple threads
@@ -422,12 +439,15 @@ Gmail API has quotas:
 ## Performance
 
 ### Current Implementation
+
 - **Latency**: ~300-500ms per Gmail fetch (includes OAuth refresh)
 - **Caching**: None (fetches every time)
 - **Concurrent Requests**: Limited by Gmail API quota
 
 ### Optimization Opportunities
+
 1. **Cache thread content** (Redis/Memcached)
+
    ```python
    cache_key = f"gmail_thread:{thread_id}"
    cached = redis.get(cache_key)
@@ -437,6 +457,7 @@ Gmail API has quotas:
    ```
 
 2. **Batch processing**
+
    ```python
    # Fetch multiple threads in one API call
    batch = service.new_batch_http_request()
@@ -455,12 +476,14 @@ Gmail API has quotas:
 ### Upgrading Existing Installations
 
 1. **Update Python dependencies** (already installed):
+
    ```bash
    cd services/api
    pip install google-api-python-client google-auth google-auth-oauthlib
    ```
 
 2. **Add environment variables**:
+
    ```bash
    # Copy .env.example to .env
    cp .env.example .env
@@ -475,6 +498,7 @@ Gmail API has quotas:
    - No database migrations required
 
 4. **Restart API server**:
+
    ```bash
    uvicorn app.main:app --reload --port 8003
    ```
@@ -484,6 +508,7 @@ Gmail API has quotas:
 If issues arise:
 
 1. **Unset Gmail env vars**:
+
    ```bash
    unset GMAIL_CLIENT_ID GMAIL_CLIENT_SECRET GMAIL_REFRESH_TOKEN GMAIL_USER
    ```
@@ -491,11 +516,13 @@ If issues arise:
 2. **API continues working** with request body content
 
 3. **Remove gmail.py** (optional):
+
    ```bash
    rm services/api/app/gmail.py
    ```
 
 4. **Revert routes** (optional):
+
    ```bash
    git checkout HEAD~1 services/api/app/routes_applications.py
    ```

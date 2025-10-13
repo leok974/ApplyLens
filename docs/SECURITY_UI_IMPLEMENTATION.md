@@ -17,12 +17,14 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ### 1. **Types & API Client**
 
 #### `apps/web/src/types/security.ts`
+
 - **RiskFlag**: Signal, evidence, and weight for security detections
 - **RiskResult**: Complete risk analysis result (score, quarantined status, flags)
 - **SecurityStats**: Aggregate statistics (high risk count, quarantined count)
 - **SecurityPolicies**: Policy configuration (auto-quarantine, auto-archive, auto-unsubscribe)
 
 #### `apps/web/src/lib/securityApi.ts`
+
 - **rescanEmail(emailId)**: Trigger re-analysis of specific email
 - **getSecurityStats()**: Fetch aggregate security statistics
 - **getPolicies()**: Fetch security policy configuration (with safe defaults)
@@ -35,9 +37,11 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ### 2. **Visual Components**
 
 #### `apps/web/src/components/security/RiskBadge.tsx`
+
 **Purpose:** Color-coded risk indicator with shield icon
 
 **Features:**
+
 - 🔴 **High risk** (score ≥ 80): Red shield alert
 - 🟡 **Medium risk** (score 40-79): Amber shield alert
 - 🟢 **Low risk** (score < 40): Green shield check
@@ -47,14 +51,17 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - `data-testid="risk-badge"` for E2E testing
 
 **Props:**
+
 ```typescript
 { score: number; quarantined?: boolean }
 ```
 
 #### `apps/web/src/components/security/EvidenceModal.tsx`
+
 **Purpose:** Dialog showing detailed security flag evidence
 
 **Features:**
+
 - Triggered by "Why flagged?" button (Info icon)
 - Scrollable list of flags with signal name, evidence text, and weight
 - Formatted weight display (+25, -5, etc.)
@@ -63,14 +70,17 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - `data-testid="evidence-open"` and `data-testid="evidence-list"`
 
 **Props:**
+
 ```typescript
 { flags: RiskFlag[] }
 ```
 
 #### `apps/web/src/components/security/SecurityPanel.tsx`
+
 **Purpose:** Comprehensive security panel for email detail view
 
 **Features:**
+
 - Card layout with header showing "Security" title
 - Risk badge and rescan button in header
 - Evidence modal button
@@ -81,6 +91,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - `data-testid="security-panel"` and `data-testid="rescan-btn"`
 
 **Props:**
+
 ```typescript
 {
   emailId: string;
@@ -92,9 +103,11 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ```
 
 #### `apps/web/src/components/security/PolicyPanel.tsx`
+
 **Purpose:** Security policy configuration UI for settings page
 
 **Features:**
+
 - **Auto-quarantine toggle**: Enable/disable auto-quarantine for high-risk emails (score ≥ 70)
 - **Auto-archive toggle**: Enable/disable auto-archiving of expired promos (≥30 days)
 - **Auto-unsubscribe toggle**: Enable/disable auto-unsubscribe from high-volume senders
@@ -105,6 +118,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - `data-testid="policy-panel"` and `data-testid="policy-save"`
 
 **State Management:**
+
 - Local state with React.useState
 - Fetches on mount with useEffect
 - Optimistic UI updates
@@ -115,30 +129,40 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ### 3. **Integration Points**
 
 #### `apps/web/src/components/inbox/EmailDetailsPanel.tsx`
+
 **Changes:**
+
 - Added SecurityPanel import
 - Updated EmailDetails type with security fields:
+
   ```typescript
   risk_score?: number;
   quarantined?: boolean;
   flags?: RiskFlag[];
   ```
+
 - Integrated SecurityPanel below email header (conditionally rendered if `risk_score` exists)
 - Added separator before and after panel for visual separation
 
 **Location:** Between metadata separator and email body
 
 #### `apps/web/src/components/inbox/EmailList.tsx`
+
 **Changes:**
+
 - Updated Item type with security fields:
+
   ```typescript
   risk_score?: number;
   quarantined?: boolean;
   ```
+
 - Passed security props to EmailRow component
 
 #### `apps/web/src/components/inbox/EmailRow.tsx`
+
 **Changes:**
+
 - Added RiskBadge import
 - Updated Props type with security fields
 - Integrated RiskBadge display (conditionally rendered if `risk_score !== undefined`)
@@ -152,9 +176,11 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ### 4. **Settings Page**
 
 #### `apps/web/src/pages/SettingsSecurity.tsx`
+
 **Purpose:** Dedicated security settings page
 
 **Layout:**
+
 - Page header with title "Security Settings"
 - Description: "Configure automated security policies for email protection"
 - PolicyPanel component
@@ -162,7 +188,9 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - Centered on page
 
 #### `apps/web/src/App.tsx`
+
 **Changes:**
+
 - Added SettingsSecurity import
 - Added route: `/settings/security` → SettingsSecurity component
 - Route placed after main `/settings` route
@@ -216,6 +244,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
    - Check list contains content
 
 **Test Utilities:**
+
 - Uses Playwright test framework
 - Includes API mocking for isolated tests
 - Uses `data-testid` attributes for reliable selectors
@@ -226,6 +255,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ## Data Flow
 
 ### Email List → Email Details
+
 ```
 1. Email fetched from API with risk_score, quarantined, flags
 2. EmailList passes security props to EmailRow
@@ -237,6 +267,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ```
 
 ### Security Settings
+
 ```
 1. User navigates to /settings/security
 2. SettingsSecurity page renders
@@ -251,6 +282,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ## Design Decisions
 
 ### Color System
+
 - **High risk (≥80)**: `bg-red-500/20 text-red-300 border-red-600/40`
 - **Medium risk (40-79)**: `bg-amber-500/20 text-amber-300 border-amber-600/40`
 - **Low risk (<40)**: `bg-emerald-500/20 text-emerald-300 border-emerald-600/40`
@@ -258,6 +290,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - Matches existing badge color patterns in codebase
 
 ### Component Architecture
+
 - **Modular**: Each component is self-contained and reusable
 - **Conditional rendering**: Components handle missing data gracefully
 - **Type safety**: Full TypeScript coverage with explicit types
@@ -265,6 +298,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - **Loading states**: Visual feedback during async operations
 
 ### shadcn/ui Components Used
+
 - Card, CardHeader, CardTitle, CardContent
 - Button (ghost, outline variants)
 - Badge (outline variant)
@@ -276,6 +310,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 - Label
 
 ### Icons (lucide-react)
+
 - ShieldAlert (high/medium risk)
 - ShieldCheck (low risk)
 - Info (evidence modal trigger)
@@ -288,14 +323,17 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ### Required Endpoints
 
 **Already Implemented:**
+
 - ✅ `POST /api/security/rescan/{email_id}` → Returns RiskResult
 - ✅ `GET /api/security/stats` → Returns SecurityStats
 
 **Placeholder (need implementation):**
+
 - ⚠️ `GET /api/policy/security` → Should return SecurityPolicies
 - ⚠️ `PUT /api/policy/security` → Should accept SecurityPolicies
 
 **Note:** Policy endpoints fall back to safe defaults if not implemented:
+
 ```typescript
 {
   autoQuarantineHighRisk: true,
@@ -305,7 +343,9 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 ```
 
 ### Email API Data Format
+
 Emails returned from `/api/search/` or `/api/emails/` should include:
+
 ```typescript
 {
   id: string | number,
@@ -327,45 +367,59 @@ Emails returned from `/api/search/` or `/api/emails/` should include:
 ## Next Steps (Optional Enhancements)
 
 ### 1. **Security Dashboard Widget**
+
 Create a compact stats widget for the main dashboard showing:
+
 - Total quarantined emails
 - Average risk score
 - High-risk email count
 - Trend graph (last 7 days)
 
 ### 2. **Bulk Security Actions**
+
 Add security actions to bulk operations:
+
 - "Mark all as safe" for selected emails
 - "Quarantine selected" button
 - "Rescan selected" for batch processing
 
 ### 3. **Security Filters in Search**
+
 Add filter options to search page:
+
 - Filter by risk level (low/med/high)
 - Show only quarantined emails
 - Filter by specific flags (DMARC_FAIL, SPF_FAIL, etc.)
 
 ### 4. **Real-time Security Notifications**
+
 Implement WebSocket or polling for:
+
 - Live toast when high-risk email arrives
 - Quarantine counter updates
 - Background rescan completion notifications
 
 ### 5. **Security History/Audit Log**
+
 Create a log view showing:
+
 - When emails were quarantined/released
 - Policy changes over time
 - Rescan history with before/after scores
 - False positive reports
 
 ### 6. **ML-Powered Suggestions**
+
 Integrate with ML profile system:
+
 - "This sender is usually safe for you" badge
 - "You never open emails from this sender" warning
 - Personalized risk threshold suggestions
 
 ### 7. **Backend Policy Endpoints**
+
 Implement actual policy storage and enforcement:
+
 ```python
 # services/api/app/routers/policy.py
 @router.get("/security")
@@ -381,7 +435,9 @@ def save_security_policies(policies: SecurityPolicies, db: Session = Depends(get
 ```
 
 ### 8. **Animated Risk Transitions**
+
 Add smooth animations:
+
 - Risk score counter animation on rescan
 - Badge color transitions
 - Evidence list expand/collapse animations
@@ -392,6 +448,7 @@ Add smooth animations:
 ## Testing Checklist
 
 ### Manual Testing
+
 - [ ] Open email details with security data → SecurityPanel displays
 - [ ] Click "Why flagged?" → Modal opens with flags
 - [ ] Click "Rescan" → Loading state → Success toast → Data refreshes
@@ -402,12 +459,14 @@ Add smooth animations:
 - [ ] Dark mode → Colors display correctly
 
 ### E2E Testing
+
 ```bash
 cd apps/web
 pnpm exec playwright test tests/security-ui.spec.ts
 ```
 
 Expected results:
+
 - ✅ All 6 tests pass
 - ✅ No console errors
 - ✅ Components render correctly
@@ -442,6 +501,7 @@ Expected results:
 ## Dependencies
 
 **All dependencies already present in project:**
+
 - `lucide-react` - Icons (ShieldAlert, ShieldCheck, Info, RotateCw)
 - `sonner` - Toast notifications
 - `date-fns` - Date formatting (already used in EmailRow)
@@ -456,6 +516,7 @@ Expected results:
 ## Performance Considerations
 
 ### Optimization Applied
+
 - **Conditional rendering**: SecurityPanel only renders if `risk_score` exists
 - **Lazy modal loading**: EvidenceModal only mounts when opened
 - **Singleton API client**: No repeated client initialization
@@ -463,6 +524,7 @@ Expected results:
 - **Small bundle size**: ~2KB gzipped for all security UI code
 
 ### Potential Optimizations
+
 - Use React.memo for RiskBadge (frequently rendered in lists)
 - Virtual scrolling for large evidence lists
 - Debounce policy input changes
@@ -473,6 +535,7 @@ Expected results:
 ## Accessibility
 
 ### Features Implemented
+
 - **Semantic HTML**: Proper heading hierarchy, button elements
 - **ARIA labels**: `aria-label="Resize panel"`, `role="dialog"`
 - **Keyboard navigation**: Modal closeable with Escape key
@@ -481,6 +544,7 @@ Expected results:
 - **Screen reader text**: Badge title attributes provide context
 
 ### Future Improvements
+
 - Add aria-live regions for toast notifications
 - Implement focus indicators for all interactive elements
 - Add skip links for keyboard users
@@ -491,12 +555,14 @@ Expected results:
 ## Security Considerations
 
 ### Data Handling
+
 - **No sensitive data in localStorage**: Only policy preferences stored
 - **XSS prevention**: Uses React's built-in escaping (no dangerouslySetInnerHTML in security components)
 - **API credentials**: All requests use `credentials: "include"` for cookie-based auth
 - **Input validation**: Number inputs have min/max constraints
 
 ### Error States
+
 - **API failures**: Graceful degradation with error toasts
 - **Network errors**: Caught and displayed to user
 - **Invalid data**: Type checking with TypeScript
@@ -507,12 +573,14 @@ Expected results:
 ## Documentation References
 
 ### Code Style
+
 - Matches existing ApplyLens patterns (functional components, hooks)
 - Uses Tailwind utility classes for styling
 - Follows shadcn/ui component structure
 - TypeScript strict mode compliant
 
 ### Similar Patterns in Codebase
+
 - `EmailRow.tsx` - Badge layout and styling
 - `EmailDetailsPanel.tsx` - Panel structure and separators
 - `PolicyPanel` structure similar to existing settings components
@@ -523,6 +591,7 @@ Expected results:
 ## Deployment Notes
 
 ### Build Requirements
+
 ```bash
 cd apps/web
 pnpm install  # No new dependencies needed
@@ -530,15 +599,19 @@ pnpm build    # TypeScript compilation
 ```
 
 ### Environment Variables
+
 No new environment variables required. Uses existing API base URL pattern.
 
 ### Database Requirements
+
 Backend already has security fields (from Phase 44 deployment):
+
 - `emails.risk_score` (Float)
 - `emails.quarantined` (Boolean)
 - `emails.flags` (JSONB)
 
 ### Backwards Compatibility
+
 - ✅ All components handle missing security data gracefully
 - ✅ Old emails without security fields display normally
 - ✅ No breaking changes to existing components
@@ -549,12 +622,14 @@ Backend already has security fields (from Phase 44 deployment):
 ## Success Metrics
 
 ### User Experience
+
 - **Visual clarity**: Risk level immediately visible in email list
 - **Information depth**: Click for detailed evidence
 - **Action efficiency**: One-click rescan and quarantine control
 - **Policy control**: Simple toggles for automation preferences
 
 ### Technical Quality
+
 - **Type safety**: 100% TypeScript coverage
 - **Test coverage**: 6 E2E tests covering all major flows
 - **Performance**: No noticeable impact on page load/render
@@ -565,6 +640,7 @@ Backend already has security fields (from Phase 44 deployment):
 ## Contact & Support
 
 For questions or issues with the security UI layer:
+
 1. Check this documentation first
 2. Review E2E tests for usage examples
 3. Inspect component props and types in TypeScript files
@@ -575,6 +651,7 @@ For questions or issues with the security UI layer:
 ## Changelog
 
 **v1.0.0 - October 12, 2025**
+
 - ✅ Initial release
 - ✅ All 10 components implemented
 - ✅ E2E test suite created

@@ -3,37 +3,44 @@
 ## ✅ What Was Configured
 
 ### 1. **Prometheus Datasource with Fixed UID**
+
 - **File:** `infra/grafana/provisioning/datasources/prom.yml`
 - **UID:** `prom` (allows alert rules to reference it reliably)
 - **URL:** `http://prometheus:9090`
 
 ### 2. **Contact Points**
+
 - **File:** `infra/grafana/provisioning/alerting/contact-points.yaml`
 - **Default Contact Point:** Webhook at `http://host.docker.internal:9000/webhook`
 - **Purpose:** Sends alert notifications (TODO: replace with real Slack/Email/Teams)
 
 ### 3. **Notification Policies**
+
 - **File:** `infra/grafana/provisioning/alerting/notification-policies.yaml`
 - **Default Route:** All alerts go to "Default" contact point
 - **Grouping:** Alerts grouped by `alertname`
 - **Matching:** Routes alerts with severity: critical|warning|info
 
 ### 4. **Alert Rules (3 Rules in ApplyLens Folder)**
+
 - **File:** `infra/grafana/provisioning/alerting/rules-applylens.yaml`
 
 #### Rule 1: ApplyLens API Down
+
 - **UID:** `applens_api_down`
 - **Severity:** `critical`
 - **Condition:** `up{job="applylens-api"} < 0.5` for >1 minute
 - **Description:** API target not responding
 
 #### Rule 2: High HTTP Error Rate
+
 - **UID:** `applens_http_error_rate`
 - **Severity:** `warning`
 - **Condition:** 5xx errors > 5% for 5 minutes
 - **Description:** HTTP error rate above acceptable threshold
 
 #### Rule 3: Backfill Errors
+
 - **UID:** `applens_backfill_errors`
 - **Severity:** `warning`
 - **Condition:** Any backfill errors in last 10 minutes
@@ -46,15 +53,15 @@
 ### Check in Grafana UI
 
 1. **Contact Points**
-   - URL: http://localhost:3000/alerting/notifications
+   - URL: <http://localhost:3000/alerting/notifications>
    - Should show: "Default" contact point with webhook
 
 2. **Notification Policies**
-   - URL: http://localhost:3000/alerting/routes
+   - URL: <http://localhost:3000/alerting/routes>
    - Should show: Root policy routing to "Default"
 
 3. **Alert Rules**
-   - URL: http://localhost:3000/alerting/list
+   - URL: <http://localhost:3000/alerting/list>
    - Should show: 3 rules in "ApplyLens" folder
    - Status: OK (green) when system is healthy
 
@@ -152,6 +159,7 @@ contactPoints:
 ```
 
 3. **Restart Grafana:**
+
 ```powershell
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
 ```
@@ -159,7 +167,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
 ### Option B: Slack
 
 1. **Create Slack Incoming Webhook:**
-   - Go to https://api.slack.com/apps
+   - Go to <https://api.slack.com/apps>
    - Create new app → Incoming Webhooks
    - Copy webhook URL (e.g., `https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXX`)
 
@@ -189,6 +197,7 @@ policies:
 ```
 
 4. **Restart Grafana:**
+
 ```powershell
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
 ```
@@ -356,13 +365,13 @@ infra/grafana/provisioning/
 
 ## 📚 Additional Resources
 
-- **Grafana Alerting Docs:** https://grafana.com/docs/grafana/latest/alerting/
-- **Provisioning Docs:** https://grafana.com/docs/grafana/latest/administration/provisioning/
-- **Contact Point Types:** https://grafana.com/docs/grafana/latest/alerting/manage-notifications/
-- **PromQL for Alerts:** https://prometheus.io/docs/prometheus/latest/querying/basics/
+- **Grafana Alerting Docs:** <https://grafana.com/docs/grafana/latest/alerting/>
+- **Provisioning Docs:** <https://grafana.com/docs/grafana/latest/administration/provisioning/>
+- **Contact Point Types:** <https://grafana.com/docs/grafana/latest/alerting/manage-notifications/>
+- **PromQL for Alerts:** <https://prometheus.io/docs/prometheus/latest/querying/basics/>
 
 ---
 
 **✅ Alerting is now fully configured and auto-provisioned!**
 
-Open http://localhost:3000/alerting/list to see your alert rules in action! 🎉
+Open <http://localhost:3000/alerting/list> to see your alert rules in action! 🎉

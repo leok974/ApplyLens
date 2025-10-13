@@ -43,32 +43,38 @@ tests/e2e/
 ## 🎯 Test Coverage
 
 ### ✅ Inbox Smoke Test
+
 - Verifies cards render with `.surface-card` class
 - Checks text legibility with demo data
 - Ensures calmer theme tokens are applied
 
 ### ✅ Legibility Controls
+
 - **Font Scale**: Tests S/M/L buttons (0.9/1.0/1.1)
 - **Density**: Tests Compact/Cozy/Spacious (0.92/1/1.08)
 - **Contrast**: Tests Soft/High contrast modes
 - **Persistence**: Verifies localStorage saves settings across page reloads
 
 ### ✅ Theme Toggle
+
 - Tests dark mode toggle via dropdown menu
 - Verifies `.dark` class applied to `<html>`
 - Checks persistence across page reloads
 
 ### ✅ Details Panel
+
 - Tests panel opening on card double-click
 - Verifies panel visibility
 - Tests ESC key to close panel
 
 ### ✅ Search Page
+
 - Tests search functionality with query input
 - Verifies BM25 results render
 - Guards against duplicate React keys
 
 ### ✅ Tracker Page
+
 - Tests application tracker list rendering
 - Verifies stubbed application data (Acme, Example Inc)
 - Validates table structure
@@ -76,6 +82,7 @@ tests/e2e/
 ## 🛡️ Console Error Guard
 
 The `_consoleGuard.ts` utility automatically fails tests when unexpected console errors or warnings appear. This helps catch:
+
 - Uncaught exceptions
 - React errors
 - Network failures (except expected 404s from API stubs)
@@ -95,6 +102,7 @@ test.beforeEach(async ({ page }) => {
 ## 🔧 Configuration
 
 The tests use:
+
 - **Base URL**: `http://localhost:5175`
 - **Viewport**: 1360x900 (Desktop Chrome)
 - **Retries**: 2 in CI, 0 locally
@@ -105,6 +113,7 @@ See `playwright.config.ts` for full configuration.
 ## 🎨 Testability Hooks
 
 Components have been enhanced with `data-testid` attributes:
+
 - `data-testid="email-details-panel"` - Main panel container
 - `data-testid="details-resizer"` - Drag handle for resizing
 
@@ -117,6 +126,7 @@ pnpm exec playwright show-report
 ```
 
 This opens an HTML report with:
+
 - Test results
 - Screenshots on failure
 - Video recordings
@@ -160,6 +170,7 @@ test("My new feature works", async ({ page }) => {
 ## 🚀 CI Integration
 
 Tests are configured for CI with:
+
 - 2 retries on failure
 - List and HTML reporters
 - Automatic artifact uploads

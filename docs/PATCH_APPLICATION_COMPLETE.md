@@ -33,6 +33,7 @@ Running application tests...
 ### Applications Tracker
 
 **Backend (FastAPI + SQLAlchemy)**
+
 - 7-stage status workflow: `applied`, `hr_screen`, `interview`, `offer`, `rejected`, `on_hold`, `ghosted`
 - Full CRUD operations via `/applications` endpoints
 - Search functionality with `?q=` parameter (searches company and role)
@@ -41,6 +42,7 @@ Running application tests...
 - Database migration `0003_applications.py` applied
 
 **Frontend (React + TypeScript)**
+
 - Grid-based tracker UI at `/tracker`
 - Inline status updates with color coding
 - Search and filtering capabilities
@@ -50,17 +52,20 @@ Running application tests...
 ### Email Parsing Heuristics
 
 **Extraction Functions (`email_parsing.py`)**
+
 - `extract_company()` - Extracts company name from sender domain, name, and body text
 - `extract_role()` - Extracts job role using pattern matching
 - `extract_source()` - Detects ATS (Lever, Greenhouse, LinkedIn, Workday, Indeed)
 
 **Accuracy (15 test cases)**
+
 - Overall: 93.3% (14/15 tests passed)
 - Company extraction: 75% (accounts for sorting preference)
 - Role extraction: 100%
 - Source detection: 100%
 
 **API Integration**
+
 - Enhanced `/applications/from-email` endpoint
 - Optional `sender`, `subject`, `body_text` parameters
 - Auto-extraction when company/role not provided
@@ -76,12 +81,14 @@ Running application tests...
 ## Quick Start
 
 ### View Tracker UI
+
 ```bash
 # Frontend running at:
 http://localhost:5175/tracker
 ```
 
 ### API Endpoints
+
 ```bash
 # List all applications
 GET http://localhost:8003/applications/
@@ -100,6 +107,7 @@ POST http://localhost:8003/applications/from-email
 ```
 
 ### Run Tests
+
 ```bash
 cd infra
 docker compose exec api sh -c 'PYTHONPATH=/app python tests/test_applications.py'
@@ -108,6 +116,7 @@ docker compose exec api sh -c 'PYTHONPATH=/app python tests/test_applications.py
 ## Documentation
 
 See detailed documentation in:
+
 - `APPLICATIONS_TRACKER_PATCH_APPLIED.md` - Tracker implementation details
 - `EMAIL_PARSING_HEURISTICS_APPLIED.md` - Email parsing documentation
 - `EMAIL_PARSING_QUICKSTART.md` - Quick start guide
@@ -116,7 +125,7 @@ See detailed documentation in:
 
 The application tracker is fully operational! You can:
 
-1. **Test the UI**: Visit http://localhost:5175/tracker
+1. **Test the UI**: Visit <http://localhost:5175/tracker>
 2. **Create applications**: Use EmailCard "Create Application" button
 3. **Track progress**: Update status inline in the grid
 4. **Search**: Use the search bar to find applications

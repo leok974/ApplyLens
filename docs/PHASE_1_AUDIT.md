@@ -1,4 +1,5 @@
 # Phase-1 Implementation Audit
+
 **Repository**: ApplyLens  
 **Audit Date**: October 11, 2025  
 **Auditor**: GitHub Copilot  
@@ -30,6 +31,7 @@ This audit compares the ApplyLens codebase against the Phase-1 specification foc
 | **Refresh Token Logic** | ✅ Done | `services/api/app/gmail_providers.py:253-256` | Token refresh in provider |
 
 **Evidence Files**:
+
 ```python
 # services/api/app/oauth_google.py:58-90
 @router.get("/init")
@@ -53,6 +55,7 @@ def oauth_callback(code: str, state: str):
 | **Message Parsing** | ✅ Done | `services/api/app/gmail_providers.py:61-82` | Recursive part extraction |
 
 **Key Implementation**:
+
 ```python
 # services/api/app/gmail_service.py:297-302
 def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
@@ -78,6 +81,7 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
 | **URLs** | ✅ Done | `services/api/app/gmail_service.py:139-156` | URL extraction in ingest |
 
 **Database Schema**:
+
 ```python
 # services/api/app/models.py:37-49
 gmail_id = Column(String(128), unique=True, index=True)
@@ -105,6 +109,7 @@ labels = Column(ARRAY(String))  # Gmail labels
 | **dense_vector** | 🟡 Partial | `services/api/app/scripts/update_es_mapping.py:86-92` | **EXISTS** but not in production mapping |
 
 **Current Mapping** (`services/api/app/es.py:58-108`):
+
 ```python
 "gmail_id": {"type": "keyword"},
 "thread_id": {"type": "keyword"},
@@ -128,6 +133,7 @@ labels = Column(ARRAY(String))  # Gmail labels
 ```
 
 **Embeddings Available (Not Activated)**:
+
 ```python
 # services/api/app/scripts/update_es_mapping.py:84-92
 "subject_vector": {
@@ -153,6 +159,7 @@ labels = Column(ARRAY(String))  # Gmail labels
 | **ES Client Writes** | ✅ Done | `services/api/app/gmail_service.py:288-293` | Bulk indexing in backfill |
 
 **Indexing Logic**:
+
 ```python
 # services/api/app/gmail_service.py:288-293
 es_docs.append({
@@ -176,6 +183,7 @@ helpers.bulk(es, es_docs)
 | **BeautifulSoup Usage** | ✅ Done | `services/api/app/gmail_service.py:168` | `soup = BeautifulSoup(html, "html.parser")` |
 
 **Implementation**:
+
 ```python
 # services/api/app/gmail_service.py:166-174
 from bs4 import BeautifulSoup
@@ -197,6 +205,7 @@ def _html_to_text(html: str) -> str:
 | **URL Regex** | ✅ Done | `services/api/app/gmail_service.py:141` | `http[s]?://(?:[a-zA-Z]...` |
 
 **Implementation**:
+
 ```python
 # services/api/app/gmail_service.py:139-156
 import re
@@ -218,6 +227,7 @@ all_urls = list(set(urls_text + urls_html))
 | **has_unsubscribe** | ✅ Done | `services/api/app/gmail_service.py:206` | Checks List-Unsubscribe header |
 
 **Implementation**:
+
 ```python
 # services/api/app/gmail_service.py:202-226
 def derive_labels(headers: dict, labels: List[str], urls: List[str]) -> List[str]:
@@ -244,6 +254,7 @@ def derive_labels(headers: dict, labels: List[str], urls: List[str]) -> List[str
 | **ISO-8601 Format** | ✅ Done | `services/api/app/gmail_service.py:346` | Uses `datetime.utcfromtimestamp()` |
 
 **Implementation**:
+
 ```python
 # services/api/app/gmail_service.py:344-348
 # Gmail internalDate is milliseconds since epoch
@@ -285,6 +296,7 @@ received_at = datetime.utcfromtimestamp(internal_date_ms / 1000.0)
 | **"Explain why"** | ❓ Not Found | - | No explain endpoint found |
 
 **Quick Actions API** (Stubbed):
+
 ```python
 # services/api/app/routers/mail_tools.py:276-292
 # TODO: Call Gmail API to archive email
@@ -298,6 +310,7 @@ received_at = datetime.utcfromtimestamp(internal_date_ms / 1000.0)
 ```
 
 **Unsubscribe Logic** (Implemented):
+
 ```python
 # services/api/app/logic/unsubscribe.py:138
 # Actual email sending is optional future enhancement via Gmail API
@@ -316,6 +329,7 @@ received_at = datetime.utcfromtimestamp(internal_date_ms / 1000.0)
 | **Fast Search** | ✅ Done | `services/api/app/routers/search.py:145-187` | Multi-field query with boosting |
 
 **Search Implementation**:
+
 ```python
 # services/api/app/routers/search.py:145-187
 query_dict = {
@@ -356,6 +370,7 @@ query_dict = {
 | **Vector Search** | 🟡 Partial | `services/api/app/scripts/update_es_mapping.py:84-92` | Infrastructure exists, not activated |
 
 **Evidence**:
+
 ```python
 # services/api/app/scripts/update_es_mapping.py:84-92
 # Vector embeddings schema exists but not in production mapping
@@ -372,6 +387,7 @@ query_dict = {
 | **dbt job_postings Model** | ❓ Not Found | - | No `models/job_postings.sql` found |
 
 **Evidence**:
+
 ```python
 # analytics/dbt/insert_test_data.py:6
 client = bigquery.Client(project='applylens-gmail-1759983601')
@@ -398,10 +414,12 @@ client = bigquery.Client(project='applylens-gmail-1759983601')
 ### 🔴 HIGH PRIORITY (Phase-1 Blockers)
 
 #### Gap 1: UI Inbox View Component
+
 **Status**: ❓ Not Found  
 **Impact**: No user-facing inbox  
 
 **TODO**:
+
 ```typescript
 // File: web/src/components/Inbox/EmailList.tsx
 // Create React component with:
@@ -441,10 +459,12 @@ export const EmailList = () => {
 ```
 
 #### Gap 2: Filters Panel Component
+
 **Status**: ❓ Not Found  
 **Impact**: No filtering capability  
 
 **TODO**:
+
 ```typescript
 // File: web/src/components/Inbox/FiltersPanel.tsx
 // Create filters sidebar with:
@@ -473,10 +493,12 @@ export const FiltersPanel = ({ onFilterChange }) => {
 ```
 
 #### Gap 3: "Reason" Column Implementation
+
 **Status**: ❓ Not Found  
 **Impact**: No AI explanation for email relevance  
 
 **TODO**:
+
 ```python
 # File: services/api/app/routers/search.py
 # Add new endpoint:
@@ -512,10 +534,12 @@ async def explain_email(email_id: str, db: Session = Depends(get_db)):
 ```
 
 #### Gap 4: Quick Actions UI Integration
+
 **Status**: 🟡 Partial (API stubbed, no UI)  
 **Impact**: Users can't perform bulk actions  
 
 **TODO**:
+
 ```typescript
 // File: web/src/components/Inbox/EmailActions.tsx
 // Add action buttons to each email row:
@@ -552,6 +576,7 @@ export const EmailActions = ({ email }) => {
 ```
 
 **ALSO**: Complete Gmail API integration in backend:
+
 ```python
 # File: services/api/app/routers/mail_tools.py:276-292
 # Replace TODOs with actual Gmail API calls:
@@ -577,10 +602,12 @@ async def archive_email(email_id: str, db: Session = Depends(get_db)):
 ### 🟡 MEDIUM PRIORITY (Phase-1 Nice-to-Have)
 
 #### Gap 5: Elasticsearch sender_domain Field
+
 **Status**: 🟡 Partial (from_addr exists, no explicit sender_domain)  
 **Impact**: Harder to aggregate by domain  
 
 **TODO**:
+
 ```python
 # File: services/api/app/es.py:62-65
 # Add to mappings:
@@ -590,6 +617,7 @@ async def archive_email(email_id: str, db: Session = Depends(get_db)):
 ```
 
 **AND**:
+
 ```python
 # File: services/api/app/gmail_service.py:380-395
 # Extract domain when indexing:
@@ -606,10 +634,12 @@ es_doc = {
 ```
 
 #### Gap 6: ESQL Saved Queries
+
 **Status**: ❓ Not Found  
 **Impact**: No pre-built analytics in Kibana  
 
 **TODO**:
+
 ```esql
 -- File: infra/kibana/saved_queries/top_senders_by_category.esql
 -- Save in Kibana Dev Tools
@@ -634,10 +664,12 @@ FROM gmail_emails_v1*
 ```
 
 #### Gap 7: Kibana Data View Export
+
 **Status**: ❓ Not Found  
 **Impact**: Manual Kibana setup required  
 
 **TODO**:
+
 ```bash
 # Export data view from Kibana:
 curl -X GET "http://localhost:5601/api/saved_objects/_export" \
@@ -650,6 +682,7 @@ curl -X GET "http://localhost:5601/api/saved_objects/_export" \
 ```
 
 **THEN** commit to repo:
+
 ```bash
 git add infra/kibana/exports/data_view_gmail_emails.ndjson
 git commit -m "Add Kibana data view export for gmail_emails*"
@@ -658,10 +691,12 @@ git commit -m "Add Kibana data view export for gmail_emails*"
 ### 🟢 LOW PRIORITY (Optional Features)
 
 #### Gap 8: Activate Dense Vector Embeddings
+
 **Status**: 🟡 Partial (schema exists, not in production)  
 **Impact**: No semantic search  
 
 **TODO**:
+
 ```python
 # File: services/api/app/es.py:108
 # Add to production mapping (after "labels"):
@@ -681,6 +716,7 @@ git commit -m "Add Kibana data view export for gmail_emails*"
 ```
 
 **AND** generate embeddings during indexing:
+
 ```python
 # File: services/api/app/gmail_service.py:390-395
 # Add embedding generation:
@@ -699,10 +735,12 @@ es_doc = {
 ```
 
 #### Gap 9: ELSER Model Deployment
+
 **Status**: ❓ Not Found  
 **Impact**: No ELSER semantic search  
 
 **TODO**:
+
 ```bash
 # Deploy ELSER model to Elasticsearch:
 POST _ml/trained_models/.elser_model_2/deployment/_start
@@ -730,10 +768,12 @@ PUT _ingest/pipeline/gmail_elser_pipeline
 ```
 
 #### Gap 10: Fivetran → BigQuery job_postings
+
 **Status**: ❓ Not Found  
 **Impact**: No external job data enrichment  
 
 **TODO**:
+
 ```sql
 -- File: analytics/dbt/models/job_postings.sql
 -- dbt model to transform Fivetran job postings
@@ -760,6 +800,7 @@ SELECT * FROM cleaned
 ```
 
 **AND** configure Fivetran:
+
 ```yaml
 # infra/fivetran/config.yml
 connector_type: "job_boards_api"
@@ -775,17 +816,20 @@ sync_frequency: "daily"
 ## Action Plan (Priority Order)
 
 ### Sprint 1 (Week 1-2): Core UI
+
 1. **Build Inbox EmailList component** (Gap 1)
 2. **Build FiltersPanel component** (Gap 2)
 3. **Implement "Explain why" endpoint** (Gap 3)
 4. **Wire up Quick Actions UI** (Gap 4)
 
 ### Sprint 2 (Week 3): Elasticsearch Refinements
+
 5. **Add sender_domain field to ES mapping** (Gap 5)
 6. **Create ESQL saved queries** (Gap 6)
 7. **Export Kibana data views** (Gap 7)
 
 ### Sprint 3 (Week 4): Optional Enhancements
+
 8. **Activate dense_vector embeddings** (Gap 8)
 9. **Deploy ELSER model** (Gap 9)
 10. **Configure Fivetran + dbt models** (Gap 10)
@@ -798,12 +842,14 @@ sync_frequency: "daily"
 **Phase-1 with UI**: 40% Complete  
 
 **Strengths**:
+
 - ✅ Solid Gmail OAuth + backfill infrastructure
 - ✅ Comprehensive ingest pipeline with heuristics
 - ✅ Production-ready Elasticsearch mapping with BM25
 - ✅ Search API with multi-field boosting
 
 **Critical Gaps**:
+
 - ❌ **No user-facing UI** (inbox, filters, actions)
 - ❌ Missing ESQL saved queries and Kibana exports
 - ❌ "Explain why" reasoning endpoint not implemented

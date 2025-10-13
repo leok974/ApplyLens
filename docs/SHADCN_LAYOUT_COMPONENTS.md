@@ -1,11 +1,13 @@
 # shadcn/ui Layout Components - Complete Reference
 
 ## Overview
+
 Complete set of production-ready layout components using shadcn/ui with dark theme integration. All components use `bg-card`, `bg-background`, and semantic color tokens—no white backgrounds.
 
 ## Installed Components (Latest Batch)
 
 ### New Components Added
+
 - ✅ **Alert** - Info/warning/error messages
 - ✅ **Table** - Data tables with sorting/filtering
 - ✅ **Calendar** - Date picker calendar
@@ -17,6 +19,7 @@ Complete set of production-ready layout components using shadcn/ui with dark the
 ## Layout Components (Ready to Use)
 
 ### 1. AppHeader
+
 **File:** `src/components/AppHeader.tsx`
 
 Standardized header with navigation, actions, and theme toggle.
@@ -29,6 +32,7 @@ import { AppHeader } from '@/components/AppHeader'
 ```
 
 **Features:**
+
 - Sticky positioning with backdrop blur
 - Responsive navigation menu (hidden on mobile)
 - Sync buttons on right
@@ -36,6 +40,7 @@ import { AppHeader } from '@/components/AppHeader'
 - Uses NavigationMenu component
 
 **Customization:**
+
 ```tsx
 // Modify nav links in AppHeader.tsx:
 const navLinks = [
@@ -49,6 +54,7 @@ const navLinks = [
 ---
 
 ### 2. FilterBar
+
 **File:** `src/components/FilterBar.tsx`
 
 Reusable filter bar with inputs and select dropdown.
@@ -60,6 +66,7 @@ import { FilterBar } from '@/components/FilterBar'
 ```
 
 **Features:**
+
 - Responsive flex layout
 - Full-width on mobile, side-by-side on desktop
 - Search inputs
@@ -67,6 +74,7 @@ import { FilterBar } from '@/components/FilterBar'
 - Search button
 
 **With State:**
+
 ```tsx
 import { FilterBar } from '@/components/FilterBar'
 import { useState } from 'react'
@@ -89,6 +97,7 @@ function SearchPage() {
 ---
 
 ### 3. DryRunNotice (Alert-based)
+
 **File:** `src/components/DryRunNotice.tsx`
 
 Info panel using Alert component instead of pastel backgrounds.
@@ -100,6 +109,7 @@ import { DryRunNotice } from '@/components/DryRunNotice'
 ```
 
 **Custom Alerts:**
+
 ```tsx
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle } from "lucide-react"
@@ -129,6 +139,7 @@ import { AlertCircle, CheckCircle } from "lucide-react"
 ---
 
 ### 4. DatePicker
+
 **File:** `src/components/DatePicker.tsx`
 
 Date picker with calendar popover (no white backgrounds).
@@ -151,6 +162,7 @@ function FilterPage() {
 ```
 
 **Features:**
+
 - CalendarIcon from lucide-react
 - Format with date-fns
 - Controlled component (optional value/onChange)
@@ -159,6 +171,7 @@ function FilterPage() {
 ---
 
 ### 5. ResultsTable
+
 **File:** `src/components/ResultsTable.tsx`
 
 Data table for search results or actions log.
@@ -185,6 +198,7 @@ const results = [
 ```
 
 **Features:**
+
 - Responsive table with rounded borders
 - Header with subtle background (`bg-background/40`)
 - Row hover effect (`hover:bg-secondary/50`)
@@ -193,6 +207,7 @@ const results = [
 - Action button column
 
 **Customization:**
+
 ```tsx
 // Add more columns in ResultsTable.tsx
 <TableHead>Priority</TableHead>
@@ -312,6 +327,7 @@ import { MoreHorizontal } from 'lucide-react'
 ### Replace Existing Components
 
 #### Old Nav (Custom Classes)
+
 ```tsx
 // Before
 <nav className="ml-4 hidden gap-2 md:flex">
@@ -326,6 +342,7 @@ import { MoreHorizontal } from 'lucide-react'
 ```
 
 #### Old Filter Bar
+
 ```tsx
 // Before
 <div className="rounded-xl2 border border-[var(--border)] bg-[var(--elev1)] p-4">
@@ -340,6 +357,7 @@ import { MoreHorizontal } from 'lucide-react'
 ```
 
 #### Old Info Blocks
+
 ```tsx
 // Before
 <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
@@ -358,6 +376,7 @@ import { MoreHorizontal } from 'lucide-react'
 ```
 
 #### Old Tables
+
 ```tsx
 // Before
 <table className="w-full">
@@ -393,6 +412,7 @@ All components use these semantic tokens (mapped to your dark palette):
 ```
 
 ### Usage in Components
+
 ```tsx
 // Background
 className="bg-background"  // Page background
@@ -417,6 +437,7 @@ className="focus-visible:ring-2 focus-visible:ring-ring"  // Focus ring
 ## Additional Components Available
 
 ### Checkbox & Radio Group
+
 ```tsx
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -442,6 +463,7 @@ import { Label } from '@/components/ui/label'
 ```
 
 ### Popover (Generic)
+
 ```tsx
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
@@ -468,6 +490,7 @@ import { Button } from '@/components/ui/button'
 ### White Backgrounds Still Appearing?
 
 1. **Check for inline styles:**
+
    ```tsx
    // Bad
    <div style={{ background: 'white' }}>
@@ -477,6 +500,7 @@ import { Button } from '@/components/ui/button'
    ```
 
 2. **Check for legacy Tailwind classes:**
+
    ```tsx
    // Bad
    className="bg-white bg-gray-50"
@@ -486,6 +510,7 @@ import { Button } from '@/components/ui/button'
    ```
 
 3. **Add to dark-hotfix.css if needed:**
+
    ```css
    /* Target specific library classes */
    html.dark .some-library-class {
@@ -497,6 +522,7 @@ import { Button } from '@/components/ui/button'
 ### Components Not Styled Correctly?
 
 1. **Check CSS import order in main.tsx:**
+
    ```tsx
    import './index.css'           // Tailwind + theme tokens (first)
    import './styles/theme.css'    // Legacy theme vars
@@ -504,6 +530,7 @@ import { Button } from '@/components/ui/button'
    ```
 
 2. **Verify theme is active:**
+
    ```tsx
    // Check in browser console
    document.documentElement.classList.contains('dark')  // Should be true
@@ -534,6 +561,7 @@ await page.getByRole('table').getByText('recruiting@example.com').click()
 **Compatibility:** Works with existing dark-hotfix.css
 
 **Next Steps:**
+
 1. Replace Nav.tsx with AppHeader
 2. Update Search page with FilterBar and ResultsTable
 3. Replace info blocks with Alert components

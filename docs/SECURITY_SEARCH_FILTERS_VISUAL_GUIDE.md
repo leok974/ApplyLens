@@ -41,6 +41,7 @@
 ### High-Risk Chip
 
 #### **Inactive State (Default)**
+
 ```
 ┌──────────────────────────┐
 │ [OFF] High Risk (≥80)    │  ← Gray background
@@ -49,6 +50,7 @@
 ```
 
 #### **Active State**
+
 ```
 ┌──────────────────────────┐
 │ [ON]  🔴 High Risk (≥80) │  ← Red background (bg-red-500/15)
@@ -57,6 +59,7 @@
 ```
 
 #### **Hover State (Inactive)**
+
 ```
 ┌──────────────────────────┐
 │ [OFF] High Risk (≥80)    │  ← Light gray background
@@ -65,6 +68,7 @@
 ```
 
 #### **Hover State (Active)**
+
 ```
 ┌──────────────────────────┐
 │ [ON]  🔴 High Risk (≥80) │  ← Brighter red background
@@ -75,6 +79,7 @@
 ### Quarantined Chip
 
 #### **Inactive State (Default)**
+
 ```
 ┌──────────────────────────┐
 │ [OFF] Quarantined only   │  ← Gray background
@@ -83,6 +88,7 @@
 ```
 
 #### **Active State**
+
 ```
 ┌──────────────────────────┐
 │ [ON]  🟡 Quarantined only│  ← Amber background (bg-amber-500/15)
@@ -115,6 +121,7 @@ Clear filters  ← Appears only when filters are active
 ## Color Scheme
 
 ### High-Risk Filter (Red Theme)
+
 ```css
 Active:
   background: bg-red-500/15      /* #ef444415 */
@@ -126,6 +133,7 @@ Hover (Active):
 ```
 
 ### Quarantined Filter (Amber Theme)
+
 ```css
 Active:
   background: bg-amber-500/15    /* #f5920015 */
@@ -137,6 +145,7 @@ Hover (Active):
 ```
 
 ### Inactive (Both Chips)
+
 ```css
 background: bg-muted/30          /* neutral gray */
 border: border                   /* subtle border */
@@ -149,6 +158,7 @@ Hover:
 ## Responsive Behavior
 
 ### Desktop (≥1024px)
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ 🛡️ Security filters:                                     │
@@ -160,6 +170,7 @@ Hover:
 ```
 
 ### Mobile (≤768px)
+
 ```
 ┌─────────────────────────┐
 │ 🛡️ Security filters:    │
@@ -176,23 +187,27 @@ Hover:
 ## URL Bar Examples
 
 ### No Filters
+
 ```
 https://applylens.com/search?q=invoice
 ```
 
 ### High-Risk Only
+
 ```
 https://applylens.com/search?q=invoice&risk_min=80
                                         └─────────┘
 ```
 
 ### Quarantined Only
+
 ```
 https://applylens.com/search?q=test&quarantined=true
                                     └──────────────────┘
 ```
 
 ### Both Filters
+
 ```
 https://applylens.com/search?q=security&risk_min=80&quarantined=true
                                         └─────────┘ └──────────────────┘
@@ -252,6 +267,7 @@ https://applylens.com/search?q=security&risk_min=80&quarantined=true
 ## Accessibility
 
 ### Keyboard Navigation
+
 ```
 Tab → Focus on High-Risk chip
 Space → Toggle High-Risk
@@ -262,6 +278,7 @@ Enter → Clear all filters
 ```
 
 ### Screen Reader Announcements
+
 ```
 High-Risk chip:
   "High Risk, greater than or equal to 80, switch, on/off"
@@ -274,6 +291,7 @@ Clear button:
 ```
 
 ### ARIA Attributes
+
 ```html
 <label data-testid="chip-high-risk" className="...">
   <Switch 
@@ -288,6 +306,7 @@ Clear button:
 ## Dark Mode Support
 
 ### High-Risk Chip (Active)
+
 ```css
 Light Mode:
   bg-red-500/15 border-red-600/30 text-red-300
@@ -297,6 +316,7 @@ Dark Mode:
 ```
 
 ### Quarantined Chip (Active)
+
 ```css
 Light Mode:
   bg-amber-500/15 border-amber-600/30 text-amber-300
@@ -306,6 +326,7 @@ Dark Mode:
 ```
 
 ### Inactive State
+
 ```css
 Light Mode:
   bg-muted/30 (light gray)

@@ -36,6 +36,7 @@ EmailDetailsPanel (sliding panel)
 ### New Files
 
 **`apps/web/src/components/inbox/EmailDetailsPanel.tsx`**
+
 - Sliding panel component (720px max width)
 - Header with close button and actions
 - ScrollArea for long email bodies
@@ -46,11 +47,13 @@ EmailDetailsPanel (sliding panel)
 ### Updated Files
 
 **`apps/web/src/lib/api.ts`**
+
 - Added `EmailDetailResponse` type
 - Added `getEmailById(id)` function
 - Fetches from `/api/search/by_id/{id}` endpoint
 
 **`apps/web/src/pages/InboxPolishedDemo.tsx`**
+
 - Imported `EmailDetailsPanel` and `EmailDetails`
 - Added state: `selectedDetailId`, `openPanel`, `loadingDetail`, `detail`
 - Added `openDetails(id)` async function
@@ -93,6 +96,7 @@ className={cn(
 ### Body Content
 
 **Metadata Section:**
+
 - Subject (h1, semibold, tracking-tight)
 - From/To/Date in small text
 - Labels as outline badges
@@ -100,11 +104,13 @@ className={cn(
 - Risk badge (rose for high)
 
 **Email Body:**
+
 - HTML: Rendered with Tailwind prose classes
 - Plain text: Pre-formatted with monospace
 - Fallback: "(No body content)" message
 
 **Footer:**
+
 - Unsubscribe link (if detected)
 - External link icon
 
@@ -179,6 +185,7 @@ function InboxPage() {
 3. Include HTML sanitization on backend
 
 **Endpoint Response:**
+
 ```json
 {
   "id": "email_123",
@@ -279,11 +286,13 @@ className="transition-transform duration-300"
 ### Body Typography
 
 **HTML Rendering:**
+
 ```tsx
 className="prose prose-slate max-w-none dark:prose-invert prose-a:text-indigo-600"
 ```
 
 **Plain Text:**
+
 ```tsx
 className="whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-sm"
 ```
@@ -308,6 +317,7 @@ import DOMPurify from 'dompurify';
 ```
 
 **Backend Sanitization** (preferred):
+
 ```python
 import bleach
 
@@ -333,6 +343,7 @@ clean_html = bleach.clean(
 ### Panel Not Opening
 
 **Check:**
+
 1. `open` prop is `true`
 2. `openDetails(id)` is called on row click
 3. `onOpen` prop passed to EmailList
@@ -341,6 +352,7 @@ clean_html = bleach.clean(
 ### Email Not Loading
 
 **Check:**
+
 1. API endpoint `/api/search/by_id/{id}` exists
 2. `getEmailById(id)` function implemented
 3. Response format matches `EmailDetailResponse` type
@@ -349,6 +361,7 @@ clean_html = bleach.clean(
 ### Styling Issues
 
 **Check:**
+
 1. Tailwind CSS classes compiled
 2. `z-index: 40` not conflicting with other elements
 3. Dark mode classes applied correctly
@@ -357,6 +370,7 @@ clean_html = bleach.clean(
 ### Escape Key Not Working
 
 **Check:**
+
 1. `useEffect` hook listening for keydown
 2. No input fields capturing event
 3. Panel has focus (tabindex or auto-focus)

@@ -29,11 +29,13 @@ Phase 4 adds **Agentic Actions & Approval Loop** - an intelligent email automati
 A complete DSL interpreter for policy evaluation:
 
 **Operators:**
+
 - Logical: `all` (AND), `any` (OR), `not` (NOT)
 - Comparators: `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `in`, `regex`, `exists`
 - Special values: `"now"` resolves to current datetime
 
 **Example Policy:**
+
 ```json
 {
   "condition": {
@@ -46,6 +48,7 @@ A complete DSL interpreter for policy evaluation:
 ```
 
 **Key Functions:**
+
 - `evaluate_policy(policy, ctx)` → bool
 - `validate_condition(condition)` → (valid, error)
 - Recursive evaluation with datetime parsing
@@ -58,16 +61,19 @@ A complete DSL interpreter for policy evaluation:
 Implements 8 action types (currently stubbed, ready for service integration):
 
 **Gmail Operations:**
+
 - `gmail_archive()` - Remove INBOX, add ARCHIVED
 - `gmail_label()` - Add label to email
 - `gmail_move()` - Move to folder
 - `try_list_unsubscribe()` - Parse List-Unsubscribe header
 
 **Calendar/Tasks:**
+
 - `create_calendar_event()` - Google Calendar API
 - `create_task_item()` - Google Tasks API
 
 **Security:**
+
 - `block_sender()` - Create Gmail filter
 - `quarantine_email()` - Set quarantined flag + move attachments
 
@@ -80,12 +86,14 @@ All return `(success: bool, error: str | None)` for audit trail.
 Complete REST API with 10 endpoints:
 
 **Action Lifecycle:**
+
 - `POST /api/actions/propose` - Create proposals for matching emails
 - `POST /api/actions/{id}/approve` - Approve and execute (with screenshot)
 - `POST /api/actions/{id}/reject` - Reject action (audit as noop)
 - `GET /api/actions/tray` - List pending for UI
 
 **Policy Management:**
+
 - `GET /api/actions/policies` - List all policies
 - `POST /api/actions/policies` - Create policy
 - `PUT /api/actions/policies/{id}` - Update policy
@@ -93,6 +101,7 @@ Complete REST API with 10 endpoints:
 - `POST /api/actions/policies/{id}/test` - Test policy against emails
 
 **Key Features:**
+
 - Priority-based policy evaluation (short-circuit on first match)
 - Confidence threshold filtering
 - Screenshot capture (Base64 PNG → `/data/audit/YYYY-MM/`)
@@ -126,6 +135,7 @@ Complete REST API with 10 endpoints:
    - Confidence: 0.9
 
 **Functions:**
+
 - `seed_policies(db)` - Insert defaults (skip existing)
 - `reset_policies(db)` - Delete all + reseed (destructive)
 
@@ -136,11 +146,13 @@ Complete REST API with 10 endpoints:
 Complete TypeScript client with type definitions:
 
 **Types:**
+
 - `ActionType` - 8 action type literals
 - `ProposedAction` - Full action object with email details
 - `Policy`, `PolicyCreate`, `PolicyUpdate` - Policy models
 
 **Functions:**
+
 - `fetchTray(limit?)` - Get pending actions
 - `approveAction(id, screenshotDataUrl?)` - Approve + execute
 - `rejectAction(id)` - Reject action
@@ -158,6 +170,7 @@ Complete TypeScript client with type definitions:
 Beautiful right-side drawer UI:
 
 **Features:**
+
 - Slide-in tray with backdrop (420px width)
 - Pending actions list with email context
 - Action type badges with color coding
@@ -171,6 +184,7 @@ Beautiful right-side drawer UI:
 - Processing state during execution
 
 **Action Card Components:**
+
 - Email subject + sender display
 - Action type chip with color
 - Confidence percentage bar
@@ -186,6 +200,7 @@ Beautiful right-side drawer UI:
 Added Actions button to header:
 
 **Features:**
+
 - Sparkles icon button
 - Badge with pending count (red, shows when > 0)
 - Polling every 30s for pending count
@@ -193,6 +208,7 @@ Added Actions button to header:
 - Positioned next to Sync buttons
 
 **Badge Behavior:**
+
 - Hidden when count = 0
 - Shows number when count > 0
 - Updates automatically via polling
@@ -299,25 +315,33 @@ npm install html2canvas
 ## 🎯 Key Design Decisions
 
 ### 1. Priority Short-Circuit
+
 Policies are evaluated in priority order (ASC), stopping at first match. This prevents multiple actions for same email and gives explicit control over precedence.
 
 ### 2. Confidence Threshold
+
 Each policy has a threshold. Actions below threshold are filtered out. This allows tuning sensitivity per policy type.
 
 ### 3. Fail-Closed Evaluation
+
 Yardstick returns `False` on evaluation errors. This prevents accidental execution of actions when policy syntax is malformed.
 
 ### 4. Immutable Audit Trail
+
 `AuditAction` records are append-only. No updates or deletes allowed. Screenshot paths are stored for later review.
 
 ### 5. Screenshot Capture
+
 html2canvas runs client-side before approval. Captures page state at approval time. Saved as Base64 PNG to audit directory with YYYY-MM structure.
 
 ### 6. Stubbed Executors
+
 All action handlers are implemented but stubbed with print statements. This allows testing full flow without service integration. Real implementations will inject Gmail/Calendar/Tasks services.
 
 ### 7. Policy DSL
+
 JSON-based DSL (vs Python code) provides:
+
 - Safe evaluation (no code injection)
 - Serializable (store in DB)
 - Testable (unit tests for evaluator)
@@ -371,11 +395,13 @@ npm run dev
    - Verify action removed from tray
 
 3. **Check Audit:**
+
    ```sql
    SELECT * FROM audit_actions ORDER BY created_at DESC LIMIT 5;
    ```
 
 4. **Check Screenshot:**
+
    ```powershell
    docker exec infra-api-1 ls -lh /data/audit/2025-10/
    ```
@@ -383,11 +409,13 @@ npm run dev
 ### Automated Tests (TODO)
 
 **Backend Tests:**
+
 - `test_yardstick_eval.py` - DSL evaluation
 - `test_actions_propose.py` - Proposal creation
 - `test_actions_approve_and_audit.py` - Approval + audit
 
 **E2E Tests:**
+
 - `actions.tray.spec.ts` - Tray UI + approve flow
 - `policies.crud.spec.ts` - Policy management
 
@@ -396,11 +424,13 @@ npm run dev
 ### Phase 4.1: Enhanced Rationale
 
 **Add ES Aggregations:**
+
 - Sender domain statistics
 - Percentiles for expiry windows
 - Similar emails in last 14 days
 
 **Add KNN Neighbors:**
+
 - Implement `body_vector` embedding search
 - Include top-5 similar emails in rationale
 - Show "X other emails like this were archived"
@@ -408,11 +438,13 @@ npm run dev
 ### Phase 4.2: Service Integration
 
 **Gmail API Integration:**
+
 - Replace stubbed executors with real Gmail API calls
 - Implement OAuth refresh token handling
 - Add batch operations for bulk actions
 
 **Calendar/Tasks Integration:**
+
 - Google Calendar API event creation
 - Google Tasks API task creation
 - Parse event details from email body
@@ -420,16 +452,19 @@ npm run dev
 ### Phase 4.3: Advanced Features
 
 **SSE Real-Time Updates:**
+
 - Add `/api/actions/events` SSE endpoint
 - Push new proposals to frontend
 - Update badge without polling
 
 **Policy Versioning:**
+
 - Add `policies_history` table
 - Track all policy changes
 - Audit which version triggered each proposal
 
 **ML Confidence:**
+
 - Train classifier for confidence scores
 - Use model probability instead of heuristic
 - A/B test policy thresholds
@@ -458,6 +493,7 @@ npm run dev
 ## 🎉 Highlights
 
 ### Beautiful UI
+
 - Smooth slide-in drawer
 - Color-coded action badges
 - Confidence progress bars
@@ -466,6 +502,7 @@ npm run dev
 - Empty states
 
 ### Robust Backend
+
 - Type-safe Pydantic models
 - Fail-closed policy evaluation
 - Comprehensive error handling
@@ -473,6 +510,7 @@ npm run dev
 - Screenshot archival
 
 ### Developer Experience
+
 - Well-documented code
 - Type-safe TypeScript client
 - Clear separation of concerns
@@ -485,9 +523,10 @@ npm run dev
 - **Integration Checklist:** `docs/PHASE_4_INTEGRATION_CHECKLIST.md`
 - **This Summary:** `docs/PHASE_4_SUMMARY.md`
 
-## 🙏 Thank You!
+## 🙏 Thank You
 
 This was a comprehensive implementation involving:
+
 - 9 new files created
 - 2 files modified
 - ~1,700 lines of production code

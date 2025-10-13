@@ -40,7 +40,8 @@ React.useEffect(() => {
 }, []);
 ```
 
-**Purpose**: 
+**Purpose**:
+
 - Track whether viewport is desktop-sized (≥1024px)
 - Use both resize events and matchMedia for optimal performance
 - Clean up listeners on unmount
@@ -57,6 +58,7 @@ const effectiveMode: PanelMode = isDesktop ? panelMode : "overlay";
 **Purpose**: Calculate the actual mode to use based on viewport size and user preference.
 
 **Logic**:
+
 - Desktop: Use saved preference (`panelMode`)
 - Mobile: Force overlay mode (ignore saved preference)
 
@@ -78,6 +80,7 @@ React.useEffect(() => {
 #### 5. Updated Toggle Button
 
 **Before**:
+
 ```typescript
 <Button variant="outline" size="sm" onClick={togglePanelMode}>
   {panelMode === "split" ? (
@@ -93,6 +96,7 @@ React.useEffect(() => {
 ```
 
 **After**:
+
 ```typescript
 <Button 
   variant={!isDesktop ? "secondary" : "outline"} 
@@ -115,6 +119,7 @@ React.useEffect(() => {
 ```
 
 **Changes**:
+
 - `variant` changes to `secondary` when disabled (visual hint)
 - `disabled={!isDesktop}` prevents toggling on mobile
 - `className="hidden md:inline-flex"` hides button on small screens
@@ -126,6 +131,7 @@ React.useEffect(() => {
 #### 6. Updated Layout Conditional
 
 **Before**:
+
 ```typescript
 {panelMode === "split" ? (
   // Split layout
@@ -135,6 +141,7 @@ React.useEffect(() => {
 ```
 
 **After**:
+
 ```typescript
 {effectiveMode === "split" ? (
   // Split layout
@@ -238,12 +245,14 @@ React.useEffect(() => {
 ### Button Visual Differences
 
 **Enabled (Desktop)**:
+
 - Outline border
 - Normal contrast
 - Pointer cursor
 - Clickable
 
 **Disabled (Mobile)**:
+
 - Secondary background (dimmed)
 - Reduced contrast
 - Not-allowed cursor
@@ -363,6 +372,7 @@ docker ps --filter "name=infra-web"
 ```
 
 **Output**:
+
 ```
 NAMES         STATUS        PORTS
 infra-web-1   Up 47 seconds 0.0.0.0:5175->5175/tcp
@@ -370,13 +380,13 @@ infra-web-1   Up 47 seconds 0.0.0.0:5175->5175/tcp
 
 ### Access
 
-**URL**: http://localhost:5175/inbox-polished-demo
+**URL**: <http://localhost:5175/inbox-polished-demo>
 
 ## Next Steps
 
 ### For Testing
 
-1. Open http://localhost:5175/inbox-polished-demo
+1. Open <http://localhost:5175/inbox-polished-demo>
 2. Test on desktop (≥1024px viewport)
 3. Test toggle button functionality
 4. Resize window below 1024px
@@ -422,4 +432,3 @@ infra-web-1   Up 47 seconds 0.0.0.0:5175->5175/tcp
 **Total Build Time**: 10.8 seconds  
 **Status**: ✅ Ready for Testing  
 **Breaking Changes**: None
-

@@ -15,10 +15,12 @@ This is a tight, drop-in upgrade that layers onto existing analytics infrastruct
 ### Phase 51.1 — CSV Dashboard Exporter
 
 **New Files:**
+
 - `analytics/dashboards/exporter.py` - KPI time-series CSV export
 - `analytics/pipeline.py` - Main pipeline with CSV export hook
 
 **Features:**
+
 - Exports daily KPI metrics to CSV format
 - Generates two formats:
   - **Wide format** (`kpis.csv`): One column per metric
@@ -26,6 +28,7 @@ This is a tight, drop-in upgrade that layers onto existing analytics infrastruct
 - Output directory: `analytics/outputs/dashboards/`
 
 **KPI Fields:**
+
 - `seo_coverage_pct` - SEO page coverage percentage
 - `playwright_pass_pct` - Playwright test pass rate
 - `avg_p95_ms` - Average P95 latency
@@ -34,6 +37,7 @@ This is a tight, drop-in upgrade that layers onto existing analytics infrastruct
 ### Phase 51.2 — Analytics Search API
 
 **New Files:**
+
 - `services/api/app/routers/analytics.py` - Analytics API endpoints
 - `analytics/rag/embedder_local.py` - Text embedding (stub)
 - `analytics/rag/query_engine.py` - Vector store search
@@ -56,18 +60,21 @@ GET /analytics/dashboards/kpis.csv
 ```
 
 **Integration:**
+
 - Auto-registered in `main.py` (gracefully handles missing modules)
 - Uses try/except to avoid hard dependencies
 
 ### Phase 51.3 — Weight Recommendations
 
 **New Files:**
+
 - `analytics/recommenders/weights.py` - Heuristic weight adjustment logic
 - `analytics/summarizers/report_builder.py` - Report generator with recommendations
 - `analytics/collectors/kpi_extractor.py` - KPI extraction from raw metrics
 - `analytics/config/test_page_map.json.example` - Optional test-to-page mapping
 
 **Features:**
+
 - Analyzes anomalies to recommend safe weight adjustments
 - Based on:
   - SEO page failures (`ok == false`)
@@ -76,15 +83,18 @@ GET /analytics/dashboards/kpis.csv
 - Conservative deltas (capped at 0.2 per run)
 
 **Recommendation Types:**
+
 - `page_priority:/path` - Increase attention to failing pages
 - `variant:stability_over_speed` - Prefer stable variants when tests drop
 
 ### Optional — PR Comment Workflow
 
 **New File:**
+
 - `.github/workflows/analytics-pr-comment.yml` - PR comment automation
 
 **Features:**
+
 - Posts analytics insights to PRs
 - Posts weight recommendations as separate comment
 - Uses sticky comments (updates existing comment)
@@ -100,6 +110,7 @@ python -m analytics.pipeline --window-days 7
 ```
 
 **Expected Output:**
+
 ```
 ✅ CSV dashboards exported:
    kpis_csv: analytics/outputs/dashboards/kpis.csv
@@ -146,6 +157,7 @@ code analytics/outputs/insight-summary.md
 ```
 
 **Example Recommendations Section:**
+
 ```markdown
 ## Recommendations
 
@@ -218,6 +230,7 @@ analytics/data/
 ```
 
 Each JSON file should contain:
+
 ```json
 {
   "seo": {
@@ -401,18 +414,21 @@ print(rec)
 ## 🚀 Next Steps
 
 ### Immediate
+
 - [x] Create sample data files in `analytics/data/`
 - [ ] Run pipeline to test CSV export
 - [ ] Test analytics API endpoints
 - [ ] Review recommendations output
 
 ### This Week
+
 - [ ] Set up Grafana CSV datasource (optional)
 - [ ] Create test-to-page mapping file
 - [ ] Add frontend analytics page
 - [ ] Configure PR comment workflow
 
 ### This Month
+
 - [ ] Replace dummy embedder with real model
 - [ ] Implement proper vector similarity scoring
 - [ ] Add more KPI metrics

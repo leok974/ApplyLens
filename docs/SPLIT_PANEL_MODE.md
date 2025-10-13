@@ -17,6 +17,7 @@ Users can toggle between modes with a toolbar button, and the preference is save
 ### 1. Overlay Mode (Original Behavior)
 
 **Characteristics**:
+
 - Panel is `position: fixed` with `right-0`
 - Slides in/out with transform animation
 - Covers the email list when open
@@ -24,11 +25,13 @@ Users can toggle between modes with a toolbar button, and the preference is save
 - Close button always visible
 
 **Use Cases**:
+
 - Focus on email content without distraction
 - Maximum list space when panel is closed
 - Mobile-friendly (panel takes full screen)
 
 **CSS Classes**:
+
 ```tsx
 "fixed inset-y-0 right-0 z-40 transform bg-card text-card-foreground shadow-2xl transition-transform"
 open ? "translate-x-0" : "translate-x-full"
@@ -37,6 +40,7 @@ open ? "translate-x-0" : "translate-x-full"
 ### 2. Split Mode (New)
 
 **Characteristics**:
+
 - Panel is `position: relative`
 - Always rendered (even when no email selected)
 - Docked to right side in grid layout
@@ -44,12 +48,14 @@ open ? "translate-x-0" : "translate-x-full"
 - Close button hidden on medium+ screens
 
 **Use Cases**:
+
 - Compare multiple emails quickly
 - Reference email while scrolling list
 - Desktop power user workflow
 - Persistent context
 
 **CSS Classes**:
+
 ```tsx
 "relative z-0 bg-card text-card-foreground border-l border-[color:hsl(var(--color-border))] h-full"
 ```
@@ -61,6 +67,7 @@ open ? "translate-x-0" : "translate-x-full"
 #### EmailDetailsPanel.tsx
 
 **New Props**:
+
 ```tsx
 type PanelMode = "overlay" | "split";
 
@@ -74,6 +81,7 @@ export function EmailDetailsPanel({
 ```
 
 **Dynamic Container Classes**:
+
 ```tsx
 const containerClass =
   mode === "overlay"
@@ -88,6 +96,7 @@ const containerClass =
 ```
 
 **Conditional Close Button Visibility**:
+
 ```tsx
 <Button 
   variant="ghost" 
@@ -101,6 +110,7 @@ const containerClass =
 ```
 
 **Resize Handle**:
+
 - Works in both modes
 - Same drag behavior
 - Width persists across mode switches
@@ -108,6 +118,7 @@ const containerClass =
 #### InboxPolishedDemo.tsx
 
 **New State**:
+
 ```tsx
 type PanelMode = "overlay" | "split";
 const MODE_KEY = "inbox:panelMode";
@@ -119,6 +130,7 @@ const [panelMode, setPanelMode] = React.useState<PanelMode>(() => {
 ```
 
 **Toggle Function**:
+
 ```tsx
 function togglePanelMode() {
   setPanelMode((m) => {
@@ -132,6 +144,7 @@ function togglePanelMode() {
 ```
 
 **Toolbar Button**:
+
 ```tsx
 <Button variant="outline" size="sm" onClick={togglePanelMode}>
   {panelMode === "split" ? (
@@ -149,6 +162,7 @@ function togglePanelMode() {
 **Note**: Button label shows the **target mode** (what you'll switch TO), not the current mode.
 
 **Conditional Layout**:
+
 ```tsx
 {panelMode === "split" ? (
   // GRID: list on left, details docked right
@@ -191,6 +205,7 @@ function togglePanelMode() {
 ### Keyboard Shortcuts
 
 Works in both modes:
+
 - `[` - Previous message in thread
 - `]` - Next message in thread
 - `Esc` - Close panel (overlay only, hidden in split on desktop)
@@ -198,6 +213,7 @@ Works in both modes:
 ### Resize Behavior
 
 **Both modes**:
+
 - Drag left edge to resize
 - Width: 420px - 1000px
 - Persists across mode switches
@@ -206,16 +222,19 @@ Works in both modes:
 ### Responsive Behavior
 
 **Overlay Mode**:
+
 - Mobile: Full screen panel
 - Tablet: Slide-over from right
 - Desktop: Slide-over from right
 
 **Split Mode**:
+
 - Mobile: Falls back to overlay-like behavior
 - Tablet: Side-by-side if space allows
 - Desktop: Always side-by-side
 
 **Close Button in Split Mode**:
+
 - Hidden on `md` breakpoint and above
 - Visible on mobile (for closing panel)
 
@@ -224,11 +243,13 @@ Works in both modes:
 ### Persistence
 
 **Panel Mode**:
+
 - Key: `inbox:panelMode`
 - Values: `"overlay"` | `"split"`
 - Default: `"overlay"`
 
 **Panel Width**:
+
 - Key: `inbox:detailsPanelWidth`
 - Values: `420` - `1000` (number)
 - Default: `720`
@@ -236,6 +257,7 @@ Works in both modes:
 ### Synchronization
 
 When switching modes:
+
 1. New mode saved to localStorage
 2. If switching to split → `setOpenPanel(true)`
 3. If switching to overlay → preserve current open state
@@ -256,6 +278,7 @@ When switching modes:
 ```
 
 **CSS Grid**:
+
 ```css
 /* Outer grid: filters + content */
 grid-cols-1 md:grid-cols-[18rem,1fr]
@@ -265,6 +288,7 @@ grid-template-columns: 1fr auto
 ```
 
 **Panel Width**:
+
 - Controlled by `style={{ width }}` prop
 - Not constrained by grid column
 - User can resize from 420px to 1000px
@@ -272,6 +296,7 @@ grid-template-columns: 1fr auto
 ### Overflow Handling
 
 **Split Mode**:
+
 ```tsx
 <div className="overflow-hidden">
   <EmailList />  // Scrolls independently
@@ -280,6 +305,7 @@ grid-template-columns: 1fr auto
 ```
 
 **Overlay Mode**:
+
 ```tsx
 <div className="relative">
   <EmailList />  // Full height scrolling
@@ -290,12 +316,14 @@ grid-template-columns: 1fr auto
 ## Visual Design
 
 ### Overlay Mode
+
 - **Shadow**: `shadow-2xl` for depth
 - **Transform**: `translate-x-full` → `translate-x-0`
 - **Transition**: `transition-transform` (smooth slide)
 - **Z-index**: `z-40` (above content)
 
 ### Split Mode
+
 - **Border**: `border-l border-[color:hsl(var(--color-border))]`
 - **No shadow**: Uses border for separation
 - **Position**: `relative` (in flow)
@@ -306,7 +334,8 @@ grid-template-columns: 1fr auto
 **Overlay Icon**: `Maximize2` (expand/maximize)  
 **Split Icon**: `Columns2` (two columns)
 
-**Reasoning**: 
+**Reasoning**:
+
 - Maximize suggests panel will overlay/expand
 - Columns suggests side-by-side layout
 
@@ -315,22 +344,26 @@ grid-template-columns: 1fr auto
 ### Split Mode Optimization
 
 **Always Mounted**:
+
 - Panel is always in DOM when in split mode
 - Shows "Select an email..." placeholder when no email selected
 - Avoids mount/unmount overhead on email selection
 
 **Benefits**:
+
 - Instant state restoration
 - Smoother transitions
 - Preserves scroll position
 
 **Trade-offs**:
+
 - Slightly higher memory usage (one extra component tree)
 - Acceptable for desktop use case
 
 ### Overlay Mode Optimization
 
 **Conditional Mounting**:
+
 - Panel only mounted when `open={true}`
 - Removed from DOM when closed
 - Saves memory on mobile
@@ -340,6 +373,7 @@ grid-template-columns: 1fr auto
 ### ARIA Attributes
 
 Both modes:
+
 ```tsx
 role="dialog"
 aria-modal="true"
@@ -355,11 +389,13 @@ aria-label="Resize panel" (on drag handle)
 ### Screen Reader Announcements
 
 **Mode toggle**:
+
 - Button label announces target mode
 - "Split Panel" = switching to split
 - "Overlay Panel" = switching to overlay
 
 **Panel state**:
+
 - Dialog role announces when panel opens
 - Thread counter announces position
 
@@ -368,6 +404,7 @@ aria-label="Resize panel" (on drag handle)
 ### Manual Test Cases
 
 **Overlay Mode**:
+
 - [ ] Click email → panel slides in
 - [ ] Click close → panel slides out
 - [ ] Resize panel → width persists
@@ -375,6 +412,7 @@ aria-label="Resize panel" (on drag handle)
 - [ ] Refresh page → stays in overlay mode
 
 **Split Mode**:
+
 - [ ] Click "Split Panel" → layout changes to grid
 - [ ] Click email → panel shows content
 - [ ] Click close (mobile) → panel shows placeholder
@@ -382,6 +420,7 @@ aria-label="Resize panel" (on drag handle)
 - [ ] Refresh page → stays in split mode
 
 **Mode Switching**:
+
 - [ ] Toggle overlay → split → layout changes
 - [ ] Toggle split → overlay → layout changes
 - [ ] Width preserved across toggle
@@ -389,6 +428,7 @@ aria-label="Resize panel" (on drag handle)
 - [ ] Panel auto-opens when switching to split
 
 **Responsive**:
+
 - [ ] Mobile overlay: full screen
 - [ ] Mobile split: close button visible
 - [ ] Desktop overlay: slide-over
@@ -425,6 +465,7 @@ aria-label="Resize panel" (on drag handle)
 ### For Existing Pages
 
 **Before** (old API):
+
 ```tsx
 <EmailDetailsPanel
   open={openPanel}
@@ -434,6 +475,7 @@ aria-label="Resize panel" (on drag handle)
 ```
 
 **After** (new API, backward compatible):
+
 ```tsx
 <EmailDetailsPanel
   mode="overlay"  // Add this for explicit mode
@@ -460,4 +502,3 @@ aria-label="Resize panel" (on drag handle)
 **Backward Compatible**: ✅ Yes (mode defaults to "overlay")  
 **Tested**: ⏳ Pending user verification  
 **Documentation**: ✅ Complete
-

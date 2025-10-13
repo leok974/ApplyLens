@@ -1,17 +1,21 @@
 # Sync Button Fix - Issue Resolution
 
 ## Problem
+
 The "Sync 7 days" and "Sync 60 days" buttons in the AppHeader component were non-functional - clicking them did nothing and no API calls were made.
 
 ## Root Cause
+
 The buttons in `apps/web/src/components/AppHeader.tsx` were purely presentational with **no onClick handlers** attached. They were just static UI elements with no functionality.
 
 ## Investigation Steps
 
 ### 1. Verified API Endpoint Exists ✅
+
 **Client Call:** `POST /api/gmail/backfill?days=7`
 
 **API Endpoint:** Found in `services/api/app/routes_gmail.py`
+
 ```python
 @router.post("/backfill", response_model=BackfillResp)
 def backfill(request: Request, days: int = Query(60, ge=1, le=365), ...):
@@ -20,6 +24,7 @@ def backfill(request: Request, days: int = Query(60, ge=1, le=365), ...):
 **Mounted at:** `/api` prefix in main.py → Full path: `POST /api/gmail/backfill` ✅
 
 ### 2. Tested API Directly ✅
+
 ```bash
 curl -i "http://127.0.0.1:8003/api/gmail/backfill?days=7" -X POST
 # Result: HTTP/1.1 200 OK
@@ -29,7 +34,9 @@ curl -i "http://127.0.0.1:8003/api/gmail/backfill?days=7" -X POST
 The API endpoint works perfectly! ✅
 
 ### 3. Checked Frontend Configuration ✅
+
 **Vite Proxy:** `apps/web/vite.config.ts`
+
 ```typescript
 proxy: {
   '/api': {
@@ -42,7 +49,9 @@ proxy: {
 Proxy configuration is correct for Docker environment ✅
 
 ### 4. Found the Issue ❌
+
 **Original Code:** `apps/web/src/components/AppHeader.tsx`
+
 ```tsx
 <Button size="sm">Sync 7 days</Button>
 <Button size="sm">Sync 60 days</Button>
@@ -53,6 +62,7 @@ Proxy configuration is correct for Docker environment ✅
 ## Solution Implemented
 
 ### Updated AppHeader.tsx
+
 Added full functionality to the sync buttons:
 
 1. **Imported Required Functions:**
@@ -61,12 +71,14 @@ Added full functionality to the sync buttons:
    - `useToast` from `@/components/ui/use-toast` - User feedback
 
 2. **Added State Management:**
+
    ```tsx
    const [syncing, setSyncing] = useState(false)
    const { toast } = useToast()
    ```
 
 3. **Created Click Handler:**
+
    ```tsx
    async function handleSync(days: number) {
      setSyncing(true)
@@ -89,6 +101,7 @@ Added full functionality to the sync buttons:
    ```
 
 4. **Connected Buttons:**
+
    ```tsx
    <Button 
      size="sm" 
@@ -109,18 +122,22 @@ Added full functionality to the sync buttons:
 ## Features Added
 
 ### ✅ Functional Sync Buttons
+
 - Click "Sync 7 days" → Fetches last 7 days of emails
 - Click "Sync 60 days" → Fetches last 60 days of emails
 
 ### ✅ Loading States
+
 - Buttons show "⏳ Syncing..." during API call
 - Buttons are disabled during sync to prevent duplicate requests
 
 ### ✅ User Feedback
+
 - **Success Toast:** Shows number of emails imported
 - **Error Toast:** Shows error message if sync fails
 
 ### ✅ Error Handling
+
 - Catches and displays API errors
 - Logs errors to console for debugging
 - Always re-enables buttons after completion
@@ -128,7 +145,8 @@ Added full functionality to the sync buttons:
 ## Testing
 
 ### Manual Testing Steps
-1. Open the app: http://localhost:5175
+
+1. Open the app: <http://localhost:5175>
 2. Click "Sync 7 days" button
 3. Should see:
    - Button changes to "⏳ Syncing..."
@@ -136,6 +154,7 @@ Added full functionality to the sync buttons:
    - Toast shows: "Imported X emails from the last 7 days"
 
 ### API Verification
+
 ```bash
 # Test API directly
 curl -i "http://127.0.0.1:8003/api/gmail/backfill?days=7" -X POST
@@ -148,7 +167,9 @@ HTTP/1.1 200 OK
 ## Files Modified
 
 ### 1. `apps/web/src/components/AppHeader.tsx`
+
 **Changes:**
+
 - Added imports: `backfillGmail`, `useState`, `useToast`
 - Added state: `syncing` boolean
 - Added function: `handleSync(days)`
@@ -174,6 +195,7 @@ docker logs infra-web-1 --tail 20
 ## Status: ✅ FIXED
 
 The sync buttons are now fully functional with:
+
 - API integration
 - Loading states
 - User feedback via toasts

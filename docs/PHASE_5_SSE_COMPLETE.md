@@ -5,6 +5,7 @@
 This enhancement adds **real-time streaming** with Server-Sent Events (SSE) and wires the "file actions to Approvals" toggle to automatically file actions when checked.
 
 ## Implementation Date
+
 October 12, 2025
 
 ## What Changed
@@ -13,15 +14,17 @@ October 12, 2025
 
 **File**: `apps/web/src/components/MailChat.tsx`
 
-#### New Behavior:
+#### New Behavior
+
 - Replaced POST `/api/chat` with SSE GET `/api/chat/stream`
 - Real-time events: `intent`, `tool`, `answer`, `filed`, `done`, `error`
 - Progressive UI updates as events arrive
 - Automatic confirmation when actions are filed
 
-#### Key Changes:
+#### Key Changes
 
 **EventSource Implementation**:
+
 ```typescript
 async function send(text: string, opts?: { propose?: boolean }) {
   const shouldPropose = opts?.propose ?? false
@@ -59,6 +62,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
 ```
 
 **Wired Toggle to Auto-Propose**:
+
 ```typescript
 // Send button
 <button onClick={() => send(input, { propose: fileActions })} ...>
@@ -76,7 +80,7 @@ function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>) {
 
 **File**: `services/api/app/routers/chat.py`
 
-#### New Endpoint:
+#### New Endpoint
 
 ```python
 @router.get("/stream")
@@ -146,7 +150,7 @@ async def chat_stream(
     return StreamingResponse(generate(), media_type="text/event-stream")
 ```
 
-#### Integration with Phase 4 Approvals:
+#### Integration with Phase 4 Approvals
 
 The streaming endpoint uses the existing `approvals_bulk_insert()` function from `app/db.py` to file actions:
 
@@ -157,6 +161,7 @@ approvals_bulk_insert(approval_rows)
 ```
 
 Actions are inserted into the `approvals_proposed` table with:
+
 - **policy_id**: `"chat_assistant"` (tagged from chat)
 - **confidence**: `0.8` (high confidence from user chat)
 - **status**: `"proposed"` (ready for review)
@@ -167,6 +172,7 @@ Actions are inserted into the `approvals_proposed` table with:
 **File**: `scripts/test-chat-streaming.ps1`
 
 Validates:
+
 - ✅ Health check endpoint
 - ✅ List intents endpoint
 - ✅ SSE `intent` event emission
@@ -179,7 +185,7 @@ Validates:
 
 ## User Experience
 
-### Before (Non-Streaming):
+### Before (Non-Streaming)
 
 1. User types query
 2. Clicks "Send"
@@ -187,7 +193,7 @@ Validates:
 4. Response appears all at once
 5. To file actions, must click "Run actions now" button
 
-### After (Streaming with Auto-Propose):
+### After (Streaming with Auto-Propose)
 
 1. User types query
 2. **Checks "file actions to Approvals" toggle** (optional)
@@ -199,7 +205,7 @@ Validates:
    - **If toggle checked**: "✅ Filed 5 actions to Approvals tray."
 5. User can still use "Run actions now" button to replay with filing
 
-### Key Improvements:
+### Key Improvements
 
 ✅ **Instant feedback** - See what the assistant is doing in real-time  
 ✅ **Auto-file option** - Toggle once, file every query  
@@ -212,12 +218,14 @@ Validates:
 ### GET /api/chat/stream
 
 **Query Parameters**:
+
 - `q` (required): The user query text
 - `propose` (optional): Set to `1` to file actions to Approvals tray
 
 **Response**: `text/event-stream` (SSE)
 
 **Events**:
+
 ```
 event: intent
 data: {"intent": "clean", "explanation": "Propose archiving old promotional emails"}
@@ -241,7 +249,8 @@ Still available for backward compatibility. Use streaming endpoint for better UX
 
 ## Files Modified
 
-### Frontend:
+### Frontend
+
 - **apps/web/src/components/MailChat.tsx** (+180 lines, -70 lines)
   - Replaced `sendChatMessage()` with `EventSource`
   - Added event listeners for `intent`, `tool`, `answer`, `filed`, `done`, `error`
@@ -249,7 +258,8 @@ Still available for backward compatibility. Use streaming endpoint for better UX
   - Added progressive UI updates during streaming
   - Enhanced "Run actions now" button
 
-### Backend:
+### Backend
+
 - **services/api/app/routers/chat.py** (+128 lines)
   - Added `GET /stream` endpoint with SSE
   - Integrated with Phase 4 Approvals via `approvals_bulk_insert()`
@@ -257,21 +267,24 @@ Still available for backward compatibility. Use streaming endpoint for better UX
   - Safety cap at 100 actions per query
   - Tags filed actions with `policy_id: "chat_assistant"`
 
-### Testing:
+### Testing
+
 - **scripts/test-chat-streaming.ps1** (new file, 160 lines)
   - 7 comprehensive tests
   - Validates SSE events
   - Tests `propose=1` parameter
 
-### Documentation:
+### Documentation
+
 - **PHASE_5_STREAMING_ACTIONS.md** (updated)
 - **PHASE_5_SSE_COMPLETE.md** (this file)
 
 ## Testing
 
-### Manual Testing (Recommended):
+### Manual Testing (Recommended)
 
 1. **Start Services**:
+
    ```powershell
    # Backend (if not running)
    cd d:\ApplyLens\infra
@@ -283,7 +296,7 @@ Still available for backward compatibility. Use streaming endpoint for better UX
    ```
 
 2. **Navigate to Chat**:
-   - Open: http://localhost:5176/chat
+   - Open: <http://localhost:5176/chat>
 
 3. **Test Real-Time Streaming**:
    - Type: "Summarize recent emails"
@@ -307,12 +320,12 @@ Still available for backward compatibility. Use streaming endpoint for better UX
    - Result: "✅ Filed X actions to Approvals tray." confirmation
 
 6. **Verify in Approvals Tray**:
-   - Navigate to: http://localhost:5176/actions
+   - Navigate to: <http://localhost:5176/actions>
    - Verify: Pending actions appear
    - Check: `policy_id: "chat_assistant"` in database
    - Check: Rationale shows chat query
 
-### Automated Testing:
+### Automated Testing
 
 ```powershell
 # Backend streaming tests
@@ -329,7 +342,7 @@ pwsh ./scripts/test-chat.ps1
 # ✅ All tests passed! (12/12)
 ```
 
-### Database Verification:
+### Database Verification
 
 ```sql
 -- Check filed actions from chat
@@ -348,7 +361,7 @@ LIMIT 10;
 
 ## Integration with Phase 4
 
-### Approvals Tray Workflow:
+### Approvals Tray Workflow
 
 1. **Chat Assistant** → Files actions with `propose=1`
 2. **Database** → Inserts into `approvals_proposed` table
@@ -357,9 +370,10 @@ LIMIT 10;
 5. **Execution** → Batch execute on Gmail via Phase 4 system
 6. **Audit Trail** → Logged in `actions_audit` table
 
-### Policy Tagging:
+### Policy Tagging
 
 All chat-filed actions are tagged with:
+
 - **policy_id**: `"chat_assistant"`
 - **confidence**: `0.8` (high confidence)
 - **status**: `"proposed"` (requires approval)
@@ -368,18 +382,21 @@ This allows filtering and analyzing chat-originated actions separately from poli
 
 ## Performance & Safety
 
-### Streaming Performance:
+### Streaming Performance
+
 - **Latency**: ~100ms per event (with artificial delay for smooth UI)
 - **Connection**: Auto-closes after `done` event
 - **Error Handling**: Graceful fallback with `error` event
 
-### Safety Measures:
+### Safety Measures
+
 - **Action Cap**: Maximum 100 actions per query (prevent accidents)
 - **User Confirmation**: `filed` event confirms count before execution
 - **Approval Required**: All actions go through Phase 4 Approvals tray
 - **Audit Trail**: Every action logged with rationale and timestamp
 
-### Robustness:
+### Robustness
+
 - **EventSource Auto-Retry**: Browser automatically reconnects on network errors
 - **Fallback to POST**: Legacy `/api/chat` endpoint still available
 - **Error Events**: Server errors reported via SSE `error` event
@@ -393,19 +410,23 @@ The frontend uses the `API_BASE` from `@/lib/apiBase.ts`:
 export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
 ```
 
-### Development:
-- **Frontend**: http://localhost:5176 (Vite dev server)
-- **Backend**: http://localhost:8003 (Docker)
+### Development
+
+- **Frontend**: <http://localhost:5176> (Vite dev server)
+- **Backend**: <http://localhost:8003> (Docker)
 - **Proxy**: Vite proxies `/api` → `http://localhost:8003`
 
-### Production:
+### Production
+
 - Set `VITE_API_BASE=http://api:8003` in `.env.docker`
 - Or use relative path `/api` with reverse proxy
 
 ## Future Enhancements
 
 ### 1. Token-by-Token Streaming (LLM Integration)
+
 When integrating with LLM (GPT-4, Claude, etc.):
+
 ```python
 async def generate():
     # Stream LLM tokens in real-time
@@ -414,6 +435,7 @@ async def generate():
 ```
 
 ### 2. Progress Bar for Long Operations
+
 ```typescript
 ev.addEventListener('progress', (e: any) => {
   const data = JSON.parse(e.data)
@@ -422,7 +444,9 @@ ev.addEventListener('progress', (e: any) => {
 ```
 
 ### 3. Batch Filing Confirmation Dialog
+
 For large action counts:
+
 ```typescript
 if (filedCount > 20) {
   const confirmed = window.confirm(`File ${filedCount} actions to Approvals?`)
@@ -431,7 +455,9 @@ if (filedCount > 20) {
 ```
 
 ### 4. Action Preview Before Filing
+
 Show action details before confirming:
+
 ```typescript
 ev.addEventListener('actions', (e: any) => {
   const actions = JSON.parse(e.data).actions
@@ -441,7 +467,9 @@ ev.addEventListener('actions', (e: any) => {
 ```
 
 ### 5. Undo Filed Actions
+
 Add ability to quickly undo accidental filing:
+
 ```typescript
 <button onClick={() => undoFiledActions(lastFiledIds)}>
   Undo filing
@@ -455,6 +483,7 @@ Add ability to quickly undo accidental filing:
 **Cause**: API not reachable or CORS issue
 
 **Fix**:
+
 ```powershell
 # Check API is running
 curl http://localhost:8003/api/chat/health
@@ -472,11 +501,15 @@ docker-compose restart api
 **Cause**: No actions to file (no matching emails)
 
 **Fix**:
+
 - Verify emails exist in database:
+
   ```sql
   SELECT COUNT(*) FROM emails;
   ```
+
 - Seed test data:
+
   ```powershell
   cd d:\ApplyLens\services\api
   python -m app.seeds.seed_emails
@@ -487,6 +520,7 @@ docker-compose restart api
 **Cause**: Frontend not reloaded after code changes
 
 **Fix**:
+
 ```powershell
 # Hard refresh browser: Ctrl+Shift+R
 # Or restart frontend:
@@ -499,6 +533,7 @@ npm run dev
 **Cause**: API returned non-200 status
 
 **Check API logs**:
+
 ```powershell
 cd d:\ApplyLens\infra
 docker-compose logs -f api
@@ -506,9 +541,10 @@ docker-compose logs -f api
 
 ## Migration Notes
 
-### From Previous Implementation:
+### From Previous Implementation
 
 **Old (POST with manual replay)**:
+
 ```typescript
 // Old: POST /api/chat
 const response = await sendChatMessage({...})
@@ -518,6 +554,7 @@ const response = await sendChatMessage({...})
 ```
 
 **New (SSE with auto-propose)**:
+
 ```typescript
 // New: EventSource /api/chat/stream
 const ev = new EventSource(url)
@@ -530,13 +567,13 @@ ev.addEventListener('filed', ...)
 </label>
 ```
 
-### Backward Compatibility:
+### Backward Compatibility
 
 ✅ **POST /api/chat** - Still available, returns full response at once  
 ✅ **"Run actions now" button** - Still functional, replays with `propose=true`  
 ✅ **Existing Phase 4 integration** - Unchanged, uses same database tables
 
-### Breaking Changes:
+### Breaking Changes
 
 ❌ **None** - This is a pure enhancement, no breaking changes
 
@@ -545,6 +582,7 @@ ev.addEventListener('filed', ...)
 This enhancement delivers **real-time streaming** with Server-Sent Events and **one-click action filing** via the toggle checkbox. Users get instant feedback as the assistant works, and can optionally auto-file actions without clicking "Run actions now" every time.
 
 **Key Achievements**:
+
 - ✅ EventSource SSE implementation with 6 event types
 - ✅ Auto-propose toggle wired to Enter key and Send button
 - ✅ `filed` event confirmation with action count
@@ -555,6 +593,6 @@ This enhancement delivers **real-time streaming** with Server-Sent Events and **
 - ✅ Backward compatible with existing POST endpoint
 
 **Status**: ✅ Complete and production-ready  
-**Frontend**: Running on http://localhost:5176/chat  
-**Backend**: Running on http://localhost:8003  
+**Frontend**: Running on <http://localhost:5176/chat>  
+**Backend**: Running on <http://localhost:8003>  
 **Tests**: 7/7 passing (streaming), 12/12 passing (comprehensive)

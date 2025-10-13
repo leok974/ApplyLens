@@ -5,6 +5,7 @@ Guide for setting up minimal role-based access control for the ApplyLens applica
 ## Overview
 
 Instead of using the elastic superuser, create a dedicated API key with minimal required permissions:
+
 - **emails_v1**: Read-only access
 - **actions_audit_v1**: Write access for audit logging
 
@@ -102,15 +103,18 @@ curl -H "Authorization: ApiKey VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrd
 ## Privilege Breakdown
 
 ### Cluster Privileges
+
 - **monitor**: Allows health checks and basic cluster info
 
 ### Index Privileges
 
 **emails_v1 (Read-Only)**:
+
 - `read`: Search and get documents
 - `view_index_metadata`: View index settings and mappings
 
 **actions_audit_v1 (Write + Read)**:
+
 - `create`: Create new documents (POST without ID)
 - `create_doc`: Alias for create
 - `index`: Index documents (PUT with ID)
@@ -159,6 +163,7 @@ services:
 ```
 
 Create `.env` file:
+
 ```bash
 ES_API_KEY=VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrdzl0dk5udw==
 ```
@@ -175,16 +180,19 @@ ES_API_KEY=VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrdzl0dk5udw==
 ## Troubleshooting
 
 ### 401 Unauthorized
+
 - Check API key is not expired
 - Verify encoded format is correct
 - Ensure key has not been deleted
 
 ### 403 Forbidden
+
 - Check role_descriptors have required privileges
 - Verify index name matches pattern (e.g., `emails_v1*`)
 - Test with `_cat/indices` to see accessible indices
 
 ### Connection Refused
+
 - Verify ES_URL is correct
 - Check Elasticsearch is running
 - Ensure security is enabled in ES config

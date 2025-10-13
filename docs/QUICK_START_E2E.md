@@ -19,6 +19,7 @@ pnpm test:e2e:ui
 ```
 
 **What you'll see:**
+
 - Interactive test runner
 - Click to run individual tests
 - Watch tests execute in real-time
@@ -34,6 +35,7 @@ pnpm test:e2e
 ```
 
 **Output:**
+
 ```
 ✓ [chromium] › pipeline.spec.ts:5:3 › runs Gmail→Label→Profile with toasts (25s)
 ✓ [chromium] › search.spec.ts:50:3 › category buttons mutate URL (1s)
@@ -53,6 +55,7 @@ pnpm test:e2e:headed
 ```
 
 **What you'll see:**
+
 - Browser window opens
 - Tests run visibly
 - Good for debugging
@@ -62,9 +65,11 @@ pnpm test:e2e:headed
 ## Test Descriptions
 
 ### 1. Pipeline Tests (`pipeline.spec.ts`)
+
 **Duration:** ~30-60s (live API calls)
 
 **Tests:**
+
 - 7-day sync button → 4 toasts appear
 - 60-day sync button → sync completes
 
@@ -73,9 +78,11 @@ pnpm test:e2e:headed
 ---
 
 ### 2. Search Tests (`search.spec.ts`)
+
 **Duration:** ~3-5s (mocked API)
 
 **Tests:**
+
 - Category button clicks update URL
 - Multiple categories can be selected
 - Hide expired switch works
@@ -86,9 +93,11 @@ pnpm test:e2e:headed
 ---
 
 ### 3. Highlight Tests (`highlight.spec.ts`)
+
 **Duration:** ~2-3s (mocked API)
 
 **Tests:**
+
 - `<mark>` tags render in subjects
 - `<mark>` tags render in body snippets
 - XSS protection (scripts blocked)
@@ -99,9 +108,11 @@ pnpm test:e2e:headed
 ---
 
 ### 4. Profile Tests (`profile.spec.ts`)
+
 **Duration:** ~5-10s (real or mocked API)
 
 **Tests:**
+
 - Profile link in navigation
 - Profile page loads
 - Summary data displays
@@ -114,6 +125,7 @@ pnpm test:e2e:headed
 ## Expected Results
 
 ### All Tests Passing ✅
+
 ```
 ✓ pipeline.spec.ts (2 tests, 30s)
 ✓ search.spec.ts (4 tests, 5s)
@@ -124,6 +136,7 @@ pnpm test:e2e:headed
 ```
 
 ### Some Tests Skipped (API Down) ⏭️
+
 ```
 ✓ search.spec.ts (4 tests, 5s)
 ✓ highlight.spec.ts (4 tests, 3s)
@@ -137,9 +150,10 @@ pnpm test:e2e:headed
 
 ## Troubleshooting
 
-### Tests Fail: "Cannot connect to http://localhost:5175"
+### Tests Fail: "Cannot connect to <http://localhost:5175>"
 
 **Solution:**
+
 ```bash
 # Check if web container is running
 docker ps | Select-String "infra-web"
@@ -158,6 +172,7 @@ docker compose up -d web
 **This is expected!** Pipeline tests will skip gracefully.
 
 **To fix (optional):**
+
 ```bash
 # Check if API container is running
 docker ps | Select-String "infra-api"
@@ -177,11 +192,13 @@ curl http://localhost:8003/docs
 ### Tests Fail: "Element not found"
 
 **Possible causes:**
+
 1. Test IDs not deployed yet
 2. Component changed
 3. Timing issue
 
 **Solution:**
+
 ```bash
 # Rebuild web container
 cd d:\ApplyLens\infra
@@ -202,6 +219,7 @@ pnpm test:e2e
 **Error:** `command not found: playwright`
 
 **Solution:**
+
 ```bash
 cd d:\ApplyLens\apps\web
 pnpm add -D @playwright/test
@@ -219,6 +237,7 @@ pnpm test:e2e:report
 ```
 
 **Opens browser with:**
+
 - Test results
 - Screenshots (on failure)
 - Videos (on failure)
@@ -244,18 +263,21 @@ PWDEBUG=1 pnpm exec playwright test tests/search.spec.ts
 ## Next Steps
 
 ### 1. Run Tests Now
+
 ```bash
 cd d:\ApplyLens\apps\web
 pnpm test:e2e:ui
 ```
 
 ### 2. Watch Tests Execute
+
 - Click "pipeline.spec.ts" to run sync tests
 - Click "search.spec.ts" to run filter tests
 - Click "highlight.spec.ts" to run highlight tests
 - Click "profile.spec.ts" to run profile tests
 
 ### 3. Verify All Features
+
 - ✅ Sync buttons work
 - ✅ Category filters work
 - ✅ Highlights render

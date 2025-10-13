@@ -10,6 +10,7 @@ python -m analytics.pipeline --window-days 7
 ```
 
 **Expected Output:**
+
 ```
 ✅ CSV dashboards exported:
    kpis_csv: analytics/outputs/dashboards/kpis.csv
@@ -100,18 +101,21 @@ curl "http://localhost:8003/analytics/search?q=test&k=3"
 ## Common Issues
 
 ### "Vector store not built yet"
+
 ```bash
 # Run pipeline to create vector store
 python -m analytics.pipeline --window-days 7
 ```
 
 ### "kpis.csv not found"
+
 ```bash
 # Export CSVs
 python -m analytics.dashboards.exporter
 ```
 
 ### "No recommendations"
+
 - Check if anomalies exist in your data
 - Verify `analytics/data/*.json` files have proper structure
 - Look for error suppression message in report

@@ -11,6 +11,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 **File**: `apps/web/src/components/ui/badge.tsx`
 
 **New Variants**:
+
 - `promo` - Amber colors for promotional emails
 - `bill` - Blue colors for bills and invoices
 - `ats` - Purple colors for application tracking systems
@@ -20,12 +21,14 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 - `default` - Slate colors for general use
 
 **New Sizes**:
+
 - `sm` - Smaller badges (10px font, reduced padding)
 - `md` - Default size (12px font)
 
 **Dark Mode**: All variants have optimized dark mode colors with proper contrast
 
 **Usage**:
+
 ```tsx
 <Badge variant="promo" size="sm">Promotion</Badge>
 <Badge variant="ats">Application</Badge>
@@ -39,11 +42,13 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 **File**: `apps/web/src/components/ui/skeleton.tsx`
 
 **Features**:
+
 - Animated pulse effect
 - Dark mode support
 - Customizable size via className
 
 **Usage**:
+
 ```tsx
 <Skeleton className="h-4 w-40" />
 <Skeleton className="mt-2 h-4 w-3/4" />
@@ -56,6 +61,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 **File**: `apps/web/src/components/ui/label.tsx`
 
 **Features**:
+
 - Radix UI Label primitive
 - Accessible form labels
 - Peer-disabled styling support
@@ -63,6 +69,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 **Dependencies**: `@radix-ui/react-label`
 
 **Usage**:
+
 ```tsx
 <Label htmlFor="email">Email address</Label>
 <Input id="email" type="email" />
@@ -75,6 +82,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 **File**: `apps/web/src/components/ui/switch.tsx`
 
 **Features**:
+
 - Radix UI Switch primitive
 - Smooth animations
 - Keyboard accessible
@@ -84,6 +92,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 **Dependencies**: `@radix-ui/react-switch`
 
 **Usage**:
+
 ```tsx
 <Switch checked={enabled} onCheckedChange={setEnabled} />
 ```
@@ -95,6 +104,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 **File**: `apps/web/src/components/inbox/EmailRow.tsx`
 
 **Features**:
+
 - **Clean card-based layout** with rounded corners
 - **Selection indicator** - Indigo left rail when selected
 - **Hover state** - Subtle background change
@@ -106,6 +116,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 - **Timestamp** - Right-aligned received date
 
 **Props**:
+
 ```typescript
 type Props = {
   selected?: boolean;
@@ -124,6 +135,7 @@ type Props = {
 ```
 
 **Usage**:
+
 ```tsx
 <EmailRow
   subject="Interview Invitation"
@@ -144,12 +156,14 @@ type Props = {
 **File**: `apps/web/src/components/inbox/EmailList.tsx`
 
 **Features**:
+
 - **Loading state** - Shows 6 skeleton placeholders
 - **Empty state** - Friendly message when no emails
 - **Scrollable list** - All EmailRow components
 - **Event delegation** - Passes all actions to EmailRow
 
 **Props**:
+
 ```typescript
 {
   items: Item[];
@@ -164,6 +178,7 @@ type Props = {
 ```
 
 **Usage**:
+
 ```tsx
 <EmailList
   items={emails}
@@ -184,6 +199,7 @@ type Props = {
 **File**: `apps/web/src/components/inbox/FiltersPanel.tsx`
 
 **Features**:
+
 - **Sticky sidebar** - Stays visible when scrolling
 - **Search input** - Text query field
 - **Toggle switches** - Promotions, Bills, Safe senders
@@ -192,6 +208,7 @@ type Props = {
 - **Compact layout** - 288px (18rem) width
 
 **Props**:
+
 ```typescript
 {
   q: string; setQ: (v: string) => void;
@@ -204,6 +221,7 @@ type Props = {
 ```
 
 **Usage**:
+
 ```tsx
 <FiltersPanel
   q={query}
@@ -226,6 +244,7 @@ type Props = {
 **File**: `apps/web/src/pages/InboxPolishedDemo.tsx`
 
 **Features**:
+
 - **Complete working demo** with 6 sample emails
 - **Functional search** - Filters by subject, sender, preview
 - **Category filtering** - Promotions, Bills, Safe senders
@@ -236,6 +255,7 @@ type Props = {
 - **Loading states** - Simulated API delay
 
 **Demo Emails Include**:
+
 1. ATS email (job application)
 2. Interview invitation
 3. Promotional email
@@ -245,7 +265,7 @@ type Props = {
 
 **Route**: `/inbox-polished-demo`
 
-**Test It**: http://localhost:5175/inbox-polished-demo
+**Test It**: <http://localhost:5175/inbox-polished-demo>
 
 ---
 
@@ -254,6 +274,7 @@ type Props = {
 ### Color Palette
 
 **Badge Colors** (Light Mode → Dark Mode):
+
 - **Promo**: Amber 100/800 → Amber 300/10
 - **Bill**: Blue 100/800 → Blue 300/10
 - **ATS**: Purple 100/800 → Purple 300/10
@@ -261,14 +282,17 @@ type Props = {
 - **Danger**: Rose 100/800 → Rose 300/10
 
 **Background Colors**:
+
 - Light: slate-50 (body), white (cards/header)
 - Dark: slate-950 (body), slate-900 (cards/header)
 
 **Text Colors**:
+
 - Light: slate-900 (primary), slate-600 (secondary)
 - Dark: slate-100 (primary), slate-400 (secondary)
 
 **Border Colors**:
+
 - Light: slate-200
 - Dark: slate-800
 
@@ -382,6 +406,7 @@ export default function MyInbox() {
 ## Dark Mode Classes Reference
 
 ### EmailRow
+
 ```tsx
 // Container
 "bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850/60"
@@ -409,6 +434,7 @@ export default function MyInbox() {
 ```
 
 ### FiltersPanel
+
 ```tsx
 // Container
 "bg-white dark:bg-slate-900"
@@ -427,6 +453,7 @@ export default function MyInbox() {
 ```
 
 ### Header
+
 ```tsx
 // Background
 "bg-white dark:bg-slate-900"
@@ -443,6 +470,7 @@ export default function MyInbox() {
 ## Testing Checklist
 
 ### Visual Testing
+
 - [ ] EmailRow displays correctly in light mode
 - [ ] EmailRow displays correctly in dark mode
 - [ ] Hover actions appear on hover
@@ -453,6 +481,7 @@ export default function MyInbox() {
 - [ ] Empty state is centered and readable
 
 ### Interaction Testing
+
 - [ ] Clicking email row selects it
 - [ ] Archive button works
 - [ ] Mark safe button works
@@ -465,12 +494,14 @@ export default function MyInbox() {
 - [ ] Reset button clears filters
 
 ### Responsive Testing
+
 - [ ] Layout works on desktop (>768px)
 - [ ] Sidebar collapses on mobile (<768px)
 - [ ] Header remains sticky
 - [ ] Scrolling works properly
 
 ### Accessibility Testing
+
 - [ ] All buttons have titles/aria-labels
 - [ ] Switches are keyboard accessible
 - [ ] Labels are properly associated with inputs
@@ -490,6 +521,7 @@ To integrate these components with your existing inbox:
 5. **Add toast notifications** for user feedback
 
 Example integration:
+
 ```tsx
 // In your existing InboxPolished.tsx
 import { EmailList } from "@/components/inbox/EmailList";
@@ -529,6 +561,7 @@ import { EmailList } from "@/components/inbox/EmailList";
 ## Future Enhancements
 
 ### Optional Improvements
+
 1. **Bulk actions** - Checkbox selection for multiple emails
 2. **Keyboard shortcuts** - j/k navigation, x to select, e to archive
 3. **Preview panel** - Slide-out panel with full email content
@@ -551,7 +584,8 @@ import { EmailList } from "@/components/inbox/EmailList";
 ✅ **Fully documented** with usage examples
 
 **Next Steps**:
-1. Test the demo at http://localhost:5175/inbox-polished-demo
+
+1. Test the demo at <http://localhost:5175/inbox-polished-demo>
 2. Integrate components into your existing InboxPolished.tsx
 3. Connect to real API endpoints
 4. Add any custom business logic

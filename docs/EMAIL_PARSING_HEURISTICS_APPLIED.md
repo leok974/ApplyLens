@@ -48,6 +48,7 @@ Applied intelligent email parsing heuristics to automatically extract company na
 4. **Best candidate:** Prefers capitalized names, longer matches
 
 **Examples:**
+
 ```python
 extract_company("Careers <careers@openai.com>", "", "")
 # Returns: "openai"
@@ -62,12 +63,14 @@ extract_company("OpenAI Recruiting <jobs@example.com>", "", "")
 ### Role Extraction
 
 **Patterns matched:**
+
 - `"for {Role} role"` → "Research Engineer role"
 - `"Position: {Role}"` → "Position: Senior Developer"
 - `"Job: {Role}"` → "Job: ML Engineer"
 - `"Application for {Role}"` → "Application for Data Scientist"
 
 **Examples:**
+
 ```python
 extract_role("Application for Research Engineer role", "")
 # Returns: "Research Engineer"
@@ -93,6 +96,7 @@ extract_role("Your application for ML Engineer", "")
 | Email | Default fallback |
 
 **Examples:**
+
 ```python
 extract_source({}, "jobs@lever.co", "via Lever", "")
 # Returns: "Lever"
@@ -111,6 +115,7 @@ extract_source({}, "recruiting@company.com", "", "")
 ### Updated `/applications/from-email` Endpoint
 
 **Before:**
+
 ```json
 POST /applications/from-email
 {
@@ -122,6 +127,7 @@ POST /applications/from-email
 ```
 
 **After (with auto-extraction):**
+
 ```json
 POST /applications/from-email
 {
@@ -161,6 +167,7 @@ POST /applications/from-email
 ### Test 1: OpenAI Email
 
 **Input:**
+
 ```powershell
 {
     "thread_id": "test_thread_parsing_123",
@@ -171,6 +178,7 @@ POST /applications/from-email
 ```
 
 **Output:**
+
 ```
 ✅ company: "Careers"
 ✅ role: "Research Engineer"
@@ -180,6 +188,7 @@ POST /applications/from-email
 ### Test 2: Anthropic Email
 
 **Input:**
+
 ```powershell
 {
     "thread_id": "test_anthropic_456",
@@ -190,6 +199,7 @@ POST /applications/from-email
 ```
 
 **Output:**
+
 ```
 ✅ company: "Anthropic"
 ✅ role: "Senior AI Safety Researcher at Anthropic"
@@ -199,6 +209,7 @@ POST /applications/from-email
 ### Test 3: Lever ATS Detection
 
 **Input:**
+
 ```powershell
 {
     "thread_id": "test_lever_789",
@@ -209,6 +220,7 @@ POST /applications/from-email
 ```
 
 **Output:**
+
 ```
 ✅ company: "lever"
 ✅ role: "Software Engineer"
@@ -255,6 +267,7 @@ POST /applications/from-email
 The frontend can now create applications with minimal data:
 
 **Before:**
+
 ```typescript
 // Frontend had to extract company/role manually
 createFromEmail({
@@ -266,6 +279,7 @@ createFromEmail({
 ```
 
 **After:**
+
 ```typescript
 // Backend handles extraction automatically
 createFromEmail({
@@ -283,23 +297,29 @@ createFromEmail({
 ## 🔍 Edge Cases Handled
 
 ### 1. Missing Company Name
+
 **Input:** No company found in email  
 **Output:** `"(Unknown)"`
 
 ### 2. Missing Job Role
+
 **Input:** No role patterns match  
 **Output:** `"(Unknown Role)"`
 
 ### 3. Short Domain Names
+
 **Input:** `hr@ai.com`  
 **Output:** Skipped (too short, fallback to sender name)
 
 ### 4. Multiple Candidates
+
 **Input:** Multiple possible company names  
 **Output:** Prefers capitalized, longer names
 
 ### 5. Email Already in Database
+
 **Flow:**
+
 1. Check if email exists by `thread_id`
 2. Use database fields for extraction
 3. Fallback to provided parameters if not found
@@ -491,22 +511,27 @@ Add UI hints based on extraction:
 ## 🐛 Known Limitations
 
 ### 1. Generic Email Addresses
+
 **Problem:** `@gmail.com`, `@yahoo.com` don't reveal company  
 **Workaround:** Relies on sender name or body content
 
 ### 2. Ambiguous Roles
+
 **Problem:** "Your application has been received" (no role mentioned)  
 **Result:** Returns `"(Unknown Role)"`
 
 ### 3. Non-English Emails
+
 **Problem:** Patterns are English-centric  
 **Future:** Add multi-language pattern support
 
 ### 4. Complex Company Names
+
 **Problem:** "ABC Corp (a subsidiary of XYZ Inc)"  
 **Result:** May extract "ABC Corp" or entire string
 
 ### 5. Forwarded Emails
+
 **Problem:** Original sender info lost  
 **Workaround:** Use email body parsing
 
@@ -546,6 +571,7 @@ The email parsing heuristics system is now live! Applications can be created fro
 - ✅ **Application sources** (Lever, Greenhouse, LinkedIn, etc.)
 
 **Benefits:**
+
 - 🚀 Faster application creation
 - 🎯 More accurate data capture
 - 🤖 Less manual data entry

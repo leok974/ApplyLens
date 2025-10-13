@@ -15,6 +15,7 @@ Two new UX components added to the web app for Phase 6 personalization features.
 **Location**: `apps/web/src/components/PolicyAccuracyPanel.tsx`
 
 **What it does**:
+
 - Fetches per-user policy stats from `/api/policy/stats`
 - Displays top 5 most active policies (sorted by fired count)
 - Shows precision as visual progress bars (emerald green)
@@ -26,6 +27,7 @@ Two new UX components added to the web app for Phase 6 personalization features.
 **Where it appears**: Chat page sidebar (right column, 1/3 width on lg+ screens)
 
 **API Client**: `apps/web/src/lib/policiesClient.ts`
+
 ```typescript
 export type PolicyStat = {
   policy_id: number
@@ -40,6 +42,7 @@ export async function fetchPolicyStats(): Promise<PolicyStat[]>
 ```
 
 **Visual Design**:
+
 - Dark neutral background (neutral-900)
 - Emerald precision bars
 - Tabular numbers for percentages
@@ -51,6 +54,7 @@ export async function fetchPolicyStats(): Promise<PolicyStat[]>
 **Location**: Integrated into `apps/web/src/components/MailChat.tsx`
 
 **What it does**:
+
 - Adds mode state: `'' | 'networking' | 'money'`
 - Dropdown selector with 3 options:
   - **off** - No special context boosting
@@ -60,6 +64,7 @@ export async function fetchPolicyStats(): Promise<PolicyStat[]>
 - Shows "Export receipts (CSV)" link when money mode active
 
 **Mode Parameter Integration**:
+
 ```typescript
 const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
   + (shouldPropose ? '&propose=1' : '')
@@ -70,6 +75,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 
 **Money Mode Extra**:
 When `mode='money'`, an export link appears:
+
 ```tsx
 {mode === 'money' && (
   <a href="/api/money/receipts.csv" target="_blank">
@@ -79,6 +85,7 @@ When `mode='money'`, an export link appears:
 ```
 
 **Layout Changes**:
+
 - Changed from single column (`max-w-4xl`) to grid layout (`max-w-7xl`)
 - Main chat: `lg:col-span-2` (2/3 width)
 - Sidebar: `lg:col-span-1` (1/3 width)
@@ -91,6 +98,7 @@ When `mode='money'`, an export link appears:
 **File**: `apps/web/tests/policy-panel.spec.ts`
 
 **5 test cases**:
+
 1. ✅ Panel loads and shows bars
 2. ✅ Handles empty state
 3. ✅ Refresh button works
@@ -104,6 +112,7 @@ When `mode='money'`, an export link appears:
 **File**: `apps/web/tests/chat-modes.spec.ts`
 
 **6 test cases**:
+
 1. ✅ Mode selector wires to SSE URL
 2. ✅ Money mode shows export link
 3. ✅ Networking mode wires to SSE
@@ -116,6 +125,7 @@ When `mode='money'`, an export link appears:
 ## File Changes
 
 ### New Files (4)
+
 ```
 apps/web/src/lib/policiesClient.ts           (22 lines)
 apps/web/src/components/PolicyAccuracyPanel.tsx  (68 lines)
@@ -124,6 +134,7 @@ apps/web/tests/chat-modes.spec.ts            (147 lines)
 ```
 
 ### Modified Files (2)
+
 ```
 apps/web/src/components/MailChat.tsx         (+51/-10 lines)
   - Added PolicyAccuracyPanel import
@@ -145,6 +156,7 @@ PHASE_6_PERSONALIZATION.md                   (+98/-2 lines)
 ### Endpoints Used
 
 **GET /api/policy/stats**
+
 ```typescript
 // Response:
 {
@@ -158,6 +170,7 @@ PHASE_6_PERSONALIZATION.md                   (+98/-2 lines)
 ```
 
 **GET /api/chat/stream?mode=<mode>**
+
 ```
 ?mode=networking  → Boosts events/meetups
 ?mode=money       → Boosts receipts/payments
@@ -165,6 +178,7 @@ PHASE_6_PERSONALIZATION.md                   (+98/-2 lines)
 ```
 
 **GET /api/money/receipts.csv**
+
 ```
 Direct CSV download of all receipts
 ```
@@ -172,6 +186,7 @@ Direct CSV download of all receipts
 ## How to Use
 
 ### Add Policy Panel to Any Page
+
 ```tsx
 import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
 
@@ -190,9 +205,11 @@ function MyPage() {
 ```
 
 ### Mode Selector Already Integrated
+
 The mode selector is built into MailChat. No additional work needed - just use the chat page!
 
 ### Run Tests
+
 ```bash
 cd apps/web
 pnpm test policy-panel.spec.ts
@@ -202,6 +219,7 @@ pnpm test chat-modes.spec.ts
 ## Visual Design
 
 ### Policy Panel
+
 ```
 ┌─────────────────────────────────┐
 │ Policy Accuracy (30d)  Refresh  │
@@ -217,6 +235,7 @@ pnpm test chat-modes.spec.ts
 ```
 
 ### Mode Selector
+
 ```
 ┌────────────────────────────────────────────┐
 │ mode [off ▼] [networking] [money]          │
@@ -224,6 +243,7 @@ pnpm test chat-modes.spec.ts
 ```
 
 When money mode:
+
 ```
 ┌────────────────────────────────────────────┐
 │ mode [money ▼] [Export receipts (CSV)]     │
@@ -247,12 +267,14 @@ When money mode:
 ## Known Limitations
 
 ### Policy Panel
+
 - Shows max 5 policies (top by fired count)
 - No pagination or filtering
 - Precision only (recall not shown yet)
 - No drill-down into individual actions
 
 ### Mode Selector
+
 - Only 2 modes implemented (networking, money)
 - No "auto-detect" mode
 - Mode doesn't persist across sessions (resets on page load)
@@ -261,6 +283,7 @@ When money mode:
 ## Future Enhancements
 
 ### Policy Panel
+
 - [ ] Hover tooltips with full policy descriptions
 - [ ] Click to see detailed policy performance
 - [ ] Historical trend charts (precision over time)
@@ -268,6 +291,7 @@ When money mode:
 - [ ] Export policy stats as CSV
 
 ### Mode Selector
+
 - [ ] Auto-detect mode from query intent
 - [ ] Persist mode in localStorage
 - [ ] Show mode badge on messages
@@ -277,12 +301,14 @@ When money mode:
 ## Deployment Steps
 
 ### 1. Build Web App
+
 ```bash
 cd apps/web
 pnpm build
 ```
 
 ### 2. Verify API Endpoints
+
 ```bash
 # Test policy stats
 curl http://localhost:8003/api/policy/stats | jq .
@@ -292,12 +318,14 @@ curl "http://localhost:8003/api/chat/stream?q=test&mode=money"
 ```
 
 ### 3. Run Tests
+
 ```bash
 cd apps/web
 pnpm test
 ```
 
 ### 4. Deploy
+
 ```bash
 # Deploy to production
 pnpm deploy
@@ -306,6 +334,7 @@ pnpm deploy
 ## Success Metrics
 
 **Implementation**:
+
 - ✅ 2 new components created
 - ✅ 4 new files added (347 lines)
 - ✅ 2 files modified (139 lines)
@@ -317,6 +346,7 @@ pnpm deploy
 - ✅ Error handling
 
 **Code Quality**:
+
 - TypeScript strict mode compliant
 - Tailwind CSS for styling
 - React hooks best practices
@@ -327,6 +357,7 @@ pnpm deploy
 ## Documentation
 
 Full documentation added to:
+
 - `PHASE_6_PERSONALIZATION.md` - "Web UI Components" section
 - Component JSDoc comments
 - Test file headers
@@ -335,6 +366,7 @@ Full documentation added to:
 ## Commit History
 
 **13212e3** - feat(web): Phase 6 UX - Policy Accuracy panel and mode selector
+
 - 6 files changed
 - 477 insertions
 - 12 deletions
@@ -343,6 +375,7 @@ Full documentation added to:
 ## Conclusion
 
 Phase 6 UX components are production-ready! Users can now:
+
 1. See which policies are performing well (precision bars)
 2. Switch between networking/money modes for specialized assistance
 3. Export receipts directly from money mode

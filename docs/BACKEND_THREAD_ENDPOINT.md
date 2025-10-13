@@ -209,6 +209,7 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
 ## Performance Considerations
 
 1. **Caching**: Cache thread results for 5-10 minutes
+
    ```python
    from functools import lru_cache
    
@@ -218,16 +219,19 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
    ```
 
 2. **Pagination**: Limit to 20 messages by default
+
    ```python
    limit: int = Query(20, ge=1, le=100)
    ```
 
 3. **Field Selection**: Only return necessary fields
+
    ```python
    "_source": ["id", "from", "date", "snippet", "body_html", "body_text"]
    ```
 
 4. **Async Operations**: Use async/await for I/O
+
    ```python
    async def get_thread(...):
        result = await es_client.search(...)
@@ -316,11 +320,13 @@ Ensure `thread_id` is indexed:
 If you don't have thread data yet:
 
 1. **Phase 1**: Return empty array
+
    ```python
    return {"messages": []}
    ```
 
 2. **Phase 2**: Populate thread_id from Gmail
+
    ```python
    # Backfill script
    for email in emails:
@@ -328,6 +334,7 @@ If you don't have thread data yet:
    ```
 
 3. **Phase 3**: Enable full thread support
+
    ```python
    # Use actual thread_id from database
    ```
@@ -335,6 +342,7 @@ If you don't have thread data yet:
 ## Expected Frontend Behavior
 
 The frontend will:
+
 1. Call `getThread(threadId)` when opening an email
 2. Display all messages in chronological order
 3. Allow user to navigate between messages
@@ -354,4 +362,3 @@ The frontend will:
 **Estimated Effort**: 2-4 hours  
 **Dependencies**: Elasticsearch/Database with thread_id field  
 **Testing**: Frontend integration test available
-

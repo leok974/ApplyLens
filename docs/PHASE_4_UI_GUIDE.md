@@ -130,6 +130,7 @@ Low Confidence (<50%):
 ## Expandable Rationale
 
 **Collapsed:**
+
 ```
 ┌─────────────────────────────────────────────┐
 │ ▶ Explain                                   │
@@ -137,6 +138,7 @@ Low Confidence (<50%):
 ```
 
 **Expanded:**
+
 ```
 ┌─────────────────────────────────────────────┐
 │ ▼ Explain                                   │
@@ -220,11 +222,13 @@ The action card disappears. Audit trail records rejection as "noop".
 ## Responsive Behavior
 
 ### Desktop (>420px available)
+
 - Tray slides in from right
 - Backdrop covers remaining screen
 - Tray is 420px wide
 
 ### Mobile (<420px available)
+
 - Tray covers full screen
 - Still slides in from right
 - Close button in header
@@ -249,16 +253,19 @@ Progress bar fg:  #3b82f6 (blue-500)
 ## Interaction States
 
 ### Hover States
+
 - Buttons: Subtle background color change
 - Expand/collapse: Text color lightens
 - Action cards: No hover effect (not clickable)
 
 ### Loading States
+
 - Refresh button: Icon spins
 - Approve/Reject: Button text changes to "Processing..."
 - Entire tray: Skeleton loader (optional)
 
 ### Error States
+
 - Toast notification with red background
 - Action remains in tray
 - Error message in toast description
@@ -277,6 +284,7 @@ R           → Refresh
 ## Animations
 
 ### Tray Slide-In
+
 ```css
 transition: transform 300ms ease-out
 from: translateX(100%)
@@ -284,6 +292,7 @@ to: translateX(0)
 ```
 
 ### Backdrop Fade
+
 ```css
 transition: opacity 200ms ease-out
 from: opacity(0)
@@ -291,6 +300,7 @@ to: opacity(0.5)
 ```
 
 ### Action Card Remove
+
 ```css
 transition: opacity 200ms, height 200ms
 from: opacity(1) height(auto)
@@ -298,6 +308,7 @@ to: opacity(0) height(0)
 ```
 
 ### Progress Bar Fill
+
 ```css
 transition: width 500ms ease-out
 ```
@@ -351,24 +362,28 @@ transition: width 500ms ease-out
 ## Tips for Users
 
 **Getting Started:**
+
 1. Click "Actions" button to see pending actions
 2. Review each action's details and confidence
 3. Click "Explain" to understand why it was proposed
 4. Approve or reject based on your judgment
 
 **Best Practices:**
+
 - Review high-confidence actions (>80%) quickly
 - Scrutinize low-confidence actions (<50%)
 - Check rationale for unfamiliar actions
 - Approve in batches for efficiency
 
 **Keyboard Users:**
+
 - Tab through actions
 - Space to expand/collapse
 - Enter to approve
 - Esc to close tray
 
 **Understanding Confidence:**
+
 - 80-100%: Very likely correct
 - 50-80%: Likely correct, review recommended
 - <50%: Uncertain, careful review needed
@@ -376,21 +391,25 @@ transition: width 500ms ease-out
 ## Troubleshooting
 
 **Tray won't open:**
+
 - Check browser console for errors
 - Verify API endpoint is accessible
 - Check CORS configuration
 
 **Actions not loading:**
+
 - Check network tab for failed requests
 - Verify Docker services are running
 - Check API logs: `docker logs infra-api-1`
 
 **Screenshot capture fails:**
+
 - Check console for html2canvas errors
 - Verify html2canvas is installed
 - Screenshot failure is non-blocking (action still executes)
 
 **Badge count wrong:**
+
 - Wait 30s for next poll
 - Click refresh button in tray
 - Check `/api/actions/tray` endpoint
@@ -398,6 +417,7 @@ transition: width 500ms ease-out
 ## Future Enhancements
 
 **Planned:**
+
 - [ ] "Always do this" button (create policy from action)
 - [ ] Bulk approve/reject
 - [ ] Action history view
@@ -406,6 +426,7 @@ transition: width 500ms ease-out
 - [ ] Action scheduling (execute at specific time)
 
 **Nice to Have:**
+
 - [ ] Dark/light mode toggle
 - [ ] Compact view mode
 - [ ] Action undo (within 5 seconds)
@@ -416,6 +437,7 @@ transition: width 500ms ease-out
 ---
 
 **This UI is designed to be:**
+
 - **Fast** - Smooth animations, optimistic updates
 - **Clear** - Color-coded badges, confidence bars
 - **Trustworthy** - Detailed rationale, screenshot audit

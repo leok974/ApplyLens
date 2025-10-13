@@ -8,6 +8,7 @@
 ## Overview
 
 Added visual polish to the search UI with:
+
 - **Impact-ordered labels** (Offer > Interview > Others > Rejection)
 - **Color-coded badges** (Yellow for offers, green for interviews, gray for rejections)
 - **Scoring hint display** in search results
@@ -20,6 +21,7 @@ Added visual polish to the search UI with:
 ### Frontend
 
 #### 1. `apps/web/src/lib/searchScoring.ts` ✨ NEW
+
 Centralized scoring constants and utilities:
 
 ```typescript
@@ -36,6 +38,7 @@ export function labelTitle(label: string): string
 **Purpose**: Single source of truth for scoring weights, shared between backend and frontend
 
 #### 2. `apps/web/src/components/EmailLabels.tsx` ✨ NEW
+
 Reusable label badge component:
 
 ```tsx
@@ -43,12 +46,14 @@ Reusable label badge component:
 ```
 
 **Features**:
+
 - Auto-sorts labels by impact (offer first, rejection last)
 - Color-coded: Yellow (offer), Green (interview), Gray (rejection), Blue (others)
 - Tailwind-styled with ring borders
 - Handles empty/null labels gracefully
 
 #### 3. `apps/web/src/components/SearchResultsHeader.tsx` ✨ NEW
+
 Search results header with scoring hint:
 
 ```tsx
@@ -56,12 +61,14 @@ Search results header with scoring hint:
 ```
 
 **Displays**:
+
 - Query and result count
 - Scoring weights: "offer^4 • interview^3 • rejection^0.5"
 - Recency hint: "7-day decay (gauss scale=7d, decay=0.5)"
 - Current scale setting
 
 #### 4. `apps/web/src/state/searchPrefs.ts` ✨ NEW
+
 localStorage-backed preferences:
 
 ```typescript
@@ -79,6 +86,7 @@ export function setRecencyScale(scale: RecencyScale)
 ### Backend
 
 #### `services/api/app/routers/search.py`
+
 Added `scale` query parameter:
 
 ```python
@@ -98,6 +106,7 @@ def search(
 ```
 
 **Changes**:
+
 - Accepts `?scale=3d`, `?scale=7d`, or `?scale=14d`
 - Validates and defaults to `7d`
 - Dynamically applies scale to Gaussian decay function
@@ -105,6 +114,7 @@ def search(
 ### Frontend
 
 #### `apps/web/src/lib/api.ts`
+
 Updated `searchEmails` to accept scale:
 
 ```typescript
@@ -123,30 +133,36 @@ export async function searchEmails(
 ```
 
 #### `apps/web/src/pages/Search.tsx`
+
 Major visual improvements:
 
 **Added**:
+
 - Import `SearchResultsHeader` and `EmailLabels` components
 - Pass recency scale to API: `searchEmails(q, 20, undefined, scale)`
 - Display scoring hint header
 - Use `EmailLabels` component instead of inline badges
 
 **Before**:
+
 ```tsx
 <span style={{ background:'#eef', padding:'2px 6px' }}>{h.label}</span>
 ```
 
 **After**:
+
 ```tsx
 <EmailLabels labels={h.label_heuristics || (h.label ? [h.label] : [])} />
 ```
 
 **Layout improvements**:
+
 - Score and labels aligned to the right
 - Better spacing and alignment
 - Impact-ordered, color-coded labels
 
 #### `apps/web/src/pages/Settings.tsx`
+
 Complete redesign with recency toggle:
 
 ```tsx
@@ -158,6 +174,7 @@ Complete redesign with recency toggle:
 ```
 
 **Features**:
+
 - Dropdown to select recency scale
 - Displays current scoring weights (offer 4×, interview 3×, etc.)
 - Persists preference to localStorage
@@ -192,12 +209,14 @@ Recency: 7-day decay (gauss scale=7d, decay=0.5) • Scale: 7d
 ## User Flow
 
 ### 1. Searching
+
 1. User types query: `"interview google"`
 2. Results show with **SearchResultsHeader** displaying scoring hint
 3. Each result shows **EmailLabels** sorted by impact (offers first)
 4. Labels are color-coded for quick scanning
 
 ### 2. Adjusting Recency
+
 1. User goes to **Settings** page
 2. Selects recency scale from dropdown:
    - **3d**: Recent emails matter most (aggressive decay)
@@ -208,7 +227,9 @@ Recency: 7-day decay (gauss scale=7d, decay=0.5) • Scale: 7d
 5. Scale shown in SearchResultsHeader hint
 
 ### 3. Label Sorting
+
 Labels always appear in impact order:
+
 - ✅ Offer → Interview → Application → ... → Rejection
 
 ---
@@ -243,6 +264,7 @@ GET /api/search/?q=interview&size=20&scale=14d
 ### Manual Testing
 
 #### 1. Test Label Sorting
+
 ```
 1. Search for "interview" or "offer"
 2. Verify labels appear in order: Offer > Interview > Others > Rejection
@@ -250,6 +272,7 @@ GET /api/search/?q=interview&size=20&scale=14d
 ```
 
 #### 2. Test Recency Toggle
+
 ```
 1. Go to Settings page
 2. Change recency scale to 3d
@@ -260,6 +283,7 @@ GET /api/search/?q=interview&size=20&scale=14d
 ```
 
 #### 3. Test Scoring Hint
+
 ```
 1. Search for any query
 2. Verify header shows: "Scoring: offer^4 • interview^3 • rejection^0.5 • ..."
@@ -267,6 +291,7 @@ GET /api/search/?q=interview&size=20&scale=14d
 ```
 
 #### 4. Test Label Colors
+
 ```
 1. Find search results with different labels
 2. Verify:
@@ -279,6 +304,7 @@ GET /api/search/?q=interview&size=20&scale=14d
 ### Browser DevTools
 
 Check localStorage:
+
 ```javascript
 localStorage.getItem('search.recencyScale')
 // Should return: "3d", "7d", or "14d"
@@ -303,7 +329,7 @@ localStorage.getItem('search.recencyScale')
 3. **Show Settings**
    - Navigate to Settings
    - "We can adjust the recency decay scale"
-   - Change to "3d" 
+   - Change to "3d"
    - "Now recent emails matter even more - 3-day half-life instead of 7"
 
 4. **Search Again**
@@ -321,17 +347,20 @@ localStorage.getItem('search.recencyScale')
 ## Code Quality
 
 ### TypeScript Safety
+
 - ✅ All components fully typed
 - ✅ RecencyScale type enforced: `"3d" | "7d" | "14d"`
 - ✅ Props interfaces defined
 - ✅ No `any` types
 
 ### Reusability
+
 - ✅ EmailLabels component can be used anywhere
 - ✅ SearchResultsHeader reusable across search views
 - ✅ searchScoring.ts utilities usable in any component
 
 ### Performance
+
 - ✅ localStorage reads cached in state
 - ✅ Label sorting is O(n log n), minimal overhead
 - ✅ No unnecessary re-renders
@@ -383,6 +412,7 @@ localStorage.getItem('search.recencyScale')
 | Frontend Integration | ✅ Complete | Search.tsx, api.ts |
 
 **Total Files**:
+
 - ✨ 4 New: searchScoring.ts, EmailLabels.tsx, SearchResultsHeader.tsx, searchPrefs.ts
 - 📝 4 Updated: search.py, api.ts, Search.tsx, Settings.tsx
 

@@ -13,6 +13,7 @@ Comprehensive UI polish applied to the Tracker page with improved UX, accessibil
 A new visual component that displays status with color-coded chips using Tailwind CSS.
 
 **Features:**
+
 - 7 status variants with distinct colors
 - Rounded pill design (`rounded-2xl`)
 - Border for definition
@@ -20,6 +21,7 @@ A new visual component that displays status with color-coded chips using Tailwin
 - Test IDs for E2E testing
 
 **Color Scheme:**
+
 - `applied` - Gray (neutral)
 - `hr_screen` - Sky blue (informational)
 - `interview` - Emerald green (positive)
@@ -29,6 +31,7 @@ A new visual component that displays status with color-coded chips using Tailwin
 - `ghosted` - Amber (warning)
 
 **Usage:**
+
 ```tsx
 <StatusChip status="interview" />
 // Renders: [Interview] in green pill
@@ -45,6 +48,7 @@ The table header now uses `sticky top-0` with proper z-indexing:
 ```
 
 **Benefits:**
+
 - Header remains visible while scrolling
 - Always know which column you're looking at
 - Better UX for long lists
@@ -60,6 +64,7 @@ className="focus:outline-none focus:ring-2 focus:ring-sky-500"
 ```
 
 **Applied to:**
+
 - Search input
 - Status filter dropdown
 - Create dialog inputs
@@ -72,16 +77,19 @@ className="focus:outline-none focus:ring-2 focus:ring-sky-500"
 ### 4. **Hover Effects & Transitions** ✅
 
 **Table Rows:**
+
 ```tsx
 className="hover:bg-gray-50 transition"
 ```
 
 **Buttons:**
+
 ```tsx
 className="hover:bg-white transition"
 ```
 
 **CSS:**
+
 ```css
 .transition {
   transition: all 120ms ease-in-out;
@@ -95,6 +103,7 @@ className="hover:bg-white transition"
 ### 5. **Improved Empty State** ✅
 
 Enhanced empty state with:
+
 - Large emoji icon (📭)
 - Clear heading
 - Contextual message (changes based on filters)
@@ -121,20 +130,24 @@ Enhanced empty state with:
 Every interactive element has a `data-testid` attribute:
 
 **Search & Filters:**
+
 - `tracker-search-input`
 - `tracker-search-btn`
 - `tracker-status-filter`
 - `tracker-new-btn`
 
 **Table Rows:**
+
 - `tracker-row-{id}` - Each row
 - `status-select-{id}` - Status dropdown per row
 - `note-btn-{id}` - Note button per row
 
 **Chips:**
+
 - `status-chip-{status}` - Status chip component
 
 **Create Dialog:**
+
 - `create-company`
 - `create-role`
 - `create-source`
@@ -145,6 +158,7 @@ Every interactive element has a `data-testid` attribute:
 ### 7. **Polished Dialog Styling** ✅
 
 **Create Dialog:**
+
 - Rounded corners (`rounded-xl`)
 - No border (`border-0`)
 - Fixed width for consistency (`w-[420px]`)
@@ -153,11 +167,13 @@ Every interactive element has a `data-testid` attribute:
 - Gray footer for visual separation
 
 **Note Dialog:**
+
 - Similar styling
 - Textarea for longer notes
 - Auto-focus on open
 
 **CSS Enhancements:**
+
 ```css
 dialog::backdrop {
   background: rgb(0 0 0 / 0.35);
@@ -216,6 +232,7 @@ Innovative dual-display approach:
 ```
 
 **Benefits:**
+
 - Visual status indicator (chip)
 - Quick status change (dropdown)
 - Both accessible (aria-label)
@@ -230,6 +247,7 @@ Innovative dual-display approach:
 Three comprehensive test scenarios:
 
 ### Test 1: Status Transition with Toast
+
 ```typescript
 test('updates status → shows contextual toast', async ({ page }) => {
   // Mocks API list and PATCH
@@ -241,6 +259,7 @@ test('updates status → shows contextual toast', async ({ page }) => {
 ```
 
 ### Test 2: Rejected Status (Error Toast)
+
 ```typescript
 test('rejected path shows error toast', async ({ page }) => {
   // Changes status to "rejected"
@@ -250,6 +269,7 @@ test('rejected path shows error toast', async ({ page }) => {
 ```
 
 ### Test 3: Create Application
+
 ```typescript
 test('create new application shows success toast', async ({ page }) => {
   // Opens create dialog
@@ -260,6 +280,7 @@ test('create new application shows success toast', async ({ page }) => {
 ```
 
 **Hermetic Testing:**
+
 - All API calls mocked
 - No backend dependency
 - Fast and reliable
@@ -269,14 +290,16 @@ test('create new application shows success toast', async ({ page }) => {
 
 ## Running the Tests
 
-### Install Playwright (if not already installed):
+### Install Playwright (if not already installed)
+
 ```bash
 cd apps/web
 npm install -D @playwright/test
 npx playwright install
 ```
 
-### Run tests:
+### Run tests
+
 ```bash
 # All tests
 npx playwright test
@@ -314,6 +337,7 @@ dialog {
 ```
 
 **Why 120ms?**
+
 - Fast enough to feel immediate
 - Slow enough to see the transition
 - Sweet spot for perceived smoothness
@@ -323,25 +347,31 @@ dialog {
 ## Accessibility Improvements
 
 ### 1. **Keyboard Navigation**
+
 - All buttons are keyboard accessible
 - Focus rings on all inputs
 - Dialog can be closed with Escape key
 - Enter key submits forms
 
 ### 2. **ARIA Labels**
+
 ```tsx
 aria-label={`Change status for ${r.company}`}
 ```
+
 Screen readers announce: "Change status for OpenAI"
 
 ### 3. **Semantic HTML**
+
 - `<dialog>` element for modals
 - `<select>` for dropdowns
 - `<button>` for actions
 - Proper heading hierarchy
 
 ### 4. **Color Contrast**
+
 All status chips meet WCAG AA standards:
+
 - Text is always dark (800 shade)
 - Background is light (100 shade)
 - Border adds definition
@@ -351,6 +381,7 @@ All status chips meet WCAG AA standards:
 ## Performance Considerations
 
 ### 1. **Memoization Opportunities**
+
 ```tsx
 const filteredApplications = useMemo(() => {
   return applications.filter(/* ... */)
@@ -358,12 +389,15 @@ const filteredApplications = useMemo(() => {
 ```
 
 ### 2. **Debounced Search**
+
 Could add debounce to search input:
+
 ```tsx
 const debouncedSearch = useDebounce(search, 300)
 ```
 
 ### 3. **Virtual Scrolling**
+
 For >100 applications, consider `react-window` or `@tanstack/react-virtual`
 
 ---
@@ -371,12 +405,14 @@ For >100 applications, consider `react-window` or `@tanstack/react-virtual`
 ## Browser Compatibility
 
 **Tested in:**
+
 - ✅ Chrome 120+
 - ✅ Firefox 120+
 - ✅ Safari 17+
 - ✅ Edge 120+
 
 **Dialog Element:**
+
 - Native `<dialog>` supported in all modern browsers
 - No polyfill needed (2024+)
 
@@ -384,20 +420,24 @@ For >100 applications, consider `react-window` or `@tanstack/react-virtual`
 
 ## Migration Notes
 
-### Breaking Changes:
+### Breaking Changes
+
 None - this is a pure enhancement
 
-### New Dependencies:
+### New Dependencies
+
 - None (uses existing Tailwind + React Router)
 
-### Optional Dependencies:
+### Optional Dependencies
+
 - `@playwright/test` (for E2E tests)
 
 ---
 
 ## Visual Comparison
 
-### Before:
+### Before
+
 - Plain table
 - No status chips
 - No hover effects
@@ -405,7 +445,8 @@ None - this is a pure enhancement
 - No test IDs
 - Scrolling header
 
-### After:
+### After
+
 - ✨ Sticky header
 - 🎨 Color-coded status chips
 - 🎯 Smooth hover effects
@@ -418,7 +459,8 @@ None - this is a pure enhancement
 
 ## Future Enhancements
 
-### Potential additions:
+### Potential additions
+
 1. **Bulk Actions**
    - Select multiple rows
    - Batch status updates
@@ -448,7 +490,8 @@ None - this is a pure enhancement
 
 ## Maintenance
 
-### Code Organization:
+### Code Organization
+
 ```
 apps/web/src/
 ├── components/
@@ -460,7 +503,8 @@ apps/web/src/
         └── tracker-status.spec.ts  # E2E tests
 ```
 
-### Testing Strategy:
+### Testing Strategy
+
 - E2E tests for user flows
 - Component tests for StatusChip (TODO)
 - API integration tests (existing)
@@ -470,6 +514,7 @@ apps/web/src/
 ## Conclusion
 
 The Tracker UI is now **production-ready** with:
+
 - ✅ Professional polish
 - ✅ Excellent UX
 - ✅ Full accessibility
@@ -477,12 +522,14 @@ The Tracker UI is now **production-ready** with:
 - ✅ Clean, maintainable code
 
 **Total Changes:**
+
 - 1 new component (StatusChip)
 - 1 major refactor (Tracker page)
 - 3 E2E tests
 - Minor CSS enhancements
 
 **Lines of Code:**
+
 - StatusChip: ~40 lines
 - Tracker: ~370 lines
 - Tests: ~160 lines

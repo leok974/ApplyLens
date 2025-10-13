@@ -11,6 +11,7 @@
 ## Initial Response (10 minutes)
 
 ### 1. Check Current Performance
+
 ```bash
 # Query Prometheus metrics
 curl -s http://localhost:8003/metrics | grep applylens_backfill_duration
@@ -21,6 +22,7 @@ curl -s http://localhost:8003/metrics | grep applylens_backfill_duration
 ```
 
 ### 2. Review Recent Backfill Jobs
+
 ```bash
 # Check logs for backfill activity
 docker-compose logs api | grep -i "backfill\|analyze_risk" | tail -n 100
@@ -34,11 +36,13 @@ docker-compose logs api | grep "Processed.*batch.*in.*seconds"
 ## Understanding SLO
 
 **Service Level Objective:**
+
 - **p95 Duration:** < 5 minutes (300 seconds)
 - **Measurement Window:** 15-minute rolling window
 - **Alert Threshold:** Sustained violation for 30+ minutes
 
 **Why This Matters:**
+
 - Slow backfills → delayed risk scores
 - Delayed scores → UI lag
 - Resource contention → API slowdown
@@ -48,11 +52,14 @@ docker-compose logs api | grep "Processed.*batch.*in.*seconds"
 ## Common Causes & Fixes
 
 ### 1. Large Batch Size
+
 **Symptoms:**
+
 - Single batches taking 5+ minutes
 - High memory usage during backfill
 
 **Fix:**
+
 ```powershell
 # Reduce batch size
 cd D:\ApplyLens\services\api
@@ -65,11 +72,14 @@ python scripts/analyze_risk.py --batch-size 25 --max-batches 2
 ```
 
 ### 2. Database Lock Contention
+
 **Symptoms:**
+
 - Backfill slows during high traffic periods
 - Logs show "waiting for lock" messages
 
 **Investigation:**
+
 ```sql
 -- Check for locks
 SELECT pid, state, wait_event_type, wait_event, query
@@ -85,6 +95,7 @@ ORDER BY duration DESC;
 ```
 
 **Fix:**
+
 ```bash
 # Run backfill during low-traffic hours
 # Add to cron: 2 AM daily
@@ -95,11 +106,14 @@ python scripts/analyze_risk.py --batch-size 25
 ```
 
 ### 3. Elasticsearch Slow Indexing
+
 **Symptoms:**
+
 - DB updates fast, but ES indexing slow
 - Logs show ES timeout warnings
 
 **Investigation:**
+
 ```bash
 # Check ES cluster health
 curl http://localhost:9200/_cluster/health?pretty
@@ -112,6 +126,7 @@ curl http://localhost:9200/_cat/allocation?v
 ```
 
 **Fix:**
+
 ```bash
 # Increase ES heap size (if low)
 # Edit: infra/docker-compose.yml
@@ -125,11 +140,14 @@ curl -X DELETE http://localhost:9200/.old_index_*
 ```
 
 ### 4. Too Many Emails to Process
+
 **Symptoms:**
+
 - Backfill processes thousands of emails
 - Job runs for hours
 
 **Fix:**
+
 ```powershell
 # Process in smaller chunks with max-batches
 cd D:\ApplyLens\services\api
@@ -143,11 +161,14 @@ python scripts/analyze_risk.py --batch-size 50 --max-batches 10
 ```
 
 ### 5. CPU/Memory Bottleneck
+
 **Symptoms:**
+
 - High CPU usage during backfill
 - System sluggish during processing
 
 **Investigation:**
+
 ```bash
 # Check container resource usage
 docker stats --no-stream
@@ -157,6 +178,7 @@ docker stats api --no-stream
 ```
 
 **Fix:**
+
 ```yaml
 # Increase container resources
 # Edit: infra/docker-compose.yml
@@ -174,16 +196,19 @@ services:
 ## Optimization Strategies
 
 ### Short-term (Immediate Relief)
+
 1. Reduce batch size: 100 → 50
 2. Limit max batches: Add --max-batches 20
 3. Run during off-peak hours (2-6 AM)
 
 ### Medium-term (This Week)
+
 1. Add batch timing metrics for better observability
 2. Implement incremental backfill (--since flag)
 3. Optimize DB queries (add indexes if needed)
 
 ### Long-term (This Quarter)
+
 1. Implement async job queue (Celery/RQ)
 2. Distribute backfill across workers
 3. Add progress tracking and resumable jobs
@@ -209,6 +234,7 @@ Measure-Command { python scripts/analyze_risk.py --batch-size 50 --max-batches 1
 ## Monitoring Queries
 
 ### Grafana (PromQL)
+
 ```promql
 # p95 duration
 histogram_quantile(0.95, 
@@ -229,6 +255,7 @@ rate(applylens_backfill_duration_seconds_count[5m]) * 60
 ```
 
 ### Database Queries
+
 ```sql
 -- Check emails needing risk scores
 SELECT COUNT(*) 
@@ -288,6 +315,7 @@ ORDER BY mean_time DESC;
 ---
 
 ## Related Links
+
 - [Risk Scoring Script](../../scripts/analyze_risk.py)
 - [Backfill Metrics](http://localhost:8003/metrics)
 - [Grafana Dashboard](http://localhost:3000/d/applylens-ops-overview)

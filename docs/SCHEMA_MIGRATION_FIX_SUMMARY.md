@@ -22,6 +22,7 @@ psycopg2.errors.UndefinedColumn: column "category" does not exist
 4. **Database was missing the column** that code expected
 
 This is a common deployment issue where:
+
 - Code is deployed with queries for new columns
 - But migrations haven't been applied to add those columns
 - Long-running jobs fail hours into execution
@@ -35,6 +36,7 @@ This is a common deployment issue where:
 **File:** `services/api/alembic/versions/0009_add_emails_category.py`
 
 **Changes:**
+
 - Adds `category` column to `emails` table (nullable text)
 - Creates index `ix_emails_category` for efficient filtering
 - Backfills category from Gmail `CATEGORY_*` labels if available
@@ -42,6 +44,7 @@ This is a common deployment issue where:
 **Applied:** `alembic upgrade head`
 
 **Verification:**
+
 ```bash
 $ docker-compose exec db psql -U postgres -d applylens \
     -c "SELECT version_num FROM alembic_version;"
@@ -88,6 +91,7 @@ def run():
 ```
 
 **Benefits:**
+
 - ✅ **Fast fail**: Detects issues in seconds, not hours
 - ✅ **Clear errors**: Shows exactly what's wrong and how to fix
 - ✅ **Prevents corruption**: Stops before making changes
@@ -98,11 +102,13 @@ def run():
 **File:** `services/api/scripts/backfill_bill_dates.py`
 
 **Changes:**
+
 - Added schema guard at startup
 - Fails immediately if schema too old
 - Includes helpful error message with upgrade instructions
 
 **Before:**
+
 ```python
 def run():
     # No schema check - would fail hours later
@@ -111,6 +117,7 @@ def run():
 ```
 
 **After:**
+
 ```python
 def run():
     # Schema guard catches issues immediately
@@ -131,6 +138,7 @@ def run():
 **File:** `docs/SCHEMA_MIGRATION_GUIDE.md` (530+ lines)
 
 **Contents:**
+
 - Problem statement and explanation
 - Schema guard usage examples
 - Migration workflow and best practices
@@ -142,17 +150,20 @@ def run():
 ### 5. Tests and Verification ✅
 
 **Unit Tests:** `tests/unit/test_schema_guard.py`
+
 - Test require_min_migration with old/current/future versions
 - Test check_column_exists for present/missing columns
 - Test require_columns with valid/invalid columns
 - Test integration with backfill scripts
 
 **Verification Script:** `scripts/verify_schema_guard.py`
+
 - Manual verification against live database
 - Tests all schema guard functions
 - Provides detailed output for debugging
 
 **Results:**
+
 ```
 ✓ PASS: Get Current Migration
 ✓ PASS: Check Column Existence
@@ -185,6 +196,7 @@ To prevent this issue from recurring:
 ### 1. Always Apply Migrations Before Code
 
 **Deployment order:**
+
 ```bash
 # 1. Apply migrations FIRST
 alembic upgrade head
@@ -197,18 +209,21 @@ docker-compose up -d --build
 ### 2. Add Schema Guards to Long-Running Jobs
 
 **Required for:**
+
 - GitHub Actions workflows
 - Cron jobs
 - Batch processing scripts
 - Manual maintenance scripts
 
 **Not required for:**
+
 - FastAPI routes (fail fast on first request)
 - Unit tests (use test database)
 
 ### 3. Use CI/CD Pre-Checks
 
 Add to GitHub Actions:
+
 ```yaml
 - name: Check schema version
   run: |
@@ -234,6 +249,7 @@ Before deploying code that uses new columns:
 ## Files Changed
 
 ### Created
+
 - `services/api/alembic/versions/0009_add_emails_category.py` - Migration to add category column
 - `services/api/app/utils/schema_guard.py` - Schema guard utility
 - `services/api/tests/unit/test_schema_guard.py` - Unit tests
@@ -241,6 +257,7 @@ Before deploying code that uses new columns:
 - `docs/SCHEMA_MIGRATION_GUIDE.md` - Comprehensive guide
 
 ### Modified
+
 - `services/api/scripts/backfill_bill_dates.py` - Added schema guard
 
 ---

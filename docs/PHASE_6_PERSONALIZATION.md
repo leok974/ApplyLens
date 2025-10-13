@@ -13,18 +13,21 @@ Phase 6 adds powerful personalization features that learn from user behavior and
 **What**: System learns from every approve/reject decision to personalize future recommendations.
 
 **How**: Uses online gradient descent to update feature weights:
+
 - w ← w + η \* y \* x
 - η = 0.2 (learning rate)
 - y = +1 for approve, -1 for reject
 - x = 1 for feature presence
 
 **Features Learned**:
+
 - `category:<cat>` (e.g., category:promo, category:event)
 - `sender_domain:<domain>` (e.g., sender_domain:bestbuy.com)
 - `listid:<list_id>` (e.g., listid:github-notifications)
 - `contains:<token>` (e.g., contains:invoice, contains:meetup)
 
 **Example**:
+
 ```
 User approves archiving emails from "deals@groupon.com"
 → sender_domain:groupon.com weight increases (+0.2)
@@ -40,6 +43,7 @@ User rejects archiving "Interview Schedule" email
 **What**: Track precision/recall metrics for each policy per user.
 
 **Metrics**:
+
 - **Fired**: How many times policy proposed an action
 - **Approved**: How many proposals user accepted
 - **Rejected**: How many proposals user rejected
@@ -49,6 +53,7 @@ User rejects archiving "Interview Schedule" email
 **API**: `GET /policy/stats`
 
 **Response**:
+
 ```json
 [
   {
@@ -73,6 +78,7 @@ User rejects archiving "Interview Schedule" email
 **Data Source**: Warehouse view `vw_applications_enriched` populated by Fivetran.
 
 **Schema**:
+
 ```sql
 CREATE VIEW vw_applications_enriched AS
 SELECT
@@ -95,6 +101,7 @@ SELECT ... FROM workday_candidates
 **Schedule**: Daily at 2am (after Fivetran sync)
 
 **ES Mapping** (`PUT emails/_mapping`):
+
 ```json
 {
   "properties": {
@@ -114,6 +121,7 @@ SELECT ... FROM workday_candidates
 ```
 
 **Ghosting Risk Calculation**:
+
 ```python
 def compute_ghosting_risk(row, now):
     days = (now - row.last_stage_change).days
@@ -127,6 +135,7 @@ def compute_ghosting_risk(row, now):
 ```
 
 **Example Enriched Email**:
+
 ```json
 {
   "id": "msg123",
@@ -149,10 +158,12 @@ def compute_ghosting_risk(row, now):
 **What**: Automatically prioritize emails from recruiters where you might be getting ghosted or are in critical stages.
 
 **Boost Conditions**:
+
 - `ats.ghosting_risk >= 0.6` (high risk of being ghosted)
 - `ats.stage IN ["Onsite", "Offer", "Final Round", "Negotiation"]` (critical stages)
 
 **Implementation** (in `core/rag.py`):
+
 ```python
 should = [
     {"range": {"ats.ghosting_risk": {"gte": 0.6}}},
@@ -177,16 +188,19 @@ body = {
 **What**: Track expenses, export receipts to CSV, detect duplicate charges.
 
 **Endpoints**:
+
 - `GET /money/receipts.csv` - Export all receipts
 - `GET /money/duplicates?window_days=7` - Find duplicate charges
 - `GET /money/summary` - Spending statistics
 
 **Receipt Detection Heuristics**:
+
 - Subject contains: receipt, invoice, order, payment, purchase
 - Category is `finance`
 - Sender is known payment processor (PayPal, Stripe, etc.)
 
 **CSV Export Format**:
+
 ```csv
 date,merchant,amount,email_id,subject,category
 2025-10-10,amazon.com,49.99,msg123,"Your Amazon order confirmation",commerce
@@ -194,6 +208,7 @@ date,merchant,amount,email_id,subject,category
 ```
 
 **Duplicate Detection**:
+
 ```json
 {
   "duplicates": [
@@ -210,6 +225,7 @@ date,merchant,amount,email_id,subject,category
 ```
 
 **Spending Summary**:
+
 ```json
 {
   "total_amount": 1234.56,
@@ -231,6 +247,7 @@ date,merchant,amount,email_id,subject,category
 **What**: Boost event/meetup emails based on geo and interest overlap.
 
 **Boost Conditions**:
+
 - `category:event`
 - Subject contains "meetup", "conference", "webinar"
 - Learned user preferences (contains:meetup weight > 0.5)
@@ -253,6 +270,7 @@ CREATE TABLE user_weights (
 ```
 
 **Example Rows**:
+
 ```
 | user_id          | feature                    | weight |
 |------------------|----------------------------|--------|
@@ -280,6 +298,7 @@ CREATE TABLE policy_stats (
 ```
 
 **Example Rows**:
+
 ```
 | policy_id | user_id      | fired | approved | rejected | precision |
 |-----------|--------------|-------|----------|----------|-----------|
@@ -306,8 +325,8 @@ CREATE TABLE policy_stats (
 
 4. **services/api/app/routers/actions.py** (MODIFIED)
    - Added _touch_policy_stats() helper
-   - approve_action(): Call update_user_weights(label=+1) and _touch_policy_stats()
-   - reject_action(): Call update_user_weights(label=-1) and _touch_policy_stats()
+   - approve_action(): Call update_user_weights(label=+1) and_touch_policy_stats()
+   - reject_action(): Call update_user_weights(label=-1) and_touch_policy_stats()
    - propose_action(): Track policy fired events
 
 5. **services/api/app/routers/policy.py** (MODIFIED)
@@ -527,6 +546,7 @@ METRICS["ats_enriched_total"] = Counter("ats_enriched_total", "Emails enriched b
 ### 1. Recall Estimation
 
 Currently recall is a stub (0.0). Improve by:
+
 - Track manual approvals outside of policy flow
 - Estimate "should have fired" cases
 - Use as signal for policy tuning
@@ -541,6 +561,7 @@ Currently recall is a stub (0.0). Improve by:
 ### 3. User Preference UI
 
 Dashboard showing:
+
 - Top liked features (weight > 0.5)
 - Top disliked features (weight < -0.5)
 - Edit/remove learned preferences
@@ -557,6 +578,7 @@ Dashboard showing:
 
 Current: Single linear model (gradient descent)
 Future: Ensemble of models
+
 - Logistic regression (current)
 - Neural network (deep learning)
 - Decision tree (explainable)
@@ -567,6 +589,7 @@ Future: Ensemble of models
 ### Issue: Weights not updating
 
 **Check**:
+
 ```sql
 SELECT * FROM user_weights WHERE user_id = 'alice@co.com' LIMIT 10;
 ```
@@ -576,6 +599,7 @@ SELECT * FROM user_weights WHERE user_id = 'alice@co.com' LIMIT 10;
 ### Issue: Policy stats not incrementing
 
 **Check**:
+
 ```sql
 SELECT * FROM policy_stats WHERE user_id = 'alice@co.com';
 ```
@@ -585,11 +609,13 @@ SELECT * FROM policy_stats WHERE user_id = 'alice@co.com';
 ### Issue: ATS enrichment not running
 
 **Check ES**:
+
 ```bash
 curl "http://localhost:9200/emails/_search?q=ats.system:*" | jq '.hits.total'
 ```
 
 **Check logs**:
+
 ```bash
 tail -f /var/log/cron.log | grep ats_enrich
 ```
@@ -597,11 +623,13 @@ tail -f /var/log/cron.log | grep ats_enrich
 ### Issue: Receipts CSV empty
 
 **Check ES**:
+
 ```bash
 curl "http://localhost:9200/emails/_search?q=category:finance" | jq '.hits.total'
 ```
 
 **Test detection**:
+
 ```python
 from app.core.money import is_receipt
 email = {"subject": "Your Amazon order receipt", "category": "commerce"}
@@ -631,6 +659,7 @@ Phase 6 delivers:
 **Location**: Chat page sidebar (right column)
 
 **What it shows**:
+
 - Per-user precision bars for top 5 most active policies
 - Fired, approved, rejected counters over 30-day window
 - Refresh button to reload stats
@@ -638,12 +667,14 @@ Phase 6 delivers:
 **Uses**: `GET /api/policy/stats` endpoint
 
 **Features**:
+
 - Visual precision bars (0-100%)
 - Sorts by fired count (most active policies first)
 - Shows "No data yet" when no policies have fired
 - Real-time refresh capability
 
 **Implementation**:
+
 ```tsx
 import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
 
@@ -656,12 +687,14 @@ import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
 **Location**: Chat input bar (after the checkboxes)
 
 **Mode Options**:
+
 - **off** – Neutral retrieval, no specialized boosting
 - **networking** – Boosts events, meetups, conferences, webinars in RAG results
 - **money** – Boosts receipts, invoices, payments, finance-related emails
 
 **Wire to SSE**:
 The mode parameter is automatically added to the `/api/chat/stream` URL:
+
 ```
 /api/chat/stream?q=<query>&mode=networking
 /api/chat/stream?q=<query>&mode=money
@@ -669,11 +702,13 @@ The mode parameter is automatically added to the `/api/chat/stream` URL:
 
 **Money Mode Extras**:
 When `mode=money` is selected, an "Export receipts (CSV)" link appears that downloads receipts directly:
+
 ```
 <a href="/api/money/receipts.csv">Export receipts (CSV)</a>
 ```
 
 **Implementation**:
+
 ```tsx
 const [mode, setMode] = useState<'' | 'networking' | 'money'>('')
 
@@ -692,12 +727,14 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 ### Tests
 
 **Policy Panel Tests** (`apps/web/tests/policy-panel.spec.ts`):
+
 - Loads and shows precision bars
 - Handles empty state
 - Refresh button functionality
 - Error handling
 
 **Chat Mode Tests** (`apps/web/tests/chat-modes.spec.ts`):
+
 - Mode selector wires to SSE URL
 - Money mode shows export link
 - Networking mode parameter added
@@ -705,6 +742,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 - Mode persists across queries
 
 **Run tests**:
+
 ```bash
 cd apps/web
 pnpm test
@@ -744,6 +782,7 @@ def estimate_confidence(policy, feats, aggs, neighbors, db=None, user=None, emai
 ```
 
 **Effect**:
+
 - **Positive weights** (user has approved similar emails): Confidence increases (up to +0.15)
 - **Negative weights** (user has rejected similar emails): Confidence decreases (up to -0.15)
 - **High risk emails**: Override with 0.95 confidence regardless of weights
@@ -781,6 +820,7 @@ user_weight_updates = Counter(
 ```
 
 **Wired In**:
+
 - `policy_fired_total`: Incremented in `/actions/propose` when proposal created
 - `policy_approved_total`: Incremented in `/actions/{id}/approve` after approval
 - `policy_rejected_total`: Incremented in `/actions/{id}/reject` after rejection
@@ -797,6 +837,7 @@ user_weight_updates = Counter(
 3. **money**: Boosts receipts, invoices, payments in RAG results
 
 **SSE URL Wiring**:
+
 ```typescript
 const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
   + (shouldPropose ? '&propose=1' : '')
@@ -810,6 +851,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 ### Money Panel Features
 
 **CSV Export Link**: When `mode=money` is selected, a link to download receipts appears:
+
 ```html
 <a href="/api/money/receipts.csv" target="_blank">Export receipts (CSV)</a>
 ```
@@ -822,6 +864,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 **UI Location**: Right sidebar, below Policy Accuracy Panel
 
 **Implementation**:
+
 ```tsx
 const [dupes, setDupes] = useState<any[] | null>(null)
 const [summary, setSummary] = useState<any | null>(null)
@@ -844,6 +887,7 @@ async function loadSummary() {
 ### Quick Smoke Test
 
 **Test confidence bump effect**:
+
 ```powershell
 # 1. Propose actions for meetup emails
 Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
@@ -867,4 +911,3 @@ Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
 **Expected**: Confidence scores for similar emails increase by ~0.05-0.15 after positive feedback.
 
 **Next**: Phase 7 - Multi-Model Ensemble & A/B Testing
-

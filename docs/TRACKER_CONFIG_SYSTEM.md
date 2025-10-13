@@ -43,6 +43,7 @@ You can customize snippets per environment using the `VITE_TRACKER_SNIPPETS` env
 **Example:** `"Sent thank-you|Follow-up scheduled|Left voicemail"`
 
 **Behavior:**
+
 - If `VITE_TRACKER_SNIPPETS` is set: Uses environment variable (splits by `|`)
 - If `VITE_TRACKER_SNIPPETS` is not set: Uses default array from config
 - Empty strings are automatically filtered out
@@ -150,7 +151,7 @@ npm run dev
 
 ### Step 4: Verify
 
-1. Open browser to http://localhost:5175/tracker
+1. Open browser to <http://localhost:5175/tracker>
 2. Click any note preview to open editor
 3. Check that snippet chips match your configuration
 
@@ -161,12 +162,14 @@ npm run dev
 ### Scenario 1: Different Snippets per Environment
 
 **Development:** Minimal set for testing
+
 ```bash
 # .env.development
 VITE_TRACKER_SNIPPETS="Test 1|Test 2"
 ```
 
 **Production:** Full set for end users
+
 ```bash
 # .env.production
 VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruiter screen scheduled|Sent take-home|Referred by X|Declined offer"
@@ -175,11 +178,13 @@ VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruit
 ### Scenario 2: Team-Specific Workflows
 
 **Team A (Engineering Recruiting):**
+
 ```bash
 VITE_TRACKER_SNIPPETS="Technical screen passed|Coding challenge sent|System design completed|Team match scheduled|Offer extended"
 ```
 
 **Team B (Sales Pipeline):**
+
 ```bash
 VITE_TRACKER_SNIPPETS="Discovery call|Demo scheduled|Proposal sent|Contract negotiation|Closed-won|Closed-lost"
 ```
@@ -187,11 +192,13 @@ VITE_TRACKER_SNIPPETS="Discovery call|Demo scheduled|Proposal sent|Contract nego
 ### Scenario 3: Industry-Specific
 
 **Academia:**
+
 ```bash
 VITE_TRACKER_SNIPPETS="Application submitted|Shortlisted|Interview scheduled|Campus visit|Offer received|Accepted position"
 ```
 
 **Freelance:**
+
 ```bash
 VITE_TRACKER_SNIPPETS="Inquiry received|Proposal sent|Contract signed|Milestone completed|Payment received|Project closed"
 ```
@@ -351,6 +358,7 @@ npm run dev
 **Symptoms:** Always uses default snippets
 
 **Solutions:**
+
 1. Check file name: Must be `.env`, `.env.local`, `.env.development`, or `.env.production`
 2. Check variable name: Must start with `VITE_` prefix
 3. Check format: Use pipe delimiter `|`, not commas or semicolons
@@ -359,6 +367,7 @@ npm run dev
 ### Issue: Snippets appear but are wrong
 
 **Solutions:**
+
 1. Check for typos in environment variable value
 2. Verify no extra spaces (they're trimmed, but check anyway)
 3. Check for special characters that might break parsing
@@ -369,6 +378,7 @@ npm run dev
 **Symptoms:** No snippet chips appear in editor
 
 **Solutions:**
+
 1. Check if `VITE_TRACKER_SNIPPETS` is set to empty string
 2. Verify pipe delimiters are correct
 3. Check that snippets aren't all empty strings (filtered out)
@@ -381,6 +391,7 @@ npm run dev
 ### From Hardcoded Snippets
 
 **Before:**
+
 ```tsx
 <InlineNote
   snippets={['Custom 1', 'Custom 2']}
@@ -388,6 +399,7 @@ npm run dev
 ```
 
 **After:**
+
 ```tsx
 import { NOTE_SNIPPETS } from '../config/tracker'
 
@@ -401,6 +413,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
 If you were passing snippets as props through multiple components:
 
 **Before:**
+
 ```tsx
 function ParentComponent() {
   const snippets = ['Custom 1', 'Custom 2']
@@ -413,6 +426,7 @@ function ChildComponent({ snippets }) {
 ```
 
 **After:**
+
 ```tsx
 import { NOTE_SNIPPETS } from '../config/tracker'
 
@@ -426,29 +440,34 @@ function ChildComponent() {
 ## Best Practices
 
 ### 1. **Use Environment Variables for Deployment-Specific Config**
-   - Different snippets per environment (dev/staging/prod)
-   - Team-specific deployments
-   - Multi-tenant setups
+
+- Different snippets per environment (dev/staging/prod)
+- Team-specific deployments
+- Multi-tenant setups
 
 ### 2. **Keep Defaults in Code for Documentation**
-   - Fallback array shows what snippets look like
-   - Self-documenting code
-   - No external dependency for basic functionality
+
+- Fallback array shows what snippets look like
+- Self-documenting code
+- No external dependency for basic functionality
 
 ### 3. **Document Custom Snippets**
-   - Add comments in `.env` files
-   - Create team documentation for snippet meanings
-   - Keep snippet names clear and concise
+
+- Add comments in `.env` files
+- Create team documentation for snippet meanings
+- Keep snippet names clear and concise
 
 ### 4. **Test Configuration Changes**
-   - Verify snippets load correctly
-   - Test that chips render properly
-   - Ensure E2E tests still pass
+
+- Verify snippets load correctly
+- Test that chips render properly
+- Ensure E2E tests still pass
 
 ### 5. **Version Control .env.example**
-   - Commit `.env.example` with documentation
-   - Never commit `.env.local` (contains secrets)
-   - Update example when adding new variables
+
+- Commit `.env.example` with documentation
+- Never commit `.env.local` (contains secrets)
+- Update example when adding new variables
 
 ---
 
@@ -457,11 +476,13 @@ function ChildComponent() {
 ### Safe for Client-Side
 
 Environment variables starting with `VITE_` are:
+
 - ✅ Embedded in client-side JavaScript bundle
 - ✅ Visible to users in browser DevTools
 - ✅ Safe for non-sensitive configuration
 
 **Do NOT use for:**
+
 - ❌ API keys
 - ❌ Secrets or passwords
 - ❌ Private configuration
@@ -469,6 +490,7 @@ Environment variables starting with `VITE_` are:
 ### Public Configuration Only
 
 Snippet chips are UI-only configuration. They don't affect:
+
 - API behavior
 - Database queries
 - Authentication
@@ -479,6 +501,7 @@ Snippet chips are UI-only configuration. They don't affect:
 ## Summary
 
 **What Was Built:**
+
 - ✅ Centralized configuration file (`config/tracker.ts`)
 - ✅ Environment variable support (`VITE_TRACKER_SNIPPETS`)
 - ✅ Fallback to sensible defaults
@@ -486,6 +509,7 @@ Snippet chips are UI-only configuration. They don't affect:
 - ✅ Extensible pattern for future config options
 
 **Benefits:**
+
 - 🎯 Customize snippets without code changes
 - 🚀 Deploy different configs per environment
 - 👥 Support team-specific workflows
@@ -493,6 +517,7 @@ Snippet chips are UI-only configuration. They don't affect:
 - 📦 Maintain backward compatibility
 
 **Production Ready:**
+
 - ✅ No TypeScript errors
 - ✅ Backward compatible
 - ✅ Well-documented

@@ -17,7 +17,7 @@ EXPORT_SCRIPT := services/api/app/labeling/export_weak_labels.py
 TRAIN_SCRIPT  := services/api/app/labeling/train_ml.py
 
 # ---- Meta ----
-.PHONY: help export-weak train-labels apply-labels phase2-all clean-weak stats profile
+.PHONY: help export-weak train-labels apply-labels phase2-all clean-weak stats profile test-api test-db-up test-db-down test-db-clean test-all
 
 help:
 	@echo "ApplyLens Phase-2 Labeling Shortcuts"
@@ -28,6 +28,13 @@ help:
 	@echo "  make train-labels    Train TF-IDF+LR model from JSONL"
 	@echo "  make apply-labels    Apply labels to ES (rules + ML fallback)"
 	@echo "  make phase2-all      Run full pipeline: export -> train -> apply"
+	@echo ""
+	@echo "Testing:"
+	@echo "  make test-api        Run API tests (requires test DB)"
+	@echo "  make test-db-up      Start test database"
+	@echo "  make test-db-down    Stop test database"
+	@echo "  make test-db-clean   Stop and remove test database"
+	@echo "  make test-all        Start DB, run tests, stop DB"
 	@echo ""
 	@echo "Analytics:"
 	@echo "  make stats           Show label statistics"
@@ -92,3 +99,41 @@ phase2-all: export-weak train-labels apply-labels
 clean-weak:
 	@echo ">> Removing $(WEAK_JSONL)"
 	@rm -f $(WEAK_JSONL) || true
+
+# ========= Testing =========
+
+TEST_DB_PASSWORD ?= test_password_change_me
+
+test-db-up:
+	@echo ">> Starting test database on port 5433"
+	@TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) docker compose -f infra/docker-compose.test.yml up -d
+	@echo ">> Waiting for database to be ready..."
+	@for i in $$(seq 1 30); do \
+		docker exec applylens-test-db pg_isready -U postgres -d applylens && break; \
+		echo "   Attempt $$i/30: Waiting..."; \
+		sleep 1; \
+	done
+	@echo ">> Database ready!"
+
+test-db-down:
+	@echo ">> Stopping test database"
+	@docker compose -f infra/docker-compose.test.yml down
+
+test-db-clean:
+	@echo ">> Stopping and removing test database"
+	@docker compose -f infra/docker-compose.test.yml down -v
+
+test-api: test-db-up
+	@echo ">> Running API tests"
+	@cd services/api && \
+		TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) alembic upgrade head && \
+		TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) pytest -v
+	@echo ">> Tests complete!"
+
+test-all: test-db-up
+	@echo ">> Running full test suite"
+	@cd services/api && \
+		TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) alembic upgrade head && \
+		TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) pytest -v
+	@$(MAKE) test-db-down
+	@echo "✅ All tests passed!"

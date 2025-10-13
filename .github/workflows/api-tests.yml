@@ -1,0 +1,169 @@
+name: API Tests
+
+on:
+  push:
+    branches: [main, develop, phase-*, polish]
+    paths:
+      - "services/api/**"
+      - "infra/docker-compose.test.yml"
+      - ".github/workflows/api-tests.yml"
+  pull_request:
+    paths:
+      - "services/api/**"
+      - "infra/docker-compose.test.yml"
+      - ".github/workflows/api-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # PostgreSQL service container
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+          POSTGRES_DB: applylens
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d applylens"
+          --health-interval=3s
+          --health-timeout=3s
+          --health-retries=20
+          --health-start-period=5s
+
+    env:
+      DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD }}@localhost:5433/applylens
+      TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+      ENV: test
+      ES_ENABLED: false
+      USE_MOCK_GMAIL: true
+      PIP_CACHE_DIR: ~/.cache/pip
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: services/api/requirements.txt
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install Python dependencies
+        working-directory: services/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio pytest-env
+
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          for i in {1..60}; do
+            if pg_isready -h localhost -p 5433 -U postgres -d applylens; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            echo "Attempt $i/60: PostgreSQL not ready yet..."
+            sleep 1
+          done
+          pg_isready -h localhost -p 5433 -U postgres -d applylens || exit 1
+
+      - name: Run Alembic migrations
+        working-directory: services/api
+        run: |
+          echo "Applying database migrations..."
+          alembic upgrade head
+          echo "Migrations applied successfully!"
+
+      - name: Run tests with coverage
+        working-directory: services/api
+        run: |
+          echo "Running test suite..."
+          pytest -v --cov=app --cov-report=term-missing --cov-report=xml --cov-report=html
+
+      - name: Save coverage XML
+        if: always()
+        working-directory: services/api
+        run: |
+          echo "Coverage report generated at coverage.xml"
+          ls -lh coverage.xml || echo "No coverage.xml found"
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage-xml
+          path: services/api/coverage.xml
+
+      - name: Upload to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: services/api/coverage.xml
+          flags: api
+          fail_ci_if_error: true
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            services/api/htmlcov/
+            services/api/coverage.xml
+          retention-days: 7
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 70
+          MINIMUM_ORANGE: 50
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install linting tools
+        run: |
+          pip install ruff black isort mypy
+
+      - name: Run ruff
+        working-directory: services/api
+        run: ruff check app/ tests/ --output-format=github
+
+      - name: Check code formatting with black
+        working-directory: services/api
+        run: black --check app/ tests/
+
+      - name: Check import sorting with isort
+        working-directory: services/api
+        run: isort --check-only app/ tests/
+
+      - name: Type check with mypy (non-blocking)
+        working-directory: services/api
+        continue-on-error: true
+        run: mypy app/

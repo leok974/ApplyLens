@@ -25,11 +25,13 @@ analytics/dbt/
 ## 🚀 Quick Start
 
 ### 1. Install dbt
+
 ```bash
 pip install dbt-bigquery
 ```
 
 ### 2. Set Environment Variables
+
 ```bash
 # Required
 export BQ_PROJECT="your-gcp-project-id"
@@ -40,12 +42,14 @@ export BQ_SA_JSON="/path/to/service-account-key.json"
 ```
 
 ### 3. Install Dependencies
+
 ```bash
 cd analytics/dbt
 dbt deps
 ```
 
 ### 4. Run Models
+
 ```bash
 # Run all models
 dbt run
@@ -58,6 +62,7 @@ dbt run --select marts.*
 ```
 
 ### 5. Test Data Quality
+
 ```bash
 dbt test
 ```
@@ -65,34 +70,42 @@ dbt test
 ## 📊 Models
 
 ### Staging Models (`staging/`)
+
 Clean and standardize raw BigQuery tables from Fivetran.
 
 **stg_emails.sql:**
+
 - Source: `applylens.public_emails`
 - Output: Cleaned email data with parsed features
 
 **stg_applications.sql:**
+
 - Source: `applylens.public_applications`
 - Output: Job application tracking data
 
 ### Mart Models (`marts/`)
+
 Business logic aggregations ready for Kibana.
 
 **mrt_risk_daily.sql:**
+
 - Daily risk score trends
 - Columns: `d` (date), `emails` (count), `avg_risk`, `high_risk_count`
 
 **mrt_parity_drift.sql:**
+
 - DB↔ES consistency tracking
 - Columns: `d` (date), `mismatches`, `mismatch_ratio`
 
 **mrt_backfill_slo.sql:**
+
 - Backfill job performance
 - Columns: `d` (date), `backfill_count`, `p95_seconds`
 
 ## 🔧 Development
 
 ### Run in Dev Mode
+
 ```bash
 # Use dev profile (local testing)
 dbt run --target dev
@@ -102,6 +115,7 @@ dbt run --target ci --profiles-dir .
 ```
 
 ### Debug Models
+
 ```bash
 # Compile SQL without running
 dbt compile --select mrt_risk_daily
@@ -114,6 +128,7 @@ dbt --debug run --select mrt_risk_daily
 ```
 
 ### Test Specific Model
+
 ```bash
 dbt test --select stg_emails
 ```
@@ -187,6 +202,7 @@ models:
 ```
 
 Run tests:
+
 ```bash
 dbt test --select stg_emails
 ```
@@ -196,6 +212,7 @@ dbt test --select stg_emails
 See `.github/workflows/analytics-sync.yml` for automated dbt runs.
 
 **Manual trigger:**
+
 ```bash
 gh workflow run analytics-sync.yml
 ```

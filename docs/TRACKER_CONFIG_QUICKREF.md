@@ -15,6 +15,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
 ## Default Snippets
 
 7 pre-configured phrases:
+
 1. Sent thank-you
 2. Follow-up scheduled
 3. Left voicemail
@@ -46,18 +47,21 @@ npm run dev
 ## Examples
 
 ### Development (Minimal)
+
 ```bash
 # .env.development
 VITE_TRACKER_SNIPPETS="Test 1|Test 2|Test 3"
 ```
 
 ### Production (Full)
+
 ```bash
 # .env.production
 VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruiter screen scheduled|Sent take-home|Referred by X|Declined offer"
 ```
 
 ### Custom Workflow
+
 ```bash
 # .env.local
 VITE_TRACKER_SNIPPETS="Demo scheduled|Proposal sent|Contract signed|Payment received"
@@ -108,6 +112,7 @@ npm run dev
 ## Status
 
 ✅ Production Ready
+
 - Centralized config
 - Environment support
 - Backward compatible

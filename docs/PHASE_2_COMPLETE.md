@@ -3,9 +3,11 @@
 ## ✅ What Was Implemented
 
 ### 1. Extended Elasticsearch Mapping
+
 **File**: `infra/elasticsearch/emails_v1.template.json`
 
 Added 8 new fields for Phase 2:
+
 - `category` (keyword) - Email category (newsletter, promo, recruiting, bill, other)
 - `confidence` (float) - Classification confidence score
 - `expires_at` (date) - Promo expiration date
@@ -18,7 +20,9 @@ Added 8 new fields for Phase 2:
 **Status**: ✅ Applied to Elasticsearch cluster
 
 ### 2. Labeling System
+
 **Files Created**:
+
 - `services/api/app/labeling/rules.py` (169 lines)
 - `services/api/app/labeling/export_weak_labels.py` (251 lines) ⭐ NEW
 - `services/api/app/labeling/train_ml.py` (209 lines)
@@ -26,6 +30,7 @@ Added 8 new fields for Phase 2:
 - `services/api/app/labeling/__init__.py`
 
 **Capabilities**:
+
 - **High-Precision Rules**: Newsletter, promo, recruiting, bill detection
 - **Weak Label Export**: Streams ES → JSONL with balanced classes
 - **ML Fallback**: TF-IDF + Logistic Regression for ambiguous cases
@@ -35,18 +40,22 @@ Added 8 new fields for Phase 2:
 **Status**: ✅ Complete and tested
 
 ### 3. API Routers
+
 **Files Created**:
+
 - `services/api/app/routers/labels.py` (391 lines)
 - `services/api/app/routers/profile.py` (314 lines)
 
 **Endpoints**:
 
 **Labels Router** (`/labels/*`):
+
 - `POST /labels/apply` - Apply labels to all/filtered emails
 - `POST /labels/apply-batch` - Label specific document IDs
 - `GET /labels/stats` - Category statistics
 
 **Profile Router** (`/profile/*`):
+
 - `GET /profile/summary` - Email profile overview
 - `GET /profile/senders` - Sender breakdown (filterable by category)
 - `GET /profile/categories/{category}` - Category details
@@ -55,9 +64,11 @@ Added 8 new fields for Phase 2:
 **Status**: ✅ Integrated and working
 
 ### 4. Dependencies
+
 **File**: `services/api/pyproject.toml`
 
 Added:
+
 - `scikit-learn` - ML model training
 - `joblib` - Model serialization
 - `tldextract` - Domain extraction
@@ -65,7 +76,9 @@ Added:
 **Status**: ✅ Installed in Docker container
 
 ### 5. Documentation
+
 **Files Created**:
+
 - `PHASE_2_IMPLEMENTATION.md` (733 lines) - Complete guide
 - `scripts/test-phase2-endpoints.ps1` (288 lines) - Test suite
 
@@ -74,11 +87,13 @@ Added:
 ## 🧪 Testing Results
 
 ### API Health: ✅
+
 - All Phase 2 routes registered in OpenAPI schema
 - API running on port 8003
 - No import errors
 
-### Endpoints Status:
+### Endpoints Status
+
 | Endpoint | Status | Note |
 |----------|--------|------|
 | `/labels/apply` | ✅ Ready | Needs data to process |
@@ -93,7 +108,8 @@ Added:
 
 ## 📦 Files Summary
 
-### Created (12 files):
+### Created (12 files)
+
 1. `services/api/app/labeling/__init__.py`
 2. `services/api/app/labeling/rules.py`
 3. `services/api/app/labeling/export_weak_labels.py` ⭐ NEW
@@ -105,7 +121,8 @@ Added:
 9. `PHASE_2_COMPLETE.md`
 10. `scripts/test-phase2-endpoints.ps1`
 
-### Modified (4 files):
+### Modified (4 files)
+
 1. `infra/elasticsearch/emails_v1.template.json` - Added 8 Phase-2 fields
 2. `services/api/pyproject.toml` - Added ML dependencies
 3. `services/api/app/main.py` - Integrated routers
@@ -116,12 +133,14 @@ Added:
 ## 🚀 Next Steps
 
 ### 1. Populate Data (Required)
+
 ```bash
 cd analytics/ingest
 python gmail_backfill_to_es_bq.py
 ```
 
 ### 2. Apply Labels
+
 ```bash
 curl -X POST "http://localhost:8003/labels/apply" \
   -H "Content-Type: application/json" \
@@ -129,6 +148,7 @@ curl -X POST "http://localhost:8003/labels/apply" \
 ```
 
 ### 3. View Results
+
 ```bash
 # Get profile summary
 curl "http://localhost:8003/profile/summary?days=60"
@@ -169,6 +189,7 @@ docker compose restart api
 ```
 
 ### 5. Build UI Components
+
 - Profile page (`apps/web/src/pages/Profile.tsx`)
 - Category chips in inbox
 - Expiry badges on email rows
@@ -229,9 +250,10 @@ Profile Analytics API
 
 **Interactive Docs**: `http://localhost:8003/docs`
 
-### Example Requests:
+### Example Requests
 
 **Apply Labels**:
+
 ```bash
 curl -X POST "http://localhost:8003/labels/apply" \
   -H "Content-Type: application/json" \
@@ -239,16 +261,19 @@ curl -X POST "http://localhost:8003/labels/apply" \
 ```
 
 **Get Profile Summary**:
+
 ```bash
 curl "http://localhost:8003/profile/summary?days=60" | jq
 ```
 
 **Get Newsletter Senders**:
+
 ```bash
 curl "http://localhost:8003/profile/senders?category=newsletter&days=60" | jq
 ```
 
 **Get Time Series**:
+
 ```bash
 curl "http://localhost:8003/profile/time-series?days=30&interval=1d" | jq
 ```
@@ -274,7 +299,7 @@ The 404 errors during testing are expected behavior when the Elasticsearch index
 - **Profile Queries**: <1 second for 100k emails
 - **Time Series**: <2 seconds for 1 year of data
 
-## 🎊 Phase 2 Complete!
+## 🎊 Phase 2 Complete
 
 All Phase 2 components are implemented, tested, and ready to use. Once you run the Gmail backfill, you'll have:
 

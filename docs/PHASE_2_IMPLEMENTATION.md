@@ -1,15 +1,18 @@
 # Phase 2: Email Categorization & Profile Analytics
 
 ## Overview
+
 **Core Labeling Logic**
 
 **`services/api/app/labeling/rules.py`**
+
 - High-precision rule engine
 - Pattern matching for categories
 - Domain-based detection
 - Header analysis
 
 **`services/api/app/labeling/export_weak_labels.py`** ⭐ NEW
+
 - Streams emails from Elasticsearch
 - Applies rules to generate weak labels
 - Extracts features for ML
@@ -17,6 +20,7 @@
 - CLI with filtering options
 
 **`services/api/app/labeling/train_ml.py`**
+
 - ML model training script
 - TF-IDF vectorization
 - Logistic regression classifier
@@ -32,6 +36,7 @@
 ### 1. Email Categories
 
 Emails are automatically classified into:
+
 - **newsletter**: Mailing lists with unsubscribe headers
 - **promo**: Promotional content, deals, offers
 - **recruiting**: ATS systems (Lever, Greenhouse, etc.)
@@ -41,6 +46,7 @@ Emails are automatically classified into:
 ### 2. Labeling Approach
 
 **Two-stage labeling**:
+
 1. **High-precision rules** (95% confidence)
    - Header-based detection (List-Unsubscribe, Precedence: bulk)
    - Domain patterns (known ATS domains)
@@ -54,12 +60,14 @@ Emails are automatically classified into:
 ### 3. Time-Relevance Features
 
 **Expiration Detection**:
+
 - Parses "Valid through", "Expires", "Offer ends" patterns
 - Extracts dates in MM/DD/YYYY or "Month DD, YYYY" formats
 - Falls back to received_at + 7 days heuristic
 - Enables auto-hide of expired promos
 
 **Event Time Parsing**:
+
 - Detects "Meeting on", "Scheduled for" patterns
 - Extracts date and time from invitations
 - Powers "upcoming events" digests (future)
@@ -67,17 +75,20 @@ Emails are automatically classified into:
 ### 4. Profile Analytics
 
 **Summary Statistics**:
+
 - Total email volume
 - Category breakdown with percentages
 - Top senders by volume
 - Average emails per day
 
 **Sender Analysis**:
+
 - Filter senders by category
 - Track latest email from each sender
 - Identify subscription opportunities
 
 **Time Series**:
+
 - Email volume over time
 - Category trends
 - Configurable intervals (hourly, daily, weekly)
@@ -87,18 +98,21 @@ Emails are automatically classified into:
 ### Core Labeling Logic
 
 **`services/api/app/labeling/rules.py`**
+
 - High-precision rule engine
 - Pattern matching for categories
 - Domain-based detection
 - Header analysis
 
 **`services/api/app/labeling/train_ml.py`**
+
 - ML model training script
 - TF-IDF vectorization
 - Logistic regression classifier
 - Train/test split and evaluation
 
 **`services/api/app/labeling/relevance.py`**
+
 - Expiration date parsing
 - Event time extraction
 - Time-to-expiry calculations
@@ -107,11 +121,13 @@ Emails are automatically classified into:
 ### API Routers
 
 **`services/api/app/routers/labels.py`**
+
 - `POST /labels/apply` - Apply labels to all emails
 - `POST /labels/apply-batch` - Label specific documents
 - `GET /labels/stats` - Category statistics
 
 **`services/api/app/routers/profile.py`**
+
 - `GET /profile/summary` - Email profile overview
 - `GET /profile/senders` - Sender breakdown
 - `GET /profile/categories/{category}` - Category details
@@ -120,6 +136,7 @@ Emails are automatically classified into:
 ### Infrastructure
 
 **`infra/elasticsearch/emails_v1.template.json`** (Updated)
+
 - Added Phase-2 fields:
   - `category` (keyword)
   - `confidence` (float)
@@ -240,6 +257,7 @@ python export_weak_labels.py \
 ```
 
 **How it works**:
+
 1. Streams emails from Elasticsearch using scroll API
 2. Applies high-precision rules (`rules.py`) to each email
 3. Extracts features (URL count, money mentions, due dates)
@@ -337,6 +355,7 @@ FROM emails_v1-*
 Apply labels to all emails matching query.
 
 **Request**:
+
 ```json
 {
   "query": {"match_all": {}},  // ES query (optional)
@@ -345,6 +364,7 @@ Apply labels to all emails matching query.
 ```
 
 **Response**:
+
 ```json
 {
   "updated": 1234,
@@ -368,6 +388,7 @@ Apply labels to all emails matching query.
 Label specific documents by ID.
 
 **Request**:
+
 ```json
 {
   "doc_ids": ["abc123", "def456"]
@@ -379,6 +400,7 @@ Label specific documents by ID.
 Get labeling statistics.
 
 **Response**:
+
 ```json
 {
   "total": 5000,
@@ -398,6 +420,7 @@ Get labeling statistics.
 Get email profile summary.
 
 **Response**:
+
 ```json
 {
   "total": 1234,
@@ -418,6 +441,7 @@ Get email profile summary.
 Get senders filtered by category.
 
 **Response**:
+
 ```json
 {
   "category": "newsletter",
@@ -437,6 +461,7 @@ Get senders filtered by category.
 Get detailed breakdown for a category.
 
 **Response**:
+
 ```json
 {
   "category": "newsletter",
@@ -459,6 +484,7 @@ Get detailed breakdown for a category.
 Get email volume time series.
 
 **Response**:
+
 ```json
 {
   "interval": "1d",
@@ -477,6 +503,7 @@ Get email volume time series.
 ### Inbox Enhancements
 
 **Add Category Chips**:
+
 ```tsx
 // In InboxWithActions.tsx or similar
 <div className="flex gap-2 mb-4">
@@ -493,6 +520,7 @@ Get email volume time series.
 ```
 
 **Show Expiry Info**:
+
 ```tsx
 // In email row component
 {email.expires_at && (
@@ -521,6 +549,7 @@ Create new route `/profile` that displays:
    - Stacked by category
 
 **Example**:
+
 ```tsx
 // apps/web/src/pages/Profile.tsx
 import { useState, useEffect } from 'react';
@@ -708,16 +737,19 @@ LABEL_CONFIDENCE = Histogram(
 ### Grafana Dashboard
 
 **Panel 1: Category Distribution**
+
 ```
 sum by (category) (applylens_labels_applied_total)
 ```
 
 **Panel 2: Labeling Methods**
+
 ```
 sum by (method) (applylens_labels_applied_total)
 ```
 
 **Panel 3: Average Confidence**
+
 ```
 avg(applylens_label_confidence)
 ```
@@ -770,6 +802,7 @@ avg(applylens_label_confidence)
 **Problem**: All emails have `category: null`
 
 **Solution**: Apply labels:
+
 ```bash
 curl -X POST "http://localhost:8000/labels/apply"
 ```
@@ -785,6 +818,7 @@ curl -X POST "http://localhost:8000/labels/apply"
 **Problem**: Expected newsletters not detected
 
 **Solution**: Check for missing fields:
+
 ```bash
 # Verify list_unsubscribe header present
 curl "http://localhost:9200/emails_v1-000001/_search" \
@@ -796,6 +830,7 @@ curl "http://localhost:9200/emails_v1-000001/_search" \
 **Problem**: `/profile/summary` returns `total: 0`
 
 **Solution**: Check date filter:
+
 ```bash
 # Try larger time window
 curl "http://localhost:8000/profile/summary?days=365"

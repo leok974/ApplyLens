@@ -57,6 +57,7 @@ def create_from_email(
 ```
 
 **Extraction Logic:**
+
 1. If `company` is provided → use it
 2. Else → call `extract_company(sender, body_text, subject)`
 3. If `role` is provided → use it
@@ -85,6 +86,7 @@ interface CreateFromEmailButtonProps {
 ```
 
 **Flow:**
+
 1. User clicks "Create Application" button
 2. Component sends POST request to `/applications/from-email`
 3. Backend extracts company, role, source from email metadata
@@ -132,6 +134,7 @@ useEffect(() => {
 4. ✅ `test_from_email_endpoint_autofill` - Validates auto-extraction in API
 
 **Test Results:**
+
 ```
 Running application tests...
 ✅ Test passed: Application 1 created and linked to email
@@ -157,6 +160,7 @@ Running application tests...
 ```
 
 **Result:**
+
 - Company: "Careers Team" or "openai" (extracted from sender)
 - Role: "Research Engineer" (extracted from subject)
 - Source: "Lever" (detected from headers)
@@ -174,6 +178,7 @@ Running application tests...
 ```
 
 **Result:**
+
 - Company: "Anthropic" (manual override used)
 - Role: "ML Engineer" (extracted from body)
 - Source: "Email" (default)
@@ -192,6 +197,7 @@ curl -X POST http://localhost:8003/applications/from-email \
 ```
 
 **Response:**
+
 ```json
 {
   "id": 42,
@@ -217,6 +223,7 @@ The system recognizes the following Applicant Tracking Systems:
 | **Indeed** | `indeed` |
 
 Detection is case-insensitive and searches across:
+
 - Email subject
 - Email body
 - Sender address

@@ -9,6 +9,7 @@ This enhancement adds three powerful features to the Phase 5 chat assistant:
 3. **Memory of Preferences** - Learn exceptions like "always keep Best Buy"
 
 ## Implementation Date
+
 October 12, 2025
 
 ## Features Added
@@ -20,6 +21,7 @@ October 12, 2025
 **Why**: Provides complete audit trail showing what the user asked, what the assistant found, and why actions were proposed.
 
 **Schema**:
+
 ```json
 {
   "via": "chat",
@@ -34,11 +36,13 @@ October 12, 2025
 ```
 
 **Storage**:
+
 - `ProposedAction.rationale = {"via": "chat", "transcript": {...}}`
 - `AuditAction.why = {"via": "chat", "transcript": {...}}`
 - `AuditAction.outcome = "proposed"` (created immediately when filed)
 
 **Lifecycle**:
+
 1. User sends query with `propose=1`
 2. Actions filed → `ProposedAction` created with transcript in rationale
 3. Simultaneously → `AuditAction` created with `outcome="proposed"` and transcript in why
@@ -52,6 +56,7 @@ October 12, 2025
 **Why**: Transparency - users see exactly why the assistant routed to a specific intent.
 
 **Backend Function**:
+
 ```python
 def explain_intent_tokens(text: str) -> list[str]:
     """
@@ -65,12 +70,14 @@ def explain_intent_tokens(text: str) -> list[str]:
 ```
 
 **Frontend**:
+
 - Checkbox: "explain my intent"
 - SSE Event: `intent_explain` with `{"tokens": ["clean", "before friday"]}`
 - UI: Collapsible "Intent tokens" section with chip-style display
 - Query param: `&explain=1` (optional, for logging)
 
 **Example**:
+
 ```
 Query: "Clean up promos older than a week unless they're from Best Buy"
 
@@ -87,6 +94,7 @@ Intent Tokens:
 **Why**: Users don't have to repeat "unless Best Buy" every time - the assistant remembers.
 
 **Backend Function**:
+
 ```python
 def extract_unless_brands(text: str) -> list[str]:
     """
@@ -100,6 +108,7 @@ def extract_unless_brands(text: str) -> list[str]:
 ```
 
 **Policy Creation**:
+
 ```python
 # For each brand, create a high-priority policy
 Policy(
@@ -118,6 +127,7 @@ Policy(
 ```
 
 **How It Works**:
+
 1. User: "Clean up promos unless Best Buy and Costco" + checks "remember exceptions"
 2. Backend extracts: `["best buy", "costco"]`
 3. Creates 2 policies with `priority=5` (higher than archive policy at 50)
@@ -127,18 +137,21 @@ Policy(
 7. Frontend shows: "🧠 Learned preference: keep promos for best buy, costco"
 
 **Future Queries**:
+
 - User: "Clean up all old promos" (no "unless")
 - System: Archives everything EXCEPT Best Buy and Costco (remembered)
 
 ## Files Modified
 
-### Backend (3 files):
+### Backend (3 files)
 
 **1. services/api/app/core/intent.py** (+70 lines)
+
 - Added `explain_intent_tokens()` - Extract matched regex patterns
 - Added `extract_unless_brands()` - Parse brand names from "unless" clauses
 
 **2. services/api/app/routers/chat.py** (+90 lines)
+
 - Added `remember` query parameter
 - Extract intent tokens and brands
 - Emit `intent_explain` SSE event with tokens
@@ -147,12 +160,14 @@ Policy(
 - Emit `memory` SSE event with kept brands
 
 **3. services/api/tests/test_chat.py** (+40 lines)
+
 - Added `test_intent_explain_tokens()` - Verify token extraction
 - Added `test_extract_unless_brands()` - Verify brand extraction
 
-### Frontend (2 files):
+### Frontend (2 files)
 
 **1. apps/web/src/components/MailChat.tsx** (+60 lines)
+
 - Added `explain` state and toggle
 - Added `remember` state and toggle
 - Added `intentTokens` state for display
@@ -163,6 +178,7 @@ Policy(
 - Updated Send button and Enter key to pass new options
 
 **2. apps/web/tests/chat-intent.spec.ts** (new file, 180 lines)
+
 - Test: "explain tokens and remember exceptions render"
 - Test: "intent tokens only show when explain is checked"
 - Test: "memory event creates confirmation message"
@@ -173,12 +189,14 @@ Policy(
 ### New SSE Events
 
 **intent_explain**:
+
 ```
 event: intent_explain
 data: {"tokens": ["clean up", "before friday", "unless best buy"]}
 ```
 
 **memory**:
+
 ```
 event: memory
 data: {"kept_brands": ["best buy", "costco"]}
@@ -187,11 +205,13 @@ data: {"kept_brands": ["best buy", "costco"]}
 ### New Query Parameters
 
 **GET /api/chat/stream**:
+
 - `remember=1` - Learn exceptions from "unless" clauses and create policies
 
 ### New Database Records
 
 **ProposedAction.rationale**:
+
 ```json
 {
   "via": "chat",
@@ -208,6 +228,7 @@ data: {"kept_brands": ["best buy", "costco"]}
 ```
 
 **AuditAction (outcome="proposed")**:
+
 ```json
 {
   "email_id": 123,
@@ -222,6 +243,7 @@ data: {"kept_brands": ["best buy", "costco"]}
 ```
 
 **Policy (learned exception)**:
+
 ```json
 {
   "name": "Learned: keep promos for best buy",
@@ -243,6 +265,7 @@ data: {"kept_brands": ["best buy", "costco"]}
 ### Scenario 1: Explain My Intent
 
 **User Flow**:
+
 1. Check "explain my intent" ✅
 2. Type: "Clean up promos before Friday unless Best Buy"
 3. Click Send
@@ -255,6 +278,7 @@ data: {"kept_brands": ["best buy", "costco"]}
 ### Scenario 2: Remember Exceptions
 
 **User Flow**:
+
 1. Check "remember exceptions" ✅
 2. Type: "Clean up promos unless Best Buy and Costco"
 3. Click Send
@@ -267,6 +291,7 @@ data: {"kept_brands": ["best buy", "costco"]}
 ### Scenario 3: Combined Workflow
 
 **User Flow**:
+
 1. Check all three toggles: ✅ file actions, ✅ explain intent, ✅ remember exceptions
 2. Type: "Clean up promos older than a month unless LinkedIn and GitHub"
 3. See:
@@ -283,6 +308,7 @@ data: {"kept_brands": ["best buy", "costco"]}
 ### Backend Tests
 
 **Function Tests** (Direct):
+
 ```powershell
 cd d:\ApplyLens\services\api
 
@@ -302,6 +328,7 @@ print(extract_unless_brands('Clean promos unless Best Buy and Costco'))"
 ```
 
 **API Tests** (SSE):
+
 ```powershell
 # Test intent_explain event
 curl -N "http://localhost:8003/api/chat/stream?q=Clean%20up%20promos%20before%20Friday"
@@ -328,7 +355,8 @@ curl -N "http://localhost:8003/api/chat/stream?q=Clean%20unless%20Best%20Buy&rem
 ### Frontend Tests
 
 **Manual Testing**:
-1. Open: http://localhost:5176/chat
+
+1. Open: <http://localhost:5176/chat>
 2. Check "explain my intent" ✅
 3. Type: "Clean up promos before Friday"
 4. Send
@@ -339,6 +367,7 @@ curl -N "http://localhost:8003/api/chat/stream?q=Clean%20unless%20Best%20Buy&rem
 9. Verify: "🧠 Learned preference: keep promos for best buy, costco"
 
 **Playwright Tests**:
+
 ```powershell
 cd d:\ApplyLens\apps\web
 npx playwright test tests/chat-intent.spec.ts
@@ -347,6 +376,7 @@ npx playwright test tests/chat-intent.spec.ts
 ### Database Verification
 
 **Check Transcript in Audit**:
+
 ```sql
 -- Check proposed actions with transcript
 SELECT id, email_id, action, outcome, why
@@ -360,6 +390,7 @@ LIMIT 5;
 ```
 
 **Check Learned Policies**:
+
 ```sql
 -- Check high-priority learned policies
 SELECT id, name, priority, enabled, action, condition
@@ -377,12 +408,14 @@ LIMIT 10;
 ### Transcript Export
 
 **Phase 4 Flow** (existing):
+
 1. User approves `ProposedAction`
 2. System executes action on Gmail
 3. System copies `ProposedAction.rationale` → `AuditAction.why`
 4. System sets `AuditAction.outcome = "executed"`
 
 **Now Enhanced**:
+
 - `ProposedAction.rationale` contains full chat transcript
 - When copied to `AuditAction.why`, audit trail shows:
   - What user asked
@@ -392,6 +425,7 @@ LIMIT 10;
   - How many actions were proposed
 
 **Query Audit Trail**:
+
 ```sql
 -- Find all actions from chat queries about "promos"
 SELECT *
@@ -404,17 +438,20 @@ ORDER BY created_at DESC;
 ### Memory Learning
 
 **Policy Engine** (existing Phase 4):
+
 - Evaluates policies in priority order (lowest number first)
 - Stops at first match (short-circuit)
 - Applies action from matched policy
 
 **Now Enhanced**:
+
 - Learned policies have `priority=5`
 - Default archive policy has `priority=50`
 - When email matches learned brand → `label_email` action → stops
 - Archive policy never evaluated for that email
 
 **View Learned Preferences**:
+
 ```
 GET /api/actions/policies
 
@@ -438,22 +475,26 @@ GET /api/actions/policies
 ## Performance & Safety
 
 ### Token Extraction
+
 - **Complexity**: O(n×m) where n=text length, m=number of regex patterns
 - **Typical**: ~20ms for 100-word query
 - **Impact**: Negligible (runs during SSE streaming)
 
 ### Brand Extraction
+
 - **Complexity**: O(n) where n=text length
 - **Typical**: <5ms for any query
 - **Impact**: None
 
 ### Policy Creation
+
 - **Cap**: Maximum 5 brands per query (safety limit)
 - **Dedup**: Prevents duplicate policies
 - **Cost**: 1 DB insert per brand (~10ms each)
 - **Total**: <100ms for 5 brands
 
 ### Memory Usage
+
 - **Transcript**: ~2KB JSON per action
 - **10,000 actions**: ~20MB in database
 - **Impact**: Minimal (JSON columns are efficient)
@@ -474,6 +515,7 @@ Policy(
 ```
 
 **Recommendation**:
+
 - Set learned policies to run **before** auto-archive policies
 - Set learned policies to run **after** critical security policies
 - Example stack:
@@ -507,9 +549,11 @@ params={"star": true}
 **Cause**: `explain` checkbox not checked or SSE event not received
 
 **Fix**:
+
 1. Check browser console for `[Chat] Intent tokens:` log
 2. Verify `intent_explain` event in Network tab
 3. Check `intentTokens` state is set:
+
    ```tsx
    const [intentTokens, setIntentTokens] = useState<string[]>([])
    ```
@@ -519,6 +563,7 @@ params={"star": true}
 **Cause**: `remember=1` not sent or brand extraction failed
 
 **Check**:
+
 ```powershell
 # Test brand extraction
 cd d:\ApplyLens\services\api
@@ -529,6 +574,7 @@ print(extract_unless_brands('YOUR QUERY HERE'))"
 ```
 
 **Verify Policy Created**:
+
 ```sql
 SELECT * FROM policies WHERE name LIKE 'Learned:%' ORDER BY created_at DESC LIMIT 5;
 ```
@@ -538,14 +584,17 @@ SELECT * FROM policies WHERE name LIKE 'Learned:%' ORDER BY created_at DESC LIMI
 **Cause**: Priority conflict or condition mismatch
 
 **Fix**:
+
 1. Check learned policy priority: Should be < archive policy priority
 2. Check condition matches emails:
+
    ```json
    {"all": [
      {"eq": ["category", "promo"]},  ← Email must be category=promo
      {"regex": ["sender", "best buy"]}  ← Sender must contain "best buy"
    ]}
    ```
+
 3. Verify policy is enabled: `enabled=true`
 
 ### Issue: "Transcript not in audit trail"
@@ -553,6 +602,7 @@ SELECT * FROM policies WHERE name LIKE 'Learned:%' ORDER BY created_at DESC LIMI
 **Cause**: Using old `approvals_bulk_insert` instead of ORM models
 
 **Fix**: Chat router now uses ORM:
+
 ```python
 # OLD (removed):
 from ..db import approvals_bulk_insert
@@ -569,6 +619,7 @@ db.add(AuditAction(...))
 ### 1. Intent Confidence Scores
 
 Show confidence percentage for intent detection:
+
 ```tsx
 <div>Intent: clean (92% confident)</div>
 <div>Tokens: clean up, before friday</div>
@@ -577,6 +628,7 @@ Show confidence percentage for intent detection:
 ### 2. Token Highlighting
 
 Highlight matched tokens in the user's query:
+
 ```tsx
 "<span class='highlight'>Clean up</span> promos 
 <span class='highlight'>before Friday</span>"
@@ -585,6 +637,7 @@ Highlight matched tokens in the user's query:
 ### 3. Edit Learned Preferences
 
 UI to manage learned policies:
+
 ```tsx
 <div>Learned Preferences:</div>
 <ul>
@@ -597,6 +650,7 @@ UI to manage learned policies:
 ### 4. Transcript Search
 
 Search audit trail by query content:
+
 ```
 GET /api/actions/audit?transcript_search=promos
 
@@ -606,6 +660,7 @@ Returns all actions from queries containing "promos"
 ### 5. Memory Expiration
 
 Auto-expire learned policies after inactivity:
+
 ```python
 Policy(
     ...
@@ -619,15 +674,18 @@ Policy(
 ## Migration Notes
 
 ### Breaking Changes
+
 ❌ **None** - This is a pure enhancement
 
 ### Backward Compatibility
+
 ✅ **ProposedAction**: Still works with string rationale (old code)  
 ✅ **AuditAction**: Still works with string why (old code)  
 ✅ **Toggles**: Optional (default=false), existing users unaffected  
 ✅ **SSE Events**: New events, old clients ignore them
 
 ### Database Changes
+
 ✅ **No schema changes required**  
 ✅ **Uses existing JSON columns**: `ProposedAction.rationale`, `AuditAction.why`  
 ✅ **Uses existing Policy table**: Just inserts new rows with priority=5
@@ -637,22 +695,26 @@ Policy(
 This enhancement delivers **three powerful features** in a commit-ready additive patch:
 
 **1. Transcript Export**:
+
 - ✅ Full audit trail with `via="chat"` in `audit_actions`
 - ✅ Query, intent, tokens, citations all preserved
 - ✅ `outcome="proposed"` created immediately when filed
 
 **2. Explain My Intent**:
+
 - ✅ Show matched regex tokens in collapsible section
 - ✅ Transparency into why assistant chose specific intent
 - ✅ Chips UI with clean presentation
 
 **3. Memory of Preferences**:
+
 - ✅ Learn brand exceptions from "unless" clauses
 - ✅ Create high-priority policies automatically
 - ✅ User sets preference once, benefits forever
 - ✅ "🧠 Learned preference" confirmation message
 
 **Key Achievements**:
+
 - ✅ 160 lines backend code (2 functions, SSE events, policy creation)
 - ✅ 60 lines frontend code (2 toggles, 2 event listeners, tokens display)
 - ✅ 220 lines tests (backend + Playwright)
@@ -661,11 +723,12 @@ This enhancement delivers **three powerful features** in a commit-ready additive
 - ✅ Full backward compatibility
 
 **Status**: ✅ Complete and production-ready  
-**Frontend**: http://localhost:5176/chat  
-**Backend**: http://localhost:8003  
+**Frontend**: <http://localhost:5176/chat>  
+**Backend**: <http://localhost:8003>  
 **Tests**: All functions validated
 
 **Next Steps**:
+
 1. Test manually in UI
 2. Check database for transcript in `audit_actions`
 3. Verify learned policies prevent archive

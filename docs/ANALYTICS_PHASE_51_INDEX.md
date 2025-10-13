@@ -85,6 +85,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ## 🎯 Key Features
 
 ### Phase 51.1 — CSV Dashboards
+
 ✅ Export KPI time-series to CSV  
 ✅ Wide format for tables  
 ✅ Long format for charts  
@@ -92,12 +93,14 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ✅ Auto-export on pipeline runs  
 
 **Outputs:**
+
 - `analytics/outputs/dashboards/kpis.csv`
 - `analytics/outputs/dashboards/kpis_long.csv`
 
 ---
 
 ### Phase 51.2 — Analytics Search API
+
 ✅ Semantic search over insights  
 ✅ Vector store backed (SQLite)  
 ✅ 3 REST endpoints  
@@ -105,6 +108,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ✅ Auto-registered in FastAPI  
 
 **Endpoints:**
+
 - `GET /analytics/latest`
 - `GET /analytics/search?q=...&k=6`
 - `GET /analytics/dashboards/kpis.csv`
@@ -112,6 +116,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ---
 
 ### Phase 51.3 — Weight Recommendations
+
 ✅ Analyze SEO page failures  
 ✅ Extract paths from test failures  
 ✅ Recommend priority adjustments  
@@ -119,6 +124,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ✅ Evidence-based suggestions  
 
 **Recommendations:**
+
 - `page_priority:/{path}` - Increase attention to failing pages
 - `variant:stability_over_speed` - Prefer stable variants
 
@@ -127,6 +133,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ## 📁 Files Created
 
 ### Core Analytics (8 files)
+
 - `analytics/pipeline.py` - Main entry point
 - `analytics/dashboards/exporter.py` - CSV export
 - `analytics/recommenders/weights.py` - Weight recommendations
@@ -137,17 +144,21 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 - `analytics/rag/query_engine.py` - Vector search
 
 ### API & Integration (1 file)
+
 - `services/api/app/routers/analytics.py` - Analytics endpoints
 
 ### Configuration (3 files)
+
 - `analytics/.gitignore` - Ignore outputs
 - `analytics/config/test_page_map.json.example` - Test mapping
 - `analytics/README.md` - Directory docs
 
 ### Workflows (1 file)
+
 - `.github/workflows/analytics-pr-comment.yml` - PR automation
 
 ### Documentation (5 files)
+
 - `ANALYTICS_PHASE_51_COMPLETE.md` - Full guide
 - `ANALYTICS_PHASE_51_QUICKSTART.md` - Quick runbook
 - `ANALYTICS_PHASE_51_SUMMARY.md` - Summary
@@ -155,6 +166,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 - `ANALYTICS_PHASE_51_MANIFEST.md` - File manifest
 
 ### Modified (1 file)
+
 - `services/api/app/main.py` - Analytics router registration
 
 ---
@@ -190,6 +202,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 ## 🎨 Integration
 
 ### FastAPI (Auto-registered)
+
 ```python
 # services/api/app/main.py
 try:
@@ -200,6 +213,7 @@ except ImportError:
 ```
 
 ### Pipeline (Auto-export)
+
 ```python
 # analytics/pipeline.py
 from analytics.dashboards.exporter import export_csv_series
@@ -207,6 +221,7 @@ export_csv_series(DATA_DIR, OUT_DIR / "dashboards")
 ```
 
 ### Reports (Auto-recommendations)
+
 ```python
 # analytics/summarizers/report_builder.py
 try:
@@ -221,6 +236,7 @@ except Exception:
 ## 📊 Example Outputs
 
 ### CSV Export
+
 ```csv
 date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 2025-10-01,95.2,98.5,245,12
@@ -229,6 +245,7 @@ date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 ```
 
 ### Recommendations
+
 ```markdown
 ## Recommendations
 
@@ -278,18 +295,21 @@ Elevate attention to pages implicated by SEO/Test failures; prefer stable varian
 ## 🔄 Next Steps
 
 ### Immediate (Today)
+
 - [ ] Run pipeline: `python -m analytics.pipeline --window-days 7`
 - [ ] Test CSV export: Check `analytics/outputs/dashboards/`
 - [ ] Test API: `curl http://localhost:8003/analytics/latest`
 - [ ] Review recommendations in `insight-summary.md`
 
 ### This Week
+
 - [ ] Create `analytics/data/` with sample JSON files
 - [ ] Set up Grafana CSV datasource (optional)
 - [ ] Create `analytics/config/test_page_map.json` for your tests
 - [ ] Enable PR comment workflow in GitHub
 
 ### This Month
+
 - [ ] Replace dummy embedder with sentence-transformers
 - [ ] Implement proper cosine similarity in vector search
 - [ ] Add frontend analytics page (see docs)
@@ -300,6 +320,7 @@ Elevate attention to pages implicated by SEO/Test failures; prefer stable varian
 ## 📞 Support
 
 ### Documentation Links
+
 - [Complete Guide](./ANALYTICS_PHASE_51_COMPLETE.md)
 - [Quick Start](./ANALYTICS_PHASE_51_QUICKSTART.md)
 - [Implementation Summary](./ANALYTICS_PHASE_51_SUMMARY.md)

@@ -16,12 +16,14 @@ python -m services.api.scripts.es_reindex_with_ats
 ```
 
 **What it does:**
+
 - Creates new index `gmail_emails_v2` with ATS synonym analyzer
 - Copies all data from current index
 - Swaps alias `gmail_emails` to point to new index
 - Zero downtime (alias swap is atomic)
 
 **Output:**
+
 ```
 Alias gmail_emails -> gmail_emails_v2 (from gmail_emails)
 ```
@@ -46,6 +48,7 @@ uvicorn app.main:app --reload --port 8001
 ## 3. Test the Search
 
 ### Basic Search
+
 ```bash
 curl -s "http://127.0.0.1:8001/search?q=interview" | jq '.hits[0] | {subject, labels, score}'
 ```
@@ -69,6 +72,7 @@ curl -s "http://127.0.0.1:8001/search?q=application" | jq '.hits[] | {subject, l
 ```
 
 Expected order:
+
 1. Emails with `offer` label (score ~4x higher)
 2. Emails with `interview` label (score ~3x higher)
 3. Emails with no label
@@ -96,6 +100,7 @@ pytest -q tests/test_search_scoring.py
 ```
 
 **Test verifies:**
+
 - Label boost ordering (rejection ≤ neutral)
 - Recency decay (recent > old)
 - Response structure
@@ -127,6 +132,7 @@ Emails prioritized by importance:
 ### ✅ 7-Day Recency Decay
 
 Gaussian decay function:
+
 - **Today**: 100% weight
 - **7 days ago**: 50% weight (half-life)
 - **14 days ago**: 25% weight
@@ -148,6 +154,7 @@ Important fields weighted higher:
 Query pattern: `"{query}" | {query}*`
 
 Examples:
+
 - `"job offer"` → Exact phrase "job offer"
 - `interv*` → Matches interview, interviewing, etc.
 
@@ -182,6 +189,7 @@ SEARCH_FIELDS = [
 ```
 
 After changing tunables:
+
 - **No reindex required** (scoring only)
 - Just restart the API
 
@@ -192,11 +200,13 @@ After changing tunables:
 ### Synonyms Not Working
 
 **Check analyzer exists:**
+
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_settings" | jq '.*.settings.index.analysis.analyzer.ats_search_analyzer'
 ```
 
 **Test analyzer:**
+
 ```bash
 curl -X POST "http://localhost:9200/gmail_emails/_analyze" -H 'Content-Type: application/json' -d'
 {
@@ -208,22 +218,26 @@ curl -X POST "http://localhost:9200/gmail_emails/_analyze" -H 'Content-Type: app
 Should return tokens: `[workday, myworkdayjobs, wd1.myworkday, ..., lever, lever.co, hire.lever.co]`
 
 **If missing:**
+
 - Run reindex script again
 - Check ES logs for errors
 
 ### Label Boosts Not Applied
 
 **Verify labels field populated:**
+
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_search?size=1" | jq '.hits.hits[0]._source.labels'
 ```
 
 **Check function_score in API logs:**
+
 - Should see `"function_score"` with `"filter": {"terms": {"labels": ["offer"]}}`
 
 ### Recency Decay Not Working
 
 **Check received_at field type:**
+
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_mapping" | jq '.*.mappings.properties.received_at'
 ```
@@ -231,6 +245,7 @@ curl -s "http://localhost:9200/gmail_emails/_mapping" | jq '.*.mappings.properti
 Should be: `{"type": "date"}`
 
 **Verify dates are ISO format:**
+
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_search?size=1" | jq '.hits.hits[0]._source.received_at'
 ```
@@ -244,12 +259,14 @@ Should be: `"2025-10-09T12:00:00Z"` (ISO 8601)
 ### Index Settings
 
 Current settings (from reindex script):
+
 ```python
 "number_of_shards": 1,
 "number_of_replicas": 0,
 ```
 
 **For production:**
+
 - Use 3+ shards for >10M docs
 - Use 1 replica for high availability
 - Adjust in `es_reindex_with_ats.py` before running
@@ -257,11 +274,13 @@ Current settings (from reindex script):
 ### Query Performance
 
 Expected latency:
+
 - **< 50ms**: Simple queries (1-2 words)
 - **< 100ms**: Complex queries with filters
 - **< 200ms**: Queries with highlights
 
 **If slow:**
+
 - Check shard count (more shards = more parallelism)
 - Enable query cache: `"index.queries.cache.enabled": true`
 - Monitor with: `curl "http://localhost:9200/_cat/nodes?v&h=name,search.query_total,search.query_time"`
@@ -281,6 +300,7 @@ Expected latency:
 ---
 
 **Files Modified:**
+
 - `services/api/scripts/es_reindex_with_ats.py` ✅ NEW
 - `services/api/app/routers/search.py` ✅ Updated
 - `services/api/tests/test_search_scoring.py` ✅ Simplified

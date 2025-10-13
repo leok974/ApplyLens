@@ -3,17 +3,19 @@
 ## ✅ What's Been Deployed
 
 ### Services Running
-- ✅ **Prometheus v2.55.1** - http://localhost:9090
+
+- ✅ **Prometheus v2.55.1** - <http://localhost:9090>
   - Hot reload enabled: `POST http://localhost:9090/-/reload`
   - Scraping API every 15 seconds
   - 6 alert rules active
 
-- ✅ **Grafana 11.1.0** - http://localhost:3000 (admin/admin)
+- ✅ **Grafana 11.1.0** - <http://localhost:3000> (admin/admin)
   - Auto-provisioned Prometheus datasource
   - Auto-provisioned "ApplyLens API Overview" dashboard
   - Pre-installed plugin: grafana-piechart-panel
 
 ### Configuration Structure
+
 ```
 infra/
 ├── docker-compose.yml                    ✅ Updated with lifecycle & volumes
@@ -50,6 +52,7 @@ The **"ApplyLens API Overview"** dashboard includes:
 ## 🚨 Alert Rules (6 Total)
 
 ### Critical Alerts
+
 1. **ApplyLensApiDown**
    - Fires if API is unreachable for >1 minute
    - Expression: `(1 - up{job="applylens-api"}) == 1`
@@ -59,6 +62,7 @@ The **"ApplyLens API Overview"** dashboard includes:
    - Expression: `(min(applylens_db_up) == 0) or (min(applylens_es_up) == 0)`
 
 ### Warning Alerts
+
 3. **HighHttpErrorRate**
    - Fires if 5xx errors >5% for 5 minutes
    - Expression: `sum(rate(...{status_code=~"5.."}[5m])) / sum(rate(...[5m])) > 0.05`
@@ -72,11 +76,12 @@ The **"ApplyLens API Overview"** dashboard includes:
    - Expression: `max_over_time(applylens_gmail_connected[15m]) < 1`
 
 ### Info Alerts
+
 6. **BackfillRateLimitedSpike**
    - Fires if >10 rate-limited backfills in 15 minutes
    - Expression: `increase(applylens_backfill_requests_total{result="rate_limited"}[15m]) > 10`
 
-**View Alerts:** http://localhost:9090/alerts
+**View Alerts:** <http://localhost:9090/alerts>
 
 ---
 
@@ -85,6 +90,7 @@ The **"ApplyLens API Overview"** dashboard includes:
 Prometheus supports live configuration reload (no restart needed):
 
 ### After Editing Alert Rules
+
 ```powershell
 # Edit alerts
 notepad D:\ApplyLens\infra\prometheus\alerts.yml
@@ -100,6 +106,7 @@ Invoke-RestMethod http://localhost:9090/api/v1/rules
 ```
 
 ### After Editing Prometheus Config
+
 ```powershell
 # Edit config
 notepad D:\ApplyLens\infra\prometheus\prometheus.yml
@@ -119,6 +126,7 @@ Invoke-RestMethod http://localhost:9090/api/v1/targets
 ## 📈 Quick Sanity Checks
 
 ### 1. Check Prometheus Target Health
+
 ```powershell
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/targets"
 $target = $response.data.activeTargets | Where-Object { $_.labels.job -eq "applylens-api" }
@@ -128,6 +136,7 @@ $target | Select-Object scrapeUrl, health, lastError | Format-Table
 **Expected:** `scrapeUrl: http://api:8003/metrics`, `health: up`
 
 ### 2. Query Metrics
+
 ```powershell
 # Total request rate
 $query = "sum(rate(applylens_http_requests_total[5m]))"
@@ -141,6 +150,7 @@ Write-Host "DB: $db, ES: $es (1=up, 0=down)"
 ```
 
 ### 3. Generate Test Traffic
+
 ```powershell
 # Generate 20 requests
 1..5 | ForEach-Object {
@@ -158,6 +168,7 @@ start "http://localhost:9090/graph?g0.expr=sum(rate(applylens_http_requests_tota
 ```
 
 ### 4. Verify Grafana Provisioning
+
 ```powershell
 # Check datasource
 $datasources = Invoke-RestMethod -Uri "http://localhost:3000/api/datasources" -Credential (New-Object PSCredential("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force)))
@@ -175,17 +186,20 @@ $dashboards | Where-Object { $_.title -match "ApplyLens" } | Select-Object title
 ## 🎯 Access Your Monitoring
 
 ### Prometheus UI
+
 ```powershell
 start http://localhost:9090
 ```
 
 **Try these queries:**
+
 - `applylens_http_requests_total` - See all HTTP requests
 - `rate(applylens_http_requests_total[5m])` - Request rate per second
 - `histogram_quantile(0.95, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))` - p95 latency
 - `sum by (result) (increase(applylens_backfill_requests_total[1h]))` - Backfill outcomes
 
 ### Grafana Dashboards
+
 ```powershell
 start http://localhost:3000
 ```
@@ -196,6 +210,7 @@ start http://localhost:3000
 4. Time range default: Last 1 hour
 
 ### Alerts Page
+
 ```powershell
 start http://localhost:9090/alerts
 ```
@@ -207,6 +222,7 @@ All 6 alerts should show as **inactive** (green) when system is healthy.
 ## 🔄 Common Operations
 
 ### Restart Services
+
 ```powershell
 # Restart both (preserves data)
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus grafana
@@ -216,6 +232,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus
 ```
 
 ### View Logs
+
 ```powershell
 # Prometheus logs
 docker logs infra-prometheus --tail 50
@@ -228,6 +245,7 @@ docker logs -f infra-prometheus
 ```
 
 ### Validate Configuration
+
 ```powershell
 # Check Prometheus config syntax
 docker exec infra-prometheus promtool check config /etc/prometheus/prometheus.yml
@@ -277,11 +295,13 @@ Next time Grafana restarts, it will load the new dashboard automatically.
 ## 🚨 Adding Custom Alerts
 
 ### 1. Edit Alert Rules File
+
 ```powershell
 notepad D:\ApplyLens\infra\prometheus\alerts.yml
 ```
 
 ### 2. Add New Alert
+
 ```yaml
   - alert: HighLatency
     expr: |
@@ -295,6 +315,7 @@ notepad D:\ApplyLens\infra\prometheus\alerts.yml
 ```
 
 ### 3. Validate & Reload
+
 ```powershell
 # Validate syntax
 docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
@@ -313,6 +334,7 @@ start http://localhost:9090/alerts
 ### 1. Change Grafana Password
 
 Update `docker-compose.yml`:
+
 ```yaml
 grafana:
   environment:
@@ -321,6 +343,7 @@ grafana:
 ```
 
 Or set via environment variable:
+
 ```powershell
 $env:GRAFANA_ADMIN_PASSWORD = "SecurePassword123!"
 docker compose -f D:\ApplyLens\infra\docker-compose.yml up -d grafana
@@ -342,6 +365,7 @@ location /metrics {
 ```
 
 Or in FastAPI with basic auth:
+
 ```python
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from secrets import compare_digest
@@ -359,6 +383,7 @@ def metrics(credentials: HTTPBasicCredentials = Depends(security)):
 ### 3. Use Docker Networks
 
 Update `docker-compose.yml` to isolate services:
+
 ```yaml
 services:
   prometheus:
@@ -385,6 +410,7 @@ networks:
 ## 📚 PromQL Query Examples
 
 ### HTTP Metrics
+
 ```promql
 # Request rate by endpoint
 sum by (path) (rate(applylens_http_requests_total[5m]))
@@ -401,6 +427,7 @@ topk(5, histogram_quantile(0.99, sum by (le, path) (rate(applylens_http_request_
 ```
 
 ### Backfill Metrics
+
 ```promql
 # Backfill success rate
 sum(rate(applylens_backfill_requests_total{result="ok"}[5m])) 
@@ -414,6 +441,7 @@ increase(applylens_backfill_requests_total{result="rate_limited"}[1h])
 ```
 
 ### System Health
+
 ```promql
 # All systems up (should equal 1)
 min(applylens_db_up) * min(applylens_es_up)
@@ -430,25 +458,29 @@ avg_over_time(up{job="applylens-api"}[24h]) * 100
 ## 🎓 Learning Resources
 
 ### Prometheus
-- **Query Language:** https://prometheus.io/docs/prometheus/latest/querying/basics/
-- **Alerting Rules:** https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/
-- **Recording Rules:** https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/
+
+- **Query Language:** <https://prometheus.io/docs/prometheus/latest/querying/basics/>
+- **Alerting Rules:** <https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/>
+- **Recording Rules:** <https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/>
 
 ### Grafana
-- **Provisioning:** https://grafana.com/docs/grafana/latest/administration/provisioning/
-- **Dashboard JSON:** https://grafana.com/docs/grafana/latest/dashboards/json-model/
-- **Variable Templates:** https://grafana.com/docs/grafana/latest/variables/
+
+- **Provisioning:** <https://grafana.com/docs/grafana/latest/administration/provisioning/>
+- **Dashboard JSON:** <https://grafana.com/docs/grafana/latest/dashboards/json-model/>
+- **Variable Templates:** <https://grafana.com/docs/grafana/latest/variables/>
 
 ### Best Practices
-- **Naming Conventions:** https://prometheus.io/docs/practices/naming/
-- **Metric Types:** https://prometheus.io/docs/concepts/metric_types/
-- **Instrumentation:** https://prometheus.io/docs/practices/instrumentation/
+
+- **Naming Conventions:** <https://prometheus.io/docs/practices/naming/>
+- **Metric Types:** <https://prometheus.io/docs/concepts/metric_types/>
+- **Instrumentation:** <https://prometheus.io/docs/practices/instrumentation/>
 
 ---
 
 ## 🆘 Troubleshooting
 
 ### Problem: Target shows as "DOWN"
+
 ```powershell
 # Check API is running and responding
 curl http://localhost:8003/metrics
@@ -461,6 +493,7 @@ docker logs infra-prometheus --tail 50
 ```
 
 ### Problem: Dashboard not appearing in Grafana
+
 ```powershell
 # Check provisioning logs
 docker logs infra-grafana --tail 100 | Select-String "provision"
@@ -473,6 +506,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
 ```
 
 ### Problem: Alerts not firing
+
 ```powershell
 # Check alert rules are loaded
 Invoke-RestMethod http://localhost:9090/api/v1/rules | ConvertTo-Json -Depth 10
@@ -485,6 +519,7 @@ docker logs infra-prometheus | Select-String "error|warn"
 ```
 
 ### Problem: Metrics showing as 0
+
 ```powershell
 # Trigger endpoints to populate metrics
 Invoke-RestMethod http://localhost:8003/readiness
@@ -514,7 +549,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=applylens_db_up"
 
 ---
 
-## 🎉 You're All Set!
+## 🎉 You're All Set
 
 Your monitoring stack is **fully auto-provisioned** and ready for production use:
 
@@ -524,4 +559,4 @@ Your monitoring stack is **fully auto-provisioned** and ready for production use
 - ✅ 6 production-ready alerts configured
 - ✅ Complete observability of ApplyLens API
 
-**Next:** Open Grafana (http://localhost:3000), login, and explore the "ApplyLens API Overview" dashboard!
+**Next:** Open Grafana (<http://localhost:3000>), login, and explore the "ApplyLens API Overview" dashboard!

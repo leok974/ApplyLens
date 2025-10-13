@@ -9,14 +9,17 @@ The Tracker page now supports 5 different toast notification variants, each with
 ## Variants
 
 ### 1. Success ✓
+
 **Color:** Green (`bg-green-600 text-white`)  
 **Icon:** ✓  
 **Use Cases:**
+
 - Application created successfully
 - Status changed to "Interview"
 - Status changed to "Offer"
 
 **Example Messages:**
+
 ```
 ✓ OpenAI added to tracker
 ✓ Status: Interview — Anthropic
@@ -26,14 +29,17 @@ The Tracker page now supports 5 different toast notification variants, each with
 ---
 
 ### 2. Error ✗
+
 **Color:** Red (`bg-red-600 text-white`)  
 **Icon:** ✗  
 **Use Cases:**
+
 - Status changed to "Rejected"
 - API request failed
 - Delete operation failed
 
 **Example Messages:**
+
 ```
 ✗ Status: Rejected — Meta
 ✗ Failed to update status
@@ -43,13 +49,16 @@ The Tracker page now supports 5 different toast notification variants, each with
 ---
 
 ### 3. Warning ⚠
+
 **Color:** Yellow (`bg-yellow-500 text-white`)  
 **Icon:** ⚠  
 **Use Cases:**
+
 - Status changed to "On Hold"
 - Status changed to "Ghosted"
 
 **Example Messages:**
+
 ```
 ⚠ Status: On Hold — Stripe
 ⚠ Status: Ghosted — Databricks
@@ -58,13 +67,16 @@ The Tracker page now supports 5 different toast notification variants, each with
 ---
 
 ### 4. Info ℹ
+
 **Color:** Blue (`bg-blue-600 text-white`)  
 **Icon:** ℹ  
 **Use Cases:**
+
 - Status changed to "HR Screen"
 - Informational updates
 
 **Example Messages:**
+
 ```
 ℹ Status: HR Screen — Tesla
 ℹ Application updated
@@ -73,14 +85,17 @@ The Tracker page now supports 5 different toast notification variants, each with
 ---
 
 ### 5. Default •
+
 **Color:** Gray (`bg-gray-800 text-white`)  
 **Icon:** •  
 **Use Cases:**
+
 - Status changed to "Applied"
 - Application deleted
 - Generic actions
 
 **Example Messages:**
+
 ```
 • Status: Applied — Amazon
 • Deleted SpaceX
@@ -128,15 +143,18 @@ const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant> = {
 ## User Experience Flow
 
 ### Example 1: Successful Application Flow
+
 1. User clicks "Create Application" → **Green success toast**: `"✓ Acme Corp added to tracker"`
 2. User changes status to "HR Screen" → **Blue info toast**: `"ℹ Status: HR Screen — Acme Corp"`
 3. User changes status to "Interview" → **Green success toast**: `"✓ Status: Interview — Acme Corp"`
 4. User changes status to "Offer" → **Green success toast**: `"✓ Status: Offer — Acme Corp"`
 
 ### Example 2: Rejection Flow
+
 1. User changes status to "Rejected" → **Red error toast**: `"✗ Status: Rejected — Acme Corp"`
 
 ### Example 3: Uncertainty Flow
+
 1. User changes status to "On Hold" → **Yellow warning toast**: `"⚠ Status: On Hold — Acme Corp"`
 2. Weeks pass with no response
 3. User changes status to "Ghosted" → **Yellow warning toast**: `"⚠ Status: Ghosted — Acme Corp"`

@@ -68,9 +68,9 @@ curl "http://localhost:8003/applications?company=Google"
 
 ## 🎨 Web UI
 
-- Inbox: http://localhost:5175/inbox
-- Tracker: http://localhost:5175/tracker
-- Settings: http://localhost:5175/settings
+- Inbox: <http://localhost:5175/inbox>
+- Tracker: <http://localhost:5175/tracker>
+- Settings: <http://localhost:5175/settings>
 
 ## 📝 Logs
 
@@ -114,5 +114,5 @@ docker compose exec db pg_dump -U postgres applylens > "backup-db-$(Get-Date -Fo
 ---
 
 **Full Documentation:** See `PRODUCTION_SETUP.md`  
-**User:** leoklemet.pa@gmail.com  
+**User:** <leoklemet.pa@gmail.com>  
 **Status:** ✅ Operational

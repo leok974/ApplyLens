@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  # Test database - isolated from production
+  # Runs on port 5433 to avoid conflicts with local dev DB
+  db:
+    image: postgres:16
+    container_name: applylens-test-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: applylens
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d applylens"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      # Use tmpfs for faster tests (data is in-memory, not persisted)
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+    command:
+      - "postgres"
+      - "-c"
+      - "fsync=off"  # Faster for tests, unsafe for production
+      - "-c"
+      - "synchronous_commit=off"
+      - "-c"
+      - "full_page_writes=off"
+      - "-c"
+      - "shared_buffers=256MB"
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

@@ -6,6 +6,7 @@
 ## 🎉 System Overview
 
 ApplyLens is now fully configured with:
+
 - ✅ Gmail OAuth authentication connected
 - ✅ 1,807 emails synced and indexed
 - ✅ 94 job applications auto-created
@@ -24,21 +25,25 @@ ApplyLens is now fully configured with:
 **Window:** Last 2 days (fast, idempotent)
 
 **Verify task is running:**
+
 ```powershell
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Format-List
 ```
 
 **Manually trigger sync:**
+
 ```powershell
 Start-ScheduledTask -TaskName "ApplyLens-GmailSync"
 ```
 
 **View task history:**
+
 ```powershell
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
 ```
 
 **Remove task (if needed):**
+
 ```powershell
 Unregister-ScheduledTask -TaskName "ApplyLens-GmailSync" -Confirm:$false
 ```
@@ -46,6 +51,7 @@ Unregister-ScheduledTask -TaskName "ApplyLens-GmailSync" -Confirm:$false
 ### Alternative: Manual Sync
 
 Run anytime to sync recent emails:
+
 ```powershell
 # Quick 2-day sync
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
@@ -65,6 +71,7 @@ curl http://localhost:8003/gmail/status
 ```
 
 **Expected response:**
+
 ```json
 {
   "connected": true,
@@ -80,18 +87,23 @@ curl http://localhost:8003/gmail/status
 If `connected: false` unexpectedly:
 
 1. **Remove app permissions:**
+
    ```powershell
    start https://myaccount.google.com/permissions
    ```
+
    Find "ApplyLens" and remove access.
 
 2. **Re-authenticate:**
+
    ```powershell
    start http://localhost:8003/auth/google/login
    ```
+
    Grant permissions again.
 
 3. **Verify reconnection:**
+
    ```powershell
    curl http://localhost:8003/gmail/status
    ```
@@ -112,6 +124,7 @@ If `connected: false` unexpectedly:
 **Patterns:** `gmail_emails*`
 
 **Mappings:**
+
 - `gmail_id`, `thread_id`, `sender`, `recipient`, `labels`, `company`, `source`: **keyword**
 - `subject`, `body_text`, `role`: **text** (full-text searchable)
 - `received_at`: **date**
@@ -119,6 +132,7 @@ If `connected: false` unexpectedly:
 - `subject_suggest`: **completion** (autocomplete)
 
 **View template:**
+
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:9200/_index_template/gmail_emails_tpl"
 ```
@@ -128,6 +142,7 @@ Invoke-RestMethod -Uri "http://localhost:9200/_index_template/gmail_emails_tpl"
 **Name:** `gmail_emails_ilm`
 
 **Lifecycle Phases:**
+
 - **Hot:** Active indexing and searching (0-30 days)
 - **Warm:** Read-only, force-merged (30-180 days)
 - **Delete:** Automatically removed (after 180 days)
@@ -135,11 +150,13 @@ Invoke-RestMethod -Uri "http://localhost:9200/_index_template/gmail_emails_tpl"
 **Retention:** 6 months of email history
 
 **View policy:**
+
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:9200/_ilm/policy/gmail_emails_ilm"
 ```
 
 **Adjust retention (example - 1 year):**
+
 ```powershell
 $ilmJson = @'
 {
@@ -158,12 +175,14 @@ Invoke-RestMethod -Uri "http://localhost:9200/_ilm/policy/gmail_emails_ilm" -Met
 ### Index Management
 
 **Current index stats:**
+
 ```powershell
 curl http://localhost:9200/gmail_emails/_count
 curl http://localhost:9200/gmail_emails/_stats/store
 ```
 
 **Delete and recreate index (if needed):**
+
 ```powershell
 # WARNING: This deletes all indexed emails!
 curl -Method DELETE http://localhost:9200/gmail_emails
@@ -260,24 +279,25 @@ curl http://localhost:8003/applications/1
 
 ### Pages
 
-- **Inbox:** http://localhost:5175/inbox
+- **Inbox:** <http://localhost:5175/inbox>
   - View synced emails
   - Create applications from emails
   - Search and filter
 
-- **Tracker:** http://localhost:5175/tracker
+- **Tracker:** <http://localhost:5175/tracker>
   - View all applications
   - Update status inline
   - Filter by status/company
   - View linked emails
 
-- **Settings:** http://localhost:5175/settings
+- **Settings:** <http://localhost:5175/settings>
   - View connection status
   - Manage sync settings
 
 ### UI Features
 
 **Inbox Page:**
+
 - Email cards with metadata
 - "Create Application" button (green)
 - "View Application" link (blue, if linked)
@@ -287,6 +307,7 @@ curl http://localhost:8003/applications/1
 - Thread grouping
 
 **Tracker Page:**
+
 - Applications grid
 - Status dropdown (Applied, In Review, Interview, Offer, Rejected, Archived)
 - Company search box
@@ -356,6 +377,7 @@ docker compose down -v
 **Symptoms:** `connected: false`, 401 errors
 
 **Solutions:**
+
 1. Check Google Cloud Console:
    - Gmail API enabled
    - OAuth consent screen configured
@@ -363,11 +385,13 @@ docker compose down -v
    - Redirect URI: `http://localhost:8003/auth/google/callback`
 
 2. Verify credentials:
+
    ```powershell
    docker compose exec api cat /secrets/google.json
    ```
 
 3. Re-authenticate:
+
    ```powershell
    start http://localhost:8003/auth/google/login
    ```
@@ -375,16 +399,19 @@ docker compose down -v
 ### Scheduled Sync Not Running
 
 **Check task status:**
+
 ```powershell
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
 ```
 
 **View task history:**
+
 ```powershell
 Get-WinEvent -LogName "Microsoft-Windows-TaskScheduler/Operational" | Where-Object {$_.Message -like "*ApplyLens*"} | Select-Object -First 10
 ```
 
 **Manually test:**
+
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
 ```
@@ -392,6 +419,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
 ### Elasticsearch Issues
 
 **Index not found:**
+
 ```powershell
 # Check if index exists
 curl http://localhost:9200/_cat/indices?v
@@ -402,6 +430,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=60" -Method PO
 ```
 
 **Mapping conflicts:**
+
 ```powershell
 # Delete and recreate with template
 curl -Method DELETE http://localhost:9200/gmail_emails
@@ -409,6 +438,7 @@ curl -Method PUT http://localhost:9200/gmail_emails
 ```
 
 **Low disk space:**
+
 ```powershell
 # Check cluster health
 curl http://localhost:9200/_cluster/health
@@ -420,16 +450,19 @@ curl http://localhost:9200/_cat/allocation?v
 ### Database Connection Issues
 
 **Check database is running:**
+
 ```powershell
 docker compose ps db
 ```
 
 **Test connection:**
+
 ```powershell
 docker compose exec db psql -U postgres -d applylens -c "SELECT 1;"
 ```
 
 **Check connection string:**
+
 ```powershell
 docker compose exec api bash -c 'echo $DATABASE_URL'
 ```
@@ -482,6 +515,7 @@ docker compose exec api bash -c 'echo $DATABASE_URL'
 ⚠️ **Important:** The current setup uses HTTP for local development only.
 
 For production deployment:
+
 1. Remove `OAUTHLIB_INSECURE_TRANSPORT=1` from `auth_google.py`
 2. Set up HTTPS with valid SSL certificate
 3. Update `OAUTH_REDIRECT_URI` to use `https://`
@@ -493,12 +527,12 @@ For production deployment:
 
 ### OAuth Setup
 
-- **User:** leoklemet.pa@gmail.com
+- **User:** <leoklemet.pa@gmail.com>
 - **Provider:** Google
 - **Scopes:** gmail.readonly, userinfo.email, openid
 - **Client ID:** 813287438869-231mmrj2rhlu5n43amngca6ae5p72bhr.apps.googleusercontent.com
 - **Project:** applylens-gmail-1759983601
-- **Redirect URI:** http://localhost:8003/auth/google/callback
+- **Redirect URI:** <http://localhost:8003/auth/google/callback>
 
 ### Database
 
@@ -509,10 +543,10 @@ For production deployment:
 
 ### Services
 
-- **API:** http://localhost:8003
-- **Web:** http://localhost:5175
-- **Elasticsearch:** http://localhost:9200
-- **Kibana:** http://localhost:5601
+- **API:** <http://localhost:8003>
+- **Web:** <http://localhost:5175>
+- **Elasticsearch:** <http://localhost:9200>
+- **Kibana:** <http://localhost:5601>
 
 ### Data Counts (as of setup)
 
@@ -549,13 +583,13 @@ For production deployment:
 
 ### API Documentation
 
-- **Interactive docs:** http://localhost:8003/docs
-- **OpenAPI spec:** http://localhost:8003/openapi.json
+- **Interactive docs:** <http://localhost:8003/docs>
+- **OpenAPI spec:** <http://localhost:8003/openapi.json>
 
 ### Elasticsearch
 
-- **Kibana Dev Tools:** http://localhost:5601/app/dev_tools
-- **Index Management:** http://localhost:5601/app/management/data/index_management
+- **Kibana Dev Tools:** <http://localhost:5601/app/dev_tools>
+- **Index Management:** <http://localhost:5601/app/management/data/index_management>
 
 ---
 

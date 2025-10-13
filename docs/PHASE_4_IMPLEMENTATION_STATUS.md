@@ -9,9 +9,11 @@ Phase 4 adds intelligent, policy-driven email automation with human-in-the-loop 
 ### 1. Data Models (`app/models.py`)
 
 **New Enums:**
+
 - `ActionType`: 8 action types (label, archive, move, unsubscribe, calendar, task, block, quarantine)
 
 **New Models:**
+
 - `ProposedAction`: Queued action proposals pending review
   - Status lifecycle: pending → approved/rejected → executed/failed
   - Links to Policy and Email
@@ -31,6 +33,7 @@ Phase 4 adds intelligent, policy-driven email automation with human-in-the-loop 
 ### 2. Database Migration (`alembic/versions/0016_phase4_actions.py`)
 
 **Creates:**
+
 - `actiontype` enum (8 values)
 - `policies` table with condition JSON and action enum
 - `proposed_actions` table with foreign key to policies
@@ -39,6 +42,7 @@ Phase 4 adds intelligent, policy-driven email automation with human-in-the-loop 
 **Chains from:** `0015_add_security_policies`
 
 **To Apply:**
+
 ```bash
 docker exec infra-api-1 alembic upgrade head
 ```
@@ -46,18 +50,21 @@ docker exec infra-api-1 alembic upgrade head
 ### 3. Yardstick Policy Engine (`app/core/yardstick.py`)
 
 **DSL Features:**
+
 - Logical operators: `all`, `any`, `not`
 - Comparators: `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `in`, `regex`, `exists`
 - Special value: `"now"` → current datetime
 - Auto datetime parsing for ISO strings
 
 **Functions:**
+
 - `evaluate_policy(policy, ctx)` → bool
 - `validate_condition(condition)` → (valid, error_msg)
 - `_eval(expr, ctx)` → recursive evaluation
 - `_cmp(node, ctx)` → comparator execution
 
 **Example Policy:**
+
 ```json
 {
   "condition": {
@@ -70,6 +77,7 @@ docker exec infra-api-1 alembic upgrade head
 ```
 
 **Example Context:**
+
 ```python
 {
   "category": "promotions",
@@ -84,6 +92,7 @@ docker exec infra-api-1 alembic upgrade head
 ### 4. Action Executors (`app/core/executors.py`)
 
 **Implemented Stubs for 8 Actions:**
+
 - `gmail_archive(email_id)` - Remove INBOX, add ARCHIVED
 - `gmail_label(email_id, label)` - Add label
 - `gmail_move(email_id, folder)` - Move to folder
@@ -96,6 +105,7 @@ docker exec infra-api-1 alembic upgrade head
 **All return:** `(success: bool, error: str | None)`
 
 **Integration Points (TODOs):**
+
 - Gmail API service injection
 - Calendar API service injection
 - Tasks API service injection
@@ -107,6 +117,7 @@ docker exec infra-api-1 alembic upgrade head
 **Endpoints:**
 
 #### Action Proposal & Approval
+
 - `POST /actions/propose` - Create proposals for emails
   - Body: `{email_ids?, query?, limit?}`
   - Process: Load emails → evaluate policies → create proposals
@@ -126,6 +137,7 @@ docker exec infra-api-1 alembic upgrade head
   - Returns: Array of proposals with email details
 
 #### Policy CRUD
+
 - `GET /actions/policies` - List all policies
   - Query: `?enabled_only=false`
   - Returns: Array of policies ordered by priority
@@ -148,6 +160,7 @@ docker exec infra-api-1 alembic upgrade head
   - Returns: `{matches: [email_ids], count: N}`
 
 **Helper Functions:**
+
 - `build_email_ctx(email)` - Convert Email to Yardstick context
 - `extract_domain(email_address)` - Parse domain from email
 - `build_rationale(email, policy)` - Generate confidence + rationale
@@ -160,6 +173,7 @@ docker exec infra-api-1 alembic upgrade head
 **5 Seed Policies:**
 
 1. **Promo auto-archive** (Priority 50, Enabled)
+
    ```json
    {
      "all": [
@@ -171,11 +185,13 @@ docker exec infra-api-1 alembic upgrade head
    ```
 
 2. **High-risk quarantine** (Priority 10, Enabled)
+
    ```json
    {"gte": ["risk_score", 80]}
    ```
 
 3. **Job application auto-label** (Priority 30, Enabled)
+
    ```json
    {
      "all": [
@@ -186,6 +202,7 @@ docker exec infra-api-1 alembic upgrade head
    ```
 
 4. **Create event from invitation** (Priority 40, Disabled)
+
    ```json
    {
      "all": [
@@ -197,6 +214,7 @@ docker exec infra-api-1 alembic upgrade head
    ```
 
 5. **Auto-unsubscribe inactive senders** (Priority 60, Disabled)
+
    ```json
    {
      "all": [
@@ -208,10 +226,12 @@ docker exec infra-api-1 alembic upgrade head
    ```
 
 **Functions:**
+
 - `seed_policies(db)` - Insert defaults (skips existing)
 - `reset_policies(db)` - Delete all + reseed (WARNING: destructive)
 
 **To Seed:**
+
 ```bash
 docker exec infra-api-1 python -m app.seeds.policies
 ```
@@ -221,6 +241,7 @@ docker exec infra-api-1 python -m app.seeds.policies
 ### 7. Frontend API Client (`apps/web/src/lib/actionsClient.ts`)
 
 **Required Functions:**
+
 ```typescript
 export async function fetchTray(): Promise<ProposedAction[]>
 export async function approveAction(id: number, screenshotDataUrl?: string): Promise<{ok: bool}>
@@ -236,6 +257,7 @@ export async function testPolicy(id: number, emailIds?: number[]): Promise<{matc
 ### 8. ActionsTray Component (`apps/web/src/components/ActionsTray.tsx`)
 
 **Features Needed:**
+
 - Right-side drawer (fixed position, slide in/out)
 - List pending actions from `/api/actions/tray`
 - Action card UI:
@@ -249,6 +271,7 @@ export async function testPolicy(id: number, emailIds?: number[]): Promise<{matc
 - Real-time refresh after approve/reject
 
 **Example Structure:**
+
 ```tsx
 <div className="fixed right-0 top-0 h-full w-[420px] bg-neutral-900/90">
   <div className="p-4">
@@ -272,6 +295,7 @@ export async function testPolicy(id: number, emailIds?: number[]): Promise<{matc
 ### 9. Backend Tests
 
 #### `tests/test_yardstick_eval.py`
+
 ```python
 def test_eval_all_operator()
 def test_eval_any_operator()
@@ -288,6 +312,7 @@ def test_validate_condition_invalid()
 ```
 
 #### `tests/test_actions_propose.py`
+
 ```python
 def test_propose_creates_actions(client, db, seed_emails, seed_policies)
 def test_propose_respects_priority(client, db)
@@ -298,6 +323,7 @@ def test_propose_with_no_policies_fails(client, db)
 ```
 
 #### `tests/test_actions_approve_and_audit.py`
+
 ```python
 def test_approve_executes_action(client, db)
 def test_approve_writes_audit(client, db)
@@ -310,6 +336,7 @@ def test_reject_non_pending_fails(client, db)
 ### 10. E2E Tests
 
 #### `tests/actions.tray.spec.ts`
+
 ```typescript
 test("renders pending actions in tray", async ({ page }) => {
   // Mock /api/actions/tray
@@ -338,6 +365,7 @@ test("always do this creates policy", async ({ page }) => {
 ```
 
 #### `tests/policies.crud.spec.ts`
+
 ```typescript
 test("create policy with valid condition", async ({ page }) => {
   // Navigate to policies page
@@ -363,6 +391,7 @@ test("disable policy prevents proposals", async ({ page }) => {
 ### 11. SSE Events Endpoint (`app/routers/actions.py`)
 
 **Add Endpoint:**
+
 ```python
 @router.get("/events")
 async def action_events(request: Request):
@@ -396,6 +425,7 @@ async def action_events(request: Request):
 ```
 
 **Frontend Integration:**
+
 ```typescript
 const events = new EventSource("/api/actions/events")
 events.onmessage = (e) => {
@@ -410,6 +440,7 @@ events.onmessage = (e) => {
 ### 12. Documentation (`docs/PHASE_4_ACTIONS.md`)
 
 **Required Sections:**
+
 - Overview
 - Architecture diagram
 - Policy DSL reference (all operators + examples)
@@ -440,6 +471,7 @@ docker exec infra-api-1 alembic upgrade head
 ```
 
 Expected output:
+
 ```
 INFO  [alembic.runtime.migration] Running upgrade 0015 -> 0016, phase4 actions
 ```
@@ -513,6 +545,7 @@ import { ActionsTray } from "@/components/ActionsTray"
    - Seed default policies
 
 2. **Propose actions:**
+
    ```bash
    curl -X POST http://localhost:8003/api/actions/propose -d '{"limit":20}'
    ```
@@ -598,6 +631,7 @@ npm run test:e2e -- policies.crud.spec.ts
 ## Monitoring
 
 **Prometheus Metrics:**
+
 ```python
 from prometheus_client import Counter, Histogram
 
@@ -608,6 +642,7 @@ policy_eval_duration = Histogram("policy_eval_duration_seconds", "Policy evaluat
 ```
 
 **Grafana Dashboard:**
+
 - Actions proposed per hour (by policy)
 - Action approval rate
 - Action failure rate (by type)
@@ -645,6 +680,7 @@ policy_eval_duration = Histogram("policy_eval_duration_seconds", "Policy evaluat
 ## Summary
 
 **Phase 4 Backend (✅ Complete):**
+
 - ✅ Models and migration (ProposedAction, AuditAction, Policy)
 - ✅ Yardstick DSL engine with full operator set
 - ✅ Action executors (8 types, stubs ready for integration)
@@ -652,16 +688,19 @@ policy_eval_duration = Histogram("policy_eval_duration_seconds", "Policy evaluat
 - ✅ Default policies (5 sensible defaults)
 
 **Phase 4 Frontend (⏳ Pending):**
+
 - ⏳ Actions API client
 - ⏳ ActionsTray component
 - ⏳ Policy management UI
 
 **Phase 4 Testing (⏳ Pending):**
+
 - ⏳ Yardstick unit tests
 - ⏳ Actions API tests
 - ⏳ Playwright E2E tests
 
 **Phase 4 Infrastructure (⏳ Pending):**
+
 - ⏳ SSE events endpoint
 - ⏳ Screenshot cleanup job
 - ⏳ Prometheus metrics

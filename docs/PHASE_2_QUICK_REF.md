@@ -7,17 +7,20 @@ One-page cheat sheet for Phase-2 email categorization automation.
 ## 🚀 Quick Start (Choose Your Platform)
 
 ### 🐧 Unix/Linux/Mac → Makefile
+
 ```bash
 make phase2-all
 ```
 
 ### 🌐 Cross-Platform → npm
+
 ```bash
 npm install
 npm run phase2:all
 ```
 
 ### 🪟 Windows → PowerShell
+
 ```powershell
 .\scripts\phase2-all.ps1
 ```
@@ -59,6 +62,7 @@ npm run phase2:all
 ## 🎯 Common Tasks
 
 ### Full Pipeline
+
 ```bash
 # Makefile
 make phase2-all
@@ -71,6 +75,7 @@ npm run phase2:all
 ```
 
 ### Step by Step
+
 ```bash
 # Makefile
 make export-weak
@@ -87,6 +92,7 @@ npm run phase2:apply
 ```
 
 ### View Results
+
 ```bash
 # Makefile/npm
 curl "http://localhost:8003/labels/stats" | jq
@@ -102,12 +108,14 @@ Invoke-RestMethod -Uri "http://localhost:8003/profile/summary?days=60"
 ## ⚙️ Configuration
 
 ### Makefile (CLI Override)
+
 ```bash
 make export-weak EXPORT_DAYS=90 EXPORT_LIMIT=50000
 make apply-labels API_BASE=https://api.applylens.app
 ```
 
 ### npm (Environment Variables)
+
 ```bash
 # PowerShell
 $env:ES_URL="http://localhost:9200"
@@ -119,6 +127,7 @@ ES_URL=http://localhost:9200 npm run phase2:export
 ```
 
 ### PowerShell (Parameters)
+
 ```powershell
 .\scripts\phase2-all.ps1 -Days 90 -Limit 50000 -ApiBase https://api.applylens.app
 ```
@@ -157,6 +166,7 @@ Phase-2 automatically labels emails into:
 ## 📊 Expected Results
 
 ### Export Phase
+
 ```json
 {
   "seen": 15234,
@@ -172,6 +182,7 @@ Phase-2 automatically labels emails into:
 ```
 
 ### Training Phase
+
 ```
 ✅ Saved model to label_model.joblib
 
@@ -186,6 +197,7 @@ Phase-2 automatically labels emails into:
 ```
 
 ### Apply Phase
+
 ```json
 {"updated": 15234}
 ```
@@ -195,6 +207,7 @@ Phase-2 automatically labels emails into:
 ## 🛠️ Troubleshooting
 
 ### No Data in ES
+
 ```bash
 # Check if index exists
 curl http://localhost:9200/emails_v1-000001/_count
@@ -205,6 +218,7 @@ python gmail_backfill_to_es_bq.py
 ```
 
 ### API Not Running
+
 ```bash
 # Check API health
 curl http://localhost:8003/health
@@ -215,6 +229,7 @@ docker-compose up -d api
 ```
 
 ### Module Not Found
+
 ```bash
 # Install Python dependencies
 cd services/api
@@ -224,6 +239,7 @@ poetry install
 ```
 
 ### Permission Denied (PowerShell)
+
 ```powershell
 # Allow script execution
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -247,6 +263,7 @@ After running automation:
 ## 🎓 Advanced Usage
 
 ### Custom Export Window
+
 ```bash
 # Last 30 days only
 make export-weak EXPORT_DAYS=30
@@ -256,12 +273,14 @@ make export-weak EXPORT_DAYS=30
 ```
 
 ### Large Dataset Training
+
 ```bash
 # 100k rows, 20k per category
 make export-weak EXPORT_LIMIT=100000 EXPORT_LPC=20000
 ```
 
 ### Production Deployment
+
 ```powershell
 .\scripts\phase2-all.ps1 `
   -EsUrl https://es.prod.applylens.app `
@@ -272,6 +291,7 @@ make export-weak EXPORT_LIMIT=100000 EXPORT_LPC=20000
 ```
 
 ### Re-train with New Rules
+
 ```bash
 # 1. Update rules.py with new patterns
 # 2. Re-export with updated rules

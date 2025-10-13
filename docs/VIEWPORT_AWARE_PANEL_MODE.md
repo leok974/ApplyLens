@@ -22,6 +22,7 @@ const DESKTOP_BP = 1024; // 1024px breakpoint (lg)
 ```
 
 **Why 1024px?**
+
 - Matches Tailwind CSS `lg` breakpoint convention
 - Provides adequate horizontal space for split layout
 - Common desktop/tablet boundary
@@ -52,6 +53,7 @@ React.useEffect(() => {
 ```
 
 **Two-layer approach**:
+
 1. **resize event**: Fallback for older browsers
 2. **matchMedia listener**: More efficient, fires only at breakpoint crossing
 
@@ -63,6 +65,7 @@ const effectiveMode: PanelMode = isDesktop ? panelMode : "overlay";
 ```
 
 **Logic**:
+
 - **Desktop**: Use saved preference (`panelMode` from localStorage)
 - **Mobile**: Always use overlay mode
 - **User preference**: Only applies on desktop, ignored on mobile
@@ -77,6 +80,7 @@ React.useEffect(() => {
 ```
 
 **Why this is needed**:
+
 - User has split mode saved in localStorage
 - Opens page on mobile (panel in overlay mode, closed)
 - Rotates device or resizes window to desktop width
@@ -106,6 +110,7 @@ React.useEffect(() => {
 ```
 
 **Key changes**:
+
 - `disabled={!isDesktop}` - Can't toggle on mobile
 - `variant={!isDesktop ? "secondary" : "outline"}` - Dimmed appearance when disabled
 - `className="hidden md:inline-flex"` - Completely hidden below md breakpoint
@@ -136,6 +141,7 @@ This ensures the layout respects the calculated effective mode, not just the sav
 ### Desktop User (≥1024px)
 
 **Initial visit**:
+
 1. User opens page on desktop
 2. Default: overlay mode (localStorage empty)
 3. Toggle button enabled: "Split Panel"
@@ -143,12 +149,14 @@ This ensures the layout respects the calculated effective mode, not just the sav
 5. Preference saved to localStorage
 
 **Return visit**:
+
 1. User opens page on desktop
 2. Reads localStorage: "split"
 3. Panel opens in split mode automatically
 4. Toggle button shows "Overlay Panel"
 
 **Resize to mobile**:
+
 1. User shrinks browser window below 1024px
 2. `effectiveMode` changes to "overlay"
 3. Layout switches to full-width list + slide-over panel
@@ -156,6 +164,7 @@ This ensures the layout respects the calculated effective mode, not just the sav
 5. Saved preference ("split") preserved in localStorage
 
 **Resize back to desktop**:
+
 1. User expands browser window above 1024px
 2. `effectiveMode` changes back to "split" (reads saved preference)
 3. Panel auto-opens (useEffect triggered)
@@ -165,17 +174,20 @@ This ensures the layout respects the calculated effective mode, not just the sav
 ### Mobile User (<1024px)
 
 **Initial visit**:
+
 1. User opens page on mobile
 2. `effectiveMode` forced to "overlay"
 3. Toggle button disabled/hidden
 4. Full-width list with slide-over panel
 
 **Clicks email**:
+
 1. Panel slides in from right
 2. Takes full screen (mobile-optimized)
 3. Close button visible
 
 **No split mode available**:
+
 - Even if localStorage contains "split"
 - Mobile always uses overlay
 - No way to toggle (button disabled/hidden)
@@ -183,11 +195,13 @@ This ensures the layout respects the calculated effective mode, not just the sav
 ### Tablet User (Borderline)
 
 **Portrait (<1024px)**:
+
 - Behaves like mobile
 - Overlay mode forced
 - Toggle disabled
 
 **Landscape (≥1024px)**:
+
 - Behaves like desktop
 - Toggle enabled
 - Can choose split or overlay
@@ -198,6 +212,7 @@ This ensures the layout respects the calculated effective mode, not just the sav
 ### Toggle Button States
 
 **Desktop - Overlay Mode**:
+
 ```
 ┌──────────────────────────┐
 │ ⚏  Split Panel          │  <- Enabled, outline variant
@@ -205,6 +220,7 @@ This ensures the layout respects the calculated effective mode, not just the sav
 ```
 
 **Desktop - Split Mode**:
+
 ```
 ┌──────────────────────────┐
 │ ⛶  Overlay Panel        │  <- Enabled, outline variant
@@ -212,6 +228,7 @@ This ensures the layout respects the calculated effective mode, not just the sav
 ```
 
 **Mobile - Any Mode**:
+
 ```
 ┌──────────────────────────┐
 │ ⚏  Split Panel          │  <- Disabled, secondary variant (dimmed)
@@ -222,6 +239,7 @@ This ensures the layout respects the calculated effective mode, not just the sav
 ### Layout Transitions
 
 **Desktop → Mobile (window shrink)**:
+
 ```
 Before (≥1024px, split mode):
 ┌─────────────────────────────────────┐
@@ -237,6 +255,7 @@ After (<1024px, forced overlay):
 ```
 
 **Mobile → Desktop (window expand)**:
+
 ```
 Before (<1024px, forced overlay):
 ┌─────────────────────────────────────┐
@@ -256,12 +275,14 @@ After (≥1024px, reads preference = split):
 ### matchMedia Listener
 
 **Why use matchMedia?**
+
 - More efficient than resize event
 - Fires only when breakpoint is crossed
 - Native browser API, highly optimized
 - Avoids unnecessary re-renders
 
 **Fallback**:
+
 - Still includes resize listener for older browsers
 - Belt-and-suspenders approach
 - Negligible performance cost
@@ -275,6 +296,7 @@ const [isDesktop, setIsDesktop] = React.useState<boolean>(
 ```
 
 **SSR-safe**:
+
 - Check `typeof window !== "undefined"`
 - Prevents errors during server-side rendering
 - Defaults to `true` (desktop) if window not available
@@ -284,14 +306,17 @@ const [isDesktop, setIsDesktop] = React.useState<boolean>(
 ### Disabled Button
 
 **Visual feedback**:
+
 - `variant="secondary"` when disabled (dimmed appearance)
 - Lighter background, reduced contrast
 - Clear "not available" signal
 
 **Tooltip**:
+
 ```typescript
 title={!isDesktop ? "Available on larger screens" : ""}
 ```
+
 - Explains why button is disabled
 - Only shown on mobile/narrow screens
 - Empty string on desktop (no tooltip needed)
@@ -299,6 +324,7 @@ title={!isDesktop ? "Available on larger screens" : ""}
 ### Keyboard Navigation
 
 **Disabled state**:
+
 - Button still focusable (browser default)
 - Click does nothing (disabled attribute)
 - Screen readers announce "disabled"
@@ -306,6 +332,7 @@ title={!isDesktop ? "Available on larger screens" : ""}
 ### ARIA Attributes
 
 **Inherited from Button component**:
+
 - `role="button"`
 - `aria-disabled="true"` when disabled
 - `tabindex="0"` (still focusable)
@@ -317,6 +344,7 @@ title={!isDesktop ? "Available on larger screens" : ""}
 **Scenario**: User rapidly resizes window back and forth across breakpoint
 
 **Handling**:
+
 - matchMedia listener debounced by browser
 - Only one state update per breakpoint crossing
 - Layout smoothly transitions
@@ -327,10 +355,12 @@ title={!isDesktop ? "Available on larger screens" : ""}
 **Scenario**: localStorage contains invalid value (not "split" or "overlay")
 
 **Handling**:
+
 ```typescript
 const saved = localStorage.getItem(MODE_KEY) as PanelMode | null;
 return saved === "split" || saved === "overlay" ? saved : "overlay";
 ```
+
 - Explicit validation
 - Falls back to "overlay" default
 - Prevents runtime errors
@@ -340,6 +370,7 @@ return saved === "split" || saved === "overlay" ? saved : "overlay";
 **Scenario**: User has panel open, then resizes below 1024px
 
 **Handling**:
+
 - Layout switches to overlay mode
 - Panel stays open (state preserved)
 - Close button becomes visible
@@ -350,6 +381,7 @@ return saved === "split" || saved === "overlay" ? saved : "overlay";
 **Scenario**: Tablet user rotates device (portrait ↔ landscape)
 
 **Handling**:
+
 - Portrait: `effectiveMode` → overlay
 - Landscape: `effectiveMode` → reads preference
 - If preference = split → panel auto-opens
@@ -360,6 +392,7 @@ return saved === "split" || saved === "overlay" ? saved : "overlay";
 **Scenario**: User zooms in/out, changing effective viewport width
 
 **Handling**:
+
 - matchMedia uses CSS pixels (respects zoom)
 - Breakpoint adjusted proportionally
 - Correct mode applied at all zoom levels
@@ -423,6 +456,7 @@ return saved === "split" || saved === "overlay" ? saved : "overlay";
 - ⚠️ Older browsers: Falls back to `addListener` or resize event
 
 **Optional chaining**: `mq.addEventListener?.("change", onMQ)`
+
 - Safely handles browsers without method
 
 ## Future Enhancements
@@ -436,6 +470,7 @@ const DESKTOP_BP = parseInt(localStorage.getItem("inbox:desktopBp") || "1024");
 ```
 
 **Settings UI**:
+
 - Slider: 768px - 1536px
 - Presets: Tablet (768), Desktop (1024), Large (1280)
 - Live preview as user adjusts
@@ -443,6 +478,7 @@ const DESKTOP_BP = parseInt(localStorage.getItem("inbox:desktopBp") || "1024");
 ### Three Breakpoints
 
 Support three tiers:
+
 - **Mobile (<768px)**: Overlay only
 - **Tablet (768-1280px)**: Overlay default, split available
 - **Desktop (≥1280px)**: Split default, both available
@@ -474,11 +510,13 @@ Smooth layout transitions on resize:
 ### For Existing Users
 
 **No breaking changes**:
+
 - Existing localStorage values still work
 - Desktop users see no difference (unless they resize)
 - Mobile users get improved UX automatically
 
 **What changes**:
+
 - Toggle button disabled on mobile (was always visible)
 - Layout forced to overlay on mobile (was potentially broken in split mode)
 - Panel auto-opens when switching to desktop with split preference (was closed)
@@ -486,6 +524,7 @@ Smooth layout transitions on resize:
 ### For Developers
 
 **Update any custom pages**:
+
 1. Add `DESKTOP_BP` constant
 2. Add `isDesktop` state with matchMedia listener
 3. Calculate `effectiveMode = isDesktop ? panelMode : "overlay"`
@@ -501,4 +540,3 @@ Smooth layout transitions on resize:
 **Backward Compatible**: ✅ Yes  
 **Tested**: ⏳ Pending user verification  
 **Documentation**: ✅ Complete
-
