@@ -11,6 +11,7 @@
 import { useState } from 'react'
 import { Send, Sparkles, AlertCircle, Mail, Play } from 'lucide-react'
 import { sendChatMessage, Message, ChatResponse } from '@/lib/chatClient'
+import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
 
 interface QuickAction {
   label: string
@@ -79,6 +80,7 @@ export default function MailChat() {
   const [fileActions, setFileActions] = useState(false)
   const [explain, setExplain] = useState(false)
   const [remember, setRemember] = useState(false)
+  const [mode, setMode] = useState<'' | 'networking' | 'money'>('')
   const [intentTokens, setIntentTokens] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,7 +100,11 @@ export default function MailChat() {
     const shouldPropose = opts?.propose ?? false
     const shouldExplain = opts?.explain ?? false
     const shouldRemember = opts?.remember ?? false
-    const url = `/api/chat/stream?q=${encodeURIComponent(text)}${shouldPropose ? '&propose=1' : ''}${shouldExplain ? '&explain=1' : ''}${shouldRemember ? '&remember=1' : ''}`
+    const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
+      + (shouldPropose ? '&propose=1' : '')
+      + (shouldExplain ? '&explain=1' : '')
+      + (shouldRemember ? '&remember=1' : '')
+      + (mode ? `&mode=${encodeURIComponent(mode)}` : '')
     
     let assistantText = ''
     let filedCount = 0
@@ -290,17 +296,20 @@ export default function MailChat() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 pb-2 border-b border-neutral-800">
-        <Sparkles className="w-6 h-6 text-emerald-500" />
-        <div>
-          <h2 className="text-xl font-semibold">Mailbox Assistant</h2>
-          <p className="text-sm text-neutral-400">
-            Ask questions about your emails in natural language
-          </p>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Chat Column */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Header */}
+          <div className="flex items-center gap-3 pb-2 border-b border-neutral-800">
+            <Sparkles className="w-6 h-6 text-emerald-500" />
+            <div>
+              <h2 className="text-xl font-semibold">Mailbox Assistant</h2>
+              <p className="text-sm text-neutral-400">
+                Ask questions about your emails in natural language
+              </p>
+            </div>
+          </div>
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
@@ -478,6 +487,34 @@ export default function MailChat() {
           />
           remember exceptions
         </label>
+        
+        {/* Mode Selector */}
+        <label className="text-xs flex items-center gap-2 px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
+          <span className="opacity-70">mode</span>
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as '' | 'networking' | 'money')}
+            className="bg-neutral-900 text-xs border border-neutral-800 rounded px-2 py-1"
+            aria-label="assistant mode"
+          >
+            <option value="">off</option>
+            <option value="networking">networking</option>
+            <option value="money">money</option>
+          </select>
+        </label>
+        
+        {/* Money Mode: Export Receipts Link */}
+        {mode === 'money' && (
+          <a
+            href="/api/money/receipts.csv"
+            className="px-3 py-1 rounded-xl bg-neutral-800 text-xs underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Export receipts (CSV)
+          </a>
+        )}
+        
         <button
           onClick={() => lastQuery && send(lastQuery, { propose: true })}
           disabled={busy || !lastQuery}
@@ -512,6 +549,13 @@ export default function MailChat() {
       <div className="text-xs text-neutral-500 text-center">
         💡 Try asking about specific time ranges, senders, or categories. The
         assistant will cite source emails.
+      </div>
+        </div>
+
+        {/* Right Sidebar - Policy Accuracy Panel */}
+        <div className="lg:col-span-1 space-y-3">
+          <PolicyAccuracyPanel />
+        </div>
       </div>
     </div>
   )
