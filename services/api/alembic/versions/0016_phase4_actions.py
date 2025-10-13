@@ -15,8 +15,11 @@ depends_on = None
 
 
 def upgrade():
-    # Create ActionType enum
+    # Create ActionType enum (idempotent - may already exist from 0002b)
     op.execute("""
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'actiontype') THEN
         CREATE TYPE actiontype AS ENUM (
             'label_email',
             'archive_email',
@@ -26,7 +29,9 @@ def upgrade():
             'create_task',
             'block_sender',
             'quarantine_attachment'
-        )
+        );
+      END IF;
+    END$$;
     """)
     
     # Create policies table
