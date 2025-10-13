@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SecurityPanel } from "@/components/security/SecurityPanel";
+import { RiskFlag } from "@/types/security";
 
 export type EmailDetails = {
   id: string;
@@ -22,6 +24,10 @@ export type EmailDetails = {
   body_text?: string;
   thread_id?: string;
   unsubscribe_url?: string | null;
+  // Security fields
+  risk_score?: number;
+  quarantined?: boolean;
+  flags?: RiskFlag[];
 };
 
 type ThreadItem = {
@@ -238,6 +244,23 @@ export function EmailDetailsPanel({
             </div>
 
             <Separator />
+
+            {/* Security panel */}
+            {email.risk_score !== undefined && (
+              <>
+                <SecurityPanel
+                  emailId={email.id}
+                  riskScore={email.risk_score ?? 0}
+                  quarantined={email.quarantined}
+                  flags={email.flags}
+                  onRefresh={() => {
+                    // Parent can implement refresh logic
+                    console.log('Security panel refresh requested');
+                  }}
+                />
+                <Separator />
+              </>
+            )}
 
             {/* Current message body */}
             {body(email)}

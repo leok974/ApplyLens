@@ -60,6 +60,25 @@ export type SearchHit = {
   confidence?: number
 }
 
+export type SearchParams = {
+  q: string
+  size?: number
+  limit?: number
+  labelFilter?: string
+  scale?: string
+  labels?: string[]
+  dateFrom?: string
+  dateTo?: string
+  replied?: boolean
+  sort?: string
+  categories?: string[]
+  hideExpired?: boolean
+  // Security filters
+  risk_min?: number     // 0–100
+  risk_max?: number     // 0–100
+  quarantined?: boolean // true / false
+}
+
 export async function searchEmails(
   query: string,
   limit = 10,
@@ -71,7 +90,10 @@ export async function searchEmails(
   replied?: boolean,
   sort?: string,
   categories?: string[],
-  hideExpired?: boolean
+  hideExpired?: boolean,
+  risk_min?: number,
+  risk_max?: number,
+  quarantined?: boolean
 ): Promise<SearchHit[]> {
   let url = `/api/search/?q=${encodeURIComponent(query)}&limit=${limit}`
   if (labelFilter) {
@@ -105,8 +127,51 @@ export async function searchEmails(
   if (hideExpired !== undefined) {
     url += `&hide_expired=${hideExpired}`
   }
+  // Security filters
+  if (typeof risk_min === 'number') {
+    url += `&risk_min=${risk_min}`
+  }
+  if (typeof risk_max === 'number') {
+    url += `&risk_max=${risk_max}`
+  }
+  if (typeof quarantined === 'boolean') {
+    url += `&quarantined=${quarantined}`
+  }
   const r = await fetch(url)
   if (!r.ok) throw new Error('Search failed')
+  const data = await r.json()
+  return data.hits as SearchHit[]
+}
+
+// New search function with params object
+export async function searchEmailsWithParams(params: SearchParams): Promise<SearchHit[]> {
+  const { q, size, limit, risk_min, risk_max, quarantined } = params
+  const sp = new URLSearchParams({ q })
+  
+  const actualLimit = size ?? limit ?? 10
+  sp.set('limit', String(actualLimit))
+  
+  if (params.labelFilter) sp.set('label_filter', params.labelFilter)
+  if (params.scale) sp.set('scale', params.scale)
+  if (params.labels && params.labels.length > 0) {
+    params.labels.forEach(l => sp.append('labels', l))
+  }
+  if (params.dateFrom) sp.set('date_from', params.dateFrom)
+  if (params.dateTo) sp.set('date_to', params.dateTo)
+  if (params.replied !== undefined) sp.set('replied', String(params.replied))
+  if (params.sort && params.sort !== 'relevance') sp.set('sort', params.sort)
+  if (params.categories && params.categories.length > 0) {
+    params.categories.forEach(c => sp.append('categories', c))
+  }
+  if (params.hideExpired !== undefined) sp.set('hide_expired', String(params.hideExpired))
+  
+  // Security filters
+  if (typeof risk_min === 'number') sp.set('risk_min', String(risk_min))
+  if (typeof risk_max === 'number') sp.set('risk_max', String(risk_max))
+  if (typeof quarantined === 'boolean') sp.set('quarantined', String(quarantined))
+  
+  const r = await fetch(`/api/search/?${sp.toString()}`, { credentials: 'include' })
+  if (!r.ok) throw new Error(`Search failed (${r.status})`)
   const data = await r.json()
   return data.hits as SearchHit[]
 }

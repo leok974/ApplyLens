@@ -1,16 +1,39 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import ThemeToggle from "@/components/ThemeToggle"
 import { Link } from "react-router-dom"
 import { relabel, rebuildProfile, sync7d, sync60d } from "@/lib/api"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import { ActionsTray } from "@/components/ActionsTray"
+import { fetchTray } from "@/lib/actionsClient"
+import { Sparkles } from "lucide-react"
 
 const USER_EMAIL = "leoklemet.pa@gmail.com" // TODO: Read from auth context
 
 export function AppHeader() {
   const [syncing, setSyncing] = useState(false)
+  const [trayOpen, setTrayOpen] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
   const { toast } = useToast()
+
+  // Poll for pending actions count
+  useEffect(() => {
+    async function checkPending() {
+      try {
+        const actions = await fetchTray(100) // Fetch up to 100 to get accurate count
+        setPendingCount(actions.length)
+      } catch (error) {
+        // Silently fail - don't spam user with errors
+        console.error("Failed to fetch pending actions:", error)
+      }
+    }
+
+    checkPending()
+    const interval = setInterval(checkPending, 30000) // Poll every 30s
+    return () => clearInterval(interval)
+  }, [])
 
   async function runPipeline(days: 7 | 60) {
     setSyncing(true)
@@ -66,6 +89,7 @@ export function AppHeader() {
               ["Inbox", "/"],
               ["Inbox (Actions)", "/inbox-actions"],
               ["Search", "/search"],
+              ["Chat", "/chat"],
               ["Tracker", "/tracker"],
               ["Profile", "/profile"],
               ["Settings", "/settings"],
@@ -102,9 +126,33 @@ export function AppHeader() {
           >
             {syncing ? "⏳ Syncing..." : "Sync 60 days"}
           </Button>
+          
+          {/* Actions Tray Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setTrayOpen(true)}
+            className="relative"
+            data-testid="btn-actions-tray"
+          >
+            <Sparkles className="h-4 w-4 mr-1" />
+            Actions
+            {pendingCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="ml-2 px-1.5 py-0 text-xs h-5 min-w-5"
+              >
+                {pendingCount}
+              </Badge>
+            )}
+          </Button>
+
           <ThemeToggle />
         </div>
       </div>
+
+      {/* Actions Tray */}
+      <ActionsTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} />
     </header>
   )
 }

@@ -78,7 +78,10 @@ def search(
     company: Optional[str] = Query(None, description="Filter by company name"),
     source: Optional[str] = Query(None, description="Filter by source (e.g., lever, workday)"),
     categories: Optional[List[str]] = Query(None, description="Filter by ML category (ats, bills, banks, events, promotions)"),
-    hide_expired: bool = Query(True, description="Hide expired emails (expires_at < now) and past events (event_start_at < now)")
+    hide_expired: bool = Query(True, description="Hide expired emails (expires_at < now) and past events (event_start_at < now)"),
+    risk_min: Optional[int] = Query(None, ge=0, le=100, description="Minimum risk score (0-100)"),
+    risk_max: Optional[int] = Query(None, ge=0, le=100, description="Maximum risk score (0-100)"),
+    quarantined: Optional[bool] = Query(None, description="Filter by quarantine status: true|false")
 ):
     """
     Smart search with:
@@ -136,6 +139,19 @@ def search(
     # Add ML category filter (Phase 35)
     if categories:
         filters.append({"terms": {"category": categories}})
+    
+    # Add risk score filter (Security)
+    if risk_min is not None or risk_max is not None:
+        risk_range = {}
+        if risk_min is not None:
+            risk_range["gte"] = risk_min
+        if risk_max is not None:
+            risk_range["lte"] = risk_max
+        filters.append({"range": {"risk_score": risk_range}})
+    
+    # Add quarantine filter (Security)
+    if quarantined is not None:
+        filters.append({"term": {"quarantined": quarantined}})
     
     # Add hide expired filter (Phase 35)
     if hide_expired:

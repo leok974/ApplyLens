@@ -10,6 +10,8 @@ type Item = {
   receivedAtISO: string; // ISO string
   reason?: string;
   risk?: "low"|"med"|"high";
+  risk_score?: number;
+  quarantined?: boolean;
 };
 
 function groupByBucket(items: Item[]) {
@@ -103,6 +105,8 @@ export function EmailList({
                 receivedAt={new Date(m.receivedAtISO).toLocaleString()}
                 reason={m.reason}
                 risk={m.risk}
+                risk_score={m.risk_score}
+                quarantined={m.quarantined}
                 density={density}
                 onArchive={() => onArchive?.(m.id)}
                 onSafe={() => onSafe?.(m.id)}

@@ -20,11 +20,25 @@ from .ingest.due_dates import (
     extract_earliest_due_date,
     extract_money_amounts,
 )
+from .security.analyzer import EmailRiskAnalyzer, BlocklistProvider
 
 from elasticsearch import Elasticsearch, helpers
 
 ELASTICSEARCH_URL = os.getenv("ES_URL")
 ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")
+
+# Initialize security analyzer (singleton)
+_BLOCKLIST_PROVIDER = None
+_SECURITY_ANALYZER = None
+
+def get_security_analyzer() -> EmailRiskAnalyzer:
+    """Get or create security analyzer instance (singleton pattern)."""
+    global _BLOCKLIST_PROVIDER, _SECURITY_ANALYZER
+    if _SECURITY_ANALYZER is None:
+        blocklist_path = os.path.join(os.path.dirname(__file__), "security", "blocklists.json")
+        _BLOCKLIST_PROVIDER = BlocklistProvider(blocklist_path)
+        _SECURITY_ANALYZER = EmailRiskAnalyzer(blocklists=_BLOCKLIST_PROVIDER)
+    return _SECURITY_ANALYZER
 
 LABEL_MAP_BOOSTS = {
     "interview": 3.0,
@@ -380,6 +394,41 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
                 existing.last_user_reply_at = dt.datetime.fromisoformat(metrics["last_user_reply_at"])
             existing.user_reply_count = metrics["user_reply_count"]
 
+            # Security analysis: Run analyzer on each email
+            try:
+                analyzer = get_security_analyzer()
+                headers_dict = {h["name"]: h["value"] for h in headers}
+                
+                # Parse from_name and from_email
+                from_match = re.match(r'^"?([^"<]+)"?\s*<?([^>]+)>?$', sender)
+                from_name = from_match.group(1).strip() if from_match else ""
+                from_email = from_match.group(2).strip() if from_match else sender
+                
+                # Run security analysis
+                risk_result = analyzer.analyze(
+                    headers=headers_dict,
+                    from_name=from_name,
+                    from_email=from_email,
+                    subject=subject,
+                    body_text=body_text,
+                    body_html=None,  # Could extract HTML from parts if needed
+                    urls_visible_text_pairs=None,  # Auto-extract from body
+                    attachments=[],  # Could parse from payload parts if needed
+                    domain_first_seen_days_ago=None  # Could compute from whois or tracking
+                )
+                
+                # Store security analysis results
+                existing.risk_score = float(risk_result.risk_score)
+                existing.flags = [f.dict() for f in risk_result.flags]
+                existing.quarantined = risk_result.quarantined
+                
+            except Exception as e:
+                # Log error but don't fail the entire backfill
+                print(f"Warning: Security analysis failed for {meta['id']}: {e}")
+                existing.risk_score = 0.0
+                existing.flags = []
+                existing.quarantined = False
+
             db.flush()  # get email.id for linking
             upsert_application_for_email(db, existing)  # NEW: Link to application
 
@@ -411,6 +460,10 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
                 "dates": due_dates,
                 "money_amounts": money_amounts,
                 "expires_at": earliest_due,
+                # Security analysis fields (if analyzed)
+                "risk_score": int(existing.risk_score) if existing.risk_score else 0,
+                "quarantined": existing.quarantined if hasattr(existing, 'quarantined') else False,
+                "flags": existing.flags if existing.flags else [],
             })
 
     db.commit()

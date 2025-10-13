@@ -75,6 +75,19 @@ app.include_router(labels.router)
 app.include_router(profile.router)
 app.include_router(labeling.router, prefix="/api")
 
+# Security analysis
+from .routers import security, policy
+app.include_router(security.router, prefix="/api")
+app.include_router(policy.router, prefix="/api")
+
+# Phase 4 - Agentic Actions & Approval Loop
+from .routers import actions
+app.include_router(actions.router, prefix="/api")
+
+# Phase 5 - Chat Assistant
+from .routers import chat
+app.include_router(chat.router, prefix="/api")
+
 # Email automation system
 try:
     from .routers.mail_tools import router as mail_tools_router
