@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 class Settings(BaseSettings):
     # Application
@@ -8,6 +9,9 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     CORS_ORIGINS: str = "http://localhost:5175"
     DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/applylens"
+    
+    # Database table creation (disabled in test env to avoid import-time connections)
+    CREATE_TABLES_ON_STARTUP: bool = os.getenv("CREATE_TABLES_ON_STARTUP", "0" if os.getenv("ENV") == "test" else "1") == "1"
     
     # Gmail single-user quick start (optional)
     GMAIL_CLIENT_ID: Optional[str] = None
