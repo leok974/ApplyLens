@@ -10,7 +10,7 @@
 import { NOTE_SNIPPETS } from '../config/tracker'
 
 <InlineNote snippets={NOTE_SNIPPETS} />
-```
+```text
 
 ## Default Snippets
 
@@ -42,7 +42,7 @@ echo 'VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail"'
 
 # 3. Restart dev server
 npm run dev
-```
+```text
 
 ## Examples
 
@@ -51,21 +51,21 @@ npm run dev
 ```bash
 # .env.development
 VITE_TRACKER_SNIPPETS="Test 1|Test 2|Test 3"
-```
+```text
 
 ### Production (Full)
 
 ```bash
 # .env.production
 VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruiter screen scheduled|Sent take-home|Referred by X|Declined offer"
-```
+```text
 
 ### Custom Workflow
 
 ```bash
 # .env.local
 VITE_TRACKER_SNIPPETS="Demo scheduled|Proposal sent|Contract signed|Payment received"
-```
+```text
 
 ## How It Works
 
@@ -101,7 +101,7 @@ VITE_TRACKER_SNIPPETS="Test 1|Test 2" npm run dev
 
 # Test with defaults
 npm run dev
-```
+```text
 
 ## Documentation
 

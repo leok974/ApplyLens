@@ -115,20 +115,20 @@ All tests pass successfully ✅
 
 ### Applications CRUD
 
-```
+```text
 POST   /applications                    - Create application
 GET    /applications                    - List applications (filters: status, company)
 GET    /applications/{id}               - Get single application
 PATCH  /applications/{id}               - Update application
 DELETE /applications/{id}               - Delete application
 POST   /applications/from-email/{id}   - Create from email
-```
+```text
 
 ### Search Enhancements
 
-```
+```text
 GET    /search?q=...&company=...&source=...  - Search with filters
-```
+```text
 
 ## Database Migration Commands
 
@@ -139,7 +139,7 @@ docker compose exec api python -m app.migrate
 # Verify schema
 docker compose exec db psql -U postgres -d applylens -c "\d emails"
 docker compose exec db psql -U postgres -d applylens -c "\d applications"
-```
+```text
 
 ## Testing Commands
 
@@ -150,7 +150,7 @@ docker compose exec api python -m tests.test_applications
 # Test endpoints
 curl http://localhost:8003/applications
 curl http://localhost:8003/docs#/applications
-```
+```text
 
 ## Data Flow
 
@@ -220,7 +220,7 @@ Add to `EmailCard` component:
 <button onClick={() => createFromEmail(email.id)}>
   ➕ Create Application
 </button>
-```
+```text
 
 ### Create Application from Email
 
@@ -232,7 +232,7 @@ const createFromEmail = async (emailId: number) => {
   const data = await res.json();
   navigate(`/tracker?selected=${data.application_id}`);
 };
-```
+```text
 
 ### Applications Tracker Page
 
@@ -335,7 +335,7 @@ docker compose exec db psql -U postgres -d applylens -c "\d applications"
 
 # Run tests
 docker compose exec api python -m tests.test_applications
-```
+```text
 
 ## Documentation
 

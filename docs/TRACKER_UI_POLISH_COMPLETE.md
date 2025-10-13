@@ -35,7 +35,7 @@ A new visual component that displays status with color-coded chips using Tailwin
 ```tsx
 <StatusChip status="interview" />
 // Renders: [Interview] in green pill
-```
+```text
 
 ---
 
@@ -45,7 +45,7 @@ The table header now uses `sticky top-0` with proper z-indexing:
 
 ```tsx
 <div className="sticky top-0 grid grid-cols-12 gap-2 font-medium text-xs px-3 py-2 bg-gray-50 border-b z-10">
-```
+```text
 
 **Benefits:**
 
@@ -61,7 +61,7 @@ All interactive elements now have visible focus rings:
 
 ```tsx
 className="focus:outline-none focus:ring-2 focus:ring-sky-500"
-```
+```text
 
 **Applied to:**
 
@@ -80,13 +80,13 @@ className="focus:outline-none focus:ring-2 focus:ring-sky-500"
 
 ```tsx
 className="hover:bg-gray-50 transition"
-```
+```text
 
 **Buttons:**
 
 ```tsx
 className="hover:bg-white transition"
-```
+```text
 
 **CSS:**
 
@@ -94,7 +94,7 @@ className="hover:bg-white transition"
 .transition {
   transition: all 120ms ease-in-out;
 }
-```
+```text
 
 **Result:** Smooth, polished interactions throughout
 
@@ -121,7 +121,7 @@ Enhanced empty state with:
     Go to Inbox
   </a>
 </div>
-```
+```text
 
 ---
 
@@ -182,7 +182,7 @@ dialog::backdrop {
 dialog {
   border: 0;
 }
-```
+```text
 
 ---
 
@@ -196,7 +196,7 @@ Proper loading indicator while fetching:
 ) : (
   // ... table content
 )}
-```
+```text
 
 ---
 
@@ -229,7 +229,7 @@ Innovative dual-display approach:
     {/* options */}
   </select>
 </div>
-```
+```text
 
 **Benefits:**
 
@@ -256,7 +256,7 @@ test('updates status → shows contextual toast', async ({ page }) => {
   await expect(page.locator('text=Status: Interview')).toBeVisible()
   await expect(page.locator('text=Acme AI')).toBeVisible()
 })
-```
+```text
 
 ### Test 2: Rejected Status (Error Toast)
 
@@ -266,7 +266,7 @@ test('rejected path shows error toast', async ({ page }) => {
   // Asserts error variant toast appears
   await expect(page.locator('text=Status: Rejected')).toBeVisible()
 })
-```
+```text
 
 ### Test 3: Create Application
 
@@ -277,7 +277,7 @@ test('create new application shows success toast', async ({ page }) => {
   // Submits and asserts success toast
   await expect(page.locator('text=OpenAI — Research Engineer created')).toBeVisible()
 })
-```
+```text
 
 **Hermetic Testing:**
 
@@ -296,7 +296,7 @@ test('create new application shows success toast', async ({ page }) => {
 cd apps/web
 npm install -D @playwright/test
 npx playwright install
-```
+```text
 
 ### Run tests
 
@@ -312,7 +312,7 @@ npx playwright test --ui
 
 # Debug mode
 npx playwright test --debug
-```
+```text
 
 ---
 
@@ -334,7 +334,7 @@ dialog::backdrop {
 dialog {
   border: 0;
 }
-```
+```text
 
 **Why 120ms?**
 
@@ -357,7 +357,7 @@ dialog {
 
 ```tsx
 aria-label={`Change status for ${r.company}`}
-```
+```text
 
 Screen readers announce: "Change status for OpenAI"
 
@@ -386,7 +386,7 @@ All status chips meet WCAG AA standards:
 const filteredApplications = useMemo(() => {
   return applications.filter(/* ... */)
 }, [applications, search, statusFilter])
-```
+```text
 
 ### 2. **Debounced Search**
 
@@ -394,7 +394,7 @@ Could add debounce to search input:
 
 ```tsx
 const debouncedSearch = useDebounce(search, 300)
-```
+```text
 
 ### 3. **Virtual Scrolling**
 
@@ -492,7 +492,7 @@ None - this is a pure enhancement
 
 ### Code Organization
 
-```
+```text
 apps/web/src/
 ├── components/
 │   └── StatusChip.tsx          # Reusable status chip
@@ -501,7 +501,7 @@ apps/web/src/
 └── tests/
     └── e2e/
         └── tracker-status.spec.ts  # E2E tests
-```
+```text
 
 ### Testing Strategy
 

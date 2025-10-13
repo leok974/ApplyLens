@@ -36,7 +36,7 @@ Installed and configured shadcn/ui component library with full integration into 
     "ui": "@/components/ui"
   }
 }
-```
+```text
 
 #### `src/lib/utils.ts`
 
@@ -47,7 +47,7 @@ import { twMerge } from 'tailwind-merge'
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
-```
+```text
 
 #### `src/lib/layout.ts` (NEW)
 
@@ -60,7 +60,7 @@ export const panel = 'rounded-xl border bg-card p-4 shadow-card'
 export const filterBar = 'rounded-xl border bg-card p-4 shadow-card flex flex-wrap items-center gap-2'
 export const headerContainer = 'sticky top-0 z-30 border-b bg-background/95 backdrop-blur'
 export const headerInner = 'mx-auto flex max-w-6xl items-center gap-3 px-4 py-3'
-```
+```text
 
 ## Installed Components
 
@@ -114,7 +114,7 @@ export const headerInner = 'mx-auto flex max-w-6xl items-center gap-3 px-4 py-3'
   --ring: 225 100% 65%;            /* #7aa2ff (ring) */
   --radius: 0.75rem;
 }
-```
+```text
 
 ### Tailwind Config (updated)
 
@@ -139,7 +139,7 @@ export default {
     }
   }
 }
-```
+```text
 
 ## Usage Examples
 
@@ -171,7 +171,7 @@ export function Header() {
     </header>
   )
 }
-```
+```text
 
 ### Email Card
 
@@ -201,7 +201,7 @@ export function EmailCard({ subject, date, snippet, labels, link }) {
     </Card>
   )
 }
-```
+```text
 
 ### Filter Bar
 
@@ -237,7 +237,7 @@ function FilterBar() {
     </div>
   )
 }
-```
+```text
 
 ### Toast Notifications (Sonner)
 
@@ -266,7 +266,7 @@ function handleError() {
     description: 'Please check your connection and try again.'
   })
 }
-```
+```text
 
 ### Dropdown Menu
 
@@ -293,7 +293,7 @@ function ActionsMenu() {
     </DropdownMenu>
   )
 }
-```
+```text
 
 ## Component Variants
 
@@ -312,7 +312,7 @@ function ActionsMenu() {
 <Button size="default">Default</Button>
 <Button size="lg">Large</Button>
 <Button size="icon">🔍</Button>
-```
+```text
 
 ### Badge Variants
 
@@ -321,7 +321,7 @@ function ActionsMenu() {
 <Badge variant="secondary">Secondary</Badge>
 <Badge variant="outline">Outline</Badge>
 <Badge variant="destructive">Destructive</Badge>
-```
+```text
 
 ## Migration Strategy
 
@@ -349,7 +349,7 @@ function ActionsMenu() {
     <p className="text-muted-foreground">{description}</p>
   </CardContent>
 </Card>
-```
+```text
 
 ### Phase 3: Cleanup (Optional)
 
@@ -363,7 +363,7 @@ To add any additional shadcn component:
 
 ```bash
 pnpm dlx shadcn@latest add <component-name>
-```
+```text
 
 Available components:
 
@@ -461,7 +461,7 @@ All components work with your existing E2E tests:
 // Playwright example
 await page.getByRole('button', { name: 'Sync 7 days' }).click()
 await expect(page.getByRole('dialog')).toBeVisible()
-```
+```text
 
 ## Summary
 

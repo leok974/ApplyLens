@@ -22,7 +22,7 @@
 
 ```bash
 GET http://localhost:8003/search?q=test&size=5
-```
+```text
 
 **Result**: ✅ PASS
 
@@ -39,7 +39,7 @@ GET http://localhost:8003/search?q=test&size=5
 LABEL_WEIGHTS: {'offer': 4.0, 'interview': 3.0, 'rejection': 0.5}
 RECENCY: {'origin': 'now', 'scale': '7d', 'offset': '0d', 'decay': 0.5}
 SEARCH_FIELDS: ['subject^3', 'body_text', 'sender^1.5', 'to']
-```
+```text
 
 **Result**: ✅ PASS
 
@@ -50,9 +50,9 @@ SEARCH_FIELDS: ['subject^3', 'body_text', 'sender^1.5', 'to']
 
 **Test**: Check scores are calculated
 
-```
+```text
 First Hit Score: 7.60483
-```
+```text
 
 **Result**: ✅ PASS
 
@@ -69,7 +69,7 @@ First Hit Score: 7.60483
   "subject": ["[...] docker-build - <mark>test</mark> (097620f)"],
   "body_text": ["Quarantined <mark>tests</mark> failed."]
 }
-```
+```text
 
 **Result**: ✅ PASS
 
@@ -99,7 +99,7 @@ First Hit Score: 7.60483
   "snippet": "...",
   "highlight": {...}
 }
-```
+```text
 
 **Result**: ✅ PASS
 
@@ -149,19 +149,19 @@ First Hit Score: 7.60483
 
 ```powershell
 (Invoke-WebRequest -Uri "http://localhost:8003/search?q=test&size=5").Content
-```
+```text
 
 ### Verify Tunables
 
 ```bash
 docker compose exec api python -c "from app.routers.search import LABEL_WEIGHTS, RECENCY, SEARCH_FIELDS; print(LABEL_WEIGHTS)"
-```
+```text
 
 ### Check Index Exists
 
 ```bash
 curl http://localhost:9200/gmail_emails
-```
+```text
 
 ---
 

@@ -42,7 +42,7 @@ def init_oauth(user_email: str = Query(...)):
 @router.get("/callback")
 def oauth_callback(code: str, state: str):
     # ... Token exchange and storage
-```
+```text
 
 ### 1.2 Gmail API Integration
 
@@ -64,7 +64,7 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
     svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
     after_date = (dt.datetime.utcnow() - relativedelta(days=days)).strftime("%Y/%m/%d")
     q = f"newer_than:{days}d"
-```
+```text
 
 ### 1.3 Email Field Persistence
 
@@ -91,7 +91,7 @@ body_text = Column(Text)
 received_at = Column(DateTime, default=datetime.utcnow, index=True)
 thread_id = Column(String(128), index=True)
 labels = Column(ARRAY(String))  # Gmail labels
-```
+```text
 
 ---
 
@@ -130,7 +130,7 @@ labels = Column(ARRAY(String))  # Gmail labels
     "fields": {"shingles": {"type": "text", "analyzer": "applylens_text_shingles"}}
 },
 "labels": {"type": "keyword"},  # Gmail labels array
-```
+```text
 
 **Embeddings Available (Not Activated)**:
 
@@ -148,7 +148,7 @@ labels = Column(ARRAY(String))  # Gmail labels
     "index": True,
     "similarity": "cosine"
 }
-```
+```text
 
 ### 2.2 Index Creation & Writes
 
@@ -169,7 +169,7 @@ es_docs.append({
 })
 # Bulk write to ES
 helpers.bulk(es, es_docs)
-```
+```text
 
 ---
 
@@ -195,7 +195,7 @@ def _html_to_text(html: str) -> str:
     for script in soup(["script", "style"]):
         script.decompose()
     return soup.get_text(separator=' ', strip=True)
-```
+```text
 
 ### 3.2 URL Extraction
 
@@ -216,7 +216,7 @@ urls_text = url_pattern.findall(body_text or "")
 soup = BeautifulSoup(html, "html.parser")
 urls_html = [a.get("href") for a in soup.find_all("a", href=True)]
 all_urls = list(set(urls_text + urls_html))
-```
+```text
 
 ### 3.3 Heuristics
 
@@ -244,7 +244,7 @@ def derive_labels(headers: dict, labels: List[str], urls: List[str]) -> List[str
         derived.append("promo")
     
     return derived
-```
+```text
 
 ### 3.4 Timezone & Timestamps
 
@@ -260,7 +260,7 @@ def derive_labels(headers: dict, labels: List[str], urls: List[str]) -> List[str
 # Gmail internalDate is milliseconds since epoch
 internal_date_ms = int(meta.get("internalDate", 0))
 received_at = datetime.utcfromtimestamp(internal_date_ms / 1000.0)
-```
+```text
 
 ---
 
@@ -307,7 +307,7 @@ received_at = datetime.utcfromtimestamp(internal_date_ms / 1000.0)
 
 # TODO: Call Gmail API to delete (move to trash)
 # gmail_service.trash_message(email.gmail_message_id)
-```
+```text
 
 **Unsubscribe Logic** (Implemented):
 
@@ -315,7 +315,7 @@ received_at = datetime.utcfromtimestamp(internal_date_ms / 1000.0)
 # services/api/app/logic/unsubscribe.py:138
 # Actual email sending is optional future enhancement via Gmail API
 # Returns unsubscribe link and method (mailto/http)
-```
+```text
 
 ---
 
@@ -341,7 +341,7 @@ query_dict = {
         ]
     }
 }
-```
+```text
 
 ### 5.2 ESQL Saved Assets
 
@@ -376,7 +376,7 @@ query_dict = {
 # Vector embeddings schema exists but not in production mapping
 "subject_vector": {"type": "dense_vector", "dims": 768, ...}
 "body_vector": {"type": "dense_vector", "dims": 768, ...}
-```
+```text
 
 ### 6.2 Fivetran Connector (BigQuery job_postings)
 
@@ -391,7 +391,7 @@ query_dict = {
 ```python
 # analytics/dbt/insert_test_data.py:6
 client = bigquery.Client(project='applylens-gmail-1759983601')
-```
+```text
 
 ---
 
@@ -456,7 +456,7 @@ export const EmailList = () => {
     </table>
   );
 };
-```
+```text
 
 #### Gap 2: Filters Panel Component
 
@@ -490,7 +490,7 @@ export const FiltersPanel = ({ onFilterChange }) => {
     </aside>
   );
 };
-```
+```text
 
 #### Gap 3: "Reason" Column Implementation
 
@@ -531,7 +531,7 @@ async def explain_email(email_id: str, db: Session = Depends(get_db)):
             reasons.append("Contains interview-related keywords")
     
     return {"email_id": email_id, "reasons": reasons}
-```
+```text
 
 #### Gap 4: Quick Actions UI Integration
 
@@ -573,7 +573,7 @@ export const EmailActions = ({ email }) => {
     </div>
   );
 };
-```
+```text
 
 **ALSO**: Complete Gmail API integration in backend:
 
@@ -597,7 +597,7 @@ async def archive_email(email_id: str, db: Session = Depends(get_db)):
     ).execute()
     
     return {"success": True}
-```
+```text
 
 ### 🟡 MEDIUM PRIORITY (Phase-1 Nice-to-Have)
 
@@ -614,7 +614,7 @@ async def archive_email(email_id: str, db: Session = Depends(get_db)):
 
 "sender_domain": {"type": "keyword"},  # Add this line
 "from_addr": {"type": "keyword"},
-```
+```text
 
 **AND**:
 
@@ -631,7 +631,7 @@ es_doc = {
     "sender_domain": sender_domain,  # Add this
     # ... rest of fields
 }
-```
+```text
 
 #### Gap 6: ESQL Saved Queries
 
@@ -649,7 +649,7 @@ FROM gmail_emails_v1*
 | STATS email_count = COUNT(*) BY sender_domain
 | SORT email_count DESC
 | LIMIT 20
-```
+```text
 
 ```esql
 -- File: infra/kibana/saved_queries/promos_expiring_this_week.esql
@@ -661,7 +661,7 @@ FROM gmail_emails_v1*
 | WHERE expire_date >= NOW() AND expire_date <= NOW() + 7 DAYS
 | KEEP subject, sender_domain, expire_date
 | SORT expire_date ASC
-```
+```text
 
 #### Gap 7: Kibana Data View Export
 
@@ -679,14 +679,14 @@ curl -X GET "http://localhost:5601/api/saved_objects/_export" \
     "type": "index-pattern",
     "search": "gmail_emails*"
   }' > infra/kibana/exports/data_view_gmail_emails.ndjson
-```
+```text
 
 **THEN** commit to repo:
 
 ```bash
 git add infra/kibana/exports/data_view_gmail_emails.ndjson
 git commit -m "Add Kibana data view export for gmail_emails*"
-```
+```text
 
 ### 🟢 LOW PRIORITY (Optional Features)
 
@@ -713,7 +713,7 @@ git commit -m "Add Kibana data view export for gmail_emails*"
     "index": True,
     "similarity": "cosine"
 },
-```
+```text
 
 **AND** generate embeddings during indexing:
 
@@ -732,7 +732,7 @@ es_doc = {
     "subject_vector": subject_vector,
     "body_vector": body_vector
 }
-```
+```text
 
 #### Gap 9: ELSER Model Deployment
 
@@ -765,7 +765,7 @@ PUT _ingest/pipeline/gmail_elser_pipeline
     }
   ]
 }
-```
+```text
 
 #### Gap 10: Fivetran → BigQuery job_postings
 
@@ -797,7 +797,7 @@ cleaned AS (
 )
 
 SELECT * FROM cleaned
-```
+```text
 
 **AND** configure Fivetran:
 
@@ -809,7 +809,7 @@ destination:
   project_id: "applylens-gmail-1759983601"
   dataset: "fivetran_connector"
 sync_frequency: "daily"
-```
+```text
 
 ---
 

@@ -44,9 +44,9 @@ If applicable, add screenshots or log output to help explain your problem.
 
 
 **The output of `dbt --version`:**
-```
+```text
 <output goes here>
-```
+```text
 
 
 ### Additional context

@@ -69,7 +69,7 @@ curl "http://localhost:8003/search?q=interview&source=lever"
 
 # Check API docs
 open http://localhost:8003/docs
-```
+```text
 
 ### Frontend Pages to Test
 
@@ -82,7 +82,7 @@ open http://localhost:5175/tracker
 
 # Test inbox page
 open http://localhost:5175/inbox
-```
+```text
 
 ### Integration Test Flow
 
@@ -257,7 +257,7 @@ docker compose exec db psql -U postgres -d applylens -c "SELECT status, COUNT(*)
 
 # Check email->application links
 docker compose exec db psql -U postgres -d applylens -c "SELECT COUNT(*) FROM emails WHERE application_id IS NOT NULL"
-```
+```text
 
 ### API Testing
 
@@ -279,7 +279,7 @@ curl "http://localhost:8003/search?q=engineer&company=Google" | jq '.hits[0:3]'
 
 # Check API docs
 curl http://localhost:8003/docs | grep -o "<title>.*</title>"
-```
+```text
 
 ### Frontend Testing
 
@@ -290,7 +290,7 @@ curl http://localhost:5175
 # Open in browser
 open http://localhost:5175/tracker
 open http://localhost:5175/inbox
-```
+```text
 
 ### Integration Testing
 
@@ -306,7 +306,7 @@ curl http://localhost:8003/applications | jq 'length'
 
 # Check ES index has new fields (after backfill)
 curl "http://localhost:9200/gmail_emails/_mapping" | jq '.gmail_emails.mappings.properties | {company, role, source, source_confidence}'
-```
+```text
 
 ## 🔍 Debugging Tips
 

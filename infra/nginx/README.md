@@ -4,7 +4,7 @@ ApplyLens uses Nginx as a single entrypoint for path-based routing to all servic
 
 ## Architecture
 
-```
+```text
 Internet → Cloudflare Tunnel → Nginx (port 80) → Backend Services
                                     ↓
                     ┌───────────────┴────────────────┐
@@ -14,7 +14,7 @@ Internet → Cloudflare Tunnel → Nginx (port 80) → Backend Services
               Grafana:3000                     Kibana:5601
                     │                                │
               Prometheus:9090                   ES:9200
-```
+```text
 
 ## URL Routes
 
@@ -59,7 +59,7 @@ open http://localhost:8888/grafana/
 
 # Kibana
 open http://localhost:8888/kibana/
-```
+```text
 
 ## Configuration Files
 
@@ -101,7 +101,7 @@ Compresses responses for:
 [server]
 root_url = %(protocol)s://%(domain)s/grafana/
 serve_from_sub_path = true
-```
+```text
 
 This tells Grafana to:
 
@@ -117,7 +117,7 @@ This tells Grafana to:
 server.basePath: "/kibana"
 server.rewriteBasePath: true
 server.publicBaseUrl: "https://applylens.app/kibana"
-```
+```text
 
 This tells Kibana to:
 
@@ -138,7 +138,7 @@ ingress:
   - hostname: www.applylens.app
     service: http://nginx:80
   - service: http_status:404  # Catch-all
-```
+```text
 
 ## Docker Compose
 
@@ -160,7 +160,7 @@ nginx:
   ports:
     - "8888:80"  # Local debug port
   restart: unless-stopped
-```
+```text
 
 ## Benefits
 
@@ -204,7 +204,7 @@ ingress:
     service: http://grafana:3000
   - hostname: kibana.applylens.app
     service: http://kibana:5601
-```
+```text
 
 Then create DNS routes:
 
@@ -212,7 +212,7 @@ Then create DNS routes:
 cloudflared tunnel route dns applylens api.applylens.app
 cloudflared tunnel route dns applylens grafana.applylens.app
 cloudflared tunnel route dns applylens kibana.applylens.app
-```
+```text
 
 **Note**: With subdomains, you don't need the Grafana/Kibana subpath configuration.
 
@@ -233,7 +233,7 @@ docker compose logs nginx --tail 50
 
 # Restart the specific service
 docker compose restart api
-```
+```text
 
 ### Grafana/Kibana Shows Broken Layout
 
@@ -248,7 +248,7 @@ docker compose exec kibana cat /usr/share/kibana/config/kibana.yml
 
 # Restart services to reload config
 docker compose restart grafana kibana
-```
+```text
 
 ### 404 Not Found for All Routes
 
@@ -265,7 +265,7 @@ docker compose exec nginx ls -la /etc/nginx/conf.d/
 
 # View Nginx error log
 docker compose logs nginx
-```
+```text
 
 ### Cannot Access via Cloudflare Tunnel
 
@@ -283,7 +283,7 @@ cat infra/cloudflared/config.yml
 
 # Restart tunnel
 docker compose restart cloudflared
-```
+```text
 
 ## Maintenance
 
@@ -292,13 +292,13 @@ docker compose restart cloudflared
 ```bash
 # After editing nginx config files
 docker compose exec nginx nginx -s reload
-```
+```text
 
 ### View Real-Time Access Logs
 
 ```bash
 docker compose logs -f nginx
-```
+```text
 
 ### Add New Route
 
@@ -335,7 +335,7 @@ For high traffic, increase Nginx workers in `docker-compose.yml`:
 nginx:
   environment:
     - NGINX_WORKER_PROCESSES=4  # Match CPU cores
-```
+```text
 
 ### Enable HTTP/2
 
@@ -351,7 +351,7 @@ location /web/static/ {
   proxy_cache_valid 200 1d;
   add_header Cache-Control "public, max-age=86400";
 }
-```
+```text
 
 ## Security Best Practices
 
@@ -363,7 +363,7 @@ location /prometheus/ {
   deny all;
   proxy_pass http://prometheus:9090/;
 }
-```
+```text
 
 ### 2. Add Basic Auth (For Services Without Built-in Auth)
 
@@ -371,7 +371,7 @@ location /prometheus/ {
 # Create password file
 docker compose exec nginx sh -c "echo -n 'admin:' > /etc/nginx/.htpasswd"
 docker compose exec nginx sh -c "openssl passwd -apr1 >> /etc/nginx/.htpasswd"
-```
+```text
 
 Then in nginx config:
 
@@ -381,7 +381,7 @@ location /prometheus/ {
   auth_basic_user_file /etc/nginx/.htpasswd;
   proxy_pass http://prometheus:9090/;
 }
-```
+```text
 
 ### 3. Rate Limiting
 
@@ -394,7 +394,7 @@ http {
     proxy_pass http://api:8003/;
   }
 }
-```
+```text
 
 ## Monitoring Nginx
 
@@ -406,7 +406,7 @@ docker compose logs -f nginx | grep -v healthz
 
 # Count requests by path
 docker compose logs nginx | grep -oP '"\w+ \K[^ ]+' | sort | uniq -c | sort -rn
-```
+```text
 
 ### Nginx Metrics (Optional)
 
@@ -418,7 +418,7 @@ location /nginx_status {
   allow 127.0.0.1;  # Only accessible internally
   deny all;
 }
-```
+```bash
 
 Access: `curl http://localhost:8888/nginx_status`
 

@@ -10,17 +10,17 @@ One-page cheat sheet for OAuth configuration to fix `redirect_uri_mismatch`.
 
 **Add these Authorized redirect URIs:**
 
-```
+```text
 https://api.applylens.app/auth/google/callback
 http://localhost:8003/auth/google/callback
-```
+```text
 
 **Add these Authorized JavaScript origins:**
 
-```
+```text
 https://applylens.app
 http://localhost:5175
-```
+```text
 
 ### 2. Environment Variables
 
@@ -30,7 +30,7 @@ http://localhost:5175
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI_DEV=http://localhost:8003/auth/google/callback
-```
+```text
 
 **Production (.env.prod):**
 
@@ -38,14 +38,14 @@ GOOGLE_REDIRECT_URI_DEV=http://localhost:8003/auth/google/callback
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI=https://api.applylens.app/auth/google/callback
-```
+```text
 
 ### 3. Restart Services
 
 ```bash
 cd infra
 docker compose restart api nginx
-```
+```text
 
 ---
 
@@ -83,7 +83,7 @@ print(f'Redirect URI: {settings.effective_redirect_uri}')
 
 # 3. Open browser
 open http://localhost:8003/auth/google/login
-```
+```text
 
 ### Automated Test
 
@@ -94,7 +94,7 @@ open http://localhost:8003/auth/google/login
 # Expected:
 # ✅ OAuth login redirects to Google (HTTP 302)
 # ✅ OAuth callback route is accessible
-```
+```text
 
 ---
 
@@ -112,21 +112,21 @@ open http://localhost:8003/auth/google/login
 
 ```bash
 docker compose exec api env | grep GOOGLE
-```
+```text
 
 **3. Check logs:**
 
 ```bash
 docker compose logs api | grep OAuth
 # Should show: [OAuth] Initiating login flow with redirect_uri: ...
-```
+```text
 
 **4. Verify Nginx:**
 
 ```bash
 docker compose exec nginx nginx -t
 docker compose restart nginx
-```
+```text
 
 **5. Clear browser cache and try again**
 
@@ -183,7 +183,7 @@ curl -I http://localhost:8003/auth/google/login
 
 # View logs
 docker compose logs -f api | grep OAuth
-```
+```text
 
 ---
 

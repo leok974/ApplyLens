@@ -15,7 +15,7 @@ GMAIL_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GMAIL_CLIENT_SECRET=your-client-secret
 GMAIL_REFRESH_TOKEN=your-refresh-token
 GMAIL_USER=your-email@example.com
-```
+```text
 
 **All four variables must be set for Gmail integration to work.**
 
@@ -77,7 +77,7 @@ print(f"\nAdd this to your .env file along with:")
 print(f"GMAIL_CLIENT_ID={CLIENT_ID}")
 print(f"GMAIL_CLIENT_SECRET={CLIENT_SECRET}")
 print(f"GMAIL_USER=your-email@gmail.com")
-```
+```text
 
 **Or use the simplified command-line approach:**
 
@@ -96,7 +96,7 @@ flow = InstalledAppFlow.from_client_secrets_file(
 creds = flow.run_local_server(port=0)
 print('GMAIL_REFRESH_TOKEN=' + creds.refresh_token)
 "
-```
+```text
 
 #### 4. Configure Environment
 
@@ -107,7 +107,7 @@ GMAIL_CLIENT_ID=123456789-abc.apps.googleusercontent.com
 GMAIL_CLIENT_SECRET=GOCSPX-abc123def456
 GMAIL_REFRESH_TOKEN=1//abc123def456ghi789jkl
 GMAIL_USER=your-email@gmail.com
-```
+```text
 
 **Security Note**: Never commit `.env` to version control!
 
@@ -143,7 +143,7 @@ GMAIL_USER=your-email@gmail.com
   "gmail_thread_id": "18f2a3b4c5d6e7f8",
   "subject": "Custom subject override"  // Overrides Gmail content
 }
-```
+```text
 
 **Response**:
 
@@ -161,7 +161,7 @@ GMAIL_USER=your-email@gmail.com
     "used_gmail": true
   }
 }
-```
+```text
 
 ### POST `/api/applications/backfill-from-email`
 
@@ -188,7 +188,7 @@ GMAIL_USER=your-email@gmail.com
   "from": "jane@company.com",
   "text": "Email content..."
 }
-```
+```text
 
 **Response**:
 
@@ -215,7 +215,7 @@ GMAIL_USER=your-email@gmail.com
   },
   "updated": false
 }
-```
+```text
 
 ## Implementation Details
 
@@ -258,7 +258,7 @@ if payload.gmail_thread_id and gmail_is_configured():
     if gmail_content:
         email_data = {**gmail_content, **email_data}
 # Always continues with email_data (from Gmail or request body)
-```
+```text
 
 ## Testing
 
@@ -286,7 +286,7 @@ curl -X POST http://localhost:8003/api/applications/extract \
     "subject": "..."
   }
 }
-```
+```text
 
 ### Test Without Gmail
 
@@ -307,7 +307,7 @@ curl -X POST http://localhost:8003/api/applications/extract \
   }'
 
 # Should work without errors
-```
+```text
 
 ### Finding Thread IDs
 
@@ -326,7 +326,7 @@ service = build('gmail', 'v1', credentials=creds)
 results = service.users().messages().list(userId='me', q='from:recruiter@company.com').execute()
 thread_id = results['messages'][0]['threadId']
 print(thread_id)
-```
+```text
 
 ## Frontend Integration
 
@@ -345,7 +345,7 @@ await fetch("/api/applications/extract", {
   method: "POST",
   body: JSON.stringify(payload)
 })
-```
+```text
 
 ## Security Considerations
 
@@ -381,7 +381,7 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 
 service = build('gmail', 'v1', credentials=credentials)
-```
+```text
 
 ## Troubleshooting
 
@@ -400,7 +400,7 @@ export GMAIL_CLIENT_ID="..."
 export GMAIL_CLIENT_SECRET="..."
 export GMAIL_REFRESH_TOKEN="..."
 export GMAIL_USER="your-email@gmail.com"
-```
+```text
 
 ### "Invalid credentials" Error
 

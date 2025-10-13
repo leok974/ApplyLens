@@ -1,8 +1,6 @@
 # Backend
 
-
 ## Environment-Aware Configuration
-
 
 # Environment-Aware Configuration Guide
 
@@ -27,7 +25,7 @@ The ApplyLens frontend now supports environment-aware API configuration, allowin
 
 ### Configuration Files
 
-```
+```text
 apps/web/
 ├── .env.local         # Local development (host)
 ├── .env.docker        # Docker environment
@@ -37,7 +35,7 @@ apps/web/
 │       ├── apiBase.ts        # API base URL configuration
 │       └── actionsClient.ts  # Updated to use API_BASE
 └── vite.config.ts     # Conditional proxy configuration
-```
+```text
 
 ### Environment Variables
 
@@ -59,7 +57,7 @@ apps/web/
 # Local development environment
 # Frontend running on host, backend in Docker
 VITE_API_BASE=http://localhost:8003
-```
+```bash
 
 **apps/web/.env.docker** (for Docker):
 
@@ -67,7 +65,7 @@ VITE_API_BASE=http://localhost:8003
 # Docker environment
 # Both frontend and backend running in Docker
 VITE_API_BASE=http://api:8003
-```
+```text
 
 ### 2. API Base Module
 
@@ -89,7 +87,7 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
 if (import.meta.env.DEV) {
   console.log('[API Config] Base URL:', API_BASE)
 }
-```
+```text
 
 ### 3. TypeScript Definitions
 
@@ -107,7 +105,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
-```
+```text
 
 ### 4. Updated API Client
 
@@ -121,7 +119,7 @@ export async function fetchTray(limit: number = 50) {
   const r = await fetch(`${API_BASE}/actions/tray?limit=${limit}`)
   // ...
 }
-```
+```text
 
 **All updated endpoints:**
 
@@ -166,7 +164,7 @@ export default defineConfig({
     } : undefined
   }
 })
-```
+```text
 
 **Proxy Behavior:**
 
@@ -186,7 +184,7 @@ export default defineConfig({
     "preview": "vite preview"
   }
 }
-```
+```text
 
 ---
 
@@ -197,7 +195,7 @@ export default defineConfig({
 ```powershell
 cd apps/web
 npm run dev
-```
+```text
 
 - Uses `.env.local` automatically
 - `VITE_API_BASE=http://localhost:8003`
@@ -208,21 +206,21 @@ npm run dev
 ```powershell
 cd apps/web
 npm run dev:docker
-```
+```text
 
 Or manually set the variable:
 
 ```powershell
 $env:VITE_API_BASE="http://api:8003"
 npm run dev
-```
+```text
 
 ### Production Build
 
 ```powershell
 cd apps/web
 npm run build
-```
+```text
 
 The built files will use the `VITE_API_BASE` value at build time. Set it appropriately:
 
@@ -230,7 +228,7 @@ The built files will use the `VITE_API_BASE` value at build time. Set it appropr
 # For production deployment
 $env:VITE_API_BASE="https://api.applylens.com"
 npm run build
-```
+```text
 
 ---
 
@@ -243,7 +241,7 @@ Run the comprehensive smoke test:
 ```powershell
 cd d:/ApplyLens
 pwsh ./scripts/smoke-test.ps1
-```
+```text
 
 **Tests:**
 
@@ -256,7 +254,7 @@ pwsh ./scripts/smoke-test.ps1
 
 **Expected Output:**
 
-```
+```text
 🎉 All critical tests passed!
   ✅ Passed:  7
 
@@ -264,7 +262,7 @@ Next steps:
   • Open UI: http://localhost:5175
   • View metrics: http://localhost:8003/metrics
   • API docs: http://localhost:8003/docs
-```
+```text
 
 ### Manual Testing
 
@@ -275,17 +273,17 @@ Next steps:
 // Open DevTools (F12) → Console
 // You should see:
 [API Config] Base URL: http://localhost:8003
-```
+```text
 
 **2. Verify Network Requests:**
 
-```
+```text
 Open DevTools → Network tab
 Trigger an action (click Actions button)
 Check request URL:
   ✅ http://localhost:8003/actions/tray
   ❌ NOT /api/actions/tray (proxy)
-```
+```text
 
 **3. Test Different Configurations:**
 
@@ -304,7 +302,7 @@ npm run dev
 Remove-Item Env:\VITE_API_BASE
 npm run dev
 # Check console: [API Config] Base URL: /api
-```
+```text
 
 ---
 
@@ -333,7 +331,7 @@ docker compose up -d
 # Terminal 2: Frontend
 cd d:/ApplyLens/apps/web
 npm run dev
-```
+```text
 
 ### Scenario 2: Full Docker Stack
 
@@ -353,7 +351,7 @@ npm run dev
 ```powershell
 cd d:/ApplyLens/infra
 docker compose up -d
-```
+```bash
 
 (Assumes frontend Dockerfile and docker-compose.yml entry exist)
 
@@ -377,7 +375,7 @@ $env:VITE_API_BASE="https://api.applylens.com"
 npm run build
 
 # Deploy dist/ folder to CDN
-```
+```text
 
 ### Scenario 4: CI/CD Pipeline
 
@@ -400,7 +398,7 @@ npm run build
     cd apps/web
     npm ci
     npm run build
-```
+```text
 
 ---
 
@@ -415,14 +413,14 @@ npm run build
 // Open http://localhost:5175
 // Check console for:
 [API Config] Base URL: http://localhost:8003
-```
+```text
 
 **In Code:**
 
 ```typescript
 import { API_BASE } from '@/lib/apiBase'
 console.log('API Base:', API_BASE)
-```
+```text
 
 ### Prometheus Metrics
 
@@ -430,7 +428,7 @@ After running smoke test, check metrics:
 
 ```powershell
 curl http://localhost:8003/metrics | Select-String -Pattern "actions_"
-```
+```text
 
 **Expected Output:**
 
@@ -445,7 +443,7 @@ actions_executed_total{action_type="archive_email",outcome="success"} 0
 
 # HELP actions_failed_total Total number of failed action executions
 # TYPE actions_failed_total counter
-```
+```text
 
 ---
 
@@ -509,7 +507,7 @@ actions_executed_total{action_type="archive_email",outcome="success"} 0
 # apps/web/.gitignore
 .env.local
 .env.*.local
-```
+```text
 
 **Why:** Contains local machine-specific configuration
 
@@ -522,7 +520,7 @@ Create `.env.example`:
 # Copy to .env.local and adjust values
 
 VITE_API_BASE=http://localhost:8003
-```
+```text
 
 ### 3. Validate Configuration at Startup
 
@@ -533,7 +531,7 @@ import { API_BASE } from '@/lib/apiBase'
 if (import.meta.env.PROD && API_BASE === '/api') {
   console.warn('⚠️ API_BASE not set in production!')
 }
-```
+```text
 
 ### 4. Use TypeScript for Type Safety
 
@@ -544,7 +542,7 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE?: string
   readonly VITE_OTHER_VAR?: string  // Add more as needed
 }
-```
+```text
 
 ### 5. Test All Configurations
 
@@ -560,7 +558,7 @@ pwsh ./scripts/smoke-test.ps1
 # Test proxy fallback
 Remove-Item Env:\VITE_API_BASE
 pwsh ./scripts/smoke-test.ps1
-```
+```text
 
 ---
 
@@ -571,7 +569,7 @@ pwsh ./scripts/smoke-test.ps1
 ```typescript
 // actionsClient.ts
 const r = await fetch(`/api/actions/tray`)
-```
+```text
 
 ```typescript
 // vite.config.ts
@@ -580,7 +578,7 @@ proxy: {
     target: 'http://localhost:8003',  // Hard-coded
   }
 }
-```
+```text
 
 ### After (Environment-aware)
 
@@ -588,7 +586,7 @@ proxy: {
 // actionsClient.ts
 import { API_BASE } from './apiBase'
 const r = await fetch(`${API_BASE}/actions/tray`)
-```
+```text
 
 ```typescript
 // vite.config.ts
@@ -598,7 +596,7 @@ const needsProxy = !API_BASE || API_BASE.startsWith('/')
 proxy: needsProxy ? {
   '/api': { target: 'http://localhost:8003' }
 } : undefined
-```
+```text
 
 ### Migration Steps
 
@@ -664,7 +662,7 @@ Successfully implemented a complete **Approvals Tray API** with Postgres + Elast
 
 ## Architecture
 
-```
+```text
 Policy Engine (/policies/run)
     ↓
 Propose API (/approvals/propose)
@@ -683,7 +681,7 @@ Execute API (/approvals/execute)
     └─→ ES Audit (status=executed)
     ↓
 Kibana Dashboard (policy hits vs misses)
-```
+```text
 
 ---
 
@@ -715,13 +713,13 @@ CREATE TABLE approvals_proposed (
 CREATE INDEX idx_approvals_status_policy ON approvals_proposed(status, policy_id);
 CREATE INDEX idx_approvals_email ON approvals_proposed(email_id);
 CREATE INDEX idx_approvals_created ON approvals_proposed(created_at);
-```
+```text
 
 **Usage**:
 
 ```bash
 alembic upgrade head
-```
+```text
 
 ---
 
@@ -749,13 +747,13 @@ alembic upgrade head
     }
   }
 }
-```
+```text
 
 **Usage**:
 
 ```bash
 python -m app.scripts.create_audit_index
-```
+```text
 
 ---
 
@@ -783,7 +781,7 @@ rows = [
     }
 ]
 approvals_bulk_insert(rows)
-```
+```text
 
 #### `approvals_get(status="proposed", limit=200)`
 
@@ -794,7 +792,7 @@ Retrieves approvals by status with optional limit.
 ```python
 pending = approvals_get(status="proposed", limit=50)
 # Returns: [{"id": 1, "email_id": "e123", "action": "archive", ...}, ...]
-```
+```text
 
 #### `approvals_update_status(ids: List[int], status: str)`
 
@@ -804,7 +802,7 @@ Updates status for multiple approval IDs.
 
 ```python
 approvals_update_status([1, 2, 3], "approved")
-```
+```text
 
 ---
 
@@ -842,7 +840,7 @@ emit_audit({
     "created_at": "2025-10-10T00:00:00Z",
     "payload": {"folder": "Archive"}
 })
-```
+```text
 
 ---
 
@@ -871,13 +869,13 @@ Store proposed actions from policy engine.
     }
   ]
 }
-```
+```text
 
 **Response**:
 
 ```json
 {"accepted": 1}
-```
+```text
 
 **Actions**:
 
@@ -908,7 +906,7 @@ List pending approvals for review.
     }
   ]
 }
-```
+```text
 
 ---
 
@@ -920,13 +918,13 @@ Approve selected actions.
 
 ```json
 {"ids": [1, 2, 3]}
-```
+```text
 
 **Response**:
 
 ```json
 {"updated": 3, "status": "approved"}
-```
+```text
 
 **Actions**:
 
@@ -943,13 +941,13 @@ Reject selected actions.
 
 ```json
 {"ids": [4, 5]}
-```
+```text
 
 **Response**:
 
 ```json
 {"updated": 2, "status": "rejected"}
-```
+```text
 
 **Actions**:
 
@@ -979,13 +977,13 @@ Execute approved actions.
     }
   ]
 }
-```
+```text
 
 **Response**:
 
 ```json
 {"applied": 2}
-```
+```text
 
 **Actions**:
 
@@ -1007,7 +1005,7 @@ try:
     app.include_router(approvals_router)
 except ImportError:
     pass  # Approvals module not available yet
-```
+```text
 
 **Result**: All 5 endpoints are now available at `/approvals/*`
 
@@ -1142,7 +1140,7 @@ Execute endpoint intelligently routes:
     "action": "move",
     "params": {"folder": "Archive/2024"}
 }
-```
+```text
 
 ### ✅ Error Handling
 
@@ -1155,7 +1153,7 @@ Execute endpoint intelligently routes:
 
 ```python
 GET /approvals/proposed?limit=50
-```
+```text
 
 ---
 
@@ -1179,7 +1177,7 @@ Tests will run successfully in Docker where all dependencies are installed:
 # Inside Docker container
 pytest tests/unit/test_approvals_db.py -v     # 11 tests
 pytest tests/e2e/test_approvals_flow.py -v    # 9 tests
-```
+```text
 
 ### ✅ Production Code
 
@@ -1203,7 +1201,7 @@ All production code is **complete and correct**:
 ```bash
 cd services/api
 alembic upgrade head
-```
+```text
 
 **Verifies**:
 
@@ -1214,7 +1212,7 @@ alembic upgrade head
 
 ```bash
 python -m app.scripts.create_audit_index
-```
+```text
 
 **Verifies**:
 
@@ -1236,7 +1234,7 @@ python -m app.scripts.create_audit_index
 
 ```bash
 curl http://localhost:8000/docs
-```
+```text
 
 **Check for**:
 
@@ -1251,7 +1249,7 @@ curl http://localhost:8000/docs
 ```bash
 docker-compose exec api pytest tests/unit/test_approvals_db.py -v
 docker-compose exec api pytest tests/e2e/test_approvals_flow.py -v
-```
+```text
 
 **Expected**: 20/20 tests passing
 
@@ -1283,7 +1281,7 @@ response = httpx.post("http://localhost:8000/approvals/propose", json={
 })
 
 print(response.json())  # {"accepted": 50}
-```
+```text
 
 ### Example 2: User Reviews Proposals
 
@@ -1299,7 +1297,7 @@ httpx.post("http://localhost:8000/approvals/approve", json={"ids": approved_ids}
 # User rejects low confidence ones
 rejected_ids = [p["id"] for p in proposals if p["confidence"] < 0.70]
 httpx.post("http://localhost:8000/approvals/reject", json={"ids": rejected_ids})
-```
+```text
 
 ### Example 3: Execute Approved Actions
 
@@ -1319,11 +1317,11 @@ execute_items = [
 
 response = httpx.post("http://localhost:8000/approvals/execute", json={"items": execute_items})
 print(response.json())  # {"applied": 100}
-```
+```text
 
 ### Example 4: Kibana Analytics
 
-```
+```text
 Dashboard: "Policy hits vs misses"
 
 Visualizations:
@@ -1338,7 +1336,7 @@ Filters:
 - Policy ID selector
 - Status selector
 - Confidence range slider
-```
+```text
 
 ---
 
@@ -1369,7 +1367,7 @@ async def run_policy(policy_id: str):
     ]))
     
     return {"status": "proposed", "count": len(suggested_actions)}
-```
+```text
 
 ---
 
@@ -1385,7 +1383,7 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/applylens
 ES_URL=http://localhost:9200
 ES_API_KEY=optional_api_key_here
 ES_AUDIT_INDEX=actions_audit_v1  # optional, defaults to actions_audit_v1
-```
+```text
 
 ---
 
@@ -1445,7 +1443,7 @@ ES_AUDIT_INDEX=actions_audit_v1  # optional, defaults to actions_audit_v1
     }
   }
 }
-```
+```text
 
 ---
 
@@ -1527,7 +1525,7 @@ Content-Type: application/json
 }
 
 Response: {"accepted": 1}
-```
+```text
 
 ### 2. List Pending
 
@@ -1549,7 +1547,7 @@ Response: {
     }
   ]
 }
-```
+```text
 
 ### 3. Approve
 
@@ -1560,7 +1558,7 @@ Content-Type: application/json
 {"ids": [1, 2, 3]}
 
 Response: {"updated": 3, "status": "approved"}
-```
+```text
 
 ### 4. Reject
 
@@ -1571,7 +1569,7 @@ Content-Type: application/json
 {"ids": [4, 5]}
 
 Response: {"updated": 2, "status": "rejected"}
-```
+```text
 
 ### 5. Execute
 
@@ -1590,7 +1588,7 @@ Content-Type: application/json
 }
 
 Response: {"applied": 1}
-```
+```text
 
 ## Database Schema
 
@@ -1611,7 +1609,7 @@ updated_at      TIMESTAMPTZ DEFAULT now()
 idx_approvals_status_policy: (status, policy_id)
 idx_approvals_email: (email_id)
 idx_approvals_created: (created_at)
-```
+```text
 
 ## ES Audit Index (actions_audit_v1)
 
@@ -1627,13 +1625,13 @@ idx_approvals_created: (created_at)
   "created_at": "2025-10-10T00:00:00Z",
   "payload": {"folder": "Archive"}
 }
-```
+```text
 
 ## Status Flow
 
-```
+```text
 proposed (agent) → approved/rejected (user) → executed (system)
-```
+```text
 
 ## Actor Types
 
@@ -1697,7 +1695,7 @@ emit_audit({
     "created_at": "2025-10-10T00:00:00Z",
     "payload": {}
 })
-```
+```text
 
 ## Environment Variables
 
@@ -1706,7 +1704,7 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/applylens
 ES_URL=http://localhost:9200
 ES_API_KEY=optional_key
 ES_AUDIT_INDEX=actions_audit_v1
-```
+```text
 
 ## Files Modified/Created
 

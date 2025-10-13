@@ -17,7 +17,7 @@ This guide will help you get ApplyLens up and running on your local machine.
 ```bash
 git clone https://github.com/leok974/ApplyLens.git
 cd ApplyLens
-```
+```text
 
 ### 2. Set Up Environment Variables
 
@@ -25,7 +25,7 @@ Copy the example environment file and configure it:
 
 ```bash
 cp infra/.env.example infra/.env
-```
+```text
 
 Edit `infra/.env` with your settings:
 
@@ -47,14 +47,14 @@ ES_EMAIL_INDEX=emails_v1
 
 # Security
 CORS_ORIGINS=http://localhost:5175
-```
+```text
 
 ### 3. Start the Infrastructure
 
 ```bash
 # Start PostgreSQL, Elasticsearch, and other services
 docker compose -f infra/docker-compose.yml up -d
-```
+```text
 
 ### 4. Set Up the Database
 
@@ -62,7 +62,7 @@ docker compose -f infra/docker-compose.yml up -d
 # Run Alembic migrations
 cd services/api
 alembic upgrade head
-```
+```text
 
 ### 5. Start the Backend API
 
@@ -73,7 +73,7 @@ pip install -r requirements.txt
 
 # Run the FastAPI server
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 The API will be available at: <http://localhost:8003>
 
@@ -88,7 +88,7 @@ npm install
 
 # Start Vite dev server
 npm run dev
-```
+```text
 
 The web app will be available at: <http://localhost:5175>
 
@@ -116,14 +116,14 @@ docker compose -f infra/docker-compose.yml ps
 # Should show:
 # - applylens-db (PostgreSQL)
 # - applylens-es (Elasticsearch)
-```
+```text
 
 ### Check API Health
 
 ```bash
 curl http://localhost:8003/health
 # Should return: {"status":"healthy"}
-```
+```text
 
 ### Check Frontend
 
@@ -141,7 +141,7 @@ pytest
 # Frontend E2E tests
 cd ../..
 npm run test:e2e
-```
+```text
 
 ### Database Migrations
 
@@ -155,7 +155,7 @@ alembic upgrade head
 
 # Rollback
 alembic downgrade -1
-```
+```text
 
 ### Code Quality
 
@@ -168,7 +168,7 @@ black --check .
 # Lint TypeScript/React
 cd ../web
 npm run lint
-```
+```text
 
 ## Common Issues
 
@@ -180,7 +180,7 @@ If ports 8003 or 5175 are already in use:
 # Change ports in infra/.env
 API_PORT=8004
 WEB_PORT=5176
-```
+```text
 
 ### Database Connection Failed
 
@@ -188,13 +188,13 @@ Check that PostgreSQL is running:
 
 ```bash
 docker compose -f infra/docker-compose.yml logs db
-```
+```text
 
 Verify connection string in `.env`:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/applylens
-```
+```text
 
 ### Elasticsearch Not Ready
 
@@ -202,7 +202,7 @@ Wait for Elasticsearch to start (can take 30-60 seconds):
 
 ```bash
 curl http://localhost:9200/_cluster/health
-```
+```text
 
 ## Next Steps
 

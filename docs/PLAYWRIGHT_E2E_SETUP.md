@@ -47,7 +47,7 @@ export default defineConfig({
     reuseExistingServer: true,
   },
 })
-```
+```text
 
 **Projects:**
 
@@ -78,7 +78,7 @@ await mockApi([
     body: { id: 1, notes: 'Updated' },
   },
 ])
-```
+```text
 
 **Features:**
 
@@ -92,7 +92,7 @@ await mockApi([
 ```typescript
 export const SMOKE = '@smoke'  // Critical path tests
 export const E2E = '@e2e'      // Full flow tests
-```
+```text
 
 **Usage in Tests:**
 
@@ -105,7 +105,7 @@ test.describe(`Feature ${SMOKE}`, () => {
     // test code
   })
 })
-```
+```text
 
 ---
 
@@ -139,7 +139,7 @@ test.describe(`Tracker smoke ${SMOKE}`, () => {
     await page.getByTestId('tracker-status-filter').selectOption('applied')
   })
 })
-```
+```text
 
 **Why Smoke Tests:**
 
@@ -178,7 +178,7 @@ npm run test:e2e
 
 # 4. Debug a failure
 npm run test:e2e:debug -- tests/e2e/tracker-smoke.spec.ts
-```
+```text
 
 ---
 
@@ -209,7 +209,7 @@ jobs:
       - Build app (npm run build)
       - Run tests (sharded)
       - Upload artifacts (always)
-```
+```text
 
 **Sharding Benefits:**
 
@@ -234,7 +234,7 @@ jobs:
 npm run test:e2e:smoke
 # ✓ Runs in <10 seconds
 # ✓ Catches major breakage
-```
+```text
 
 **2. Full Test Suite:**
 
@@ -242,7 +242,7 @@ npm run test:e2e:smoke
 npm run test:e2e
 # ✓ All tests, all browsers
 # ✓ Headless (fast)
-```
+```text
 
 **3. Visual Debugging:**
 
@@ -250,7 +250,7 @@ npm run test:e2e
 npm run test:e2e:headed
 # ✓ See browser interactions
 # ✓ Verify UI behavior
-```
+```text
 
 **4. Interactive Development:**
 
@@ -259,7 +259,7 @@ npm run test:e2e:ui
 # ✓ Time-travel debugging
 # ✓ Selector playground
 # ✓ Watch mode
-```
+```text
 
 **5. Step-by-Step Debugging:**
 
@@ -268,7 +268,7 @@ npm run test:e2e:debug
 # ✓ Pauses at each step
 # ✓ Inspect page state
 # ✓ Console access
-```
+```text
 
 ---
 
@@ -304,7 +304,7 @@ test('user creates application', async ({ page, mockApi }) => {
   // Verify
   await expect(page.getByText('NewCo')).toBeVisible()
 })
-```
+```text
 
 **Add Test Tags:**
 
@@ -322,7 +322,7 @@ test.describe(`Full flows ${E2E}`, () => {
     // Runs with: npm run test:e2e
   })
 })
-```
+```text
 
 **Use Test IDs (Already Present):**
 
@@ -336,7 +336,7 @@ test.describe(`Full flows ${E2E}`, () => {
 // In tests
 await page.getByTestId('tracker-search-input').fill('Acme')
 await page.getByTestId('tracker-new-btn').click()
-```
+```text
 
 ---
 
@@ -374,7 +374,7 @@ await page.getByTestId('tracker-new-btn').click()
 <testsuite name="Tracker smoke" tests="1" failures="0">
   <testcase name="loads grid and filters" time="2.341" />
 </testsuite>
-```
+```text
 
 Use with CI dashboards (e.g., GitHub Checks, Jenkins, CircleCI)
 
@@ -389,28 +389,28 @@ Use with CI dashboards (e.g., GitHub Checks, Jenkins, CircleCI)
 ```bash
 PW_WORKERS=6 npm run test:e2e
 # Override default 50% (local) or 100% (CI)
-```
+```text
 
 **Custom Port:**
 
 ```bash
 PORT=3000 npm run test:e2e
 # Change dev server port
-```
+```text
 
 **Custom Base URL:**
 
 ```bash
 BASE_URL=https://staging.example.com npm run test:e2e
 # Test against deployed environment
-```
+```text
 
 **CI Mode:**
 
 ```bash
 CI=1 npm run test:e2e
 # Force CI behavior locally (2 retries, 100% workers, artifacts)
-```
+```text
 
 ---
 
@@ -426,7 +426,7 @@ projects: [
   { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   { name: 'mobile', use: { ...devices['iPhone 13'] } },
 ]
-```
+```text
 
 **Adjust Timeouts:**
 
@@ -435,7 +435,7 @@ export default defineConfig({
   timeout: 60_000,           // 60s for slow tests
   expect: { timeout: 10_000 }, // 10s for assertions
 })
-```
+```text
 
 **Change Sharding:**
 
@@ -444,7 +444,7 @@ export default defineConfig({
 matrix:
   shard: [1, 2, 3, 4, 5]  # 5-way shard
   shardsTotal: [5]
-```
+```text
 
 ---
 
@@ -456,13 +456,13 @@ matrix:
 
 ```typescript
 await mockApi([{ url: '/api/applications?', body: testData }])
-```
+```text
 
 ❌ **Avoid:**
 
 ```typescript
 // Relying on real API = flaky, slow, database pollution
-```
+```text
 
 **Why:** Deterministic tests, instant execution, no database cleanup
 
@@ -478,7 +478,7 @@ test.describe(`Login ${SMOKE}`, () => {
     // Critical path
   })
 })
-```
+```text
 
 **Why:** Run smoke tests in <1 minute, full suite in <5 minutes
 
@@ -490,13 +490,13 @@ test.describe(`Login ${SMOKE}`, () => {
 
 ```typescript
 await page.getByTestId('submit-button').click()
-```
+```text
 
 ❌ **Avoid:**
 
 ```typescript
 await page.getByRole('button').nth(3).click()
-```
+```text
 
 **Why:** Stable across UI changes, self-documenting
 
@@ -509,13 +509,13 @@ await page.getByRole('button').nth(3).click()
 ```typescript
 await expect(page.getByText('Application created')).toBeVisible()
 await expect(page.getByTestId('status-chip-applied')).toBeVisible()
-```
+```text
 
 ❌ **Avoid:**
 
 ```typescript
 await page.waitForTimeout(2000) // Hope it worked?
-```
+```text
 
 **Why:** Explicit verification, clear failure messages
 
@@ -535,7 +535,7 @@ test('test B', async ({ page, mockApi }) => {
   await mockApi([/* different data */])
   // test code
 })
-```
+```text
 
 **Why:** Tests can run in any order, parallel execution safe
 
@@ -676,7 +676,7 @@ npm run test:e2e:smoke
 # 2. If smoke passes, run full suite
 npm run test:e2e
 # ~30-60 seconds (50% workers)
-```
+```text
 
 **Parallel Execution:**
 
@@ -686,7 +686,7 @@ PW_WORKERS=100% npm run test:e2e
 
 # Use specific count
 PW_WORKERS=6 npm run test:e2e
-```
+```text
 
 ---
 

@@ -10,15 +10,15 @@
 
 ### Services Running
 
-```
+```text
 ✅ infra-prometheus  → http://localhost:9090
 ✅ infra-grafana     → http://localhost:3000 (admin/admin)
 ✅ infra-api-1       → http://localhost:8003/metrics
-```
+```text
 
 ### Configuration Files Created
 
-```
+```bash
 infra/
 ├── docker-compose.yml              (updated - added prometheus + grafana)
 └── prometheus/
@@ -30,7 +30,7 @@ docs/
 ├── MONITORING_SETUP.md             (complete setup guide - 500+ lines)
 ├── PROMETHEUS_METRICS.md           (metrics documentation - 600+ lines)
 └── PROMQL_RECIPES.md               (query cookbook - 400+ lines)
-```
+```text
 
 ---
 
@@ -47,7 +47,7 @@ start http://localhost:3000
 
 # API Metrics (raw)
 start http://localhost:8003/metrics
-```
+```text
 
 ### Import Grafana Dashboard
 
@@ -101,7 +101,7 @@ min(applylens_db_up) * min(applylens_es_up)
 
 # Gmail connected
 applylens_gmail_connected{user_email="leoklemet.pa@gmail.com"}
-```
+```text
 
 ### API Performance
 
@@ -115,7 +115,7 @@ histogram_quantile(0.95, sum by (le) (rate(applylens_http_request_duration_secon
 # Error rate (percentage)
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))
-```
+```text
 
 ### Backfill Activity
 
@@ -125,7 +125,7 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 
 # Emails inserted per minute
 rate(applylens_backfill_inserted_total[1m]) * 60
-```
+```text
 
 ---
 
@@ -146,13 +146,13 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
     Invoke-RestMethod "http://localhost:8003/healthz"
     Start-Sleep -Seconds 2
 }
-```
+```text
 
 ### 2. Wait for Scrape (30 seconds)
 
 ```powershell
 Start-Sleep -Seconds 35
-```
+```text
 
 ### 3. Query Prometheus
 
@@ -163,7 +163,7 @@ $response = Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query"
 $response.data.result | ForEach-Object { 
     Write-Host "$($_.metric.__name__): $($_.value[1])" 
 }
-```
+```text
 
 ### 4. Check Grafana Dashboard
 
@@ -214,7 +214,7 @@ docker logs infra-grafana --tail 50
 
 # API logs (metrics endpoint)
 docker logs infra-api-1 | Select-String "metrics"
-```
+```text
 
 ### Restart Services
 
@@ -227,7 +227,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
 
 # Restart both
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus grafana
-```
+```text
 
 ### Validate Configuration
 
@@ -242,7 +242,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 Invoke-RestMethod "http://localhost:9090/api/v1/targets" | 
     Select-Object -ExpandProperty data | 
     Select-Object -ExpandProperty activeTargets
-```
+```text
 
 ---
 
@@ -291,7 +291,7 @@ Add to `prometheus/alerts.yml`:
   annotations:
     summary: "Endpoint p95 latency > 1s"
     description: "{{$labels.path}} is slow (p95: {{$value}}s)"
-```
+```text
 
 ---
 
@@ -428,7 +428,7 @@ If you encounter issues:
 
 ## 📍 Architecture Overview
 
-```
+```text
 ┌──────────────────────────────────────────────────────────┐
 │                     ApplyLens API                        │
 │                   (Port 8003)                            │
@@ -463,7 +463,7 @@ If you encounter issues:
 │  • Real-time updates (10s refresh)                      │
 │  • Alert annotations on graphs                          │
 └──────────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 

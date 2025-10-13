@@ -6,9 +6,9 @@ This document explains how to safely manage database schema changes and prevent 
 
 When SQL queries reference columns that don't exist in the database, the query fails with errors like:
 
-```
+```text
 psycopg2.errors.UndefinedColumn: column "category" does not exist
-```
+```text
 
 This typically happens when:
 
@@ -26,7 +26,7 @@ Each database change requires an Alembic migration file:
 
 ```bash
 services/api/alembic/versions/0009_add_emails_category.py
-```
+```text
 
 **Key sections:**
 
@@ -50,7 +50,7 @@ from app.utils.schema_guard import require_min_migration
 
 # At the start of a script
 require_min_migration("0009_add_emails_category", "emails.category column")
-```
+```text
 
 **Raises `RuntimeError` if:**
 
@@ -67,7 +67,7 @@ from app.utils.schema_guard import require_columns
 
 # Before using columns
 require_columns("emails", "category", "risk_score", "expires_at")
-```
+```text
 
 **Raises `RuntimeError` if:**
 
@@ -85,7 +85,7 @@ if check_column_exists("emails", "category"):
     # Use category column
 else:
     # Skip or use fallback
-```
+```text
 
 #### `get_migration_info()`
 
@@ -97,7 +97,7 @@ from app.utils.schema_guard import get_migration_info
 info = get_migration_info()
 print(f"Current migration: {info['current_migration']}")
 print(f"Tables: {list(info['tables'].keys())}")
-```
+```text
 
 ### 3. Usage in Scripts
 
@@ -118,7 +118,7 @@ def run():
         sys.exit(1)
     
     # Rest of the script...
-```
+```text
 
 **Benefits:**
 
@@ -139,7 +139,7 @@ alembic revision --autogenerate -m "Add category to emails"
 
 # Or manually create
 alembic revision -m "Add category to emails"
-```
+```text
 
 **Manual template:**
 
@@ -170,7 +170,7 @@ def downgrade() -> None:
     """Remove category column."""
     op.drop_index('ix_emails_category', table_name='emails')
     op.drop_column('emails', 'category')
-```
+```text
 
 ### 2. Test Migration Locally
 
@@ -182,7 +182,7 @@ alembic upgrade head
 # Or in Docker
 cd infra
 docker-compose exec api alembic upgrade head
-```
+```text
 
 **Verify:**
 
@@ -192,7 +192,7 @@ docker-compose exec db psql -U postgres -d applylens -c "SELECT version_num FROM
 
 # Check column exists
 docker-compose exec db psql -U postgres -d applylens -c "\d emails" | grep category
-```
+```text
 
 ### 3. Update Code
 
@@ -204,7 +204,7 @@ from app.utils.schema_guard import require_min_migration
 def main():
     require_min_migration("0009_add_emails_category")
     # ... rest of code
-```
+```text
 
 ### 4. Deploy to Production
 
@@ -218,7 +218,7 @@ alembic upgrade head
 # 2. Deploy code AFTER
 git pull
 docker-compose up -d --build
-```
+```text
 
 **Or in CI/CD:**
 
@@ -229,7 +229,7 @@ steps:
     
   - name: Deploy application
     run: docker-compose up -d --build
-```
+```text
 
 ## Prevention Strategies
 
@@ -250,7 +250,7 @@ def main():
     
     # Now safe to use emails.category
     # ...
-```
+```text
 
 **Result:** Job fails fast (seconds) instead of hours into execution.
 
@@ -272,7 +272,7 @@ def build_query(table: str):
         columns.append("risk_score")
     
     return f"SELECT {', '.join(columns)} FROM {table}"
-```
+```text
 
 **Result:** Query adapts to available schema.
 
@@ -297,7 +297,7 @@ steps:
   
   - name: Run backfill job
     run: python scripts/backfill_bill_dates.py
-```
+```text
 
 ### Strategy 4: Pre-Deployment Checklist
 
@@ -317,7 +317,7 @@ steps:
 def upgrade() -> None:
     op.add_column('emails', sa.Column('category', sa.Text(), nullable=True))
     op.create_index('ix_emails_category', 'emails', ['category'])
-```
+```text
 
 **Safe because:** Existing rows get `NULL`, no data loss.
 
@@ -333,7 +333,7 @@ def upgrade() -> None:
     
     # Step 3: Make non-nullable
     op.alter_column('emails', 'category', nullable=False)
-```
+```text
 
 **Safe because:** Backfill ensures all rows have values before constraint.
 
@@ -355,7 +355,7 @@ def upgrade() -> None:
         END
         WHERE labels IS NOT NULL AND category IS NULL;
     """)
-```
+```text
 
 **Safe because:** Populates new column from existing data, no manual work.
 
@@ -379,7 +379,7 @@ def downgrade() -> None:
     # op.execute("UPDATE emails SET old_name = new_name")
     
     op.drop_column('emails', 'new_name')
-```
+```text
 
 **Safe because:** Data copied before deletion.
 
@@ -389,10 +389,10 @@ def downgrade() -> None:
 
 **Symptom:**
 
-```
+```text
 psycopg2.errors.UndefinedColumn: column "category" does not exist
 LINE 1: SELECT id, category FROM emails WHERE ...
-```
+```text
 
 **Solution:**
 
@@ -420,10 +420,10 @@ LINE 1: SELECT id, category FROM emails WHERE ...
 
 **Symptom:**
 
-```
+```text
 ❌ Schema validation failed:
 Database schema is too old. Current: 0008_approvals_proposed, Required: 0009_add_emails_category
-```
+```text
 
 **Solution:**
 Follow the instructions in the error message:
@@ -435,15 +435,15 @@ alembic upgrade head
 # Or in Docker:
 cd infra
 docker-compose exec api alembic upgrade head
-```
+```text
 
 ### Error: "Cannot determine database migration version"
 
 **Symptom:**
 
-```
+```text
 RuntimeError: Cannot determine database migration version. alembic_version table may not exist.
-```
+```text
 
 **Possible causes:**
 
@@ -456,15 +456,15 @@ RuntimeError: Cannot determine database migration version. alembic_version table
 ```bash
 # Initialize database
 docker-compose exec api alembic upgrade head
-```
+```text
 
 ### Migration Failed Mid-Execution
 
 **Symptom:**
 
-```
+```text
 ERROR  [alembic.util.messaging] Target database is not up to date.
-```
+```text
 
 **Solution:**
 
@@ -481,7 +481,7 @@ docker-compose exec db psql -U postgres -d applylens \
 
 # Then re-run
 docker-compose exec api alembic upgrade head
-```
+```text
 
 ## Best Practices
 
@@ -489,16 +489,16 @@ docker-compose exec api alembic upgrade head
 
 ✅ **Good:**
 
-```
+```text
 0009_add_emails_category.py       # Adds category column
 0010_add_risk_score.py            # Adds risk_score column
-```
+```text
 
 ❌ **Bad:**
 
-```
+```text
 0009_everything.py                # Adds 10 columns, 5 tables, 20 indexes
-```
+```text
 
 **Why:** Easier to rollback, debug, and review.
 
@@ -512,7 +512,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column('emails', 'category')
-```
+```text
 
 ❌ **Bad:**
 
@@ -522,7 +522,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     pass  # Rollback not implemented
-```
+```text
 
 **Why:** Enables `alembic downgrade` for rollbacks.
 
@@ -538,7 +538,7 @@ alembic downgrade -1
 # Test full cycle
 alembic downgrade base
 alembic upgrade head
-```
+```text
 
 ### 4. Document Schema Dependencies
 
@@ -561,7 +561,7 @@ This migration adds the category column to support email categorization.
 - Scripts using emails.category will fail if this migration not applied
 - Add schema guard: require_min_migration("0009_add_emails_category")
 """
-```
+```text
 
 ### 5. Use Schema Guards in All Long-Running Jobs
 
@@ -601,7 +601,7 @@ alembic downgrade base        # All migrations
 alembic current               # Current version
 alembic history               # Migration history
 alembic show 0009             # Show specific migration
-```
+```text
 
 ### Schema Guard API
 
@@ -622,7 +622,7 @@ get_current_migration() -> Optional[str]
 
 get_migration_info() -> dict
     # Returns detailed schema information
-```
+```text
 
 ### Example: Complete Migration + Guard
 
@@ -630,7 +630,7 @@ get_migration_info() -> dict
 
 ```bash
 alembic revision -m "Add email automation fields"
-```
+```text
 
 **2. Edit migration file:**
 
@@ -644,7 +644,7 @@ def downgrade() -> None:
     op.drop_index('ix_emails_category', table_name='emails')
     op.drop_column('emails', 'risk_score')
     op.drop_column('emails', 'category')
-```
+```text
 
 **3. Add schema guard to script:**
 
@@ -654,20 +654,20 @@ from app.utils.schema_guard import require_min_migration
 def main():
     require_min_migration("0010_add_email_automation_fields")
     # ... rest of code
-```
+```text
 
 **4. Apply migration:**
 
 ```bash
 alembic upgrade head
-```
+```text
 
 **5. Deploy code:**
 
 ```bash
 git push
 docker-compose up -d --build
-```
+```text
 
 ## Summary
 

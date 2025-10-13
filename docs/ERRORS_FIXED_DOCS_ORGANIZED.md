@@ -25,7 +25,7 @@ r.post('/backfill-from-email', async (req: Request, res: Response) => { ... })
 // Added @ts-ignore for environments without Express
 // NOTE: Install Express types if missing: npm install --save-dev @types/express
 // @ts-ignore - Express may not be installed in this workspace
-```
+```text
 
 **Status**: ✅ Fixed - Zero TypeScript errors
 
@@ -52,7 +52,7 @@ declare global {
 // Added installation note
 // NOTE: Install test types if missing: npm install --save-dev @types/jest
 // @ts-ignore - Test framework may not be configured
-```
+```text
 
 **Status**: ✅ Fixed - Zero TypeScript errors
 
@@ -64,7 +64,7 @@ declare global {
 
 **Moved 70+ markdown files** from root to `docs/` folder for better organization:
 
-```
+```text
 ApplyLens/
 ├── README.md (main project README)
 ├── docs/
@@ -76,7 +76,7 @@ ApplyLens/
 │   ├── MONITORING_COMPLETE.md
 │   ├── ... (67+ more docs)
 │   └── [All documentation organized by topic]
-```
+```text
 
 ### Documentation Categories
 
@@ -131,7 +131,7 @@ ApplyLens/
 - New Users → 4 essential docs
 - Developers → 4 technical docs
 - DevOps/SRE → 4 deployment docs
-```
+```text
 
 ---
 
@@ -153,7 +153,7 @@ All documentation has been organized in the [`docs/`](./docs/) folder:
 - **[Testing](./docs/RUNNING_TESTS.md)**
 
 📖 **See the [Documentation Index](./docs/README.md) for the complete list.**
-```
+```text
 
 ---
 

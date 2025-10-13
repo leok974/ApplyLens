@@ -20,7 +20,7 @@ class SearchHit(BaseModel):
     user_reply_count: int = 0
     replied: bool = False
     time_to_response_hours: Optional[float] = None
-```
+```text
 
 **Server-side TTR computation**:
 
@@ -34,7 +34,7 @@ if source.get("first_user_reply_at") and source.get("received_at"):
         time_to_response_hours = (first_reply - received).total_seconds() / 3600.0
     except Exception:
         pass
-```
+```text
 
 **Why server-side?**
 
@@ -68,7 +68,7 @@ if source.get("first_user_reply_at") and source.get("received_at"):
   value?: "all" | "true" | "false";
   onChange: (v: "all" | "true" | "false") => void;
 }
-```
+```text
 
 ### 3. Search Page Integration
 
@@ -78,14 +78,14 @@ if source.get("first_user_reply_at") and source.get("received_at"):
 
 ```typescript
 const [replied, setReplied] = useState<"all" | "true" | "false">("all")
-```
+```text
 
 **API call conversion**:
 
 ```typescript
 const repliedParam = replied === "all" ? undefined : replied === "true"
 await searchEmails(q, 20, undefined, scale, labels, dates.from, dates.to, repliedParam)
-```
+```text
 
 **Filter UI placement**:
 
@@ -94,7 +94,7 @@ await searchEmails(q, 20, undefined, scale, labels, dates.from, dates.to, replie
   Filter by reply status:
 </div>
 <RepliedFilterChips value={replied} onChange={setReplied} />
-```
+```text
 
 **Auto-refresh on change**:
 
@@ -102,7 +102,7 @@ await searchEmails(q, 20, undefined, scale, labels, dates.from, dates.to, replie
 useEffect(() => {
   if (q.trim()) onSearch()
 }, [labels, dates, replied])
-```
+```text
 
 ### 4. Time-to-Response Badge
 
@@ -118,7 +118,7 @@ const ttrText = ttrH == null
       : ttrH < 24
       ? `${Math.round(ttrH)}h`           // < 24 hours → hours
       : `${Math.round(ttrH / 24)}d`)     // >= 24 hours → days
-```
+```text
 
 **Badge display**:
 
@@ -130,12 +130,12 @@ const ttrText = ttrH == null
 
 **Visual examples**:
 
-```
+```text
 TTR 23m    (replied in 23 minutes)
 TTR 3h     (replied in 3 hours)
 TTR 2d     (replied in 2 days)
 No reply   (not replied yet)
-```
+```text
 
 ### 5. API Client Updates
 
@@ -152,7 +152,7 @@ export type SearchHit = {
   replied?: boolean
   time_to_response_hours?: number | null
 }
-```
+```text
 
 **Updated searchEmails function**:
 
@@ -167,7 +167,7 @@ export async function searchEmails(
   dateTo?: string,
   replied?: boolean  // NEW
 ): Promise<SearchHit[]>
-```
+```text
 
 **URL construction**:
 
@@ -175,7 +175,7 @@ export async function searchEmails(
 if (replied !== undefined) {
   url += `&replied=${replied}`
 }
-```
+```text
 
 ## User Experience
 
@@ -216,7 +216,7 @@ if (replied !== undefined) {
 
 ### Visual Layout
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Filter by reply status:                                      │
 │ [All] [Replied] [Not replied]                                │
@@ -235,7 +235,7 @@ if (replied !== undefined) {
 │                                                               │
 │ Just checking in to see if you have any questions...         │
 └─────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## Technical Details
 
@@ -246,7 +246,7 @@ if (replied !== undefined) {
 ```python
 if replied is not None:
     filters.append({"term": {"replied": replied}})
-```
+```text
 
 **Frontend conversion**:
 
@@ -258,9 +258,9 @@ if replied is not None:
 
 **Formula**:
 
-```
+```ini
 time_to_response_hours = (first_user_reply_at - received_at) / 3600.0
-```
+```text
 
 **Edge cases handled**:
 
@@ -289,33 +289,33 @@ time_to_response_hours = (first_user_reply_at - received_at) / 3600.0
 
 **Test 1: Filter toggle**
 
-```
+```text
 1. Open search page
 2. Search for "interview"
 3. Click "Replied" → should show only replied emails
 4. Click "Not replied" → should show only non-replied emails
 5. Click "All" → should show all emails
-```
+```text
 
 **Test 2: TTR badge display**
 
-```
+```text
 1. Filter to "Replied"
 2. Verify each result shows "TTR Xm/h/d" badge
 3. Hover badge → should show tooltip with details
 4. Filter to "Not replied"
 5. Verify each result shows "No reply" gray badge
-```
+```text
 
 **Test 3: Combined filters**
 
-```
+```text
 1. Select label: "Offer"
 2. Set date range: Last 7 days
 3. Select replied: "Not replied"
 4. Verify results match all filters (AND logic)
 5. Should show: unreplied offers from last 7 days
-```
+```text
 
 ### API Tests
 
@@ -329,7 +329,7 @@ curl -s "http://localhost:8003/search?q=offer&replied=true" | jq '.hits[0] | {
   time_to_response_hours,
   first_user_reply_at
 }'
-```
+```text
 
 **Expected output**:
 
@@ -340,13 +340,13 @@ curl -s "http://localhost:8003/search?q=offer&replied=true" | jq '.hits[0] | {
   "time_to_response_hours": 2.5,
   "first_user_reply_at": "2025-10-05T14:30:00Z"
 }
-```
+```text
 
 **Test replied=false**:
 
 ```bash
 curl -s "http://localhost:8003/search?q=interview&replied=false&size=3" | jq '.total'
-```
+```text
 
 Should return count of non-replied interview emails.
 
@@ -391,22 +391,22 @@ Should return count of non-replied interview emails.
 
 All filters use AND logic:
 
-```
+```ini
 Results = emails WHERE
   text_matches(query) AND
   labels IN selected_labels AND
   received_at BETWEEN date_from AND date_to AND
   replied = selected_replied_state
-```
+```text
 
 **Example**: "Find unreplied offers from last 7 days"
 
-```
+```ini
 q=offer
 labels=offer
 date_from=2025-10-02
 replied=false
-```
+```text
 
 ## Use Cases
 
@@ -480,18 +480,18 @@ Add visual indicators for response speed:
 
 Allow sorting results by time_to_response_hours:
 
-```
+```text
 ?sort=time_to_response_hours&order=asc
-```
+```text
 
 ### 3. TTR Statistics
 
 Show aggregate stats in header:
 
-```
+```text
 Average response time: 4.2 hours
 Fastest: 5m | Slowest: 3d
-```
+```text
 
 ### 4. Response Time Goals
 
@@ -501,7 +501,7 @@ Set target TTR and highlight overdue:
 <Badge color={ttrH > 24 ? 'red' : 'blue'}>
   {ttrH > 24 && '⚠️ '} TTR {ttrText}
 </Badge>
-```
+```text
 
 ### 5. Bulk Actions
 
@@ -511,15 +511,15 @@ Add actions for filtered results:
 // On "Not replied" view
 <Button>Mark all as needs reply</Button>
 <Button>Snooze until tomorrow</Button>
-```
+```text
 
 ### 6. Export/Analytics
 
 Export replied/not-replied lists to CSV:
 
-```
+```text
 Subject, Sender, Received, Replied, TTR
-```
+```text
 
 ## Summary
 

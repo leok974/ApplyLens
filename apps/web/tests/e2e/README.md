@@ -18,7 +18,7 @@ npm run test:e2e:smoke
 
 # Run with Playwright UI (interactive)
 npm run test:e2e:ui
-```
+```text
 
 ## Network Control
 
@@ -35,7 +35,7 @@ $env:PW_LOCK_NET='1'; npm run test:e2e; Remove-Item Env:\PW_LOCK_NET
 
 # Smoke tests with locked network
 npm run test:e2e:smoke:locked  # Unix/macOS/Linux only
-```
+```text
 
 **Note:** On Windows, the `test:e2e:smoke:locked` script won't work directly. Use the PowerShell syntax above or set the environment variable in your CI/CD pipeline.
 
@@ -77,7 +77,7 @@ await assertToast(page, {
   title: /Saved/i, 
   timeout: 10000 
 })
-```
+```text
 
 **Benefits:**
 
@@ -112,7 +112,7 @@ await withMockedNet([
     body: patchResponse(row, { notes: 'Updated' }),
   },
 ])
-```
+```text
 
 **Factory Functions:**
 
@@ -138,7 +138,7 @@ npm run test:e2e:auth
 
 # Refresh authentication state
 npm run test:e2e:auth:refresh
-```
+```text
 
 Set these environment variables to configure login:
 
@@ -159,7 +159,7 @@ await mockApi([
   { url: '/api/applications', method: 'GET', body: [...] },
   { url: '/api/applications/123', method: 'PATCH', body: {...} },
 ])
-```
+```text
 
 ### enforceNetworkPolicy
 
@@ -167,7 +167,7 @@ Deny-by-default network policy (blocks external requests):
 
 ```typescript
 await enforceNetworkPolicy()
-```
+```text
 
 ### withMockedNet
 
@@ -177,7 +177,7 @@ Convenience fixture that installs mocks then enforces network policy:
 await withMockedNet([
   { url: '/api/applications', method: 'GET', body: [...] },
 ])
-```
+```text
 
 ## CI/CD Integration
 
@@ -190,7 +190,7 @@ await withMockedNet([
     PW_LOCK_NET: '1'
   run: |
     npm run test:e2e -- --reporter=list,junit,html
-```
+```text
 
 ### Sharding (Parallel Execution)
 
@@ -204,18 +204,18 @@ steps:
       PW_LOCK_NET: '1'
     run: |
       npx playwright test --shard=${{ matrix.shard }}/4
-```
+```text
 
 ## Project Structure
 
-```
+```text
 tests/e2e/
 ├── fixtures.ts          # Custom Playwright fixtures
 ├── utils.ts             # Test helper functions (assertToast)
 ├── factories.ts         # Test data factories
 ├── *.spec.ts            # Test files
 └── .auth/               # Authentication state storage
-```
+```text
 
 ## Best Practices
 
@@ -241,7 +241,7 @@ Install `@types/node`:
 
 ```bash
 npm install --save-dev @types/node
-```
+```text
 
 ### Tests timing out
 

@@ -23,7 +23,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     ...
 )
-```
+```text
 
 ### 2. **Health Endpoints** ✅
 
@@ -34,14 +34,14 @@ Added production-ready health check endpoints:
 ```powershell
 curl http://localhost:8003/healthz
 # Returns: {"ok": true}
-```
+```text
 
 **Readiness Check (with DB + ES verification):**
 
 ```powershell
 curl http://localhost:8003/readiness
 # Returns: {"ok": true, "db": "up", "es": "up"}
-```
+```text
 
 Use these for:
 
@@ -62,7 +62,7 @@ Protected backfill endpoint from abuse:
 # 60-second rate limit on backfill
 if now - _LAST_BACKFILL_TS < 60:
     raise HTTPException(status_code=429, detail="Backfill too frequent; try again in a minute.")
-```
+```text
 
 ### 4. **Request Validation** ✅
 
@@ -74,7 +74,7 @@ Added guards on backfill parameters:
 
 ```python
 days: int = Query(60, ge=1, le=365)  # Min 1, max 365
-```
+```text
 
 ### 5. **Database Indexes** ✅
 
@@ -84,7 +84,7 @@ Created performance indexes for common queries:
 CREATE INDEX idx_emails_received_at ON emails (received_at);    -- Time-based queries
 CREATE INDEX idx_emails_company ON emails (company);             -- Company filters
 CREATE INDEX idx_apps_status_company ON applications (status, company);  -- Tracker filters
-```
+```text
 
 **Impact:**
 
@@ -97,7 +97,7 @@ CREATE INDEX idx_apps_status_company ON applications (status, company);  -- Trac
 ```powershell
 docker compose exec db psql -U postgres -d applylens -c "\d+ emails"
 docker compose exec db psql -U postgres -d applylens -c "\d+ applications"
-```
+```text
 
 ### 6. **Error Monitoring** ✅
 
@@ -120,7 +120,7 @@ Created automated error alerting:
 
 ```powershell
 D:\ApplyLens\scripts\BackfillCheck.ps1
-```
+```text
 
 ---
 
@@ -143,7 +143,7 @@ All systems verified and operational:
 
 ```powershell
 D:\ApplyLens\scripts\VerifySystem.ps1
-```
+```text
 
 ---
 
@@ -296,7 +296,7 @@ curl http://localhost:8003/readiness
 
 # Full verification
 D:\ApplyLens\scripts\VerifySystem.ps1
-```
+```text
 
 ### Backfill (rate limited)
 
@@ -307,7 +307,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
 # Check scheduled task
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync"
 Get-ScheduledTaskInfo -TaskName "ApplyLens-GmailSync"
-```
+```text
 
 ### Database Performance
 
@@ -317,7 +317,7 @@ docker compose exec db psql -U postgres -d applylens -c "SELECT tablename, index
 
 # Analyze query performance
 docker compose exec db psql -U postgres -d applylens -c "EXPLAIN ANALYZE SELECT * FROM emails WHERE company = 'Google' ORDER BY received_at DESC LIMIT 50;"
-```
+```text
 
 ### Monitoring
 
@@ -330,7 +330,7 @@ docker compose logs api --tail=100 | Select-String -Pattern "error|exception|fai
 
 # Backfill error log
 Get-Content D:\ApplyLens\scripts\backfill-errors.log -Tail 20
-```
+```text
 
 ---
 

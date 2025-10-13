@@ -37,7 +37,7 @@ interface CreateFromEmailButtonProps {
 // Usage in component
 showToast?.('Application created: Acme - Engineer', 'success')
 showToast?.('Could not extract application details from email', 'error')
-```
+```text
 
 ```typescript
 // Tracker.tsx
@@ -47,7 +47,7 @@ showToast?.('Could not extract application details from email', 'error')
   onPrefill={(prefill) => openCreateWithPrefill(prefill)}
   onCreated={() => fetchRows()}
 />
-```
+```text
 
 ### ✅ 2. Added E2E Tests for Email Extraction
 
@@ -101,7 +101,7 @@ showToast?.('Could not extract application details from email', 'error')
 ```bash
 cd apps/web
 npm run test:e2e -- tracker-extraction
-```
+```text
 
 ### ✅ 3. Fixed All TypeScript/Lint Errors
 
@@ -136,7 +136,7 @@ uvicorn app.main:app --reload --port 8003
 # Terminal 2: Start frontend
 cd apps/web
 npm run dev
-```
+```text
 
 **Test Checklist**:
 
@@ -262,7 +262,7 @@ npm run dev
 http://localhost:5175/tracker
 
 # 4. Follow test checklist above
-```
+```text
 
 ### To Run E2E Tests
 
@@ -273,7 +273,7 @@ npm run test:e2e -- tracker-extraction
 
 # Or run all E2E tests
 npm run test:e2e
-```
+```text
 
 ### To Integrate in Production
 
@@ -391,7 +391,7 @@ rm tests/e2e/tracker-extraction.spec.ts
 
 # Restore useToast (if needed for other components)
 # git checkout <previous-commit> src/components/toast/
-```
+```text
 
 ---
 

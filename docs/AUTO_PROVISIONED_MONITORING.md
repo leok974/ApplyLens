@@ -16,7 +16,7 @@
 
 ### Configuration Structure
 
-```
+```bash
 infra/
 ├── docker-compose.yml                    ✅ Updated with lifecycle & volumes
 ├── prometheus/
@@ -30,7 +30,7 @@ infra/
             ├── applylens.yml             ✅ Dashboard provider config
             └── json/
                 └── applylens-overview.json ✅ 6-panel dashboard
-```
+```text
 
 ---
 
@@ -103,7 +103,7 @@ Invoke-WebRequest -Method POST http://localhost:9090/-/reload
 
 # Verify rules reloaded
 Invoke-RestMethod http://localhost:9090/api/v1/rules
-```
+```text
 
 ### After Editing Prometheus Config
 
@@ -119,7 +119,7 @@ Invoke-WebRequest -Method POST http://localhost:9090/-/reload
 
 # Check targets
 Invoke-RestMethod http://localhost:9090/api/v1/targets
-```
+```text
 
 ---
 
@@ -131,7 +131,7 @@ Invoke-RestMethod http://localhost:9090/api/v1/targets
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/targets"
 $target = $response.data.activeTargets | Where-Object { $_.labels.job -eq "applylens-api" }
 $target | Select-Object scrapeUrl, health, lastError | Format-Table
-```
+```text
 
 **Expected:** `scrapeUrl: http://api:8003/metrics`, `health: up`
 
@@ -147,7 +147,7 @@ Write-Host "Request rate: $($response.data.result[0].value[1]) req/s"
 $db = (Invoke-RestMethod "http://localhost:9090/api/v1/query?query=applylens_db_up").data.result[0].value[1]
 $es = (Invoke-RestMethod "http://localhost:9090/api/v1/query?query=applylens_es_up").data.result[0].value[1]
 Write-Host "DB: $db, ES: $es (1=up, 0=down)"
-```
+```text
 
 ### 3. Generate Test Traffic
 
@@ -165,7 +165,7 @@ Start-Sleep -Seconds 20
 
 # View in Prometheus Graph UI
 start "http://localhost:9090/graph?g0.expr=sum(rate(applylens_http_requests_total%5B5m%5D))&g0.tab=0"
-```
+```text
 
 ### 4. Verify Grafana Provisioning
 
@@ -177,7 +177,7 @@ $datasources | Where-Object { $_.name -eq "Prometheus" } | Select-Object name, t
 # Check dashboards
 $dashboards = Invoke-RestMethod -Uri "http://localhost:3000/api/search" -Credential (New-Object PSCredential("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force)))
 $dashboards | Where-Object { $_.title -match "ApplyLens" } | Select-Object title, folderTitle, uid
-```
+```text
 
 **Expected:** Prometheus datasource exists, "ApplyLens API Overview" dashboard in "ApplyLens" folder
 
@@ -189,7 +189,7 @@ $dashboards | Where-Object { $_.title -match "ApplyLens" } | Select-Object title
 
 ```powershell
 start http://localhost:9090
-```
+```text
 
 **Try these queries:**
 
@@ -202,7 +202,7 @@ start http://localhost:9090
 
 ```powershell
 start http://localhost:3000
-```
+```text
 
 1. Login: `admin` / `admin`
 2. Navigate: Dashboards → ApplyLens → ApplyLens API Overview
@@ -213,7 +213,7 @@ start http://localhost:3000
 
 ```powershell
 start http://localhost:9090/alerts
-```
+```text
 
 All 6 alerts should show as **inactive** (green) when system is healthy.
 
@@ -229,7 +229,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus grafa
 
 # Restart just Prometheus
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus
-```
+```text
 
 ### View Logs
 
@@ -242,7 +242,7 @@ docker logs infra-grafana --tail 50
 
 # Follow logs (real-time)
 docker logs -f infra-prometheus
-```
+```text
 
 ### Validate Configuration
 
@@ -255,7 +255,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # Output:
 # SUCCESS: 6 rules found
-```
+```text
 
 ---
 
@@ -298,7 +298,7 @@ Next time Grafana restarts, it will load the new dashboard automatically.
 
 ```powershell
 notepad D:\ApplyLens\infra\prometheus\alerts.yml
-```
+```text
 
 ### 2. Add New Alert
 
@@ -312,7 +312,7 @@ notepad D:\ApplyLens\infra\prometheus\alerts.yml
     annotations:
       summary: "API p99 latency > 2s"
       description: "99th percentile latency is {{$value}}s for 10 minutes"
-```
+```text
 
 ### 3. Validate & Reload
 
@@ -325,7 +325,7 @@ Invoke-WebRequest -Method POST http://localhost:9090/-/reload
 
 # Verify new alert appears
 start http://localhost:9090/alerts
-```
+```text
 
 ---
 
@@ -340,14 +340,14 @@ grafana:
   environment:
     - GF_SECURITY_ADMIN_USER=admin
     - GF_SECURITY_ADMIN_PASSWORD=YourSecurePassword123!  # Change this!
-```
+```text
 
 Or set via environment variable:
 
 ```powershell
 $env:GRAFANA_ADMIN_PASSWORD = "SecurePassword123!"
 docker compose -f D:\ApplyLens\infra\docker-compose.yml up -d grafana
-```
+```text
 
 ### 2. Restrict /metrics Endpoint
 
@@ -362,7 +362,7 @@ location /metrics {
     
     proxy_pass http://api:8003;
 }
-```
+```text
 
 Or in FastAPI with basic auth:
 
@@ -378,7 +378,7 @@ def metrics(credentials: HTTPBasicCredentials = Depends(security)):
             compare_digest(credentials.password, os.getenv("METRICS_PASSWORD"))):
         raise HTTPException(status_code=401)
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-```
+```text
 
 ### 3. Use Docker Networks
 
@@ -403,7 +403,7 @@ networks:
   monitoring:
     internal: true  # No external access
   public:
-```
+```text
 
 ---
 
@@ -424,7 +424,7 @@ histogram_quantile(0.95, sum by (le, path) (rate(applylens_http_request_duration
 
 # Top 5 slowest endpoints
 topk(5, histogram_quantile(0.99, sum by (le, path) (rate(applylens_http_request_duration_seconds_bucket[5m]))))
-```
+```text
 
 ### Backfill Metrics
 
@@ -438,7 +438,7 @@ rate(applylens_backfill_inserted_total[1m]) * 60
 
 # Rate-limited requests (last hour)
 increase(applylens_backfill_requests_total{result="rate_limited"}[1h])
-```
+```text
 
 ### System Health
 
@@ -451,7 +451,7 @@ min(applylens_db_up) * min(applylens_es_up)
 
 # Uptime percentage (last 24h)
 avg_over_time(up{job="applylens-api"}[24h]) * 100
-```
+```text
 
 ---
 
@@ -490,7 +490,7 @@ docker exec infra-prometheus wget -O- http://api:8003/metrics
 
 # Check Prometheus logs
 docker logs infra-prometheus --tail 50
-```
+```text
 
 ### Problem: Dashboard not appearing in Grafana
 
@@ -503,7 +503,7 @@ Test-Path D:\ApplyLens\infra\grafana\provisioning\dashboards\json\applylens-over
 
 # Restart Grafana
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
-```
+```text
 
 ### Problem: Alerts not firing
 
@@ -516,7 +516,7 @@ start http://localhost:9090/alerts
 
 # View Prometheus logs for errors
 docker logs infra-prometheus | Select-String "error|warn"
-```
+```text
 
 ### Problem: Metrics showing as 0
 
@@ -530,7 +530,7 @@ Start-Sleep -Seconds 20
 
 # Query again
 Invoke-RestMethod "http://localhost:9090/api/v1/query?query=applylens_db_up"
-```
+```text
 
 ---
 

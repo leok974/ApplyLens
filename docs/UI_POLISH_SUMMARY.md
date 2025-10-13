@@ -33,7 +33,7 @@ export const LABEL_WEIGHTS = {
 
 export function sortLabelsByImpact(labels: string[]): string[]
 export function labelTitle(label: string): string
-```
+```text
 
 **Purpose**: Single source of truth for scoring weights, shared between backend and frontend
 
@@ -43,7 +43,7 @@ Reusable label badge component:
 
 ```tsx
 <EmailLabels labels={email.label_heuristics} />
-```
+```text
 
 **Features**:
 
@@ -58,7 +58,7 @@ Search results header with scoring hint:
 
 ```tsx
 <SearchResultsHeader query={q} total={total} showHint />
-```
+```text
 
 **Displays**:
 
@@ -75,7 +75,7 @@ localStorage-backed preferences:
 export type RecencyScale = "3d" | "7d" | "14d";
 export function getRecencyScale(): RecencyScale
 export function setRecencyScale(scale: RecencyScale)
-```
+```text
 
 **Purpose**: Persist user's recency scale preference across sessions
 
@@ -103,7 +103,7 @@ def search(
     
     # Use recency in function_score
     {"gauss": {"received_at": recency}}
-```
+```text
 
 **Changes**:
 
@@ -130,7 +130,7 @@ export async function searchEmails(
   }
   // ...
 }
-```
+```text
 
 #### `apps/web/src/pages/Search.tsx`
 
@@ -147,13 +147,13 @@ Major visual improvements:
 
 ```tsx
 <span style={{ background:'#eef', padding:'2px 6px' }}>{h.label}</span>
-```
+```text
 
 **After**:
 
 ```tsx
 <EmailLabels labels={h.label_heuristics || (h.label ? [h.label] : [])} />
-```
+```text
 
 **Layout improvements**:
 
@@ -171,7 +171,7 @@ Complete redesign with recency toggle:
   <option value="7d">7 days (balanced) - Default</option>
   <option value="14d">14 days (more recall)</option>
 </select>
-```
+```text
 
 **Features**:
 
@@ -197,10 +197,10 @@ Complete redesign with recency toggle:
 
 Appears at top of search results when `showHint={true}`:
 
-```
+```text
 Scoring: offer^4 • interview^3 • rejection^0.5 • 
 Recency: 7-day decay (gauss scale=7d, decay=0.5) • Scale: 7d
-```
+```text
 
 **Purpose**: Demo-ready narration for explaining search intelligence
 
@@ -255,7 +255,7 @@ GET /api/search/?q=interview&size=20&scale=3d
 
 # 14-day scale (more recall)
 GET /api/search/?q=interview&size=20&scale=14d
-```
+```text
 
 ---
 
@@ -265,41 +265,41 @@ GET /api/search/?q=interview&size=20&scale=14d
 
 #### 1. Test Label Sorting
 
-```
+```text
 1. Search for "interview" or "offer"
 2. Verify labels appear in order: Offer > Interview > Others > Rejection
 3. Check color coding: Yellow (offer), Green (interview), Gray (rejection)
-```
+```text
 
 #### 2. Test Recency Toggle
 
-```
+```text
 1. Go to Settings page
 2. Change recency scale to 3d
 3. Go back to Search
 4. Verify search header shows "Scale: 3d"
 5. Search for a query
 6. Verify fresher emails score higher (check dates vs scores)
-```
+```text
 
 #### 3. Test Scoring Hint
 
-```
+```text
 1. Search for any query
 2. Verify header shows: "Scoring: offer^4 • interview^3 • rejection^0.5 • ..."
 3. Verify current scale is displayed
-```
+```text
 
 #### 4. Test Label Colors
 
-```
+```text
 1. Find search results with different labels
 2. Verify:
    - Offer labels are yellow with yellow ring
    - Interview labels are green with green ring
    - Rejection labels are gray and slightly faded
    - Other labels are light blue
-```
+```text
 
 ### Browser DevTools
 
@@ -308,7 +308,7 @@ Check localStorage:
 ```javascript
 localStorage.getItem('search.recencyScale')
 // Should return: "3d", "7d", or "14d"
-```
+```text
 
 ---
 

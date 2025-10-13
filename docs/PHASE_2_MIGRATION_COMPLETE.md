@@ -62,7 +62,7 @@ import { Toaster } from './components/ui/sonner'
   {/* routes */}
 </main>
 <Toaster />
-```
+```text
 
 **Benefits:**
 
@@ -95,7 +95,7 @@ import { Toaster } from './components/ui/sonner'
   )}
   <AlertDescription>{err}</AlertDescription>
 </Alert>
-```
+```text
 
 **Benefits:**
 
@@ -125,14 +125,14 @@ import { Toaster } from './components/ui/sonner'
 ```powershell
 # Start Docker Desktop application manually
 # Or from command line if configured
-```
+```text
 
 ### 2. Rebuild Web Container
 
 ```powershell
 cd D:\ApplyLens\infra
 docker compose up -d --build web
-```
+```text
 
 ### 3. Verify Changes
 
@@ -147,7 +147,7 @@ docker compose up -d --build web
 ```powershell
 cd D:\ApplyLens
 pnpm test:e2e
-```
+```text
 
 **Expected Results:**
 
@@ -173,7 +173,7 @@ import { ResultsTable } from '@/components/ResultsTable'
 
 <FilterBar />
 <ResultsTable results={hits} />
-```
+```text
 
 ### Tracker Page
 
@@ -185,7 +185,7 @@ import { toast } from 'sonner'
 
 <Button onClick={handleSync}>Sync</Button>
 toast.success('Applications synced!')
-```
+```text
 
 ### Settings Page
 
@@ -195,7 +195,7 @@ Can add shadcn form components:
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-```
+```text
 
 ---
 
@@ -212,7 +212,7 @@ All components now use these semantic tokens:
 --muted-foreground: #aeb8c7  /* Secondary text */
 --border: #242b39      /* Borders */
 --destructive: #ef4444 /* Error states */
-```
+```text
 
 ### Usage in JSX
 
@@ -223,7 +223,7 @@ className="text-foreground"     // Primary text
 className="text-muted-foreground"  // Secondary text
 className="border"              // Standard border
 className="hover:bg-secondary"  // Hover effect
-```
+```text
 
 ---
 

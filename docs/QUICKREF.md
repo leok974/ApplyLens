@@ -16,7 +16,7 @@ docker compose -f infra/docker-compose.yml up -d
 
 # 4. Wait for services (takes ~30 seconds)
 docker compose -f infra/docker-compose.yml ps
-```
+```text
 
 ### Gmail Integration
 
@@ -26,7 +26,7 @@ docker compose -f infra/docker-compose.yml ps
 # 3. Visit: http://localhost:8003/auth/google/login
 # 4. Sync emails via UI or:
 curl -X POST "http://localhost:8003/gmail/backfill?days=60&user_email=your@gmail.com"
-```
+```text
 
 ## 📍 URLs
 
@@ -57,7 +57,7 @@ docker compose -f infra/docker-compose.yml down
 # Rebuild after code changes
 docker compose -f infra/docker-compose.yml build api
 docker compose -f infra/docker-compose.yml up -d api
-```
+```text
 
 ### Database
 
@@ -73,7 +73,7 @@ docker compose -f infra/docker-compose.yml exec db psql -U postgres -d applylens
 
 # Check OAuth tokens
 docker compose -f infra/docker-compose.yml exec db psql -U postgres -d applylens -c "SELECT user_email, provider, expiry FROM oauth_tokens;"
-```
+```text
 
 ### Elasticsearch
 
@@ -87,7 +87,7 @@ curl http://localhost:9200/gmail_emails/_mapping
 # Delete and recreate index
 curl -X DELETE http://localhost:9200/gmail_emails
 docker compose -f infra/docker-compose.yml restart api
-```
+```text
 
 ### Testing
 
@@ -109,7 +109,7 @@ curl http://localhost:8003/gmail/status
 
 # Test inbox (requires auth)
 curl "http://localhost:8003/gmail/inbox?page=1&limit=10"
-```
+```text
 
 ## 📧 Email Labels
 
@@ -136,7 +136,7 @@ curl "http://localhost:8003/search/?q=phone%20screen"    # matches "interview"
 
 # Autocomplete
 curl "http://localhost:8003/suggest/?q=Interv"
-```
+```text
 
 ## 🐛 Troubleshooting
 
@@ -148,7 +148,7 @@ netstat -ano | findstr :8003
 
 # Or change the port in infra/.env
 API_PORT=8004
-```
+```text
 
 ### API Won't Start
 
@@ -161,7 +161,7 @@ docker compose -f infra/docker-compose.yml logs api --tail=100
 # - Missing dependencies: rebuild container
 docker compose -f infra/docker-compose.yml build --no-cache api
 docker compose -f infra/docker-compose.yml up -d api
-```
+```text
 
 ### Gmail Auth Not Working
 
@@ -174,7 +174,7 @@ ls infra/secrets/google.json
 
 # Verify environment variables
 docker compose -f infra/docker-compose.yml exec api env | grep GOOGLE
-```
+```text
 
 ### No Emails Showing
 
@@ -187,7 +187,7 @@ open http://localhost:8003/auth/google/login
 
 # After connecting, sync emails:
 curl -X POST "http://localhost:8003/gmail/backfill?days=7&user_email=your@gmail.com"
-```
+```text
 
 ### Elasticsearch Issues
 
@@ -201,7 +201,7 @@ curl http://localhost:9200/_cat/indices
 # Recreate index
 # Set ES_RECREATE_ON_START=true in infra/.env, then:
 docker compose -f infra/docker-compose.yml restart api
-```
+```text
 
 ## 🔐 Security Checklist
 

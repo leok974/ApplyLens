@@ -76,7 +76,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
   indeterminate={selectedCount > 0 && selectedCount < total}
   onChange={handleSelectAll}
 />
-```
+```text
 
 ---
 
@@ -95,7 +95,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
 ```tsx
 <span>Press <Kbd>j</Kbd> to navigate</span>
 <span>Use <Kbd>Ctrl</Kbd> + <Kbd>S</Kbd> to save</span>
-```
+```text
 
 ---
 
@@ -125,7 +125,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
     <p>Content goes here</p>
   </DialogContent>
 </Dialog>
-```
+```text
 
 ---
 
@@ -151,7 +151,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
   onSafe: () => void;    // Bulk mark safe action
   onSus: () => void;     // Bulk mark suspicious action
 }
-```
+```text
 
 **Usage**:
 
@@ -163,7 +163,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
   onSafe={handleBulkSafe}
   onSus={handleBulkSuspicious}
 />
-```
+```text
 
 ---
 
@@ -185,7 +185,7 @@ Successfully implemented advanced inbox features including multi-select, bulk ac
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-```
+```text
 
 **Usage**:
 
@@ -194,7 +194,7 @@ const [showHelp, setShowHelp] = useState(false);
 
 // Toggle with ? key
 <ShortcutsDialog open={showHelp} onOpenChange={setShowHelp} />
-```
+```text
 
 ---
 
@@ -222,7 +222,7 @@ import { bucketFor, bucketLabel } from "@/lib/dateBuckets";
 const date = new Date("2025-10-10");
 const bucket = bucketFor(date); // "today"
 const label = bucketLabel(bucket); // "Today"
-```
+```text
 
 ---
 
@@ -243,7 +243,7 @@ const label = bucketLabel(bucket); // "Today"
   onOpen?: () => void;            // NEW: Double-click/Enter handler
   // ... existing props
 }
-```
+```text
 
 **Breaking Changes**:
 
@@ -278,7 +278,7 @@ const label = bucketLabel(bucket); // "Today"
   onOpen?: (id: string) => void;  // NEW
   // ... existing handlers
 }
-```
+```text
 
 **Item Type Updated**:
 
@@ -292,7 +292,7 @@ type Item = {
   reason?: string;
   risk?: "low"|"med"|"high";
 };
-```
+```text
 
 **Breaking Changes**:
 
@@ -319,7 +319,7 @@ type Item = {
 const [selected, setSelected] = useState<Set<string>>(new Set());
 const [activeId, setActiveId] = useState<string>("1");
 const [showHelp, setShowHelp] = useState(false);
-```
+```text
 
 **New Functions**:
 
@@ -335,7 +335,7 @@ const toggleSelect = (id: string, value?: boolean) => {
   });
 };
 const clearSelection = () => setSelected(new Set());
-```
+```text
 
 **Keyboard Shortcuts**:
 
@@ -357,7 +357,7 @@ React.useEffect(() => {
   window.addEventListener("keydown", onKey);
   return () => window.removeEventListener("keydown", onKey);
 }, [items, activeId]);
-```
+```text
 
 **Bulk Actions**:
 
@@ -369,7 +369,7 @@ const bulkArchive = () => {
 };
 const bulkSafe = () => { /* ... */ };
 const bulkSus = () => { /* ... */ };
-```
+```text
 
 **New Demo Data**:
 
@@ -414,7 +414,7 @@ sticky top-[64px] z-30
 
 /* Border */
 border-b dark:border-slate-800
-```
+```text
 
 ### Section Headers
 
@@ -430,7 +430,7 @@ sticky top-[106px] z-10  /* 64px header + 42px bulk bar */
 
 /* Typography */
 text-xs font-medium px-2 py-1 rounded-md
-```
+```text
 
 ---
 
@@ -453,7 +453,7 @@ const formattedItems = emails.map(e => ({
   ...e,
   receivedAtISO: new Date(e.receivedAt).toISOString()
 }));
-```
+```text
 
 ### Selection Management
 
@@ -477,7 +477,7 @@ const selectAll = () => {
 const clearSelection = () => {
   setSelected(new Set());
 };
-```
+```text
 
 ### Keyboard Navigation
 
@@ -531,7 +531,7 @@ React.useEffect(() => {
   window.addEventListener("keydown", onKey);
   return () => window.removeEventListener("keydown", onKey);
 }, [items, activeId, selected]);
-```
+```text
 
 ### Bulk Actions
 
@@ -551,7 +551,7 @@ const bulkArchive = async () => {
     description: `${ids.length} email${ids.length !== 1 ? 's' : ''} archived`
   });
 };
-```
+```text
 
 ### JSX Structure
 
@@ -593,7 +593,7 @@ const bulkArchive = async () => {
   {/* Help dialog */}
   <ShortcutsDialog open={showHelp} onOpenChange={setShowHelp} />
 </div>
-```
+```text
 
 ---
 
@@ -601,7 +601,7 @@ const bulkArchive = async () => {
 
 ```bash
 npm install @radix-ui/react-dialog
-```
+```text
 
 **Already installed** (from previous work):
 
@@ -689,7 +689,7 @@ const items = [{
   receivedAtISO: new Date().toISOString(),  // ✅ ISO string
   // ...
 }];
-```
+```text
 
 **2. Update selection state**:
 
@@ -699,7 +699,7 @@ const [selected, setSelected] = useState<string>();  // ❌ Single ID
 
 // After
 const [selected, setSelected] = useState<Set<string>>(new Set());  // ✅ Set of IDs
-```
+```text
 
 **3. Update EmailList props**:
 
@@ -718,7 +718,7 @@ const [selected, setSelected] = useState<Set<string>>(new Set());  // ✅ Set of
   onSetActive={setActiveId}
   onOpen={handleOpen}
 />
-```
+```text
 
 **4. Add bulk bar**:
 
@@ -730,7 +730,7 @@ const [selected, setSelected] = useState<Set<string>>(new Set());  // ✅ Set of
   onSafe={handleBulkSafe}
   onSus={handleBulkSus}
 />
-```
+```text
 
 **5. Add keyboard shortcuts**:
 
@@ -738,14 +738,14 @@ const [selected, setSelected] = useState<Set<string>>(new Set());  // ✅ Set of
 React.useEffect(() => {
   // See "Keyboard Navigation" section above
 }, [items, activeId, selected]);
-```
+```text
 
 **6. Add help dialog**:
 
 ```tsx
 const [showHelp, setShowHelp] = useState(false);
 <ShortcutsDialog open={showHelp} onOpenChange={setShowHelp} />
-```
+```text
 
 ---
 

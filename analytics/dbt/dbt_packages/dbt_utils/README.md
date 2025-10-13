@@ -90,7 +90,7 @@ models:
       - dbt_utils.equal_rowcount:
           compare_model: ref('other_table_name')
 
-```
+```text
 
 This test supports the `group_by_columns` parameter; see [Grouping in tests](#grouping-in-tests) for details.
 
@@ -108,7 +108,7 @@ models:
     tests:
       - dbt_utils.fewer_rows_than:
           compare_model: ref('other_table_name')
-```
+```text
 
 This test supports the `group_by_columns` parameter; see [Grouping in tests](#grouping-in-tests) for details.
 
@@ -129,7 +129,7 @@ models:
           compare_columns:
             - first_column
             - second_column
-```
+```text
 
 ### expression_is_true ([source](macros/generic_tests/expression_is_true.sql))
 
@@ -150,7 +150,7 @@ models:
     tests:
       - dbt_utils.expression_is_true:
           expression: "col_a + col_b = total"
-```
+```text
 
 The macro accepts an optional argument `where` that allows for asserting
 the `expression` on a subset of all records.
@@ -167,7 +167,7 @@ models:
           expression: "col_a + col_b = total"
           config:
             where: "created_at > '2018-12-31'"
-```
+```text
 
 ```yaml
 version: 2
@@ -184,7 +184,7 @@ models:
               expression: '= 1'
               config:
                 where: col_a = 1
-```
+```text
 
 ### recency ([source](macros/generic_tests/recency.sql))
 
@@ -202,7 +202,7 @@ models:
           datepart: day
           field: created_at
           interval: 1
-```
+```text
 
 This test supports the `group_by_columns` parameter; see [Grouping in tests](#grouping-in-tests) for details.
 
@@ -221,7 +221,7 @@ models:
       - name: col_name
         tests:
           - dbt_utils.at_least_one
-```
+```text
 
 This test supports the `group_by_columns` parameter; see [Grouping in tests](#grouping-in-tests) for details.
 
@@ -240,7 +240,7 @@ models:
       - name: column_name
         tests:
           - dbt_utils.not_constant
-```
+```text
 
 This test supports the `group_by_columns` parameter; see [Grouping in tests](#grouping-in-tests) for details.
 
@@ -259,7 +259,7 @@ models:
       - name: column_name
         tests:
           - dbt_utils.not_empty_string
-```
+```text
 
 The macro accepts an optional argument `trim_whitespace` that controls whether whitespace should be trimmed from the column when evaluating. The default is `true`.
 
@@ -276,7 +276,7 @@ models:
           - dbt_utils.not_empty_string:
               trim_whitespace: false
               
-```
+```text
 
 ### cardinality_equality ([source](macros/generic_tests/cardinality_equality.sql))
 
@@ -295,7 +295,7 @@ models:
           - dbt_utils.cardinality_equality:
               field: other_column_name
               to: ref('other_model_name')
-```
+```text
 
 ### not_null_proportion ([source](macros/generic_tests/not_null_proportion.sql))
 
@@ -313,7 +313,7 @@ models:
         tests:
           - dbt_utils.not_null_proportion:
               at_least: 0.95
-```
+```text
 
 This test supports the `group_by_columns` parameter; see [Grouping in tests](#grouping-in-tests) for details.
 
@@ -333,7 +333,7 @@ models:
         tests:
           - dbt_utils.not_accepted_values:
               values: ['Barcelona', 'New York']
-```
+```text
 
 ### relationships_where ([source](macros/generic_tests/relationships_where.sql))
 
@@ -354,7 +354,7 @@ models:
               field: client_id
               from_condition: id <> '4ca448b8-24bf-4b88-96c6-b1609499c38b'
               to_condition: created_date >= '2020-01-01'
-```
+```text
 
 ### mutually_exclusive_ranges ([source](macros/generic_tests/mutually_exclusive_ranges.sql))
 
@@ -393,7 +393,7 @@ models:
           upper_bound_column: ended_at
           partition_by: customer_id
           zero_length_range_allowed: true
-```
+```text
 
 **Args:**
 
@@ -424,7 +424,7 @@ models:
           upper_bound_column: coalesce(ended_at, '2099-12-31')
           partition_by: customer_id
           gaps: allowed
-```
+```text
 
 <details>
 <summary>Additional `gaps` and `zero_length_range_allowed` examples</summary>
@@ -504,7 +504,7 @@ seeds:
           - dbt_utils.sequential_values:
               interval: 1
               datepart: 'hour'
-```
+```text
 
 **Args:**
 
@@ -537,7 +537,7 @@ case we recommend using this test instead.
         combination_of_columns:
           - month
           - product
-```
+```text
 
 An optional `quote_columns` argument (`default=false`) can also be used if a column name needs to be quoted.
 
@@ -550,7 +550,7 @@ An optional `quote_columns` argument (`default=false`) can also be used if a col
           - group
         quote_columns: true
 
-```
+```text
 
 ### accepted_range ([source](macros/generic_tests/accepted_range.sql))
 
@@ -591,7 +591,7 @@ models:
               inclusive: false
               config:
                 where: "num_orders > 0"
-```
+```text
 
 ----
 
@@ -614,14 +614,14 @@ This feature is currently available for the following tests:
 
 To use this feature, the names of grouping variables can be passed as a list. For example, to test for at least one valid value by group, the `group_by_columns` argument could be used as follows:
 
-```
+```text
   - name: data_test_at_least_one
     columns:
       - name: field
         tests:
           - dbt_utils.at_least_one:
               group_by_columns: ['customer_segment']
-```
+```text
 
 ## Macros
 
@@ -653,7 +653,7 @@ This macro returns the unique values for a column in a given [relation](https://
 {% endfor %}
 
 ...
-```
+```text
 
 ```sql
 -- Returns the list sorted alphabetically
@@ -663,7 +663,7 @@ This macro returns the unique values for a column in a given [relation](https://
         column='payment_method',
         order_by='payment_method'
 ) %}
-```
+```text
 
 ```sql
 -- Returns the list sorted my most recently observed
@@ -675,7 +675,7 @@ This macro returns the unique values for a column in a given [relation](https://
         default=['bank_transfer', 'coupon', 'credit_card']
 %}
 ...
-```
+```text
 
 ### get_filtered_columns_in_relation ([source](macros/sql/get_filtered_columns_in_relation.sql))
 
@@ -702,7 +702,7 @@ to pull column names in a non-filtered fashion, also bringing along with it othe
     max({{ column_name }}) ... as max_'{{ column_name }}',
 {% endfor %}
 ...
-```
+```text
 
 ### get_relations_by_pattern ([source](macros/sql/get_relations_by_pattern.sql))
 
@@ -713,7 +713,7 @@ This macro is particularly handy when paired with `union_relations`.
 
 **Usage:**
 
-```
+```text
 -- Returns a list of relations that match schema_pattern%.table
 {% set relations = dbt_utils.get_relations_by_pattern('schema_pattern%', 'table_pattern') %}
 
@@ -726,7 +726,7 @@ This macro is particularly handy when paired with `union_relations`.
 -- Example using the union_relations macro
 {% set event_relations = dbt_utils.get_relations_by_pattern('venue%', 'clicks') %}
 {{ dbt_utils.union_relations(relations = event_relations) }}
-```
+```text
 
 **Args:**
 
@@ -756,7 +756,7 @@ Generate drop statements for all Relations that match a naming pattern:
     {% do log(drop_command, info=True) %}
     {% do sql_to_execute.append(drop_command) %}
 {% endfor %}
-```
+```text
 
 ### get_relations_by_prefix ([source](macros/sql/get_relations_by_prefix.sql))
 
@@ -768,7 +768,7 @@ handy paired with `union_relations`.
 
 **Usage:**
 
-```
+```text
 -- Returns a list of relations that match schema.prefix%
 {% set relations = dbt_utils.get_relations_by_prefix('my_schema', 'my_prefix') %}
 
@@ -778,7 +778,7 @@ handy paired with `union_relations`.
 -- Example using the union_relations macro
 {% set event_relations = dbt_utils.get_relations_by_prefix('events', 'event_') %}
 {{ dbt_utils.union_relations(relations = event_relations) }}
-```
+```text
 
 **Args:**
 
@@ -794,7 +794,7 @@ This macro returns a dictionary from a sql query, so that you don't need to inte
 
 **Usage:**
 
-```
+```json
 {% set sql_statement %}
     select city, state from {{ ref('users') }}
 {% endset %}
@@ -814,7 +814,7 @@ select
     count(*) as total_total
 
 from {{ ref('users') }}
-```
+```text
 
 ### get_single_value ([source](macros/sql/get_single_value.sql))
 
@@ -822,7 +822,7 @@ This macro returns a single value from a sql query, so that you don't need to in
 
 **Usage:**
 
-```
+```json
 {% set sql_statement %}
     select max(created_at) from {{ ref('processed_orders') }}
 {% endset %}
@@ -835,7 +835,7 @@ select
     last_order_at > '{{ newest_processed_order }}' as has_unprocessed_order
 
 from {{ ref('users') }}
-```
+```text
 
 ## SQL generators
 
@@ -847,14 +847,14 @@ This macro returns the sql required to build a date spine. The spine will includ
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.date_spine(
     datepart="day",
     start_date="cast('2019-01-01' as date)",
     end_date="cast('2020-01-01' as date)"
    )
 }}
-```
+```text
 
 ### deduplicate ([source](macros/sql/deduplicate.sql))
 
@@ -868,25 +868,25 @@ This macro returns the sql required to remove duplicate rows from a model, sourc
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.deduplicate(
     relation=source('my_source', 'my_table'),
     partition_by='user_id, cast(timestamp as day)',
     order_by="timestamp desc",
    )
 }}
-```
+```text
 
-```
+```json
 {{ dbt_utils.deduplicate(
     relation=ref('my_model'),
     partition_by='user_id',
     order_by='effective_date desc, effective_sequence desc',
    )
 }}
-```
+```text
 
-```
+```text
 with my_cte as (
     select *
     from {{ source('my_source', 'my_table') }}
@@ -899,7 +899,7 @@ with my_cte as (
     order_by='timestamp desc',
    )
 }}
-```
+```text
 
 ### haversine_distance ([source](macros/sql/haversine_distance.sql))
 
@@ -909,7 +909,7 @@ Optionally takes a `unit` string argument ('km' or 'mi') which defaults to miles
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.haversine_distance(48.864716, 2.349014, 52.379189, 4.899431) }}
 
 {{ dbt_utils.haversine_distance(
@@ -919,7 +919,7 @@ Optionally takes a `unit` string argument ('km' or 'mi') which defaults to miles
     lon2=4.899431,
     unit='km'
 ) }}
-```
+```text
 
 **Args:**
 
@@ -935,15 +935,15 @@ This macro builds a group by statement for fields 1...N
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.group_by(n=3) }}
-```
+```text
 
 Would compile to:
 
 ```sql
 group by 1,2,3
-```
+```text
 
 ### star ([source](macros/sql/star.sql))
 
@@ -971,28 +971,28 @@ select
   {{ dbt_utils.star(ref('my_model')) }}
 from {{ ref('my_model') }}
 
-```
+```text
 
 ```sql
 select
   {{ dbt_utils.star(from=ref('my_model'), quote_identifiers=False) }}
 from {{ ref('my_model') }}
 
-```
+```text
 
 ```sql
 select
 {{ dbt_utils.star(from=ref('my_model'), except=["exclude_field_1", "exclude_field_2"]) }}
 from {{ ref('my_model') }}
 
-```
+```text
 
 ```sql
 select
 {{ dbt_utils.star(from=ref('my_model'), except=["exclude_field_1", "exclude_field_2"], prefix="max_") }}
 from {{ ref('my_model') }}
 
-```
+```text
 
 ### union_relations ([source](macros/sql/union.sql))
 
@@ -1004,12 +1004,12 @@ relations will be filled with `null` where not present. A new column
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.union_relations(
     relations=[ref('my_model'), source('my_source', 'my_table')],
     exclude=["_loaded_at"]
 ) }}
-```
+```text
 
 **Args:**
 
@@ -1030,9 +1030,9 @@ This macro implements a cross-database mechanism to generate an arbitrarily long
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.generate_series(upper_bound=1000) }}
-```
+```text
 
 ### generate_surrogate_key ([source](macros/sql/generate_surrogate_key.sql))
 
@@ -1040,9 +1040,9 @@ This macro implements a cross-database way to generate a hashed surrogate key us
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.generate_surrogate_key(['field_a', 'field_b'[,...]]) }}
-```
+```text
 
 A precursor to this macro, `surrogate_key()`, treated nulls and blanks strings the same. If you need to enable this incorrect behaviour for backward compatibility reasons, add the following variable to your `dbt_project.yml`:
 
@@ -1050,7 +1050,7 @@ A precursor to this macro, `surrogate_key()`, treated nulls and blanks strings t
 #dbt_project.yml
 vars:
   surrogate_key_treat_nulls_as_empty_strings: true #turn on legacy behaviour
-```
+```text
 
 ### safe_add ([source](macros/sql/safe_add.sql))
 
@@ -1058,9 +1058,9 @@ This macro implements a cross-database way to sum nullable fields using the fiel
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.safe_add(['field_a', 'field_b', ...]) }}
-```
+```text
 
 ### safe_divide ([source](macros/sql/safe_divide.sql))
 
@@ -1073,9 +1073,9 @@ This macro performs division but returns null if the denominator is 0.
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.safe_divide('numerator', 'denominator') }}
-```
+```text
 
 ### safe_subtract ([source](macros/sql/safe_subtract.sql))
 
@@ -1083,9 +1083,9 @@ This macro implements a cross-database way to take the difference of nullable fi
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.safe_subtract(['field_a', 'field_b', ...]) }}
-```
+```text
 
 ### pivot ([source](macros/sql/pivot.sql))
 
@@ -1093,9 +1093,9 @@ This macro pivots values from rows to columns.
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.pivot(<column>, <list of values>) }}
-```
+```text
 
 **Examples:**
 
@@ -1173,7 +1173,7 @@ Boolean values are replaced with the strings 'true'|'false'
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.unpivot(
   relation=ref('table_name'),
   cast_to='datatype',
@@ -1182,7 +1182,7 @@ Boolean values are replaced with the strings 'true'|'false'
   field_name=<column name for field>,
   value_name=<column name for value>
 ) }}
-```
+```text
 
 **Usage:**
 
@@ -1237,9 +1237,9 @@ When an expression falls outside the range, the function returns:
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.width_bucket(expr, min_value, max_value, num_buckets) }}
-```
+```text
 
 ## Web macros
 
@@ -1249,9 +1249,9 @@ This macro extracts a url parameter from a column containing a url.
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.get_url_parameter(field='page_url', url_parameter='utm_source') }}
-```
+```text
 
 ### get_url_host ([source](macros/web/get_url_host.sql))
 
@@ -1259,9 +1259,9 @@ This macro extracts a hostname from a column containing a url.
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.get_url_host(field='page_url') }}
-```
+```text
 
 ### get_url_path ([source](macros/web/get_url_path.sql))
 
@@ -1269,9 +1269,9 @@ This macro extracts a page path from a column containing a url.
 
 **Usage:**
 
-```
+```json
 {{ dbt_utils.get_url_path(field='page_url') }}
-```
+```text
 
 ----
 
@@ -1293,7 +1293,7 @@ This macro returns a string of the current timestamp, optionally taking a datest
 
 {#- This will return a string like '2019-05-02 14:50:34' -#}
 {{ dbt_utils.pretty_time(format='%Y-%m-%d %H:%M:%S') }}
-```
+```text
 
 ### pretty_log_format ([source](macros/jinja_helpers/pretty_log_format.sql))
 
@@ -1305,7 +1305,7 @@ This macro formats the input in a way that will print nicely to the command line
 -#}
 
 {{ dbt_utils.pretty_log_format("my pretty message") }}
-```
+```text
 
 ### log_info ([source](macros/jinja_helpers/log_info.sql))
 
@@ -1313,12 +1313,12 @@ This macro logs a formatted message (with a timestamp) to the command line.
 
 ```sql
 {{ dbt_utils.log_info("my pretty message") }}
-```
+```text
 
-```
+```text
 11:07:28 | 1 of 1 START table model analytics.fct_orders........................ [RUN]
 11:07:31 + my pretty message
-```
+```text
 
 ### slugify ([source](macros/jinja_helpers/slugify.sql))
 
@@ -1341,7 +1341,7 @@ sum(case when payment_method = '{{ payment_method }}' then amount end)
 
 {% endfor %}
 ...
-```
+```text
 
 ```sql
 select
@@ -1356,7 +1356,7 @@ sum(case when payment_method = 'ca$h money' then amount end)
 sum(case when payment_method = '1337pay' then amount end)
   as _1337pay_amount,
 ...
-```
+```text
 
 ---
 
@@ -1398,20 +1398,20 @@ dispatch:
       - first_package_to_search    # likely the name of your root project
       - second_package_to_search   # could be a "shim" package, such as spark_utils
       - dbt_utils                  # always include dbt_utils as the last place to search
-```
+```text
 
 If overriding a dispatched macro with a custom implementation in your own project's `macros/` directory, you must name your custom macro with a prefix: either `default__` (note the two underscores), or the name of your adapter followed by two underscores. For example, if you're running on Postgres and wish to override the behavior of `dbt_utils.safe_add` (such that other macros will use your version instead), you can do this by defining a macro called either `default__safe_add` or `postgres__safe_add`.
 
 Let's say we have the config defined above, and we're running on Spark. When dbt goes to dispatch `dbt_utils.safe_add`, it will search for macros the following in order:
 
-```
+```text
 first_package_to_search.spark__safe_add
 first_package_to_search.default__safe_add
 second_package_to_search.spark__safe_add
 second_package_to_search.default__safe_add
 dbt_utils.spark__safe_add
 dbt_utils.default__safe_add
-```
+```text
 
 ----
 

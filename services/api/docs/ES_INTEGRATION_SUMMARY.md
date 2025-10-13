@@ -21,7 +21,7 @@ Successfully integrated real Elasticsearch search layer and policy execution rou
 - find_unsubscribe_candidates(days)     # Newsletters older than N days
 - find_by_filter(filter_query, limit)   # Generic ES DSL query executor
 - search_emails(...)                    # General-purpose multi-filter search
-```
+```text
 
 **Key Features:**
 
@@ -39,7 +39,7 @@ Successfully integrated real Elasticsearch search layer and policy execution rou
 ES_URL=http://localhost:9200          # Elasticsearch endpoint
 ES_API_KEY=your_key_here              # Optional API key authentication
 ES_EMAIL_INDEX=emails_v1              # Index name (default: emails_v1)
-```
+```text
 
 ### 2. Policy Execution Route (`app/routers/policy_exec.py`)
 
@@ -71,7 +71,7 @@ ES_EMAIL_INDEX=emails_v1              # Index name (default: emails_v1)
   "es_filter": {"term": {"category": "promotions"}},
   "limit": 300
 }
-```
+```text
 
 **Response Model:**
 
@@ -89,7 +89,7 @@ ES_EMAIL_INDEX=emails_v1              # Index name (default: emails_v1)
     }
   ]
 }
-```
+```text
 
 **Flow:**
 
@@ -109,7 +109,7 @@ try:
     app.include_router(policy_exec_router)
 except ImportError:
     pass  # Policy exec module not available yet
-```
+```text
 
 Graceful degradation pattern - won't crash if module unavailable.
 
@@ -165,7 +165,7 @@ def test_example(monkeypatch):
     
     res = asyncio.get_event_loop().run_until_complete(S.find_expired_promos())
     assert len(res) == 1
-```
+```text
 
 ### E2E Tests (8 + 11 = 19 tests created)
 
@@ -201,13 +201,13 @@ def test_example(monkeypatch):
 
 ```bash
 docker-compose exec api pytest tests/e2e/test_policy_exec_route.py tests/e2e/test_nl_with_es_helpers.py -v
-```
+```text
 
 ## Test Results
 
 ### Unit Tests: ✅ 100% Pass Rate
 
-```
+```text
 tests/unit/test_search_es.py::TestFindHighRisk::test_find_high_risk_uses_threshold PASSED
 tests/unit/test_search_es.py::TestFindHighRisk::test_find_high_risk_custom_threshold PASSED
 tests/unit/test_search_es.py::TestFindHighRisk::test_find_high_risk_respects_limit PASSED
@@ -226,7 +226,7 @@ tests/unit/test_search_es.py::TestHitNormalization::test_hit_to_email_fallback_i
 tests/unit/test_search_es.py::TestHitNormalization::test_hit_to_email_missing_fields PASSED
 
 =========== 16 passed, 5 warnings in 0.89s ===========
-```
+```text
 
 ### Combined Feature Tests: ✅ 44/44 Passing
 
@@ -240,7 +240,7 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
 - 2 classifier tests with unsubscribe ✅
 
 =========== 44 passed, 28 deselected, 5 warnings in 0.25s ===========
-```
+```text
 
 ## Example ES Filters for `/policies/run`
 
@@ -255,7 +255,7 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
     ]
   }
 }
-```
+```text
 
 ### 2. High-Risk Emails
 
@@ -263,7 +263,7 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
 {
   "range": { "risk_score": { "gte": 80 } }
 }
-```
+```text
 
 ### 3. Newsletters from Specific Domain
 
@@ -276,7 +276,7 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
     ]
   }
 }
-```
+```text
 
 ### 4. Stale Promotions (60+ days old)
 
@@ -289,13 +289,13 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
     ]
   }
 }
-```
+```text
 
 ## Integration Workflow
 
 ### Complete Automation Flow
 
-```
+```text
 1. User Action
    ↓
 2. ES Query (find_by_filter)
@@ -309,7 +309,7 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
 6. Action Execution (separate endpoint)
    ↓
 7. Audit Logging (actions_audit table)
-```
+```text
 
 ### Example: Clean Expired Promos
 
@@ -359,22 +359,22 @@ POST /actions/execute
 {
     "action_ids": ["action_1", "action_2", "..."]
 }
-```
+```text
 
 ## Dependencies
 
 ### Added
 
-```
+```ini
 elasticsearch==8.17.1  # Official Python ES client
-```
+```text
 
 ### Existing (used)
 
-```
+```text
 fastapi>=0.104.1
 pydantic>=2.5.0
-```
+```text
 
 ## Files Created/Modified
 
@@ -507,7 +507,7 @@ curl -X POST http://localhost:8000/policies/run \
     },
     "limit": 300
   }'
-```
+```text
 
 **Response:**
 
@@ -525,7 +525,7 @@ curl -X POST http://localhost:8000/policies/run \
     }
   ]
 }
-```
+```text
 
 ### Example 2: Flag High-Risk Emails
 
@@ -550,7 +550,7 @@ curl -X POST http://localhost:8000/policies/run \
     "es_filter": {"range": {"risk_score": {"gte": 80}}},
     "limit": 50
   }'
-```
+```text
 
 ### Example 3: Unsubscribe from Stale Newsletters
 
@@ -587,7 +587,7 @@ curl -X POST http://localhost:8000/policies/run \
     },
     "limit": 200
   }'
-```
+```text
 
 ## Future Enhancements
 

@@ -37,7 +37,7 @@ test = [
   "freezegun>=1.2",
   "requests>=2.31",
 ]
-```
+```text
 
 ### 2. Unit Tests (`tests/unit/test_risk_scoring.py`)
 
@@ -61,7 +61,7 @@ test_unknown_domain()                  # 40 points for unknown domains
 test_multiple_suspicious_keywords()    # 40 points for 2+ keywords
 test_zero_confidence()                 # 20 points for 0.0 confidence
 test_maximum_risk_email()              # 100 points total
-```
+```text
 
 ### 3. API Contract Tests (`tests/api/test_automation_endpoints.py`)
 
@@ -121,7 +121,7 @@ python scripts/check_parity.py \
   --output parity.json \
   --csv parity.csv \
   --allow 5
-```
+```text
 
 **Report Schema**:
 
@@ -149,7 +149,7 @@ python scripts/check_parity.py \
     }
   ]
 }
-```
+```text
 
 ### 5. Parity Integration Tests (`tests/integration/test_parity_job.py`)
 
@@ -213,7 +213,7 @@ applylens_parity_checks_total            # Counter
 applylens_parity_mismatches_total        # Counter
 applylens_parity_mismatch_ratio          # Gauge (0.0 - 1.0)
 applylens_parity_last_check_timestamp    # Gauge (Unix time)
-```
+```text
 
 **Usage Example**:
 
@@ -221,7 +221,7 @@ applylens_parity_last_check_timestamp    # Gauge (Unix time)
 # Alert when mismatch ratio > 0.5% for 10 minutes
 rate(applylens_parity_mismatches_total[5m]) / 
 rate(applylens_parity_checks_total[5m]) > 0.005
-```
+```text
 
 ---
 
@@ -239,7 +239,7 @@ docker-compose exec api python scripts/check_parity.py `
   --fields $env:FIELDS `
   --output /tmp/parity.json `
   --csv /tmp/parity.csv
-```
+```text
 
 #### Bash (Linux/Mac)
 
@@ -250,7 +250,7 @@ docker-compose exec api python scripts/check_parity.py \
   --fields $FIELDS \
   --output /tmp/parity.json \
   --csv /tmp/parity.csv
-```
+```text
 
 ### Investigating Mismatches
 
@@ -264,7 +264,7 @@ From CI artifacts or manual run output
 SELECT id, risk_score, expires_at, category 
 FROM emails 
 WHERE id IN (123, 456, 789);
-```
+```text
 
 #### 3. Query ES Side
 
@@ -278,7 +278,7 @@ curl -s "$ES_URL/gmail_emails_v2/_mget" \
     expires_at: ._source.expires_at, 
     category: ._source.category
   }'
-```
+```text
 
 #### 4. Common Fixes
 
@@ -287,7 +287,7 @@ curl -s "$ES_URL/gmail_emails_v2/_mget" \
 ```bash
 # Reindex specific emails
 python scripts/backfill_elasticsearch.py --ids 123,456,789
-```
+```text
 
 **Stale Risk Scores**:
 
@@ -295,7 +295,7 @@ python scripts/backfill_elasticsearch.py --ids 123,456,789
 # Recompute and sync
 python scripts/analyze_risk.py
 python scripts/sync_to_elasticsearch.py --fields risk_score
-```
+```text
 
 **Category Mismatch**:
 
@@ -304,7 +304,7 @@ python scripts/sync_to_elasticsearch.py --fields risk_score
 SELECT id, sender, subject, category, classification_confidence
 FROM emails
 WHERE id IN (123, 456, 789);
-```
+```text
 
 ### Monitoring Alerts
 
@@ -321,7 +321,7 @@ WHERE id IN (123, 456, 789);
     "description": "Parity mismatch ratio is {{ $value | humanizePercentage }}"
   }
 }
-```
+```text
 
 ---
 
@@ -433,7 +433,7 @@ WHERE id IN (123, 456, 789);
 
 ### Created Files
 
-```
+```bash
 services/api/pytest.ini                                    (27 lines)
 services/api/tests/unit/test_risk_scoring.py              (305 lines)
 services/api/tests/api/test_automation_endpoints.py       (450 lines)
@@ -441,14 +441,14 @@ services/api/tests/integration/test_parity_job.py         (200 lines)
 services/api/scripts/check_parity.py                      (440 lines)
 .github/workflows/automation-tests.yml                    (450 lines)
 services/api/docs/PHASE_12.2_PLAN.md                      (this file)
-```
+```text
 
 ### Modified Files
 
-```
+```text
 services/api/pyproject.toml                               (+9 lines)
 services/api/app/metrics.py                               (+21 lines)
-```
+```text
 
 ---
 

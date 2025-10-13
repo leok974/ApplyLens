@@ -83,11 +83,11 @@ Add the following scopes:
 
 Add these **Authorized redirect URIs**:
 
-```
+```text
 https://api.applylens.app/auth/google/callback
 https://applylens.app/auth/google/callback
 https://www.applylens.app/auth/google/callback
-```
+```text
 
 **Note**:
 
@@ -99,11 +99,11 @@ https://www.applylens.app/auth/google/callback
 
 Add these **Authorized redirect URIs** for local development:
 
-```
+```text
 http://localhost:8003/auth/google/callback
 http://localhost:5175/auth/google/callback
 http://127.0.0.1:8003/auth/google/callback
-```
+```text
 
 **Ports**:
 
@@ -114,7 +114,7 @@ http://127.0.0.1:8003/auth/google/callback
 
 Your final configuration should look like this:
 
-```
+```text
 Authorized JavaScript origins:
   https://applylens.app
   https://www.applylens.app
@@ -128,7 +128,7 @@ Authorized redirect URIs:
   http://localhost:8003/auth/google/callback
   http://localhost:5175/auth/google/callback
   http://127.0.0.1:8003/auth/google/callback
-```
+```text
 
 ---
 
@@ -138,18 +138,18 @@ Add these **Authorized JavaScript origins**:
 
 ### Production
 
-```
+```text
 https://applylens.app
 https://www.applylens.app
-```
+```text
 
 ### Development
 
-```
+```text
 http://localhost:5175
 http://localhost:8003
 http://127.0.0.1:5175
-```
+```text
 
 ---
 
@@ -265,7 +265,7 @@ print(f'Client ID: {settings.GOOGLE_CLIENT_ID[:20]}...')
 print(f'Redirect URI: {settings.effective_redirect_uri}')
 print(f'Scopes: {settings.GOOGLE_OAUTH_SCOPES}')
 "
-```
+```text
 
 ### 6.2 Test OAuth Flow
 
@@ -304,7 +304,7 @@ Run the automated smoke tests to verify OAuth configuration:
 # ✅ PASS: Redirect URI parameter present in OAuth URL
 # ✅ PASS: Client ID parameter present in OAuth URL
 # ✅ PASS: OAuth callback route is accessible
-```
+```text
 
 ---
 
@@ -314,11 +314,11 @@ Run the automated smoke tests to verify OAuth configuration:
 
 **Symptom:**
 
-```
+```text
 Error 400: redirect_uri_mismatch
 The redirect URI in the request, http://localhost:8003/auth/google/callback, 
 does not match the ones authorized for the OAuth client.
-```
+```text
 
 **Causes:**
 
@@ -379,10 +379,10 @@ does not match the ones authorized for the OAuth client.
 
 **Symptom:**
 
-```
+```text
 Error 401: invalid_client
 The OAuth client was not found.
-```
+```text
 
 **Solution:**
 
@@ -394,10 +394,10 @@ The OAuth client was not found.
 
 **Symptom:**
 
-```
+```text
 Error: access_denied
 The user denied your request
-```
+```text
 
 **Solution:**
 
@@ -409,10 +409,10 @@ The user denied your request
 
 **Symptom:**
 
-```
+```text
 Error: invalid_grant
 The provided authorization grant is invalid, expired, or revoked
-```
+```text
 
 **Solution:**
 
@@ -429,7 +429,7 @@ The provided authorization grant is invalid, expired, or revoked
 
 ApplyLens uses **backend OAuth flow** where the FastAPI backend handles the OAuth callback:
 
-```
+```text
 User → /auth/google/login (FastAPI)
   ↓
 Google OAuth Consent Screen
@@ -443,7 +443,7 @@ FastAPI backend exchanges code for tokens
 Tokens stored in database
   ↓
 User redirected to: /inbox?connected=google
-```
+```text
 
 **Redirect URI**: `https://api.applylens.app/auth/google/callback`
 

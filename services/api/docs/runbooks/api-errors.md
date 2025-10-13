@@ -19,7 +19,7 @@ curl -s http://localhost:8003/metrics | grep http_requests_total | grep "status=
 # Check health endpoints
 curl http://localhost:8003/healthz
 curl http://localhost:8003/ready
-```
+```text
 
 ### 2. Check System Status
 
@@ -34,7 +34,7 @@ docker-compose ps
 
 # Check logs for errors
 docker-compose logs --tail=100 api
-```
+```text
 
 ### 3. Identify Error Pattern
 
@@ -44,7 +44,7 @@ docker-compose logs api | grep "ERROR" | tail -n 50
 
 # Check which endpoints are failing
 curl -s http://localhost:8003/metrics | grep http_requests_total | grep status=\"5
-```
+```text
 
 ---
 
@@ -71,7 +71,7 @@ docker-compose exec db psql -U postgres -c "
   SELECT pg_terminate_backend(pid) 
   FROM pg_stat_activity 
   WHERE state = 'idle' AND state_change < now() - interval '1 hour';"
-```
+```text
 
 ### Elasticsearch Timeouts
 
@@ -91,7 +91,7 @@ curl http://localhost:9200/_cat/allocation?v
 
 # Restart ES if needed
 docker-compose restart elasticsearch
-```
+```text
 
 ### Migration Issues
 
@@ -111,7 +111,7 @@ docker-compose exec api alembic upgrade head
 
 # Verify
 curl http://localhost:8003/ready | jq .
-```
+```text
 
 ### Code Bugs (Recent Deploy)
 
@@ -131,7 +131,7 @@ docker-compose up -d --build api
 # Or revert specific file
 git checkout HEAD~1 -- services/api/app/routers/<file>.py
 docker-compose restart api
-```
+```text
 
 ---
 
@@ -174,7 +174,7 @@ sum(rate(http_requests_total[5m]))
 # Error percentage
 sum(rate(http_requests_total{status=~"5.."}[5m])) 
   / sum(rate(http_requests_total[5m])) * 100
-```
+```text
 
 ### Database Diagnostics
 
@@ -191,7 +191,7 @@ SELECT schemaname, tablename,
 FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
-```
+```text
 
 ---
 

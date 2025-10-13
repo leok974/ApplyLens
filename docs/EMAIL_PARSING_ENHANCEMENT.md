@@ -54,7 +54,7 @@ def create_from_email(
     source: Optional[str] = None,         # Manual override
     db: Session = Depends(get_db),
 ):
-```
+```text
 
 **Extraction Logic:**
 
@@ -83,7 +83,7 @@ interface CreateFromEmailButtonProps {
   headers?: Record<string, string>;  // NEW: For ATS detection
   source?: string;       // Optional manual override
 }
-```
+```text
 
 **Flow:**
 
@@ -106,7 +106,7 @@ useEffect(() => {
     // Clean up URL and auto-hide after 3s
   }
 }, [searchParams, setSearchParams])
-```
+```text
 
 ## Test Coverage
 
@@ -135,14 +135,14 @@ useEffect(() => {
 
 **Test Results:**
 
-```
+```text
 Running application tests...
 ✅ Test passed: Application 1 created and linked to email
 ✅ Test passed: Both emails linked to same application
 ✅ Test passed: No application created for newsletter email
 ✅ Test passed: /from-email endpoint auto-extracted: company=Careers Team, role=Research Engineer, source=Email
 ✅ All tests passed!
-```
+```text
 
 ## Usage Examples
 
@@ -157,7 +157,7 @@ Running application tests...
   bodyText="Thank you for applying for the Research Engineer position at OpenAI!"
   headers={{ 'x-source': 'lever.co' }}
 />
-```
+```text
 
 **Result:**
 
@@ -175,7 +175,7 @@ Running application tests...
   subject="Interview availability"
   bodyText="We'd like to schedule an interview for the ML Engineer position"
 />
-```
+```text
 
 **Result:**
 
@@ -194,7 +194,7 @@ curl -X POST http://localhost:8003/applications/from-email \
     "subject": "Application for Backend Engineer",
     "body_text": "Thank you for applying to Stripe"
   }'
-```
+```text
 
 **Response:**
 
@@ -208,7 +208,7 @@ curl -X POST http://localhost:8003/applications/from-email \
   "status": "applied",
   "created_at": "2025-10-09T12:00:00Z"
 }
-```
+```text
 
 ## ATS Detection
 

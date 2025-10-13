@@ -33,7 +33,7 @@ python -c "import elasticsearch; print(elasticsearch.__version__)"
 
 # Downgrade client if needed (for ES 8.x server)
 pip install "elasticsearch>=8.0.0,<9.0.0"
-```
+```text
 
 ## Quick Validation
 
@@ -43,17 +43,17 @@ Use `validate_backfill.py` to check backfill results at any time:
 
 ```bash
 python scripts/validate_backfill.py --pretty
-```
+```text
 
 **Example Output:**
 
-```
+```text
 Index: gmail_emails_v2
 Missing dates[] (bills): 0
 Bills with dates[]:      1243
 Bills with expires_at:   1243
 Verdict: OK  @ 2025-10-10T14:22:31Z
-```
+```text
 
 **PowerShell:**
 
@@ -61,21 +61,21 @@ Verdict: OK  @ 2025-10-10T14:22:31Z
 $env:ES_URL="http://localhost:9200"
 $env:ES_EMAIL_INDEX="gmail_emails_v2"
 python scripts/validate_backfill.py --pretty
-```
+```text
 
 **JSON Output (for automation):**
 
 ```bash
 python scripts/validate_backfill.py --json
 # {"index": "gmail_emails_v2", "missing_dates_count": 0, "bills_with_dates": 1243, ...}
-```
+```text
 
 **Makefile:**
 
 ```bash
 make validate-backfill           # Human-readable
 make validate-backfill-json      # JSON output
-```
+```text
 
 **Verdict Guide:**
 
@@ -98,7 +98,7 @@ make validate-backfill > after.txt
 
 # Compare
 diff before.txt after.txt
-```
+```text
 
 ## Usage
 
@@ -112,7 +112,7 @@ Before running the backfill, check how many bills are missing dates:
 FROM gmail_emails_v2
 | WHERE category == "bills" AND NOT _exists_:dates
 | STATS missing=count()
-```
+```text
 
 **cURL:**
 
@@ -131,13 +131,13 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
     "size": 0,
     "track_total_hits": true
   }'
-```
+```text
 
 **Makefile:**
 
 ```bash
 make check-bills-missing
-```
+```text
 
 ### 1. Dry Run (Recommended First)
 
@@ -153,7 +153,7 @@ export ES_EMAIL_INDEX="gmail_emails_v2"
 
 # Run script
 python scripts/backfill_bill_dates.py
-```
+```text
 
 **PowerShell (Windows):**
 
@@ -165,7 +165,7 @@ $env:ES_URL="http://localhost:9200"
 $env:ES_EMAIL_INDEX="gmail_emails_v2"
 
 python scripts/backfill_bill_dates.py
-```
+```text
 
 ### 2. Execute Updates
 
@@ -174,14 +174,14 @@ After reviewing dry run results, run for real:
 ```bash
 export DRY_RUN=0
 python scripts/backfill_bill_dates.py
-```
+```text
 
 **PowerShell:**
 
 ```powershell
 $env:DRY_RUN="0"
 python scripts/backfill_bill_dates.py
-```
+```text
 
 ### Post-Flight Verification
 
@@ -197,7 +197,7 @@ python scripts/validate_backfill.py --pretty
 
 # JSON output (for automation)
 python scripts/validate_backfill.py --json
-```
+```text
 
 **PowerShell:**
 
@@ -205,24 +205,24 @@ python scripts/validate_backfill.py --json
 $env:ES_URL="http://localhost:9200"
 $env:ES_EMAIL_INDEX="gmail_emails_v2"
 python scripts/validate_backfill.py --pretty
-```
+```text
 
 **Makefile:**
 
 ```bash
 make validate-backfill           # Human-readable
 make validate-backfill-json      # JSON output
-```
+```text
 
 **Example Output:**
 
-```
+```text
 Index: gmail_emails_v2
 Missing dates[] (bills): 0
 Bills with dates[]:      1243
 Bills with expires_at:   1243
 Verdict: OK  @ 2025-10-10T14:22:31Z
-```
+```text
 
 **Manual ES|QL Query (Check bills with dates and expires_at):**
 
@@ -230,7 +230,7 @@ Verdict: OK  @ 2025-10-10T14:22:31Z
 FROM gmail_emails_v2
 | WHERE category == "bills" AND _exists_:dates
 | STATS with_expiry=count(_exists_:expires_at), total=count()
-```
+```text
 
 **Expected result:** Most/all bills should have both `dates` and `expires_at` populated.
 
@@ -255,20 +255,20 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
       }
     }
   }'
-```
+```text
 
 **Makefile (legacy check):**
 
 ```bash
 make check-bills-with-dates
-```
+```text
 
 **Example output:**
 
-```
+```text
 Bills with dates: 523
 Bills with expires_at: 523
-```
+```text
 
 ### 3. Monitor Progress
 
@@ -314,7 +314,7 @@ No update if dates are identical and `expires_at` is already correct.
 
 **Dry Run:**
 
-```
+```text
 Starting backfill for index: gmail_emails_v2
 Mode: DRY RUN
 Batch size: 500
@@ -328,11 +328,11 @@ Backfill (DRY RUN) completed.
 Scanned: 523 bills
 Updated: 156 bills
 Unchanged: 367 bills
-```
+```text
 
 **Live Run:**
 
-```
+```text
 Starting backfill for index: gmail_emails_v2
 Mode: LIVE UPDATE
 Batch size: 500
@@ -343,7 +343,7 @@ Backfill completed.
 Scanned: 523 bills
 Updated: 156 bills
 Unchanged: 367 bills
-```
+```text
 
 ## Testing
 
@@ -352,7 +352,7 @@ Unit tests verify the transformation logic:
 ```bash
 cd services/api
 pytest tests/unit/test_backfill_transform.py -v
-```
+```text
 
 **Test Coverage:**
 
@@ -424,7 +424,7 @@ curl "http://localhost:9200/gmail_emails_v2/_search?pretty" -H "Content-Type: ap
   "query": {"term": {"category": "bills"}},
   "size": 1
 }'
-```
+```text
 
 **Possible causes:**
 
@@ -449,7 +449,7 @@ curl "http://localhost:9200/gmail_emails_v2/_search?pretty" -d '{
   "_source": ["dates", "expires_at"],
   "size": 5
 }'
-```
+```text
 
 ### Elasticsearch version mismatch
 
@@ -464,7 +464,7 @@ pip install "elasticsearch>=8.0.0,<9.0.0"
 # Check versions
 curl http://localhost:9200  # Server version
 python -c "import elasticsearch; print(elasticsearch.__version__)"  # Client version
-```
+```text
 
 ### Connection refused
 
@@ -473,13 +473,13 @@ python -c "import elasticsearch; print(elasticsearch.__version__)"  # Client ver
 ```bash
 docker-compose ps es
 curl http://localhost:9200
-```
+```text
 
 **Check ES_URL:**
 
 ```bash
 echo $ES_URL  # Should match ES server address
-```
+```text
 
 ## Integration
 
@@ -523,7 +523,7 @@ DRY_RUN=1 python scripts/backfill_bill_dates.py
 DRY_RUN=0 python scripts/backfill_bill_dates.py
 
 # Output: Updated 234 bills
-```
+```text
 
 ### Example 2: Recompute expires_at Only
 
@@ -534,7 +534,7 @@ Some bills have dates but wrong `expires_at`:
 DRY_RUN=0 python scripts/backfill_bill_dates.py
 
 # Output: Updated 45 bills (dates unchanged, expires_at corrected)
-```
+```text
 
 ### Example 3: After Parser Improvement
 
@@ -545,7 +545,7 @@ You improved the regex to catch more date formats:
 DRY_RUN=0 python scripts/backfill_bill_dates.py
 
 # Output: Updated 89 bills (new dates extracted)
-```
+```text
 
 ## Code Structure
 
@@ -575,7 +575,7 @@ extract_due_dates(text, received_at)
     -> Parse into datetime
     -> Format as ISO 8601
     -> Deduplicate and sort
-```
+```text
 
 ## Future Enhancements
 

@@ -35,7 +35,7 @@ This document summarizes the comprehensive design token refinement implemented t
 --color-muted: hsl(210 23% 94%)         /* Chips, muted blocks */
 --color-border: hsl(215 20% 85%)        /* Softer, less contrast */
 --color-accent: hsl(221 75% 64%)        /* Consistent indigo for primary actions */
-```
+```text
 
 ### Dark Mode
 
@@ -45,7 +45,7 @@ This document summarizes the comprehensive design token refinement implemented t
 --color-muted: hsl(222 20% 18%)         /* Darker blocks */
 --color-border: hsl(222 20% 22%)        /* Low-contrast borders */
 --color-accent: hsl(221 75% 66%)        /* Slightly brighter for visibility */
-```
+```text
 
 ## Typography Improvements
 
@@ -153,7 +153,7 @@ className="text-[color:hsl(var(--color-accent))]"
 
 // Hover states
 className="hover:bg-[color:hsl(var(--color-muted))]/40"
-```
+```text
 
 ## Icon Color Strategy
 

@@ -42,7 +42,7 @@ Groups unsubscribe candidates by sender domain.
     "headers": {"List-Unsubscribe": "<https://ex.com/u?2>"}
   }
 ]
-```
+```text
 
 **Response:**
 
@@ -57,7 +57,7 @@ Groups unsubscribe candidates by sender domain.
     }
   ]
 }
-```
+```text
 
 #### POST `/unsubscribe/execute_grouped`
 
@@ -71,7 +71,7 @@ Executes bulk unsubscribe for a domain group.
   "email_ids": ["e1", "e2"],
   "params": {"headers": {"List-Unsubscribe": "..."}}
 }
-```
+```text
 
 **Response:**
 
@@ -80,7 +80,7 @@ Executes bulk unsubscribe for a domain group.
   "applied": 2,
   "domain": "news.example.com"
 }
-```
+```text
 
 ### Features
 
@@ -119,7 +119,7 @@ Detects when display name mentions a brand but domain doesn't match legitimate d
 ```python
 risk_score('PayPal Billing <support@paypaI.com>', [])
 # Returns: 60 (brand spoofing detected)
-```
+```text
 
 **Supported Brands:**
 
@@ -136,7 +136,7 @@ Detects internationalized domain names that look similar to legitimate domains.
 ```python
 risk_score('Support <help@xn--pple-43d.com>', [])
 # Returns: 30 (punycode detected)
-```
+```text
 
 #### Suspicious TLDs (30 points)
 
@@ -147,7 +147,7 @@ Flags domains using TLDs commonly associated with phishing.
 ```python
 risk_score('Support <info@example.zip>', [])
 # Returns: 9 (suspicious TLD)
-```
+```text
 
 #### Punycode in URLs (10 points each)
 
@@ -156,7 +156,7 @@ Checks email body URLs for punycode encoding.
 ```python
 risk_score('Legit <info@example.com>', ['https://xn--test.com'])
 # Returns: 10 (punycode URL)
-```
+```text
 
 ### API Functions
 
@@ -178,7 +178,7 @@ analyze_email_risk({
 #     "risk_score": 60,
 #     "risk_factors": ["display_name_spoof"]
 # }
-```
+```text
 
 ### Integration Point
 
@@ -187,7 +187,7 @@ Can be integrated into email ingest pipeline:
 ```python
 from app.logic.risk import risk_score as compute_risk
 doc["risk_score"] = compute_risk(from_h, urls)
-```
+```text
 
 ### Test Coverage
 
@@ -233,7 +233,7 @@ Create reminders from email content.
     }
   ]
 }
-```
+```text
 
 **Response:**
 
@@ -241,7 +241,7 @@ Create reminders from email content.
 {
   "created": 1
 }
-```
+```text
 
 #### POST `/productivity/calendar/create`
 
@@ -262,7 +262,7 @@ Create calendar events from meeting invites.
     }
   ]
 }
-```
+```text
 
 **Response:**
 
@@ -270,7 +270,7 @@ Create calendar events from meeting invites.
 {
   "created": 1
 }
-```
+```text
 
 #### GET `/productivity/reminders/list`
 
@@ -278,9 +278,9 @@ List recently created reminders.
 
 **Request:**
 
-```
+```text
 GET /productivity/reminders/list?limit=10
-```
+```text
 
 **Response:**
 
@@ -296,16 +296,16 @@ GET /productivity/reminders/list?limit=10
   ],
   "total": 1
 }
-```
+```text
 
 ### Natural Language Integration
 
 Updated NL agent to support bill reminders:
 
-```
+```text
 POST /nl/run
 {"text": "show my bills and create reminders due before Friday"}
-```
+```text
 
 **Response:**
 
@@ -322,7 +322,7 @@ POST /nl/run
     }
   ]
 }
-```
+```text
 
 ### Storage & Future Enhancements
 
@@ -360,14 +360,14 @@ If using punycode detection for risk heuristics:
 
 ```bash
 pip install idna
-```
+```text
 
 Add to `pyproject.toml`:
 
 ```toml
 [tool.poetry.dependencies]
 idna = "^3.4"
-```
+```text
 
 ### Testing
 
@@ -375,7 +375,7 @@ Run all tests:
 
 ```bash
 pytest -q
-```
+```text
 
 Run specific test suites:
 
@@ -388,7 +388,7 @@ pytest tests/unit/test_risk_heuristics.py -v
 
 # Productivity tools
 pytest tests/e2e/test_productivity_reminders.py -v
-```
+```text
 
 ---
 
@@ -446,7 +446,7 @@ curl -X POST http://localhost:8003/unsubscribe/execute_grouped \
     "email_ids":["e1","e2"],
     "params":{"headers":{"List-Unsubscribe":"..."}}
   }'
-```
+```text
 
 ### Example 2: Check Email Risk Score
 
@@ -464,7 +464,7 @@ print(f"Risk Factors: {result['risk_factors']}")
 # Output:
 # Risk Score: 79
 # Risk Factors: ['display_name_spoof', 'suspicious_tld', 'punycode_url']
-```
+```text
 
 ### Example 3: Create Bill Reminder via NL
 
@@ -472,7 +472,7 @@ print(f"Risk Factors: {result['risk_factors']}")
 curl -X POST http://localhost:8003/nl/run \
   -H "Content-Type: application/json" \
   -d '{"text":"show my bills and create reminders due before Friday"}'
-```
+```text
 
 ---
 

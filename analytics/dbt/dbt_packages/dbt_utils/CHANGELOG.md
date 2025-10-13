@@ -59,20 +59,24 @@
 The full migration guide is at <https://docs.getdbt.com/guides/migration/versions/upgrading-to-dbt-utils-v1.0>
 
 ## New features
+
 * New macro `get_single_value` ([#696](https://github.com/dbt-labs/dbt-utils/pull/696))
 * New macro safe_divide() — Returns null when the denominator is 0, instead of throwing a divide-by-zero error.
 * Add `not_empty_string` generic test that asserts column values are not an empty string. ([#632](https://github.com/dbt-labs/dbt-utils/issues/632), [#634](https://github.com/dbt-labs/dbt-utils/pull/634))
 
 ## Enhancements
+
 * Implemented an optional `group_by_columns` argument across many of the generic testing macros to test for properties that only pertain to group-level or are can be more rigorously conducted at the group level. Property available in `recency`, `at_least_one`, `equal_row_count`, `fewer_rows_than`, `not_constant`, `not_null_proportion`, and `sequential` tests [#633](https://github.com/dbt-labs/dbt-utils/pull/633)
 * With the addition of an on-by-default quote_identifiers flag in the star() macro, you can now disable quoting if necessary. ([#706](https://github.com/dbt-labs/dbt-utils/pull/706))
 
 ## Fixes
+
 * `union()` now includes/excludes columns case-insensitively
 * The `expression_is_true test` doesn’t output * unless storing failures, a cost improvement for BigQuery ([#683](https://github.com/dbt-labs/dbt-utils/issues/683), [#686](https://github.com/dbt-labs/dbt-utils/pull/686))
 * Updated the `slugify` macro to prepend "_" to column names beginning with a number since most databases do not allow names to begin with numbers.
 
 ## Under the hood
+
 * Remove deprecated table argument from `unpivot` ([#671](https://github.com/dbt-labs/dbt-utils/pull/671))
 * Delete the deprecated identifier macro ([#672](https://github.com/dbt-labs/dbt-utils/pull/672))
 * Handle deprecations in deduplicate macro ([#673](https://github.com/dbt-labs/dbt-utils/pull/673))
@@ -81,6 +85,7 @@ The full migration guide is at <https://docs.getdbt.com/guides/migration/version
 * Explicitly stating the namespace for cross-db macros so that the dispatch logic works correctly by restoring the dbt. prefix for all migrated cross-db macros ([#701](https://github.com/dbt-labs/dbt-utils/pull/701))
 
 ## Contributors
+
 * [@CR-Lough] (<https://github.com/CR-Lough>) (#706) (#696)
 * [@fivetran-catfritz](https://github.com/fivetran-catfritz)
 * [@crowemi](https://github.com/crowemi)
@@ -95,6 +100,7 @@ The full migration guide is at <https://docs.getdbt.com/guides/migration/version
 # 0.9.5
 
 ## Fixes
+
 * Stop showing cross-db deprecation warnings for macros who have already been migrated ([#725](https://github.com/dbt-labs/dbt-utils/pull/725))
 
 ## 0.9.3 and 0.9.4
@@ -122,6 +128,7 @@ Rolled back due to accidental incompatibilities
 # dbt-utils 0.9.1
 
 ## Fixes
+
 * Remove cross-db dbt_utils references by @clausherther in #650
 
 # dbt-utils 0.9.0
@@ -154,19 +161,24 @@ Rolled back due to accidental incompatibilities
 # dbt-utils v0.8.6
 
 ## New features
+
 * New macros `array_append` and `array_construct` ([#595](https://github.com/dbt-labs/dbt-utils/pull/595))
 
 ## Fixes
+
 * Use `*` in `star` macro if no columns (for SQLFluff) ([#605](https://github.com/dbt-labs/dbt-utils/issues/605), [#561](https://github.com/dbt-labs/dbt-utils/pull/561))
 * Only raise error within `union_relations` for `build`/`run` sub-commands ([#606](https://github.com/dbt-labs/dbt-utils/issues/606), [#607](https://github.com/dbt-labs/dbt-utils/pull/607))
 
 ## Quality of life
+
 * Add slugify to list of Jinja Helpers ([#602](https://github.com/dbt-labs/dbt-utils/pull/602))
 
 ## Under the hood
+
 * Fix `make test` for running integration tests locally ([#344](https://github.com/dbt-labs/dbt-utils/issues/344), [#564](https://github.com/dbt-labs/dbt-utils/issues/564), [#591](https://github.com/dbt-labs/dbt-utils/pull/591))
 
 ## Contributors
+
 * [@swanjson](https://github.com/swanjson) (#561)
 * [@dataders](https://github.com/dataders) (#561)
 * [@epapineau](https://github.com/epapineau) (#583)
@@ -189,7 +201,7 @@ Before:
 {% macro deduplicate(relation, group_by, order_by=none, relation_alias=none) -%}
 ...
 {% endmacro %}
-```
+```text
 
 After:
 
@@ -197,7 +209,7 @@ After:
 {% macro deduplicate(relation, partition_by, order_by) -%}
 ...
 {% endmacro %}
-```
+```text
 
 ## New features
 * Add an optional `where` clause parameter to `get_column_values()` to filter values returned ([#511](https://github.com/dbt-labs/dbt-utils/issues/511), [#583](https://github.com/dbt-labs/dbt-utils/pull/583))
@@ -393,7 +405,7 @@ Before:
 {% macro get_column_values(table, column, order_by='count(*) desc', max_records=none, default=none) -%}
 ...
 {% endmacro %}
-```
+```text
 
 After:
 
@@ -401,11 +413,11 @@ After:
 {% macro get_column_values(table, column, max_records=none, default=none) -%}
 ...
 {% endmacro %}
-```
+```text
 
 If you were relying on the position to match up your optional arguments, this may be a breaking change — in general, we recommend that you explicitly declare any optional arguments (if not all of your arguments!)
 
-```
+```text
 -- before: This works on previous version of dbt-utils, but on 0.7.0, the `50` would be passed through as the `order_by` argument
 {% set payment_methods = dbt_utils.get_column_values(
         ref('stg_payments'),
@@ -419,7 +431,7 @@ If you were relying on the position to match up your optional arguments, this ma
         'payment_method',
         max_records=50
 ) %}
-```
+```text
 
 ## Features
 
@@ -502,7 +514,7 @@ If you were relying on the position to match up your optional arguments, this ma
 * If your project uses the `get_tables_by_prefix` macro, replace it with `get_relations_by_prefix`. All arguments have retained the same name.
 * If your project uses the `union_tables` macro, replace it with `union_relations`. While the order of arguments has stayed consistent, the `tables` argument has been renamed to `relations`. Further, the default value for the `source_column_name` argument has changed from `'_dbt_source_table'` to `'_dbt_source_relation'` — you may want to explicitly define this argument to avoid breaking changes.
 
-```
+```text
 -- before:
 {{ dbt_utils.union_tables(
     tables=[ref('my_model'), source('my_source', 'my_table')],
@@ -515,7 +527,7 @@ If you were relying on the position to match up your optional arguments, this ma
     exclude=["_loaded_at"],
     source_column_name='_dbt_source_table'
 ) }}
-```
+```text
 * If your project uses the `get_tables_by_pattern` macro, replace it with `get_tables_by_pattern_sql` — all arguments are consistent.
 
 ## Features

@@ -20,7 +20,7 @@ curl -X POST "http://localhost:8003/profile/rebuild?user_email=leoklemet.pa@gmai
 # ✅ Profile Summary
 curl "http://localhost:8003/profile/db-summary?user_email=leoklemet.pa@gmail.com"
 # Returns: Full profile with top senders, categories, interests
-```
+```text
 
 ### 2. Frontend Components
 
@@ -53,7 +53,7 @@ The `/ml/label/rebuild` endpoint updates PostgreSQL but **NOT Elasticsearch**.
 # Search shows null ML fields
 curl "http://localhost:8003/api/search/?q=interview&size=3"
 # Response shows: "category": null, "expires_at": null, "event_start_at": null
-```
+```text
 
 ### Root Cause
 
@@ -68,7 +68,7 @@ email_row.event_start_at = event_start_at
 
 # Commits to PostgreSQL only - no ES update!
 db.commit()
-```
+```text
 
 ---
 
@@ -117,7 +117,7 @@ def label_rebuild(limit: int = 2000, user_email: Optional[str] = None, db: Sessi
         logger.info(f"Synced {len(bulk_body)//2} emails to Elasticsearch")
     
     return {"updated": updated, "categories": category_counts, "errors": errors[:10] if errors else None}
-```
+```text
 
 ### Option 2: Create separate sync endpoint
 
@@ -127,7 +127,7 @@ def sync_to_es(limit: int = 2000, user_email: Optional[str] = None, db: Session 
     """Sync PostgreSQL ML fields to Elasticsearch."""
     # Read from PG, bulk update to ES
     pass
-```
+```text
 
 ### Option 3: Use existing backfill scripts
 
@@ -145,7 +145,7 @@ const categories = useMemo(() =>
   (searchParams.get("cat") ?? "").split(",").filter(Boolean),  // ✅ Already done
   [searchParams]
 )
-```
+```text
 
 ### 2. Badge Color Improvements
 
@@ -162,7 +162,7 @@ const categories = useMemo(() =>
     📅 {format(new Date(event), "MMM d")}
   </Badge>
 )}
-```
+```text
 
 ### 3. Loading States
 
@@ -175,7 +175,7 @@ const categories = useMemo(() =>
     ))}
   </div>
 )}
-```
+```text
 
 ### 4. Better Toast Messages
 
@@ -185,7 +185,7 @@ toast({
   title: "✅ Sync complete!",
   description: `Labels + Profile updated. ${labelResult.updated} emails processed.`  // ✅ Already done
 })
-```
+```text
 
 ### 5. Error Handling
 
@@ -199,7 +199,7 @@ toast({
     </AlertDescription>
   </Alert>
 )}
-```
+```text
 
 ---
 

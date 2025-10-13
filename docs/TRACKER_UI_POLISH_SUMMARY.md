@@ -65,7 +65,7 @@ Minor but impactful additions:
 
 ### Before
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │ Company | Role | Source | Status | ...  │ (scrolls away)
 ├─────────────────────────────────────────┤
@@ -73,11 +73,11 @@ Minor but impactful additions:
 │ Meta    | AI   | Green  | [Select▼]    │ (plain)
 │ ...                                      │
 └─────────────────────────────────────────┘
-```
+```text
 
 ### After
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │ Company | Role | Source | Status | ...  │ (sticky!)
 ├─────────────────────────────────────────┤
@@ -87,7 +87,7 @@ Minor but impactful additions:
 └──────────────────────────────────────────────────┘
                  ↓
          [✓ Status: Interview — OpenAI] (toast)
-```
+```text
 
 ---
 
@@ -100,11 +100,11 @@ cd apps/web
 npm install -D @playwright/test
 npx playwright install chromium
 npx playwright test tests/e2e/tracker-status.spec.ts
-```
+```text
 
 ### Expected Output
 
-```
+```text
 Running 3 tests using 1 worker
 
   ✓  tracker-status.spec.ts:4:3 › updates status → shows contextual toast (2s)
@@ -112,7 +112,7 @@ Running 3 tests using 1 worker
   ✓  tracker-status.spec.ts:110:3 › create new application shows success toast (1s)
 
   3 passed (4s)
-```
+```text
 
 ---
 
@@ -123,14 +123,14 @@ Running 3 tests using 1 worker
 ```tsx
 <StatusChip status="interview" />
 // Renders: [Interview] in emerald green pill
-```
+```text
 
 ### 2. Dual Display
 
 ```tsx
 <StatusChip status={status} />  // Visual indicator
 <select>...</select>             // Quick action
-```
+```text
 
 ### 3. Contextual Toasts
 
@@ -145,7 +145,7 @@ Running 3 tests using 1 worker
 data-testid="tracker-row-101"
 data-testid="status-select-101"
 data-testid="status-chip-interview"
-```
+```text
 
 ---
 

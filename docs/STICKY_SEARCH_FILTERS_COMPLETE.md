@@ -29,7 +29,7 @@ export type UiState = {
   replied: RepliedFilter;
   sort: "relevance" | "received_desc" | "received_asc" | "ttr_asc" | "ttr_desc";
 };
-```
+```text
 
 #### localStorage Persistence
 
@@ -59,7 +59,7 @@ export function saveUiState(state: UiState) {
     window.localStorage.setItem(KEY, JSON.stringify(state));
   } catch {}
 }
-```
+```text
 
 **Key Features**:
 
@@ -86,7 +86,7 @@ const [dates, setDates] = useState<{ from?: string; to?: string }>({
 })
 const [replied, setReplied] = useState<RepliedFilter>(init.replied)
 const [sort, setSort] = useState<SortKey>(init.sort as SortKey)
-```
+```text
 
 **Why useMemo?**
 
@@ -107,7 +107,7 @@ useEffect(() => {
     sort,
   })
 }, [labels, dates.from, dates.to, replied, sort])
-```
+```text
 
 **Behavior**:
 
@@ -132,7 +132,7 @@ useEffect(() => {
   const url = `/search?${params.toString()}`
   window.history.replaceState(null, '', url)
 }, [q, labels, dates.from, dates.to, replied, sort])
-```
+```text
 
 **Features**:
 
@@ -167,7 +167,7 @@ useEffect(() => {
     </button>
   </div>
 )}
-```
+```text
 
 **Smart Display**:
 
@@ -201,7 +201,9 @@ useEffect(() => {
 2. Copies URL from address bar:
 
    ```
+
    /search?q=senior+engineer&labels=interview&sort=received_desc&scale=7d
+
    ```
 
 3. Sends URL to colleague via Slack
@@ -234,15 +236,15 @@ useEffect(() => {
   "replied": "false",
   "sort": "ttr_desc"
 }
-```
+```text
 
 ### URL Query Parameters
 
 **Example**:
 
-```
+```text
 /search?q=interview&scale=7d&labels=offer&labels=interview&date_from=2025-10-01&replied=false&sort=ttr_desc
-```
+```text
 
 **Parameters**:
 
@@ -256,7 +258,7 @@ useEffect(() => {
 
 ### State Flow
 
-```
+```text
 User Action
     ↓
 React State Update (setLabels, setDates, etc.)
@@ -272,7 +274,7 @@ useMemo: Load from localStorage
 React State Initialized
     ↓
 useEffect: Initial search runs
-```
+```text
 
 ---
 
@@ -372,7 +374,7 @@ useEffect: Initial search runs
   cursor: 'pointer',
   padding: 0,
 }
-```
+```text
 
 **Design Choices**:
 
@@ -384,7 +386,7 @@ useEffect: Initial search runs
 
 ### Filter Panel Layout
 
-```
+```text
 ┌────────────────────────────────────────────┐
 │ Filter by label:                           │
 │ [Offer] [Interview] [Rejection]            │
@@ -400,7 +402,7 @@ useEffect: Initial search runs
 │                                            │
 │                      Clear all filters →   │
 └────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -499,7 +501,7 @@ useEffect: Initial search runs
 
 ```typescript
 return { ...DEFAULT, ...parsed };
-```
+```text
 
 **Benefits**:
 
@@ -518,7 +520,7 @@ return { ...DEFAULT, ...parsed };
 
 // v3 adds "sort" field
 { "labels": ["offer"], "replied": "all", "sort": "relevance" }  // Still works!
-```
+```text
 
 ### Error Tolerance
 
@@ -531,7 +533,7 @@ try {
 } catch {
   return DEFAULT;  // Silent fallback
 }
-```
+```text
 
 **Write failures** (privacy mode):
 
@@ -539,7 +541,7 @@ try {
 try {
   window.localStorage.setItem(KEY, JSON.stringify(state));
 } catch {}  // Silent fail, no error to user
-```
+```text
 
 ---
 

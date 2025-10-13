@@ -25,29 +25,29 @@
 
 ### Find Emails Needing Replies
 
-```
+```text
 Filter: "Not replied"
 Sort: "Slowest / no-reply first"
-```
+```text
 
 → All unreplied emails, oldest first
 
 ### Analyze Response Times
 
-```
+```text
 Filter: "Replied"
 Sort: "Fastest response"
-```
+```text
 
 → See your quickest responses
 
 ### Recent Offers
 
-```
+```text
 Query: "offer"
 Label: "offer"
 Sort: "Newest"
-```
+```text
 
 → Most recent offers at top
 
@@ -67,13 +67,13 @@ curl "http://localhost:8003/search?q=offer&sort=received_desc&size=3"
 
 # Oldest
 curl "http://localhost:8003/search?q=application&sort=received_asc&size=3"
-```
+```text
 
 ---
 
 ## ⚙️ API Parameters
 
-```
+```text
 GET /search?q={query}&sort={option}
 
 sort options:
@@ -82,7 +82,7 @@ sort options:
   - received_asc
   - ttr_asc
   - ttr_desc
-```
+```text
 
 ---
 

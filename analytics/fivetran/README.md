@@ -8,9 +8,9 @@ This guide walks you through setting up Fivetran to sync ApplyLens PostgreSQL da
 
 **Data Flow:**
 
-```
+```text
 Postgres (ApplyLens DB) → Fivetran Connector → BigQuery (dataset: applylens)
-```
+```text
 
 **Sync Frequency:** Hourly (configurable to 30 minutes)  
 **Method:** HVR (High Volume Replication) disabled for cost  
@@ -60,7 +60,7 @@ gcloud config set project YOUR_PROJECT_ID
 
 # Create dataset
 bq mk --location=US --dataset applylens
-```
+```text
 
 ---
 
@@ -101,7 +101,7 @@ gcloud iam service-accounts keys create fivetran-key.json \
   --iam-account=fivetran-applylens@YOUR_PROJECT_ID.iam.gserviceaccount.com
 
 # Upload JSON to Fivetran when creating destination
-```
+```text
 
 ---
 
@@ -127,7 +127,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 \c applylens fivetran_user
 SELECT count(*) FROM emails;
 SELECT count(*) FROM applications;
-```
+```text
 
 ### 2. Optional: IP Allowlist for Security
 
@@ -135,12 +135,12 @@ If using Cloudflare or database firewall, allowlist Fivetran IPs:
 
 **Fivetran IP Ranges (as of 2025):**
 
-```
+```text
 52.0.2.4/32
 35.234.176.144/29
 35.227.135.0/29
 # Check https://fivetran.com/docs/getting-started/ips for latest
-```
+```text
 
 **PostgreSQL pg_hba.conf:**
 
@@ -149,7 +149,7 @@ If using Cloudflare or database firewall, allowlist Fivetran IPs:
 host    applylens    fivetran_user    52.0.2.4/32    md5
 host    applylens    fivetran_user    35.234.176.144/29    md5
 host    applylens    fivetran_user    35.227.135.0/29    md5
-```
+```text
 
 ### 3. Create Connector in Fivetran
 
@@ -185,7 +185,7 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 
 **Column Selection for `emails`:**
 
-```
+```text
 ✅ id (PK)
 ✅ received_at (timestamp)
 ✅ sender (text)
@@ -197,11 +197,11 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 ✅ features_json (jsonb)
 ✅ created_at (timestamp)
 ✅ updated_at (timestamp)
-```
+```text
 
 **Column Selection for `applications`:**
 
-```
+```text
 ✅ id (PK)
 ✅ company (text)
 ✅ role (text)
@@ -209,7 +209,7 @@ host    applylens    fivetran_user    35.227.135.0/29    md5
 ✅ created_at (timestamp)
 ✅ status (text)
 ✅ user_id (FK)
-```
+```text
 
 ### 5. Configure Sync Settings
 
@@ -254,7 +254,7 @@ SELECT
 FROM applylens.public_emails
 GROUP BY risk_bucket
 ORDER BY risk_bucket;
-```
+```text
 
 ---
 
@@ -295,7 +295,7 @@ WHERE e.category = 'recruiter'
 GROUP BY e.sender, sender_domain, g.total_clicks
 HAVING g.total_clicks > 0
 ORDER BY g.total_clicks DESC;
-```
+```text
 
 ---
 
@@ -335,7 +335,7 @@ LEFT JOIN applylens.public_applications a
   ON DATE(a.created_at) = PARSE_DATE('%Y%m%d', ae.event_date)
 GROUP BY ae.event_date, ae.page_views
 ORDER BY ae.event_date DESC;
-```
+```text
 
 ---
 
@@ -377,7 +377,7 @@ telnet YOUR_HOST 5432
 
 # Verify user permissions
 psql -U fivetran_user -d applylens -c "\dt"
-```
+```text
 
 ### Sync Stalled
 
@@ -405,7 +405,7 @@ gcloud alpha billing quotas list \
 
 # Request quota increase if needed
 # https://console.cloud.google.com/iam-admin/quotas
-```
+```text
 
 ---
 
@@ -433,7 +433,7 @@ ORDER BY last_modified_time DESC;
 SELECT 'BigQuery' as source, COUNT(*) as count FROM applylens.public_emails
 UNION ALL
 SELECT 'Expected' as source, 12345 as count;  -- Update from Postgres count
-```
+```text
 
 ---
 

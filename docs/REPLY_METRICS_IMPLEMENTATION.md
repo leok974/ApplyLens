@@ -20,7 +20,7 @@ Implemented end-to-end reply-metrics tracking to power "Time to response" analyt
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
-```
+```text
 
 ### 2. ORM Model Updates
 
@@ -33,7 +33,7 @@ Updated `Email` model with reply metric fields:
 first_user_reply_at = Column(DateTime(timezone=True), nullable=True)
 last_user_reply_at = Column(DateTime(timezone=True), nullable=True)
 user_reply_count = Column(Integer, default=0)
-```
+```text
 
 ### 3. Elasticsearch Mapping
 
@@ -46,13 +46,13 @@ user_reply_count = Column(Integer, default=0)
 "last_user_reply_at":  {"type": "date"},
 "user_reply_count":    {"type": "integer"},
 "replied":             {"type": "boolean"},
-```
+```text
 
 **Reindex command**:
 
 ```bash
 python -m services.api.scripts.es_reindex_with_ats
-```
+```text
 
 ### 4. Gmail Metrics Computation Module
 
@@ -103,7 +103,7 @@ for thread_meta in threads:
         existing.first_user_reply_at = metrics["first_user_reply_at"]
         existing.last_user_reply_at = metrics["last_user_reply_at"]
         existing.user_reply_count = metrics["user_reply_count"]
-```
+```text
 
 ### 6. Backfill Script for Existing Data
 
@@ -130,7 +130,7 @@ for thread_meta in threads:
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.backfill_reply_metrics
-```
+```text
 
 ### 7. Search API Filter
 
@@ -140,14 +140,14 @@ docker compose -f infra/docker-compose.yml exec api python -m services.api.scrip
 
 ```python
 replied: Optional[bool] = Query(None, description="Filter replied threads: true|false")
-```
+```text
 
 **Filter logic**:
 
 ```python
 if replied is not None:
     filters.append({"term": {"replied": replied}})
-```
+```text
 
 **Usage examples**:
 
@@ -160,7 +160,7 @@ curl "http://localhost:8003/search?q=offer&replied=false"
 
 # Combine with other filters
 curl "http://localhost:8003/search?q=application&replied=false&labels=interview&scale=7d"
-```
+```text
 
 ## Deployment Steps
 
@@ -168,38 +168,38 @@ curl "http://localhost:8003/search?q=application&replied=false&labels=interview&
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
-```
+```text
 
 **Expected output**:
 
-```
+```text
 INFO  [alembic.runtime.migration] Running upgrade 0005_add_gmail_tokens -> 0006_reply_metrics, add reply metrics columns to emails
-```
+```text
 
 ### Step 2: Update Elasticsearch Mapping
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.es_reindex_with_ats
-```
+```text
 
 **Expected output**:
 
-```
+```text
 Creating new index: gmail_emails_v2
 Reindexing from gmail_emails to gmail_emails_v2...
 Swapping alias...
 Done!
-```
+```text
 
 ### Step 3: Backfill Existing Data
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.backfill_reply_metrics
-```
+```text
 
 **Expected output**:
 
-```
+```text
 Backfilling reply metrics for user: leoklemet.pa@gmail.com
 Database: postgresql://postgres:***@db:5432/applylens
 Elasticsearch: http://es:9200/gmail_emails
@@ -231,13 +231,13 @@ Summary:
   - 156 threads analyzed
   - 1807 database records updated
   - 1807 Elasticsearch documents updated
-```
+```text
 
 ### Step 4: Restart API (if needed)
 
 ```bash
 docker compose -f infra/docker-compose.yml restart api
-```
+```text
 
 ## Kibana Lens Configuration
 
@@ -255,7 +255,7 @@ if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
   def end   = doc['first_user_reply_at'].value.toInstant().toEpochMilli();
   if (end >= start) emit((end - start) / 3600000.0);
 }
-```
+```text
 
 ### Lens Visualization Setup
 
@@ -296,22 +296,22 @@ SELECT
   AVG(user_reply_count) as avg_reply_count
 FROM emails;
 "
-```
+```text
 
 **Expected output**:
 
-```
+```text
  total_emails | with_first_reply | with_last_reply | avg_reply_count 
 --------------+------------------+-----------------+-----------------
          1807 |              423 |             423 |            0.47
-```
+```text
 
 ### Elasticsearch Check
 
 ```bash
 # Check mapping
 curl -s "http://localhost:9200/gmail_emails/_mapping" | jq '.gmail_emails.mappings.properties | {first_user_reply_at, last_user_reply_at, user_reply_count, replied}'
-```
+```text
 
 **Expected output**:
 
@@ -322,7 +322,7 @@ curl -s "http://localhost:9200/gmail_emails/_mapping" | jq '.gmail_emails.mappin
   "user_reply_count": {"type": "integer"},
   "replied": {"type": "boolean"}
 }
-```
+```bash
 
 ```bash
 # Sample document with reply metrics
@@ -331,7 +331,7 @@ curl -s "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: applicati
   "query": {"term": {"replied": true}},
   "_source": ["subject", "received_at", "first_user_reply_at", "user_reply_count", "replied"]
 }' | jq '.hits.hits[0]._source'
-```
+```text
 
 **Expected output**:
 
@@ -343,7 +343,7 @@ curl -s "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: applicati
   "user_reply_count": 2,
   "replied": true
 }
-```
+```text
 
 ### Search API Check
 
@@ -353,7 +353,7 @@ curl "http://localhost:8003/search?q=interview&replied=true&size=5" | jq '.hits 
 
 # Test combination with date filter
 curl "http://localhost:8003/search?q=application&replied=false&date_from=2025-10-01&size=5" | jq '.total'
-```
+```text
 
 ## Use Cases
 
@@ -361,7 +361,7 @@ curl "http://localhost:8003/search?q=application&replied=false&date_from=2025-10
 
 ```bash
 GET /search?q=interview&replied=false
-```
+```text
 
 Shows all interview-related threads you haven't replied to yet.
 
@@ -381,7 +381,7 @@ GET /search?q=offer&replied=false&date_from=2025-10-01&scale=3d
 
 # Threads with multiple replies
 # (Would need additional filter, not yet implemented)
-```
+```text
 
 ### 4. Analyze Thread Engagement
 
@@ -405,7 +405,7 @@ curl "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: application/
     }
   }
 }'
-```
+```text
 
 ## Architecture Notes
 
@@ -435,7 +435,7 @@ Current implementation uses environment variable:
 def resolve_user_email(db: Session, user_email: str) -> str:
     token = db.query(GmailToken).filter_by(user_email=user_email).first()
     return token.user_email if token else user_email
-```
+```text
 
 ### Thread vs Message API
 
@@ -457,7 +457,7 @@ Changed from `messages().list()` to `threads().list()` API:
   "user_reply_count": 0,
   "replied": False
 }
-```
+```text
 
 **Case 2: User initiated thread**
 
@@ -469,7 +469,7 @@ Changed from `messages().list()` to `threads().list()` API:
   "user_reply_count": 1,
   "replied": True
 }
-```
+```text
 
 **Case 3: Multiple replies**
 
@@ -481,7 +481,7 @@ Changed from `messages().list()` to `threads().list()` API:
   "user_reply_count": 3,
   "replied": True
 }
-```
+```text
 
 ## Future Enhancements
 
@@ -498,7 +498,7 @@ Add filter controls to search page:
   />
   Show only unanswered threads
 </label>
-```
+```text
 
 ### 2. Response Time Indicators
 
@@ -510,7 +510,7 @@ Show response time badges in email list:
     Replied in {calculateHours(email.received_at, email.first_user_reply_at)}h
   </span>
 )}
-```
+```text
 
 ### 3. Analytics Dashboard
 
@@ -574,7 +574,7 @@ Support multi-user scenarios:
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic current
-```
+```text
 
 ### Issue: Backfill script shows "GMAIL_PRIMARY_ADDRESS not set"
 
@@ -584,7 +584,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
 export GMAIL_PRIMARY_ADDRESS=your.email@gmail.com
 # OR
 export DEFAULT_USER_EMAIL=your.email@gmail.com
-```
+```text
 
 ### Issue: Elasticsearch update_by_query fails
 
@@ -592,7 +592,7 @@ export DEFAULT_USER_EMAIL=your.email@gmail.com
 
 ```bash
 curl "http://localhost:9200/gmail_emails/_mapping"
-```
+```text
 
 ### Issue: replied filter returns no results
 
@@ -603,15 +603,15 @@ curl "http://localhost:9200/gmail_emails/_mapping"
 
 ```bash
 curl "http://localhost:9200/gmail_emails/_search?q=replied:*&size=1"
-```
+```text
 
 ### Issue: Time to response shows negative values
 
 **Solution**: Add filter in Kibana Lens:
 
-```
+```text
 time_to_response_hours >= 0
-```
+```text
 
 ## Summary
 

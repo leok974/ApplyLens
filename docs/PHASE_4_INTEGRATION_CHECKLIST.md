@@ -21,19 +21,19 @@
 ```powershell
 cd d:/ApplyLens/infra
 docker compose up -d
-```
+```text
 
 ### 2. Apply Database Migration
 
 ```powershell
 docker exec infra-api-1 alembic upgrade head
-```
+```text
 
 Expected output:
 
-```
+```text
 INFO  [alembic.runtime.migration] Running upgrade 0015 -> 0016, phase4 actions
-```
+```text
 
 ### 3. Seed Default Policies
 
@@ -49,13 +49,13 @@ try:
 finally:
     db.close()
 "
-```
+```text
 
 Or using the module runner:
 
 ```powershell
 docker exec infra-api-1 python -m app.seeds.policies
-```
+```text
 
 ### 4. Verify API Endpoints
 
@@ -64,7 +64,7 @@ docker exec infra-api-1 python -m app.seeds.policies
 curl http://localhost:8003/api/actions/policies | jq .
 
 # Expected output: Array of 5 default policies
-```
+```text
 
 ### 5. Test Propose Actions
 
@@ -75,7 +75,7 @@ curl -X POST http://localhost:8003/api/actions/propose `
   -d '{"limit":20}' | jq .
 
 # Expected output: {"created": [1, 2, 3], "count": 3}
-```
+```text
 
 ### 6. Test Tray Endpoint
 
@@ -84,7 +84,7 @@ curl -X POST http://localhost:8003/api/actions/propose `
 curl http://localhost:8003/api/actions/tray | jq .
 
 # Expected output: Array of pending actions with email details
-```
+```text
 
 ### 7. Test Frontend (Manual)
 
@@ -157,7 +157,7 @@ Once metrics are added:
 
 ```powershell
 curl http://localhost:8003/metrics | grep actions
-```
+```text
 
 Expected metrics:
 
@@ -179,7 +179,7 @@ docker exec infra-api-1 alembic history
 # If stuck, downgrade and retry
 docker exec infra-api-1 alembic downgrade -1
 docker exec infra-api-1 alembic upgrade head
-```
+```text
 
 ### Seeds Fail
 
@@ -202,7 +202,7 @@ try:
 finally:
     db.close()
 "
-```
+```text
 
 ### API Returns 500
 
@@ -220,7 +220,7 @@ policy = {'condition': {'eq': ['category', 'promotions']}}
 ctx = {'category': 'promotions'}
 print(evaluate_policy(policy, ctx))
 "
-```
+```text
 
 ### Frontend Tray Not Loading
 

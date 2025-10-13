@@ -111,13 +111,13 @@ gmail_tokens (
   created_at TIMESTAMP,
   updated_at TIMESTAMP
 )
-```
+```text
 
 **New Columns**:
 
 ```sql
 applications.source_confidence REAL DEFAULT 0.5
-```
+```text
 
 ---
 
@@ -129,7 +129,7 @@ applications.source_confidence REAL DEFAULT 0.5
 GMAIL_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GMAIL_CLIENT_SECRET=your-client-secret
 OAUTH_REDIRECT_URI=http://localhost:8003/oauth/google/callback
-```
+```text
 
 ### Optional Features
 
@@ -140,7 +140,7 @@ GMAIL_PDF_MAX_BYTES=2097152  # 2MB
 
 # Mock mode (testing)
 USE_MOCK_GMAIL=True
-```
+```text
 
 ### Legacy Single-User
 
@@ -149,7 +149,7 @@ GMAIL_CLIENT_ID=...
 GMAIL_CLIENT_SECRET=...
 GMAIL_REFRESH_TOKEN=1//xxx
 GMAIL_USER=you@gmail.com
-```
+```text
 
 ---
 
@@ -157,19 +157,19 @@ GMAIL_USER=you@gmail.com
 
 ### New OAuth Endpoints
 
-```
+```text
 GET  /oauth/google/init?user_email=xxx
 GET  /oauth/google/callback?code=xxx&state=xxx
 GET  /oauth/google/status?user_email=xxx
 DELETE /oauth/google/disconnect?user_email=xxx
-```
+```text
 
 ### Updated Extraction Endpoints
 
-```
+```text
 POST /applications/extract
 POST /applications/backfill-from-email
-```
+```text
 
 **New Features**:
 
@@ -201,7 +201,7 @@ POST /applications/backfill-from-email
 ```bash
 # In .env
 USE_MOCK_GMAIL=True
-```
+```text
 
 ```python
 # Seed mock data
@@ -217,7 +217,7 @@ provider = mock_provider({
         ]
     }]
 })
-```
+```text
 
 ### Unit Tests
 
@@ -233,7 +233,7 @@ result = extract_from_email(ExtractInput(
 
 assert result.source == "Greenhouse"
 assert result.source_confidence >= 0.9
-```
+```text
 
 ---
 
@@ -248,14 +248,14 @@ pg_dump applylens > backup_$(date +%Y%m%d).sql
 # Backup code
 cd services/api/app
 cp routes_applications.py routes_applications.py.backup
-```
+```text
 
 ### Step 2: Run Migrations
 
 ```bash
 cd services/api
 python -m alembic upgrade head
-```
+```text
 
 **Migrations applied**:
 
@@ -266,7 +266,7 @@ python -m alembic upgrade head
 
 ```bash
 pip install pdfminer.six  # Already in pyproject.toml
-```
+```text
 
 ### Step 4: Configure
 
@@ -276,7 +276,7 @@ Choose mode (multi-user, single-user, or mock).
 
 ```bash
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 ### Step 6: Test
 
@@ -287,7 +287,7 @@ curl -X POST http://localhost:8003/applications/extract \
   -d '{"subject": "Test", "from": "test@test.com", "text": "Test"}'
 
 # Should return: {"company": "test", "role": null, "source": null, ...}
-```
+```text
 
 ---
 
@@ -378,7 +378,7 @@ async function connectGmail(userEmail: string) {
     }
   }, 1000);
 }
-```
+```text
 
 ### Check Connection Status
 
@@ -390,7 +390,7 @@ async function checkConnectionStatus(userEmail: string) {
   const { connected } = await res.json();
   return connected;
 }
-```
+```text
 
 ### Use Connected Account
 
@@ -406,7 +406,7 @@ async function extractFromGmail(threadId: string, userEmail: string) {
   });
   return res.json();
 }
-```
+```text
 
 ---
 

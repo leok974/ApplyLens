@@ -31,7 +31,7 @@ const [width, setWidth] = React.useState<number>(() => {
   const saved = Number(localStorage.getItem("inbox:detailsPanelWidth"));
   return Number.isFinite(saved) && saved >= 420 && saved <= 1000 ? saved : 720;
 });
-```
+```text
 
 **Visual Indicator**:
 
@@ -70,7 +70,7 @@ const [width, setWidth] = React.useState<number>(() => {
     </div>
   </>
 )}
-```
+```text
 
 ### 3. State Management
 
@@ -83,7 +83,7 @@ const [loadingDetail, setLoadingDetail] = React.useState(false);
 const [detail, setDetail] = React.useState<EmailDetails | null>(null);
 const [thread, setThread] = React.useState<any[] | null>(null);
 const [indexInThread, setIndexInThread] = React.useState<number | null>(null);
-```
+```text
 
 **Navigation Functions**:
 
@@ -113,7 +113,7 @@ function nextInThread() {
   if (indexInThread == null || !thread) return;
   if (indexInThread < thread.length - 1) jumpThread(indexInThread + 1);
 }
-```
+```text
 
 ## API Integration
 
@@ -128,7 +128,7 @@ export async function getThread(threadId: string) {
   return r.json(); 
   // Expected response: { messages: [{id, from, date, snippet, body_html, body_text}, ...] }
 }
-```
+```text
 
 **Expected Response Format**:
 
@@ -153,7 +153,7 @@ export async function getThread(threadId: string) {
     }
   ]
 }
-```
+```text
 
 ### Production Implementation
 
@@ -208,7 +208,7 @@ async function openDetails(id: string) {
     setLoadingDetail(false);
   }
 }
-```
+```text
 
 ## Component Props
 
@@ -230,7 +230,7 @@ async function openDetails(id: string) {
   onMarkSus?: () => void;           // Mark suspicious action
   onExplain?: () => void;           // Explain action
 }
-```
+```text
 
 ### ThreadItem Type
 
@@ -243,7 +243,7 @@ type ThreadItem = {
   body_html?: string;  // HTML body (optional)
   body_text?: string;  // Plain text body (optional)
 };
-```
+```text
 
 ## Usage Example
 
@@ -275,7 +275,7 @@ type ThreadItem = {
     await explainEmail(selectedId); 
   }}
 />
-```
+```text
 
 ## Backend Requirements
 
@@ -304,7 +304,7 @@ type ThreadItem = {
     }
   ]
 }
-```
+```text
 
 **Implementation Notes**:
 
@@ -369,7 +369,7 @@ React.useEffect(() => {
   window.addEventListener("keydown", h);
   return () => window.removeEventListener("keydown", h);
 }, [open, onClose, onPrev, onNext]);
-```
+```text
 
 ## Styling
 
@@ -388,7 +388,7 @@ React.useEffect(() => {
     <GripVertical className="h-3.5 w-3.5 text-slate-400" />
   </div>
 </div>
-```
+```text
 
 ### Thread List Item
 
@@ -402,7 +402,7 @@ React.useEffect(() => {
 >
   {/* Message preview */}
 </button>
-```
+```text
 
 ### Panel Container
 
@@ -413,7 +413,7 @@ React.useEffect(() => {
 >
   {/* Content */}
 </div>
-```
+```text
 
 ## Performance
 

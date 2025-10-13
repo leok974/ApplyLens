@@ -80,13 +80,13 @@ python -m alembic upgrade head
 # This creates:
 # - source_confidence column in applications table
 # - gmail_tokens table for multi-user OAuth
-```
+```text
 
 ### 2. Install Dependencies
 
 ```bash
 pip install pdfminer.six  # Already in pyproject.toml
-```
+```text
 
 ### 3. Configure Environment
 
@@ -103,7 +103,7 @@ OAUTH_REDIRECT_URI=http://localhost:8003/oauth/google/callback
 # Optional: PDF parsing
 GMAIL_PDF_PARSE=True
 GMAIL_PDF_MAX_BYTES=2097152  # 2MB
-```
+```text
 
 **Option B: Single-User (Legacy)**
 
@@ -113,19 +113,19 @@ GMAIL_CLIENT_ID=your-client-id
 GMAIL_CLIENT_SECRET=your-client-secret
 GMAIL_REFRESH_TOKEN=your-refresh-token
 GMAIL_USER=you@example.com
-```
+```text
 
 **Option C: Mock (Testing)**
 
 ```bash
 USE_MOCK_GMAIL=True
-```
+```text
 
 ### 4. Start API
 
 ```bash
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 ### 5. Test
 
@@ -151,7 +151,7 @@ curl -X POST http://localhost:8003/applications/extract \
     "used_gmail": false
   }
 }
-```
+```text
 
 ---
 
@@ -163,7 +163,7 @@ curl -X POST http://localhost:8003/applications/extract \
 -- Adds confidence score to applications
 ALTER TABLE applications
   ADD COLUMN source_confidence REAL NOT NULL DEFAULT 0.5;
-```
+```text
 
 **File**: `alembic/versions/0004_add_source_confidence.py`
 
@@ -186,7 +186,7 @@ CREATE TRIGGER gmail_tokens_updated_at_trigger
 BEFORE UPDATE ON gmail_tokens
 FOR EACH ROW
 EXECUTE FUNCTION update_gmail_tokens_updated_at();
-```
+```text
 
 **File**: `alembic/versions/0005_add_gmail_tokens.py`
 
@@ -195,7 +195,7 @@ EXECUTE FUNCTION update_gmail_tokens_updated_at();
 ```bash
 cd services/api
 python -m alembic upgrade head
-```
+```text
 
 ---
 
@@ -216,7 +216,7 @@ python -m alembic upgrade head
 
 ### Provider Selection Logic
 
-```
+```text
 if USE_MOCK_GMAIL:
     → Mock Provider (empty seed)
 elif GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET:
@@ -227,7 +227,7 @@ elif GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN and GMAIL_U
     → Single-User Provider (legacy)
 else:
     → No Gmail support (use request body only)
-```
+```text
 
 ---
 
@@ -244,7 +244,9 @@ else:
 7. Add authorized redirect URI:
 
    ```
-   http://localhost:8003/oauth/google/callback
+
+   <http://localhost:8003/oauth/google/callback>
+
    ```
 
    (Or your production callback URL)
@@ -257,7 +259,7 @@ else:
 GMAIL_CLIENT_ID=123456789-abc123.apps.googleusercontent.com
 GMAIL_CLIENT_SECRET=GOCSPX-your-secret
 OAUTH_REDIRECT_URI=http://localhost:8003/oauth/google/callback
-```
+```text
 
 ### Step 3: User OAuth Flow
 
@@ -276,7 +278,7 @@ async function connectGmail(userEmail: string) {
   window.open(authUrl, 'gmail-oauth', 'width=600,height=700');
   // Or: window.location.href = authUrl;
 }
-```
+```text
 
 **Flow**:
 
@@ -305,7 +307,7 @@ curl -X POST http://localhost:8003/applications/extract \
     "gmail_thread_id": "18f2a3b4c5d6e7f8",
     "user_email": "user@example.com"
   }'
-```
+```text
 
 ### Step 5: Check Connection Status
 
@@ -319,7 +321,7 @@ Response:
   "expires_at": 1730412345000,
   "has_refresh_token": true
 }
-```
+```text
 
 ### Step 6: Disconnect
 
@@ -331,7 +333,7 @@ Response:
   "success": true,
   "message": "Disconnected Gmail for user@example.com"
 }
-```
+```text
 
 ---
 
@@ -363,7 +365,7 @@ print('Add these to .env:')
 print(f'GMAIL_REFRESH_TOKEN={creds.refresh_token}')
 print(f'GMAIL_USER=your-email@gmail.com')
 "
-```
+```text
 
 ### Configure
 
@@ -373,7 +375,7 @@ GMAIL_CLIENT_ID=your-client-id
 GMAIL_CLIENT_SECRET=your-client-secret
 GMAIL_REFRESH_TOKEN=1//your-refresh-token
 GMAIL_USER=you@gmail.com
-```
+```text
 
 ### Usage
 
@@ -381,7 +383,7 @@ GMAIL_USER=you@gmail.com
 # No need for X-User-Email header
 curl -X POST http://localhost:8003/applications/extract \
   -d '{"gmail_thread_id": "18f2a3b4c5d6e7f8"}'
-```
+```text
 
 ---
 
@@ -394,7 +396,7 @@ For CI/CD or local development without Google API.
 ```bash
 # In services/api/.env
 USE_MOCK_GMAIL=True
-```
+```text
 
 ### Seed Mock Data (Optional)
 
@@ -418,7 +420,7 @@ mock_threads = {
 provider = mock_provider(mock_threads)
 
 # Now API calls will return mocked data
-```
+```text
 
 ### Benefits
 
@@ -439,7 +441,7 @@ Optional feature to extract text from PDF attachments.
 # In services/api/.env
 GMAIL_PDF_PARSE=True
 GMAIL_PDF_MAX_BYTES=2097152  # 2MB max
-```
+```text
 
 ### How It Works
 
@@ -491,7 +493,7 @@ Extract company, role, source from email (no DB changes).
   "headers": {},                           // Fallback
   "attachments": []                        // Fallback
 }
-```
+```text
 
 **Response**:
 
@@ -510,7 +512,7 @@ Extract company, role, source from email (no DB changes).
     "user_email": "user@example.com"
   }
 }
-```
+```text
 
 ### POST /applications/backfill-from-email
 
@@ -528,7 +530,7 @@ Extract and create/update application.
     "source": "Manual"  // Optional default source
   }
 }
-```
+```text
 
 **Response**:
 
@@ -552,7 +554,7 @@ Extract and create/update application.
   },
   "updated": false
 }
-```
+```text
 
 ### GET /oauth/google/init
 
@@ -560,9 +562,9 @@ Start OAuth flow for user.
 
 **Request**:
 
-```
+```text
 GET /oauth/google/init?user_email=user@example.com
-```
+```text
 
 **Response**:
 
@@ -570,7 +572,7 @@ GET /oauth/google/init?user_email=user@example.com
 {
   "authUrl": "https://accounts.google.com/o/oauth2/auth?..."
 }
-```
+```text
 
 ### GET /oauth/google/callback
 
@@ -578,9 +580,9 @@ Handle OAuth callback (user lands here after Google consent).
 
 **Request**:
 
-```
+```text
 GET /oauth/google/callback?code=xxx&state={"user_email":"..."}
-```
+```text
 
 **Response**:
 
@@ -591,7 +593,7 @@ GET /oauth/google/callback?code=xxx&state={"user_email":"..."}
     <p>You can close this window.</p>
   </body>
 </html>
-```
+```text
 
 ### GET /oauth/google/status
 
@@ -599,9 +601,9 @@ Check connection status for user.
 
 **Request**:
 
-```
+```text
 GET /oauth/google/status?user_email=user@example.com
-```
+```text
 
 **Response**:
 
@@ -612,7 +614,7 @@ GET /oauth/google/status?user_email=user@example.com
   "expires_at": 1730412345000,
   "has_refresh_token": true
 }
-```
+```text
 
 ### DELETE /oauth/google/disconnect
 
@@ -620,9 +622,9 @@ Disconnect user's Gmail (delete tokens).
 
 **Request**:
 
-```
+```text
 DELETE /oauth/google/disconnect?user_email=user@example.com
-```
+```text
 
 **Response**:
 
@@ -631,7 +633,7 @@ DELETE /oauth/google/disconnect?user_email=user@example.com
   "success": true,
   "message": "Disconnected Gmail for user@example.com"
 }
-```
+```text
 
 ---
 
@@ -657,25 +659,25 @@ Confidence scores range from 0.4 (weak) to 0.95 (strong).
 
 **Weak Signal** (0.4):
 
-```
+```text
 From: unknown@example.com
 Subject: Hello
 Text: General message
 → source=null, confidence=0.4
-```
+```text
 
 **Medium Signal** (0.55):
 
-```
+```text
 From: hr@company.com
 Subject: Application update
 Text: Thanks for applying to the position
 → source=null, confidence=0.55 (job keywords)
-```
+```text
 
 **Strong Signal** (0.95):
 
-```
+```text
 From: notifications@greenhouse.io
 Subject: Interview for Senior Engineer
 Headers: {
@@ -683,7 +685,7 @@ Headers: {
   "DKIM-Signature": "...greenhouse.io..."
 }
 → source="Greenhouse", confidence=0.95
-```
+```text
 
 ---
 
@@ -717,7 +719,7 @@ def test_pdf_attachment_hint():
     ))
     
     assert result.source_confidence >= 0.6
-```
+```text
 
 ### Integration Tests
 
@@ -740,7 +742,7 @@ def test_extract_endpoint():
     assert data["company"] == "acme"
     assert data["role"] == "Senior Engineer"
     assert 0.4 <= data["source_confidence"] <= 1.0
-```
+```text
 
 ### Mock Provider Tests
 
@@ -762,7 +764,7 @@ def test_mock_provider():
     
     result = await provider.fetch_thread_latest("thread123")
     assert result["subject"] == "Test"
-```
+```text
 
 ---
 
@@ -782,7 +784,7 @@ env | grep GMAIL
 GMAIL_CLIENT_ID=...
 GMAIL_CLIENT_SECRET=...
 OAUTH_REDIRECT_URI=...
-```
+```text
 
 ### "Invalid state parameter"
 
@@ -823,7 +825,7 @@ OAUTH_REDIRECT_URI=...
 
 ```bash
 pip install pdfminer.six
-```
+```text
 
 ### Low Confidence Scores
 
@@ -877,7 +879,7 @@ extraction_confidence = Histogram(
     "extraction_confidence",
     "Distribution of confidence scores"
 )
-```
+```text
 
 ### Scaling
 

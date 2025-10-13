@@ -6,11 +6,11 @@ This document outlines the versioning strategy, release workflow, and PR checkli
 
 ApplyLens follows **Semantic Versioning 2.0.0** (<https://semver.org/>):
 
-```
+```text
 MAJOR.MINOR.PATCH
 
 Example: 1.2.3
-```
+```text
 
 - **MAJOR:** Breaking changes (API changes, database schema incompatibilities)
 - **MINOR:** New features (backwards-compatible)
@@ -40,7 +40,7 @@ Example: 1.2.3
 
 ### Workflow
 
-```
+```bash
 1. Create feature branch from develop
    git checkout -b feature/my-feature develop
 
@@ -57,19 +57,19 @@ Example: 1.2.3
    # Update version, changelog
    git merge --no-ff release/1.2.0 main
    git tag -a v1.2.0 -m "Release 1.2.0"
-```
+```text
 
 ## Commit Message Convention
 
 Follow **Conventional Commits** (<https://www.conventionalcommits.org/>):
 
-```
+```text
 <type>(<scope>): <subject>
 
 [optional body]
 
 [optional footer]
-```
+```text
 
 ### Types
 
@@ -110,7 +110,7 @@ test(emails): add test for risk score calculation
 
 Added unit tests for confidence learning risk scoring.
 Covered edge cases: empty features, negative weights.
-```
+```text
 
 ## Release Checklist
 
@@ -214,7 +214,7 @@ Closes #(issue)
 
 Before: [image]
 After: [image]
-```
+```text
 
 ## Hotfix Process
 
@@ -243,7 +243,7 @@ git merge --no-ff hotfix/critical-bug
 
 # 7. Deploy immediately
 git push origin main develop --tags
-```
+```text
 
 ## Changelog Format
 
@@ -286,7 +286,7 @@ Use [Keep a Changelog](https://keepachangelog.com/) format:
 ## [1.1.0] - 2025-09-15
 
 ...
-```
+```text
 
 ## Automated Release (GitHub Actions)
 
@@ -331,7 +331,7 @@ jobs:
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
           docker push applylens/api:${{ steps.version.outputs.VERSION }}
           docker push applylens/web:${{ steps.version.outputs.VERSION }}
-```
+```text
 
 ## See Also
 

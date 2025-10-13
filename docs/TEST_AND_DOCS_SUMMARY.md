@@ -15,7 +15,7 @@
 ```bash
 cd services/api
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 **Results:**
 
@@ -40,7 +40,7 @@ docker-compose up -d db
 
 # Then run tests
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 **Test Coverage:**
 
@@ -57,7 +57,7 @@ pytest tests/test_confidence_learning.py -v
 
 #### Created `/docs` Folder Structure
 
-```
+```text
 docs/
 ├── README.md                          # Master documentation index
 ├── PHASE_1_AUDIT.md
@@ -74,7 +74,7 @@ docs/
 ├── RUN_FULL_STACK.md
 ├── SETUP_GUIDE.md
 └── ... (44 files total)
-```
+```text
 
 #### Files Moved (44 total)
 
@@ -117,7 +117,7 @@ cd apps/web
 pnpm test                          # All tests
 pnpm test chat.modes.spec.ts       # Mode selector tests
 pnpm test policy-panel.spec.ts     # Policy panel tests
-```
+```text
 
 **Available Tests:**
 
@@ -133,7 +133,7 @@ pnpm test policy-panel.spec.ts     # Policy panel tests
 
 **Documentation Consolidation:**
 
-```
+```text
 46 files changed, 734 insertions(+), 132 deletions(-)
 
 Renames (44 files):
@@ -148,7 +148,7 @@ Modified:
 
 Created:
 - docs/PHASE_6_POLISH_COMPLETE.md (320 lines)
-```
+```text
 
 **All Changes Pushed:**
 
@@ -275,7 +275,7 @@ docker-compose up -d db
 # Terminal 2: Run tests
 cd services/api
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 **Frontend:**
 
@@ -287,7 +287,7 @@ pnpm dev
 # Terminal 2: Run tests
 cd apps/web
 pnpm test
-```
+```text
 
 ### Documentation Maintenance
 

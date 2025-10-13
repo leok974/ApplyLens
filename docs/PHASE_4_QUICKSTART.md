@@ -42,7 +42,7 @@ npm run dev
 
 # 3. Open browser
 # http://localhost:5175
-```
+```text
 
 ### Test Flow
 
@@ -52,7 +52,7 @@ npm run dev
 # Via UI: Click "Sync Now" button
 # Or via API:
 curl -X POST http://localhost:8003/api/gmail/sync
-```
+```text
 
 **Step 2: Create Test Policy (That Will Match)**
 
@@ -73,7 +73,7 @@ $policy = @{
 curl -X POST http://localhost:8003/api/actions/policies `
     -H "Content-Type: application/json" `
     -d $policy
-```
+```text
 
 **Step 3: Propose Actions**
 
@@ -84,7 +84,7 @@ $body = @{ email_ids = @(1,2,3,4,5) } | ConvertTo-Json
 curl -X POST http://localhost:8003/api/actions/propose `
     -H "Content-Type: application/json" `
     -d $body
-```
+```text
 
 **Step 4: View in UI**
 
@@ -104,14 +104,14 @@ curl -X POST http://localhost:8003/api/actions/propose `
 ```powershell
 # View all policies
 curl http://localhost:8003/api/actions/policies | jq '.[] | select(.name | contains("Learned"))'
-```
+```text
 
 **Step 7: Check Metrics**
 
 ```powershell
 # View Prometheus metrics
 curl http://localhost:8003/metrics | Select-String -Pattern "actions_"
-```
+```text
 
 ---
 
@@ -122,11 +122,11 @@ Run our test script:
 ```powershell
 cd d:/ApplyLens
 pwsh ./scripts/test-always-feature.ps1
-```
+```text
 
 **Expected output:**
 
-```
+```text
 === Testing 'Always do this' Feature ===
 
 [1/6] Checking API health...
@@ -148,7 +148,7 @@ pwsh ./scripts/test-always-feature.ps1
 ✓ All metrics are exposed
 
 🎉 All tests passed!
-```
+```text
 
 ---
 
@@ -166,7 +166,7 @@ pwsh ./scripts/test-always-feature.ps1
     "risk_score": 0.15
   }
 }
-```
+```text
 
 **Response:**
 
@@ -175,7 +175,7 @@ pwsh ./scripts/test-always-feature.ps1
   "ok": true,
   "policy_id": 42
 }
-```
+```text
 
 **What it does:**
 
@@ -201,7 +201,7 @@ pwsh ./scripts/test-always-feature.ps1
     ]
   }
 }
-```
+```text
 
 ---
 
@@ -218,7 +218,7 @@ actions_executed_total{action_type="archive_email",outcome="success"} 45
 
 # Failed executions by action type and error
 actions_failed_total{action_type="unsubscribe_via_header",error_type="No header"} 3
-```
+```text
 
 ### Useful Queries
 
@@ -226,20 +226,20 @@ actions_failed_total{action_type="unsubscribe_via_header",error_type="No header"
 
 ```promql
 rate(actions_proposed_total[5m])
-```
+```text
 
 **Success rate:**
 
 ```promql
 sum(rate(actions_executed_total{outcome="success"}[5m])) / 
 (sum(rate(actions_executed_total[5m])) + sum(rate(actions_failed_total[5m])))
-```
+```text
 
 **Top failing actions:**
 
 ```promql
 topk(5, sum by (action_type) (rate(actions_failed_total[1h])))
-```
+```text
 
 ### Grafana Dashboard
 
@@ -268,7 +268,7 @@ Import this JSON to create a dashboard:
     ]
   }
 }
-```
+```text
 
 ---
 
@@ -280,20 +280,20 @@ Import this JSON to create a dashboard:
 # Propose for all emails matching a query
 $body = @{ query = "category:promo OR risk_score:[80 TO *]"; limit = 50 } | ConvertTo-Json
 curl -X POST http://localhost:8003/api/actions/propose -d $body | jq .
-```
+```text
 
 ### View Tray
 
 ```powershell
 curl http://localhost:8003/api/actions/tray?limit=100 | jq '.[] | {id, action, confidence, email_subject}'
-```
+```text
 
 ### Approve First Action
 
 ```powershell
 $firstId = curl -s http://localhost:8003/api/actions/tray | jq -r '.[0].id'
 curl -X POST "http://localhost:8003/api/actions/$firstId/approve" -d '{}' | jq .
-```
+```text
 
 ### Create Learned Policy
 
@@ -309,19 +309,19 @@ $body = @{
 curl -X POST "http://localhost:8003/api/actions/$firstId/always" `
     -H "Content-Type: application/json" `
     -d $body | jq .
-```
+```text
 
 ### View Learned Policies
 
 ```powershell
 curl http://localhost:8003/api/actions/policies | jq '.[] | select(.name | contains("Learned"))'
-```
+```text
 
 ### View Metrics
 
 ```powershell
 curl http://localhost:8003/metrics | Select-String -Pattern "actions_proposed_total"
-```
+```text
 
 ---
 
@@ -356,7 +356,7 @@ Ensure rationale includes `features`:
     }
   }
 }
-```
+```text
 
 Update `build_rationale()` in actions router to include features.
 
@@ -382,7 +382,7 @@ cd d:/ApplyLens/infra
 docker compose ps  # Check status
 docker compose up -d api  # Start API
 docker compose logs api  # Check logs
-```
+```text
 
 ### "Frontend can't connect to API"
 
@@ -398,7 +398,7 @@ proxy: {
     changeOrigin: true,
   }
 }
-```
+```text
 
 Or access API directly: <http://localhost:8003/api/actions/tray>
 
@@ -504,6 +504,6 @@ pwsh ./scripts/test-always-feature.ps1
 # 1. Open http://localhost:5175
 # 2. Click "Actions" button
 # 3. Try "Always do this" on an action
-```
+```text
 
 **Happy automating! 🚀**

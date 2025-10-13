@@ -10,26 +10,26 @@ One-page cheat sheet for Phase-2 email categorization automation.
 
 ```bash
 make phase2-all
-```
+```bash
 
 ### 🌐 Cross-Platform → npm
 
 ```bash
 npm install
 npm run phase2:all
-```
+```text
 
 ### 🪟 Windows → PowerShell
 
 ```powershell
 .\scripts\phase2-all.ps1
-```
+```text
 
 ---
 
 ## 📋 What It Does
 
-```
+```text
 ┌─────────────────────┐
 │  Elasticsearch      │  ← 15,234 emails
 │  (emails_v1-000001) │
@@ -55,7 +55,7 @@ npm run phase2:all
 │  + confidence       │
 │  + expires_at       │
 └─────────────────────┘
-```
+```text
 
 ---
 
@@ -72,7 +72,7 @@ npm run phase2:all
 
 # PowerShell
 .\scripts\phase2-all.ps1
-```
+```text
 
 ### Step by Step
 
@@ -89,7 +89,7 @@ npm run phase2:apply
 
 # PowerShell
 .\scripts\phase2-all.ps1  # (runs all steps automatically)
-```
+```text
 
 ### View Results
 
@@ -101,7 +101,7 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
 # PowerShell
 Invoke-RestMethod -Uri "http://localhost:8003/labels/stats"
 Invoke-RestMethod -Uri "http://localhost:8003/profile/summary?days=60"
-```
+```text
 
 ---
 
@@ -112,7 +112,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/profile/summary?days=60"
 ```bash
 make export-weak EXPORT_DAYS=90 EXPORT_LIMIT=50000
 make apply-labels API_BASE=https://api.applylens.app
-```
+```bash
 
 ### npm (Environment Variables)
 
@@ -124,13 +124,13 @@ npm run phase2:export
 
 # Unix/Linux/Mac
 ES_URL=http://localhost:9200 npm run phase2:export
-```
+```text
 
 ### PowerShell (Parameters)
 
 ```powershell
 .\scripts\phase2-all.ps1 -Days 90 -Limit 50000 -ApiBase https://api.applylens.app
-```
+```text
 
 ---
 
@@ -179,11 +179,11 @@ Phase-2 automatically labels emails into:
     "other": 4877
   }
 }
-```
+```text
 
 ### Training Phase
 
-```
+```text
 ✅ Saved model to label_model.joblib
 
               precision    recall  f1-score   support
@@ -194,13 +194,13 @@ Phase-2 automatically labels emails into:
        other       0.79      0.83      0.81      1877
 
     accuracy                           0.89     12500
-```
+```text
 
 ### Apply Phase
 
 ```json
 {"updated": 15234}
-```
+```text
 
 ---
 
@@ -215,7 +215,7 @@ curl http://localhost:9200/emails_v1-000001/_count
 # Solution: Run Gmail backfill first
 cd analytics/ingest
 python gmail_backfill_to_es_bq.py
-```
+```text
 
 ### API Not Running
 
@@ -226,7 +226,7 @@ curl http://localhost:8003/health
 # Solution: Start API service
 cd services/api
 docker-compose up -d api
-```
+```text
 
 ### Module Not Found
 
@@ -236,14 +236,14 @@ cd services/api
 pip install -e .
 # or
 poetry install
-```
+```text
 
 ### Permission Denied (PowerShell)
 
 ```powershell
 # Allow script execution
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+```text
 
 ---
 
@@ -270,14 +270,14 @@ make export-weak EXPORT_DAYS=30
 
 # Last 7 days
 .\scripts\phase2-all.ps1 -Days 7
-```
+```text
 
 ### Large Dataset Training
 
 ```bash
 # 100k rows, 20k per category
 make export-weak EXPORT_LIMIT=100000 EXPORT_LPC=20000
-```
+```text
 
 ### Production Deployment
 
@@ -288,7 +288,7 @@ make export-weak EXPORT_LIMIT=100000 EXPORT_LPC=20000
   -Days 90 `
   -Limit 100000 `
   -PerCat 20000
-```
+```text
 
 ### Re-train with New Rules
 
@@ -300,7 +300,7 @@ make export-weak
 make train-labels
 # 4. Re-apply to all emails
 make apply-labels
-```
+```text
 
 ---
 
@@ -333,7 +333,7 @@ curl localhost:8003/labels/stats | jq
 
 # Elasticsearch query
 curl "localhost:9200/emails_v1-000001/_search?q=category:promo&size=1" | jq
-```
+```text
 
 ---
 

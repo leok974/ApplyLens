@@ -58,7 +58,7 @@ The Email Automation System adds intelligent email classification and policy-bas
 
 ### System Components
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    Email Ingestion                       │
 │               (Gmail API → PostgreSQL)                   │
@@ -107,7 +107,7 @@ The Email Automation System adds intelligent email classification and policy-bas
 │  • Move to folders                                      │
 │  • Trigger unsubscribe                                  │
 └─────────────────────────────────────────────────────────┘
-```
+```text
 
 ### Data Flow
 
@@ -141,7 +141,7 @@ features_json JSONB,       -- Extracted features for ML
 CREATE INDEX idx_emails_category ON emails(category);
 CREATE INDEX idx_emails_risk_score ON emails(risk_score);
 CREATE INDEX idx_emails_expires_at ON emails(expires_at);
-```
+```text
 
 #### 2. `actions_audit` Table
 
@@ -164,7 +164,7 @@ CREATE INDEX idx_actions_audit_email_id ON actions_audit(email_id);
 CREATE INDEX idx_actions_audit_actor ON actions_audit(actor);
 CREATE INDEX idx_actions_audit_action ON actions_audit(action);
 CREATE INDEX idx_actions_audit_created_at ON actions_audit(created_at);
-```
+```text
 
 **Example audit entry**:
 
@@ -180,7 +180,7 @@ CREATE INDEX idx_actions_audit_created_at ON actions_audit(created_at);
   "payload": {},
   "created_at": "2025-10-09T14:30:00Z"
 }
-```
+```text
 
 #### 3. `user_profile` Table
 
@@ -197,7 +197,7 @@ CREATE TABLE user_profile (
   open_rates JSONB,                  -- {"promo": 0.23, "bills": 0.88}
   updated_at TIMESTAMPTZ DEFAULT now()
 );
-```
+```text
 
 **Example profile**:
 
@@ -220,7 +220,7 @@ CREATE TABLE user_profile (
     "personal": 0.78
   }
 }
-```
+```text
 
 ### Elasticsearch Mapping
 
@@ -254,13 +254,13 @@ New fields in `emails_v1` index:
     }
   }
 }
-```
+```text
 
 **Update existing index**:
 
 ```bash
 python -m app.scripts.update_es_mapping
-```
+```text
 
 ---
 
@@ -297,7 +297,7 @@ print(result)
 #   "profile_tags": ["brand:amazon", "urgent"],
 #   "confidence": 0.9
 # }
-```
+```text
 
 ### Risk Scoring
 
@@ -344,7 +344,7 @@ Risk indicators (cumulative scoring):
     "params": {}
   }
 }
-```
+```text
 
 ### Conditional Logic
 
@@ -388,7 +388,7 @@ Risk indicators (cumulative scoring):
     "notify": false
   }
 }
-```
+```text
 
 #### 2. High-Risk Quarantine
 
@@ -407,7 +407,7 @@ Risk indicators (cumulative scoring):
     "notify": true
   }
 }
-```
+```text
 
 #### 3. Bill Reminder
 
@@ -428,7 +428,7 @@ Risk indicators (cumulative scoring):
     "notify": false
   }
 }
-```
+```text
 
 #### 4. Application Priority
 
@@ -448,7 +448,7 @@ Risk indicators (cumulative scoring):
     "notify": false
   }
 }
-```
+```text
 
 ### Using the Policy Engine
 
@@ -482,7 +482,7 @@ print(actions)
 # Evaluate batch
 emails = [email1, email2, email3]
 results = engine.evaluate_batch(emails)  # Dict[email_id, List[actions]]
-```
+```text
 
 ---
 
@@ -508,7 +508,7 @@ Preview actions before execution. Shows what would happen WITHOUT making changes
     }
   ]
 }
-```
+```text
 
 **Response**:
 
@@ -528,7 +528,7 @@ Preview actions before execution. Shows what would happen WITHOUT making changes
     "blocked": 0
   }
 }
-```
+```text
 
 ### 2. Execute Actions
 
@@ -550,7 +550,7 @@ Execute approved actions on emails. Makes real changes!
     }
   ]
 }
-```
+```text
 
 **Response**:
 
@@ -567,7 +567,7 @@ Execute approved actions on emails. Makes real changes!
     }
   ]
 }
-```
+```text
 
 ### 3. Get Action History
 
@@ -592,7 +592,7 @@ Get all actions taken on a specific email.
     }
   ]
 }
-```
+```text
 
 ### 4. Suggest Actions (Batch)
 
@@ -606,7 +606,7 @@ Use policy engine to suggest actions for multiple emails.
 {
   "email_ids": ["email_1", "email_2", "email_3"]
 }
-```
+```text
 
 **Response**:
 
@@ -633,7 +633,7 @@ Use policy engine to suggest actions for multiple emails.
     ]
   }
 }
-```
+```text
 
 ---
 
@@ -704,7 +704,7 @@ Use policy engine to suggest actions for multiple emails.
   "rationale": "Phishing attempt: fake PayPal domain"
 }
 # Success!
-```
+```text
 
 ---
 
@@ -730,7 +730,7 @@ Use policy engine to suggest actions for multiple emails.
 ```bash
 cd services/api
 pytest tests/unit/test_classifier.py -v
-```
+```text
 
 ### E2E Tests
 
@@ -752,7 +752,7 @@ pytest tests/unit/test_classifier.py -v
 ```bash
 cd services/api
 pytest tests/e2e/ -v
-```
+```text
 
 ### Test Examples
 
@@ -773,7 +773,7 @@ async def test_expired_promo_is_proposed_for_archive():
     
     assert len(actions) > 0
     assert actions[0]["action"] == "archive"
-```
+```text
 
 **Test quarantine safety**:
 
@@ -791,7 +791,7 @@ async def test_quarantine_requires_high_confidence():
         
         response = await ac.post("/mail/actions/preview", json=payload)
         assert response.json()["results"][0]["allowed"] is False
-```
+```text
 
 ---
 
@@ -802,7 +802,7 @@ async def test_quarantine_requires_high_confidence():
 ```bash
 cd services/api
 alembic upgrade head
-```
+```text
 
 This creates:
 
@@ -815,7 +815,7 @@ This creates:
 ```bash
 cd services/api
 python -m app.scripts.update_es_mapping
-```
+```text
 
 Adds new fields to `emails_v1` index.
 
@@ -828,7 +828,7 @@ uvicorn app.main:app --reload
 
 # Production
 docker-compose restart api
-```
+```text
 
 ### 4. Verify Installation
 
@@ -838,7 +838,7 @@ curl http://localhost:8000/health
 
 # Check mail tools endpoints
 curl http://localhost:8000/docs#/mail-tools
-```
+```text
 
 ### 5. Optional: Classify Existing Emails
 
@@ -864,7 +864,7 @@ async def backfill_classification():
             # ...
         
         await db.commit()
-```
+```text
 
 ---
 
@@ -888,7 +888,7 @@ async def backfill_classification():
   },
   "then": {"action": "archive"}
 }
-```
+```text
 
 **Result**: Expired promos automatically archived, inbox stays clean
 
@@ -908,7 +908,7 @@ email = {
 
 risk_score = calculate_risk_score(email)  # Returns 85
 # Policy triggers quarantine (risk >= 80)
-```
+```text
 
 **Result**: Suspicious emails quarantined for review, users protected
 
@@ -932,7 +932,7 @@ risk_score = calculate_risk_score(email)  # Returns 85
     "params": {"label": "important"}
   }
 }
-```
+```text
 
 **Result**: Never miss an interview invite
 
@@ -957,7 +957,7 @@ risk_score = calculate_risk_score(email)  # Returns 85
     "params": {"label": "needs_attention"}
   }
 }
-```
+```text
 
 **Result**: Visual reminder for unpaid bills
 
@@ -979,7 +979,7 @@ risk_score = calculate_risk_score(email)  # Returns 85
   },
   "then": {"action": "archive"}
 }
-```
+```text
 
 **Result**: Only see promos from preferred brands
 
@@ -1036,7 +1036,7 @@ alembic downgrade -1
 
 # Re-run migration
 alembic upgrade head
-```
+```text
 
 **2. Elasticsearch mapping conflicts**
 
@@ -1044,7 +1044,7 @@ alembic upgrade head
 # Create new index and reindex
 from app.scripts.update_es_mapping import reindex_with_new_fields
 reindex_with_new_fields(es, 'emails_v1', 'emails_v2')
-```
+```text
 
 **3. Actions not executing**
 

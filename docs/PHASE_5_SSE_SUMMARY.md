@@ -59,14 +59,14 @@
 
 ### Backend Streaming Tests
 
-```
+```text
 === Phase 5 Chat Streaming - API Tests ===
 
 Passed: 7/7
 Failed: 0/7
 
 ✅ All tests passed!
-```
+```text
 
 **Tests**:
 
@@ -80,11 +80,11 @@ Failed: 0/7
 
 ### Comprehensive Phase 5 Tests
 
-```
+```text
 === Phase 5 Chat Assistant - API Tests ===
 
 Total: 12/12 PASSED
-```
+```text
 
 ## User Workflow
 
@@ -126,17 +126,17 @@ Total: 12/12 PASSED
 
 ### Frontend Flow
 
-```
+```text
 User Input → EventSource → SSE Events → Progressive UI Updates
                 ↓
          propose=1 param
                 ↓
     "✅ Filed X actions" confirmation
-```
+```text
 
 ### Backend Flow
 
-```
+```text
 GET /chat/stream?q=...&propose=1
          ↓
    Detect Intent → emit 'intent'
@@ -149,11 +149,11 @@ GET /chat/stream?q=...&propose=1
    File to Approvals → emit 'filed'
          ↓
    Close Stream → emit 'done'
-```
+```text
 
 ### Database Integration
 
-```
+```text
 chat.py → approvals_bulk_insert() → approvals_proposed table
                                             ↓
                                     Phase 4 Approvals Tray
@@ -163,7 +163,7 @@ chat.py → approvals_bulk_insert() → approvals_proposed table
                                     Execute on Gmail
                                             ↓
                                     actions_audit table
-```
+```text
 
 ## Key Features
 
@@ -256,7 +256,7 @@ data: {"proposed":5}
 
 event: done
 data: {"ok":true}
-```
+```text
 
 ## Running the App
 
@@ -270,7 +270,7 @@ docker-compose up -d
 # Frontend
 cd d:\ApplyLens\apps\web
 npm run dev
-```
+```text
 
 ### Access
 
@@ -292,7 +292,7 @@ pwsh ./scripts/test-chat.ps1
 # Playwright e2e tests (optional)
 cd apps\web
 npx playwright test tests/chat-run-actions.spec.ts
-```
+```text
 
 ## What's Next
 

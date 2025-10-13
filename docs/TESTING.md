@@ -35,7 +35,7 @@ All confidence estimation tests now pass with database connectivity:
 ```powershell
 $env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@localhost:5433/applylens"
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 ### Issues Resolved
 
@@ -89,14 +89,14 @@ pytest tests/test_confidence_learning.py -v
 
 All ApplyLens infrastructure services confirmed running:
 
-```
+```text
 NAMES                 STATUS             PORTS
 infra-api-1           Up 2 hours         0.0.0.0:8003->8003/tcp
 infra-db-1            Up 2 hours         0.0.0.0:5433->5432/tcp  ✅
 infra-es-1            Up 2 hours         0.0.0.0:9200->9200/tcp (healthy)
 infra-ollama-1        Up 2 hours         0.0.0.0:11434->11434/tcp
 infra-cloudflared-1   Up 2 hours
-```
+```text
 
 ### Database Verification
 
@@ -110,7 +110,7 @@ Result: 17 tables found including:
 - user_weights ✅ (used by confidence learning)
 - actions_audit
 - proposed_actions
-```
+```text
 
 ## Recommendations
 
@@ -206,7 +206,7 @@ All confidence estimation tests now pass with database connectivity:
 ```powershell
 $env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@localhost:5433/applylens"
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 ### Issues Resolved
 
@@ -260,14 +260,14 @@ pytest tests/test_confidence_learning.py -v
 
 All ApplyLens infrastructure services confirmed running:
 
-```
+```text
 NAMES                 STATUS             PORTS
 infra-api-1           Up 2 hours         0.0.0.0:8003->8003/tcp
 infra-db-1            Up 2 hours         0.0.0.0:5433->5432/tcp  ✅
 infra-es-1            Up 2 hours         0.0.0.0:9200->9200/tcp (healthy)
 infra-ollama-1        Up 2 hours         0.0.0.0:11434->11434/tcp
 infra-cloudflared-1   Up 2 hours
-```
+```text
 
 ### Database Verification
 
@@ -281,7 +281,7 @@ Result: 17 tables found including:
 - user_weights ✅ (used by confidence learning)
 - actions_audit
 - proposed_actions
-```
+```text
 
 ## Recommendations
 
@@ -368,7 +368,7 @@ Implemented comprehensive E2E testing suite using Playwright to verify the Phase
 cd apps/web
 pnpm add -D @playwright/test
 pnpm exec playwright install --with-deps
-```
+```text
 
 **Status:** ✅ Installed (@playwright/test@1.56.0)
 
@@ -429,7 +429,7 @@ await expect(page.getByText(/syncing last 7 days/i)).toBeVisible({ timeout: 1500
 await expect(page.getByText(/applying smart labels/i)).toBeVisible({ timeout: 30000 });
 await expect(page.getByText(/updating your profile/i)).toBeVisible({ timeout: 30000 });
 await expect(page.getByText(/sync complete/i)).toBeVisible({ timeout: 30000 });
-```
+```text
 
 ---
 
@@ -469,7 +469,7 @@ await expect(page).toHaveURL(/cat=ats/);
 
 await pro.click();
 await expect(page).toHaveURL(/cat=ats,promotions/);
-```
+```text
 
 ---
 
@@ -501,7 +501,7 @@ await page.waitForSelector("[data-testid='search-result-item']");
 
 const subject = page.locator("h3").first();
 await expect(subject.locator("mark")).toHaveText(/Interview/i);
-```
+```text
 
 ---
 
@@ -533,7 +533,7 @@ await link.click();
 
 await expect(page).toHaveURL(/\/profile/);
 await expect(page.getByText(/Top senders/i)).toBeVisible();
-```
+```text
 
 ---
 
@@ -548,7 +548,7 @@ await expect(page.getByText(/Top senders/i)).toBeVisible();
 // Sync buttons
 <Button data-testid="btn-sync-7">Sync 7 days</Button>
 <Button data-testid="btn-sync-60">Sync 60 days</Button>
-```
+```text
 
 ### SearchControls.tsx
 
@@ -563,13 +563,13 @@ await expect(page.getByText(/Top senders/i)).toBeVisible();
 // Hide expired controls
 <Switch data-testid="switch-hide-expired" />
 <Button data-testid="chip-expired-toggle">Show expired</Button>
-```
+```text
 
 ### Search.tsx (existing)
 
 ```tsx
 <div data-testid="search-result-item">...</div>
-```
+```text
 
 ---
 
@@ -587,26 +587,26 @@ docker compose up -d api web
 # Ensure services are running:
 # - API on http://localhost:8003
 # - Web on http://localhost:5175
-```
+```text
 
 **Run all tests:**
 
 ```bash
 cd apps/web
 pnpm test:e2e
-```
+```text
 
 **Run with UI mode (recommended for development):**
 
 ```bash
 pnpm test:e2e:ui
-```
+```text
 
 **Run in headed mode (see browser):**
 
 ```bash
 pnpm test:e2e:headed
-```
+```text
 
 **Run specific test file:**
 
@@ -615,7 +615,7 @@ pnpm exec playwright test tests/pipeline.spec.ts
 pnpm exec playwright test tests/search.spec.ts
 pnpm exec playwright test tests/highlight.spec.ts
 pnpm exec playwright test tests/profile.spec.ts
-```
+```text
 
 ---
 
@@ -641,7 +641,7 @@ jobs:
           E2E_BASE_URL: "http://localhost:5175"
           E2E_API: "http://localhost:8003/api"
           E2E_NO_SERVER: "1"
-```
+```text
 
 **CI Environment Variables:**
 
@@ -692,7 +692,7 @@ await context.route(`${API}/search/**`, route => {
     }
   });
 });
-```
+```text
 
 **Benefits:**
 
@@ -713,7 +713,7 @@ try {
 } catch {
   test.skip(true, "API not reachable");
 }
-```
+```text
 
 ### 3. Flexible Selectors
 
@@ -723,7 +723,7 @@ Tests use testids with fallbacks:
 const sync7 = page
   .getByTestId("btn-sync-7")
   .or(page.getByRole("button", { name: /sync 7/i }));
-```
+```text
 
 **Benefits:**
 
@@ -736,14 +736,14 @@ const sync7 = page
 
 ### Console Output (List Reporter)
 
-```
+```text
 ✓ [chromium] › pipeline.spec.ts:5:3 › Pipeline sync buttons › runs Gmail→Label→Profile with toasts (25s)
 ✓ [chromium] › search.spec.ts:50:3 › Search controls › category buttons mutate URL and drive query (1s)
 ✓ [chromium] › highlight.spec.ts:7:3 › Search result highlighting › subject/snippet render <mark> highlights (500ms)
 ✓ [chromium] › profile.spec.ts:8:3 › Profile page › profile page shows summary (2s)
 
 4 passed (28s)
-```
+```text
 
 ### HTML Reporter
 
@@ -758,7 +758,7 @@ Opens automatically on failure, showing:
 
 ```bash
 pnpm test:e2e:report
-```
+```text
 
 ---
 
@@ -772,7 +772,7 @@ pnpm test:e2e:debug
 
 # Or set environment variable
 PWDEBUG=1 pnpm test:e2e
-```
+```text
 
 ### VS Code Extension
 
@@ -790,7 +790,7 @@ pnpm test:e2e
 
 # View trace
 pnpm exec playwright show-trace trace.zip
-```
+```text
 
 ---
 
@@ -854,7 +854,7 @@ docker compose up -d api web
 # Run tests in UI mode (recommended first time)
 cd d:\ApplyLens\apps\web
 pnpm test:e2e:ui
-```
+```text
 
 ### Expected Results
 
@@ -899,7 +899,7 @@ Added coverage flags with 80% threshold:
 
 ```ini
 addopts = -q --cov=app --cov-report=term-missing --cov-fail-under=80
-```
+```text
 
 **Impact:**
 
@@ -938,7 +938,7 @@ coverage:
       default:
         target: 80%
 comment: false
-```
+```text
 
 **Behavior:**
 
@@ -967,7 +967,7 @@ comment: false
 
 ```bash
 npm run docs:organize
-```
+```text
 
 **Merge Plan:**
 
@@ -986,13 +986,13 @@ npm run docs:organize
   "MD033": false,  // Allow HTML
   "MD041": false   // No first-line heading requirement
 }
-```
+```text
 
 **Usage:**
 
 ```bash
 npm run docs:lint
-```
+```text
 
 ### 3. Documentation Structure ✅
 
@@ -1049,13 +1049,13 @@ Added scripts:
     "markdownlint-cli": "^0.41.0"
   }
 }
-```
+```text
 
 **Installation:**
 
 ```bash
 npm install
-```
+```text
 
 ---
 
@@ -1069,7 +1069,7 @@ npm install
 
 ### Files Created (8)
 
-```
+```text
 codecov.yml
 .markdownlint.json
 scripts/docs/organize-docs.mjs
@@ -1081,15 +1081,15 @@ docs/ARCHITECTURE.md
 docs/SEARCH_ES.md
 docs/RELEASE.md
 docs/CONTRIBUTING.md
-```
+```text
 
 ### Files Modified (3)
 
-```
+```bash
 services/api/pytest.ini          - Added coverage config
 .github/workflows/api-tests.yml  - Added coverage steps
 package.json                     - Added docs scripts
-```
+```text
 
 ---
 
@@ -1228,15 +1228,15 @@ echo $password
 # Add to GitHub Secrets:
 # Name: TEST_DB_PASSWORD
 # Value: <generated password>
-```
+```text
 
 **CODECOV_TOKEN** (Optional)
 
-```
+```text
 # Get from codecov.io after signup
 # Name: CODECOV_TOKEN
 # Value: <token from Codecov dashboard>
-```
+```text
 
 ### Testing Secrets Locally
 
@@ -1251,7 +1251,7 @@ alembic upgrade head
 
 # Run tests
 pytest -v --cov=app --cov-report=term-missing
-```
+```text
 
 ---
 
@@ -1277,7 +1277,7 @@ pytest -v --cov=app --cov-report=term-missing
 ```bash
 # Auto-fix some issues
 npx markdownlint **/*.md --fix --ignore node_modules --ignore .git
-```
+```text
 
 ### Link Check Failures
 
@@ -1302,7 +1302,7 @@ npx markdownlint **/*.md --fix --ignore node_modules --ignore .git
 cd services/api
 pytest -v
 # Should see coverage report with 80% threshold check
-```
+```text
 
 ### ✅ Documentation Organization
 
@@ -1310,7 +1310,7 @@ pytest -v
 npm run docs:organize
 # Should output: "MERGE docs/TEST_EXECUTION_SUMMARY.md → TESTING.md"
 # Should create: docs/README.md
-```
+```text
 
 ### ✅ Markdown Linting
 
@@ -1318,7 +1318,7 @@ npm run docs:organize
 npm run docs:lint
 # Should check all .md files
 # New docs should have no errors
-```
+```text
 
 ### ✅ CI Workflows
 
@@ -1361,7 +1361,7 @@ Impact:
 Next steps: Configure TEST_DB_PASSWORD in GitHub Secrets, sign up for Codecov (optional)"
 
 git push origin polish
-```
+```text
 
 ---
 

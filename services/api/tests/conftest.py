@@ -3,18 +3,38 @@ Pytest configuration and fixtures for ApplyLens API tests.
 
 This module provides:
 - Database session fixtures with automatic rollback
+- AsyncClient fixture with ASGITransport for httpx>=0.28 compatibility
 - Test data factories
 - Mock configurations for external services
 """
 
 import os
 import pytest
-from sqlalchemy import create_engine, event
+import asyncio
+from typing import AsyncIterator, Generator
+
+import httpx
+from httpx import ASGITransport
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from typing import Generator
 
 from app.models import Base
 from app.db import get_db
+from app.main import app  # FastAPI instance
+
+
+@pytest.fixture(scope="session")
+def anyio_backend():
+    """Allow pytest-asyncio/anyio to run httpx async tests."""
+    return "asyncio"
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create a session-scoped event loop for async tests."""
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -91,6 +111,24 @@ def db_session(engine) -> Generator[Session, None, None]:
         # Rollback the transaction - this undoes all changes
         transaction.rollback()
         connection.close()
+
+
+@pytest.fixture
+async def async_client() -> AsyncIterator[httpx.AsyncClient]:
+    """
+    Provide an async HTTP client for testing FastAPI endpoints.
+    
+    Uses ASGITransport for httpx>=0.28 compatibility.
+    This replaces the old AsyncClient(app=app, base_url=...) pattern.
+    
+    Usage in tests:
+        async def test_healthz(async_client):
+            response = await async_client.get("/healthz")
+            assert response.status_code == 200
+    """
+    transport = ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
 
 
 @pytest.fixture

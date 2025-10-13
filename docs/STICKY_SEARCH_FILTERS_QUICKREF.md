@@ -16,21 +16,21 @@ Your search filters, sort preferences, and date ranges now:
 
 **1. Filters Persist Automatically**
 
-```
+```text
 Set filters → Leave page → Come back → Filters still there!
-```
+```text
 
 **2. Share Your Search**
 
-```
+```text
 Set filters → Copy URL → Send to colleague → They see same results
-```
+```text
 
 **3. Quick Reset**
 
-```
+```text
 Multiple filters active → Click "Clear all filters" → Back to defaults
-```
+```text
 
 ---
 
@@ -57,9 +57,9 @@ Multiple filters active → Click "Clear all filters" → Back to defaults
 
 ### localStorage Key
 
-```
+```text
 "search.ui"
-```
+```text
 
 ### Default Values
 
@@ -69,13 +69,13 @@ Multiple filters active → Click "Clear all filters" → Back to defaults
   "replied": "all",
   "sort": "relevance"
 }
-```
+```text
 
 ### Example Shareable URL
 
-```
+```text
 /search?q=interview&scale=7d&labels=offer&replied=false&sort=ttr_desc
-```
+```text
 
 ---
 
@@ -113,7 +113,7 @@ Multiple filters active → Click "Clear all filters" → Back to defaults
 
 **Behavior Flow**
 
-```
+```text
 User changes filter
     ↓
 React state updates
@@ -123,7 +123,7 @@ localStorage saves (instant)
 URL updates (instant)
     ↓
 Next page load → State restores
-```
+```text
 
 ---
 
@@ -131,25 +131,25 @@ Next page load → State restores
 
 ### Daily Email Triage
 
-```
+```text
 First time: Set "Not replied" + "Oldest"
 Every day after: Just open /search → Already filtered!
-```
+```text
 
 ### Team Collaboration
 
-```
+```text
 You: Find important pattern → Copy URL
 Colleague: Click URL → Sees exact same results
-```
+```text
 
 ### Demo Preparation
 
-```
+```text
 Setup: Configure perfect search → Save URL
 Demo: Click URL → Perfect state loads
 Reset: Click "Clear all" → Default view
-```
+```text
 
 ---
 
@@ -199,7 +199,7 @@ Reset: Click "Clear all" → Default view
 
 ```typescript
 const init = useMemo(() => loadUiState(), [])
-```
+```text
 
 ### Save State
 
@@ -207,7 +207,7 @@ const init = useMemo(() => loadUiState(), [])
 useEffect(() => {
   saveUiState({ labels, date_from, date_to, replied, sort })
 }, [labels, dates.from, dates.to, replied, sort])
-```
+```text
 
 ### Update URL
 
@@ -216,7 +216,7 @@ useEffect(() => {
   const url = `/search?${params.toString()}`
   window.history.replaceState(null, '', url)
 }, [q, labels, dates.from, dates.to, replied, sort])
-```
+```text
 
 ### Clear All
 
@@ -227,7 +227,7 @@ onClick={() => {
   setReplied('all')
   setSort('relevance')
 }}
-```
+```text
 
 ---
 

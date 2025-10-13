@@ -40,7 +40,7 @@ Added cursor-based pagination and multi-field sorting to the `/api/applications`
   {"id": "app_1", "company": "OpenAI", ...},
   {"id": "app_2", "company": "Acme", ...}
 ]
-```
+```text
 
 **After**:
 
@@ -55,7 +55,7 @@ Added cursor-based pagination and multi-field sorting to the `/api/applications`
   "order": "desc",
   "total": 42
 }
-```
+```text
 
 ### Response Fields
 
@@ -79,13 +79,13 @@ Cursors are base64-encoded JSON payloads:
 
 ```json
 {"offset": 25}
-```
+```text
 
 **Elasticsearch** (search_after):
 
 ```json
 {"sa": ["2025-10-05T00:00:00", "app_123"]}
-```
+```text
 
 ### Helper Functions
 
@@ -98,7 +98,7 @@ def _decode_cursor(token: str) -> Dict[str, Any]:
         return json.loads(base64.urlsafe_b64decode(token.encode()).decode())
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid cursor")
-```
+```text
 
 ### BigQuery Implementation
 
@@ -110,7 +110,7 @@ FROM `project.dataset.table`
 WHERE status = @status  -- if filter provided
 ORDER BY {sort_col} {order} NULLS LAST, id ASC
 LIMIT @limit OFFSET @offset
-```
+```text
 
 **Cursor logic**:
 
@@ -124,13 +124,13 @@ if cursor:
 next_cursor = None
 if len(items) == limit and (offset + limit) < total:
     next_cursor = _encode_cursor({"offset": offset + limit})
-```
+```text
 
 **Total count**:
 
 ```sql
 SELECT COUNT(1) AS c FROM `project.dataset.table` WHERE status = @status
-```
+```text
 
 ### Elasticsearch Implementation
 
@@ -146,7 +146,7 @@ SELECT COUNT(1) AS c FROM `project.dataset.table` WHERE status = @status
     "search_after": [prev_updated_at, prev_id],  # from cursor
     "size": 25
 }
-```
+```text
 
 **Cursor logic**:
 
@@ -164,7 +164,7 @@ if search_after:
 next_cursor = None
 if len(hits) == limit:
     next_cursor = _encode_cursor({"sa": hits[-1].get("sort")})
-```
+```text
 
 **Total count**: From `hits.total.value` (track_total_hits enabled)
 
@@ -176,7 +176,7 @@ if len(hits) == limit:
 if sort == "updated_at":
     filtered = sorted(filtered, key=lambda x: x.updated_at or datetime.min, 
                      reverse=(order == "desc"))
-```
+```text
 
 **No cursor pagination** (all results fit in one page):
 
@@ -188,7 +188,7 @@ return ApplicationListResponse(
     order=order,
     total=len(filtered)
 )
-```
+```text
 
 ---
 
@@ -225,7 +225,7 @@ export interface ListApplicationsResponse {
   order: AppsOrder
   total?: number | null
 }
-```
+```text
 
 ### API Function
 
@@ -244,7 +244,7 @@ export async function listApplicationsPaged(
   if (!r.ok) throw new Error("Failed to list applications")
   return r.json()
 }
-```
+```text
 
 ### React Component
 
@@ -272,7 +272,7 @@ async function load(reset = false) {
 
 // Reset when sort/order changes
 React.useEffect(() => { load(true) }, [sort, order])
-```
+```text
 
 ---
 
@@ -282,9 +282,9 @@ React.useEffect(() => { load(true) }, [sort, order])
 
 **Request**:
 
-```
+```text
 GET /api/applications?limit=25&sort=updated_at&order=desc
-```
+```text
 
 **Response**:
 
@@ -296,15 +296,15 @@ GET /api/applications?limit=25&sort=updated_at&order=desc
   "order": "desc",
   "total": 100
 }
-```
+```text
 
 ### 2. Load Next Page
 
 **Request**:
 
-```
+```text
 GET /api/applications?limit=25&sort=updated_at&order=desc&cursor=eyJvZmZzZXQiOjI1fQ==
-```
+```text
 
 **Response**:
 
@@ -316,15 +316,15 @@ GET /api/applications?limit=25&sort=updated_at&order=desc&cursor=eyJvZmZzZXQiOjI
   "order": "desc",
   "total": 100
 }
-```
+```text
 
 ### 3. Change Sort (Reset Cursor)
 
 **Request**:
 
-```
+```text
 GET /api/applications?limit=25&sort=company&order=asc
-```
+```text
 
 **Response**:
 
@@ -336,15 +336,15 @@ GET /api/applications?limit=25&sort=company&order=asc
   "order": "asc",
   "total": 100
 }
-```
+```text
 
 ### 4. Filter by Status
 
 **Request**:
 
-```
+```text
 GET /api/applications?limit=25&status=interview&sort=updated_at&order=desc
-```
+```text
 
 **Response**:
 
@@ -356,7 +356,7 @@ GET /api/applications?limit=25&status=interview&sort=updated_at&order=desc
   "order": "desc",
   "total": 15
 }
-```
+```text
 
 ---
 
@@ -368,7 +368,7 @@ GET /api/applications?limit=25&status=interview&sort=updated_at&order=desc
 
 ```bash
 curl "http://localhost:8003/api/applications?limit=2"
-```
+```text
 
 **Expected**: 2 items, next_cursor present, total=4
 
@@ -376,7 +376,7 @@ curl "http://localhost:8003/api/applications?limit=2"
 
 ```bash
 curl "http://localhost:8003/api/applications?limit=2&sort=company&order=asc"
-```
+```text
 
 **Expected**: Items sorted alphabetically (Acme, OpenAI), total=4
 
@@ -384,7 +384,7 @@ curl "http://localhost:8003/api/applications?limit=2&sort=company&order=asc"
 
 ```bash
 curl "http://localhost:8003/api/applications?sort=updated_at&order=desc"
-```
+```text
 
 **Expected**: Most recently updated first (TechCorp, Acme, OpenAI, StartupXYZ)
 
@@ -392,7 +392,7 @@ curl "http://localhost:8003/api/applications?sort=updated_at&order=desc"
 
 ```bash
 curl "http://localhost:8003/api/applications?status=interview"
-```
+```text
 
 **Expected**: Only Acme Corp (interview status), total=1
 
@@ -400,15 +400,15 @@ curl "http://localhost:8003/api/applications?status=interview"
 
 ```bash
 curl "http://localhost:8003/api/applications?status=applied&sort=applied_at&order=desc"
-```
+```text
 
 ### Frontend Tests
 
 **1. Open Applications page**:
 
-```
+```text
 http://localhost:5175/applications
-```
+```text
 
 **Expected**:
 
@@ -529,7 +529,7 @@ http://localhost:5175/applications
 
 ```typescript
 const apps: Application[] = await fetch('/api/applications').then(r => r.json())
-```
+```text
 
 **After**:
 
@@ -538,7 +538,7 @@ const res: ApplicationListResponse = await fetch('/api/applications').then(r => 
 const apps = res.items
 const cursor = res.next_cursor
 const total = res.total
-```
+```text
 
 ### Backward Compatibility
 
@@ -551,7 +551,7 @@ For clients expecting the old format, you can:
 def list_applications_legacy(limit: int = 100, status: Optional[str] = None):
     res = list_applications(limit=limit, status=status)
     return res.items
-```
+```text
 
 2. **Or handle in client**:
 
@@ -560,7 +560,7 @@ async function listApplicationsLegacy(params?: any): Promise<Application[]> {
   const res = await listApplicationsPaged(params)
   return res.items
 }
-```
+```text
 
 ---
 
@@ -576,7 +576,7 @@ def list_applications(
 ):
     # Add WHERE company LIKE %q% OR role LIKE %q% in BQ
     # Add multi_match query in ES
-```
+```text
 
 ### 2. Cursor Expiration
 
@@ -590,7 +590,7 @@ def _decode_cursor(token: str) -> Dict[str, Any]:
     if data.get("exp", 0) < int(datetime.now().timestamp()):
         raise HTTPException(status_code=410, detail="Cursor expired")
     return data
-```
+```text
 
 ### 3. Infinite Scroll
 
@@ -615,7 +615,7 @@ React.useEffect(() => {
   
   return () => observer.disconnect()
 }, [cursor, loading])
-```
+```text
 
 ### 4. Client-Side Caching
 
@@ -636,7 +636,7 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
   getNextPageParam: (lastPage) => lastPage.next_cursor,
   staleTime: 5 * 60 * 1000, // 5 minutes
 })
-```
+```text
 
 ---
 
@@ -679,7 +679,7 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
     "fields": {"keyword": {"type": "keyword"}}
   }
 }
-```
+```text
 
 ---
 

@@ -57,7 +57,7 @@ GET /analytics/search?q=seo%20coverage%20drop&k=5
 # Get KPI CSV preview
 GET /analytics/dashboards/kpis.csv
 → {"status": "ok", "path": "...", "preview": [...], "total_rows": 7}
-```
+```text
 
 **Integration:**
 
@@ -107,15 +107,15 @@ GET /analytics/dashboards/kpis.csv
 ```bash
 # From project root
 python -m analytics.pipeline --window-days 7
-```
+```text
 
 **Expected Output:**
 
-```
+```text
 ✅ CSV dashboards exported:
    kpis_csv: analytics/outputs/dashboards/kpis.csv
    kpis_long_csv: analytics/outputs/dashboards/kpis_long.csv
-```
+```text
 
 ### 2. Check CSV Outputs
 
@@ -127,7 +127,7 @@ Get-Content analytics\outputs\dashboards\kpis.csv | Select-Object -First 10
 # date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 # 2025-10-01,95.2,98.5,245,12
 # 2025-10-02,96.1,97.8,238,8
-```
+```text
 
 ### 3. Test Analytics API
 
@@ -144,7 +144,7 @@ curl "http://localhost:8003/analytics/search?q=seo+coverage&k=5"
 
 # Test CSV preview
 curl http://localhost:8003/analytics/dashboards/kpis.csv
-```
+```text
 
 ### 4. View Recommendations
 
@@ -154,7 +154,7 @@ python -m analytics.pipeline --window-days 7
 
 # View report
 code analytics/outputs/insight-summary.md
-```
+```text
 
 **Example Recommendations Section:**
 
@@ -173,11 +173,11 @@ Elevate attention to pages implicated by SEO/Test failures; prefer stable varian
 - /pricing (+0.10) from 2 failure signals
 - /checkout (+0.15) from 3 failure signals
 - Playwright drop → prefer stability variant (+0.10)
-```
+```text
 
 ## 📁 File Structure
 
-```
+```text
 analytics/
 ├── .gitignore                          # Ignore data/outputs
 ├── pipeline.py                         # Main pipeline entry point
@@ -201,7 +201,7 @@ services/api/app/routers/
 
 .github/workflows/
 └── analytics-pr-comment.yml           # PR comment automation
-```
+```text
 
 ## 🔧 Configuration
 
@@ -216,18 +216,18 @@ Create `analytics/config/test_page_map.json` to help extract page paths from tes
   "homepage performance": "/",
   "search functionality": "/search"
 }
-```
+```text
 
 ### Data Directory Structure
 
 The pipeline expects daily metrics in JSON format:
 
-```
+```text
 analytics/data/
 ├── 2025-10-01.json
 ├── 2025-10-02.json
 └── 2025-10-03.json
-```
+```text
 
 Each JSON file should contain:
 
@@ -258,7 +258,7 @@ Each JSON file should contain:
     "autofix_delta_count": 12
   }
 }
-```
+```text
 
 ## 🎯 Integration Points
 
@@ -273,7 +273,7 @@ try:
     app.include_router(analytics_router)
 except ImportError:
     pass  # Analytics module not available
-```
+```text
 
 This ensures the API doesn't break if analytics modules are missing.
 
@@ -285,7 +285,7 @@ CSV export runs after report writing in `pipeline.py`:
 # Phase 51.1 — CSV dashboards
 from analytics.dashboards.exporter import export_csv_series
 export_csv_series(DATA_DIR, OUT_DIR / "dashboards")
-```
+```text
 
 ### Report Integration
 
@@ -300,7 +300,7 @@ try:
         # Add recommendations section to markdown
 except Exception:
     # Fail gracefully
-```
+```text
 
 ## 🎨 Frontend Integration (Optional)
 
@@ -344,7 +344,7 @@ export default function Analytics() {
     </div>
   );
 }
-```
+```text
 
 ## 📊 Grafana Integration (Optional)
 
@@ -387,7 +387,7 @@ anomalies = [{'field': 'playwright_pass_pct', 'z': -3.0}]
 rec = recommend_weight_diffs(merged, anomalies)
 print(rec)
 "
-```
+```text
 
 ## 🔍 Troubleshooting
 

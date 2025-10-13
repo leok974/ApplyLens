@@ -108,7 +108,7 @@ Successfully implemented **Phase 51.1 → 51.3** analytics upgrade for ApplyLens
 
 ```bash
 python -m analytics.pipeline --window-days 7
-```
+```text
 
 ### 2. Check Outputs
 
@@ -118,7 +118,7 @@ cat analytics/outputs/dashboards/kpis.csv
 
 # View report with recommendations
 cat analytics/outputs/insight-summary.md
-```
+```text
 
 ### 3. Test API
 
@@ -126,7 +126,7 @@ cat analytics/outputs/insight-summary.md
 curl http://localhost:8003/analytics/latest
 curl "http://localhost:8003/analytics/search?q=seo&k=5"
 curl http://localhost:8003/analytics/dashboards/kpis.csv
-```
+```text
 
 ## 🔧 Technical Details
 
@@ -139,7 +139,7 @@ curl http://localhost:8003/analytics/dashboards/kpis.csv
 
 ### Data Flow
 
-```
+```text
 Daily JSON files (analytics/data/*.json)
     ↓
 Pipeline extracts KPIs
@@ -157,7 +157,7 @@ Markdown report (outputs/insight-summary.md)
 API endpoints (/analytics/*)
     ↓
 PR comments (via GitHub Actions)
-```
+```text
 
 ### KPI Metrics
 
@@ -186,7 +186,7 @@ date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 2025-10-01,95.2,98.5,245,12
 2025-10-02,96.1,97.8,238,8
 2025-10-03,94.5,96.2,252,15
-```
+```text
 
 ### CSV (Long Format)
 
@@ -195,7 +195,7 @@ date,metric,value
 2025-10-01,seo_coverage_pct,95.2
 2025-10-01,playwright_pass_pct,98.5
 2025-10-01,avg_p95_ms,245
-```
+```text
 
 ### Recommendations (Markdown)
 
@@ -214,7 +214,7 @@ Elevate attention to pages implicated by SEO/Test failures; prefer stable varian
 - /pricing (+0.10) from 2 failure signals
 - /checkout (+0.15) from 3 failure signals
 - Playwright drop → prefer stability variant (+0.10)
-```
+```text
 
 ## 🧪 Testing
 
@@ -234,7 +234,7 @@ try:
     # ... add to report ...
 except Exception:
     md += "> _recommendations unavailable (error suppressed)_\n"
-```
+```text
 
 ## 🎯 Integration Checklist
 

@@ -8,7 +8,7 @@ ApplyLens exposes Prometheus metrics at `/metrics` endpoint for monitoring and o
 
 ```bash
 curl http://localhost:8003/metrics
-```
+```text
 
 ### Available Metrics
 
@@ -67,7 +67,7 @@ scrape_configs:
       - targets: ['localhost:8003']
     metrics_path: '/metrics'
     scrape_interval: 30s
-```
+```text
 
 ### Docker Compose Example
 
@@ -93,7 +93,7 @@ services:
 
 volumes:
   prometheus_data:
-```
+```text
 
 ## Grafana Dashboard
 
@@ -103,38 +103,38 @@ volumes:
 
 ```promql
 rate(applylens_http_requests_total[1m]) * 60
-```
+```text
 
 **Request Latency (p95):**
 
 ```promql
 histogram_quantile(0.95, sum(rate(applylens_http_request_duration_seconds_bucket[5m])) by (le, path))
-```
+```text
 
 **Backfill Success Rate:**
 
 ```promql
 rate(applylens_backfill_requests_total{result="ok"}[5m]) / 
 rate(applylens_backfill_requests_total[5m])
-```
+```text
 
 **System Health:**
 
 ```promql
 applylens_db_up + applylens_es_up  # Should be 2 when both healthy
-```
+```text
 
 **Gmail Connection Status:**
 
 ```promql
 applylens_gmail_connected
-```
+```text
 
 **Emails Inserted Over Time:**
 
 ```promql
 increase(applylens_backfill_inserted_total[1h])
-```
+```text
 
 ### Sample Grafana Dashboard JSON
 
@@ -192,7 +192,7 @@ Create a new dashboard in Grafana and import this configuration:
     ]
   }
 }
-```
+```text
 
 ## Alerting Rules
 
@@ -250,7 +250,7 @@ groups:
         annotations:
           summary: "High backfill rate limiting"
           description: "Backfill requests are being rate limited"
-```
+```text
 
 ## Testing Metrics
 
@@ -268,7 +268,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
 
 # 3. View specific metrics
 $metrics -split "`n" | Where-Object { $_ -match "applylens_backfill" }
-```
+```text
 
 ### Bash Commands
 
@@ -283,7 +283,7 @@ curl -X POST "http://localhost:8003/gmail/backfill?days=2"
 
 # View specific metrics
 curl -s http://localhost:8003/metrics | grep "applylens_backfill"
-```
+```text
 
 ## Metrics Architecture
 
@@ -298,12 +298,12 @@ curl -s http://localhost:8003/metrics | grep "applylens_backfill"
 
 ### File Structure
 
-```
+```text
 services/api/app/
 ├── metrics.py          # Centralized metric definitions
 ├── main.py             # Middleware setup + /metrics endpoint
 └── routes_gmail.py     # Metric instrumentation
-```
+```text
 
 ### Adding New Metrics
 
@@ -319,7 +319,7 @@ MY_METRIC = Counter(
     "Description of metric",
     ["label1", "label2"]
 )
-```
+```text
 
 2. Import in your route file:
 
@@ -330,7 +330,7 @@ from .metrics import MY_METRIC
 def my_endpoint():
     MY_METRIC.labels(label1="value1", label2="value2").inc()
     return {"ok": True}
-```
+```text
 
 3. Metrics will automatically appear at `/metrics`
 
@@ -396,7 +396,7 @@ Gauges may show stale values if not updated. Call `/readiness` or relevant endpo
 ```bash
 curl http://localhost:8003/readiness
 curl http://localhost:8003/gmail/status
-```
+```text
 
 ### Missing Labels
 
@@ -408,7 +408,7 @@ GMAIL_CONNECTED.set(1)
 
 # GOOD - provides all labels
 GMAIL_CONNECTED.labels(user_email=email).set(1)
-```
+```text
 
 ## References
 

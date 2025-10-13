@@ -31,7 +31,7 @@ parse_due_cutoff(text, now, tz) -> Optional[str]
 next_weekday(from_dt, weekday) -> datetime
 parse_relative_days(text) -> Optional[int]
 cutoff_from_relative_days(days, now, tz) -> str
-```
+```text
 
 **Test Coverage:**
 
@@ -45,7 +45,7 @@ cutoff_from_relative_days(days, now, tz) -> str
 
 ```python
 async def find_bills_due_before(cutoff_iso: str, limit: int = 200) -> List[Dict[str, Any]]
-```
+```text
 
 **Features:**
 
@@ -80,7 +80,7 @@ async def find_bills_due_before(cutoff_iso: str, limit: int = 200) -> List[Dict[
     }
   }
 }
-```
+```text
 
 **Test Coverage:**
 
@@ -92,7 +92,7 @@ async def find_bills_due_before(cutoff_iso: str, limit: int = 200) -> List[Dict[
 
 **Updated Flow:**
 
-```
+```text
 User: "bills due before Friday"
   ↓
 Parse cutoff: parse_due_cutoff("bills due before Friday") → "2025-10-10T04:00:00Z"
@@ -106,7 +106,7 @@ Create reminders: POST to /productivity/reminders/create
 Emit audit: Log to actions_audit_v1 index
   ↓
 Response: {intent, cutoff, created, reminders, count}
-```
+```text
 
 **Enhanced Response:**
 
@@ -131,7 +131,7 @@ Response: {intent, cutoff, created, reminders, count}
     }
   ]
 }
-```
+```text
 
 **New Imports:**
 
@@ -139,7 +139,7 @@ Response: {intent, cutoff, created, reminders, count}
 from app.logic.timewin import parse_due_cutoff
 from app.logic.search import find_bills_due_before
 from app.routers.productivity import CreateRemindersRequest, Reminder, create_reminders
-```
+```text
 
 **Test Coverage:**
 
@@ -186,7 +186,7 @@ export interface ApprovalGroup {
   items: ApprovalItem[];
   actions: Array<"approve_all" | "reject_all" | "execute_all">;
 }
-```
+```text
 
 **React Component:**
 
@@ -200,7 +200,7 @@ export interface ApprovalGroup {
 def group_approvals(approvals: List[dict]) -> List[dict]:
     """Group by policy_id and sender_domain."""
     # Returns ApprovalGroup structure
-```
+```text
 
 **ES|QL Dashboard Queries:**
 
@@ -226,10 +226,10 @@ def group_approvals(approvals: List[dict]) -> List[dict]:
 
 ### Unit Tests: ✅ 27/27 Passing
 
-```
+```text
 tests/unit/test_timewin.py ................ 20 passed
 tests/unit/test_search_bills.py ........... 7 passed
-```
+```text
 
 **Time Window Parsing:**
 
@@ -276,7 +276,7 @@ cd D:/ApplyLens/infra && docker-compose up -d
 # Run e2e tests
 cd D:/ApplyLens/services/api
 pytest tests/e2e/test_nl_bills_due_es.py -v
-```
+```text
 
 ## Usage Examples
 
@@ -302,7 +302,7 @@ from app.logic.timewin import parse_relative_days, cutoff_from_relative_days
 days = parse_relative_days("in 7 days")  # → 7
 cutoff = cutoff_from_relative_days(7)
 # → "2025-10-17T04:00:00Z"
-```
+```text
 
 ### 2. Bill Search
 
@@ -324,7 +324,7 @@ bills = await find_bills_due_before("2025-10-15T00:00:00Z")
     "received_at": "2025-10-01T10:00:00Z"
   }
 ]
-```
+```text
 
 ### 3. Natural Language Agent
 
@@ -332,7 +332,7 @@ bills = await find_bills_due_before("2025-10-15T00:00:00Z")
 curl -X POST http://localhost:8000/nl/run \
   -H "Content-Type: application/json" \
   -d '{"text": "show my bills due before Friday and create reminders"}'
-```
+```text
 
 **Response:**
 
@@ -351,7 +351,7 @@ curl -X POST http://localhost:8000/nl/run \
     }
   ]
 }
-```
+```text
 
 ### 4. Approvals Grouping (Backend)
 
@@ -376,7 +376,7 @@ groups = await get_grouped_approvals(status="proposed")
     }
   ]
 }
-```
+```text
 
 ### 5. Approvals Grouping (Frontend)
 
@@ -401,7 +401,7 @@ const { groups } = await response.json();
   onRejectAll={...}
   onExecuteAll={...}
 />
-```
+```text
 
 ## Next Steps
 
@@ -554,7 +554,7 @@ const { groups } = await response.json();
 
 ## Commit Message
 
-```
+```text
 feat: Add date parsing and bill search for NL agent
 
 Phase 4 Enhancements:
@@ -592,4 +592,4 @@ Files:
 - tests/unit/test_search_bills.py (new)
 - tests/e2e/test_nl_bills_due_es.py (new)
 - docs/APPROVALS_GROUPING_UI.md (new)
-```
+```text

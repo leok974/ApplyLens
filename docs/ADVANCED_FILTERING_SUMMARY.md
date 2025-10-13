@@ -120,7 +120,7 @@ export async function searchEmails(
   dateFrom?: string,      // NEW
   dateTo?: string         // NEW
 ): Promise<SearchHit[]>
-```
+```text
 
 URL construction with repeatable labels parameter:
 
@@ -130,7 +130,7 @@ if (labels && labels.length > 0) {
     url += `&labels=${encodeURIComponent(l)}`
   })
 }
-```
+```text
 
 ## How It Works
 
@@ -146,19 +146,25 @@ if (labels && labels.length > 0) {
 1. **Filter by label**:
 
    ```
+
    GET /api/search?q=interview&labels=offer&labels=interview
+
    ```
 
 2. **Filter by date range**:
 
    ```
+
    GET /api/search?q=application&date_from=2025-10-01&date_to=2025-10-15
+
    ```
 
 3. **Combined filtering**:
 
    ```
+
    GET /api/search?q=test&labels=offer&date_from=2025-10-01&scale=3d
+
    ```
 
 ## Testing
@@ -174,7 +180,7 @@ curl "http://localhost:8003/search?q=application&date_from=2025-10-01&date_to=20
 
 # Test combined filters
 curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scale=3d"
-```
+```text
 
 ### Frontend Testing
 

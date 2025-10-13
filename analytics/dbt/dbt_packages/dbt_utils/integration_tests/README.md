@@ -22,13 +22,13 @@ Load the environment variables:
 
 ```shell
 set -a; source integration_tests/.env/[TARGET].env; set +a
-```
+```text
 
 or more specific:
 
 ```shell
 set -a; source integration_tests/.env/postgres.env; set +a
-```
+```text
 
 #### Setup Postgres (optional)
 
@@ -38,13 +38,13 @@ Postgres offers the easiest way to test most `dbt-utils` functionality today. It
 
 ```shell
 make setup-db
-```
+```text
 
 or, alternatively:
 
 ```shell
 docker-compose up --detach postgres
-```
+```text
 
 ### Setup virtual environment
 
@@ -54,7 +54,7 @@ in the root of the `dbt-utils` repository. To create a new virtualenv, run:
 ```shell
 python3 -m venv env
 source env/bin/activate
-```
+```text
 
 This will create and activate a new Python virtual environment.
 
@@ -66,7 +66,7 @@ First make sure that you set up your virtual environment as described above.  Al
 make dev target=[postgres|redshift|...]
 # or
 pip install --pre dbt-[postgres|redshift|...] -r dev-requirements.txt
-```
+```text
 
 or more specific:
 
@@ -74,7 +74,7 @@ or more specific:
 make dev target=postgres
 # or
 pip install --pre dbt-postgres -r dev-requirements.txt
-```
+```text
 
 ### Run the integration tests
 
@@ -82,19 +82,19 @@ To run all the integration tests on your local machine like they will get run in
 
 ```shell
 make test target=postgres
-```
+```text
 
 or, to run tests for a single model:
 
 ```shell
 make test target=[postgres|redshift|...]
-```
+```text
 
 or more specific:
 
 ```shell
 make test target=postgres
-```
+```bash
 
 Where possible, targets are being run in docker containers (this works for Postgres or in the future Spark for example). For managed services like Snowflake, BigQuery and Redshift this is not possible, hence your own configuration for these services has to be provided in the appropriate env files in `integration_tests/.env/[TARGET].env`
 
@@ -134,13 +134,13 @@ dbt deps --target {your_target}
 dbt seed --target {your_target}
 dbt run --target {your_target} --model {your_model_name}
 dbt test --target {your_target} --model {your_model_name}
-```
+```text
 
 Alternatively:
 
 ```shell
 dbt deps --target {your_target}
 dbt build --target {your_target} --select +{your_model_name}
-```
+```text
 
 If the tests all pass, then you're good to go! All tests will be run automatically when you create a PR against this repo.

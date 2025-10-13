@@ -8,7 +8,7 @@
 start http://localhost:9090          # Prometheus
 start http://localhost:3000          # Grafana (admin/admin)
 start http://localhost:8003/metrics  # API metrics (raw)
-```
+```text
 
 ### Hot Reload Prometheus (No Restart!)
 
@@ -21,7 +21,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # 3. Hot reload (instant!)
 Invoke-WebRequest -Method POST http://localhost:9090/-/reload
-```
+```text
 
 ### Generate Test Traffic
 
@@ -31,14 +31,14 @@ Invoke-WebRequest -Method POST http://localhost:9090/-/reload
     curl http://localhost:8003/readiness | Out-Null
     Start-Sleep -Milliseconds 200
 }
-```
+```text
 
 ### Check Target Health
 
 ```powershell
 $t = (irm http://localhost:9090/api/v1/targets).data.activeTargets | ? {$_.labels.job -eq "applylens-api"}
 $t | select scrapeUrl, health, lastError | ft
-```
+```text
 
 ### Query Metrics
 
@@ -50,7 +50,7 @@ $q = "sum(rate(applylens_http_requests_total[5m]))"
 # System health
 irm "http://localhost:9090/api/v1/query?query=applylens_db_up" | % data | % result | % value
 irm "http://localhost:9090/api/v1/query?query=applylens_es_up" | % data | % result | % value
-```
+```text
 
 ---
 
@@ -92,14 +92,14 @@ irm "http://localhost:9090/api/v1/query?query=applylens_es_up" | % data | % resu
 
 ```powershell
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus grafana
-```
+```text
 
 ### View Logs
 
 ```powershell
 docker logs infra-prometheus --tail 50
 docker logs infra-grafana --tail 50
-```
+```text
 
 ### Verify Provisioning
 
@@ -110,13 +110,13 @@ docker logs infra-grafana --tail 50
 # Check Grafana dashboard
 $cred = New-Object PSCredential("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force))
 irm http://localhost:3000/api/search -Credential $cred | ? title -match "ApplyLens" | select title, folderTitle
-```
+```text
 
 ---
 
 ## 📁 File Locations
 
-```
+```bash
 infra/
 ├── docker-compose.yml                                    # Updated (lifecycle flag)
 ├── prometheus/
@@ -128,7 +128,7 @@ infra/
         └── dashboards/
             ├── applylens.yml                             # Provider config
             └── json/applylens-overview.json              # Dashboard JSON
-```
+```text
 
 ---
 

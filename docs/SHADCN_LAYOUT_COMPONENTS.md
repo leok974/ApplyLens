@@ -29,7 +29,7 @@ import { AppHeader } from '@/components/AppHeader'
 
 // In your app root
 <AppHeader />
-```
+```text
 
 **Features:**
 
@@ -49,7 +49,7 @@ const navLinks = [
   ["Tracker", "/tracker"],
   // Add more...
 ]
-```
+```text
 
 ---
 
@@ -63,7 +63,7 @@ Reusable filter bar with inputs and select dropdown.
 import { FilterBar } from '@/components/FilterBar'
 
 <FilterBar />
-```
+```text
 
 **Features:**
 
@@ -92,7 +92,7 @@ function SearchPage() {
     </div>
   )
 }
-```
+```text
 
 ---
 
@@ -106,7 +106,7 @@ Info panel using Alert component instead of pastel backgrounds.
 import { DryRunNotice } from '@/components/DryRunNotice'
 
 <DryRunNotice />
-```
+```text
 
 **Custom Alerts:**
 
@@ -134,7 +134,7 @@ import { AlertCircle, CheckCircle } from "lucide-react"
   <AlertTitle>Error</AlertTitle>
   <AlertDescription>Failed to connect to Gmail API.</AlertDescription>
 </Alert>
-```
+```text
 
 ---
 
@@ -159,7 +159,7 @@ function FilterPage() {
     </div>
   )
 }
-```
+```text
 
 **Features:**
 
@@ -195,7 +195,7 @@ const results = [
   results={results}
   onViewDetails={(id) => console.log('View:', id)}
 />
-```
+```text
 
 **Features:**
 
@@ -214,7 +214,7 @@ const results = [
 
 // In TableBody:
 <TableCell>{result.priority}</TableCell>
-```
+```text
 
 ---
 
@@ -247,7 +247,7 @@ export function SearchPage() {
     </>
   )
 }
-```
+```text
 
 ---
 
@@ -281,7 +281,7 @@ function DateRangeFilter() {
     </div>
   )
 }
-```
+```text
 
 ---
 
@@ -318,7 +318,7 @@ import { MoreHorizontal } from 'lucide-react'
     </DropdownMenuItem>
   </DropdownMenuContent>
 </DropdownMenu>
-```
+```text
 
 ---
 
@@ -334,12 +334,12 @@ import { MoreHorizontal } from 'lucide-react'
   <a className="nav-link">Inbox</a>
   <a className="nav-link">Search</a>
 </nav>
-```
+```text
 
 ```tsx
 // After
 <AppHeader />
-```
+```text
 
 #### Old Filter Bar
 
@@ -349,12 +349,12 @@ import { MoreHorizontal } from 'lucide-react'
   <input className="..." placeholder="Search..." />
   {/* More inputs */}
 </div>
-```
+```text
 
 ```tsx
 // After
 <FilterBar />
-```
+```text
 
 #### Old Info Blocks
 
@@ -364,7 +364,7 @@ import { MoreHorizontal } from 'lucide-react'
   <h4 className="font-semibold">Info</h4>
   <p className="text-gray-600">Message here</p>
 </div>
-```
+```text
 
 ```tsx
 // After
@@ -373,7 +373,7 @@ import { MoreHorizontal } from 'lucide-react'
   <AlertTitle>Info</AlertTitle>
   <AlertDescription>Message here</AlertDescription>
 </Alert>
-```
+```text
 
 #### Old Tables
 
@@ -385,12 +385,12 @@ import { MoreHorizontal } from 'lucide-react'
   </thead>
   <tbody>...</tbody>
 </table>
-```
+```text
 
 ```tsx
 // After
 <ResultsTable results={data} />
-```
+```text
 
 ---
 
@@ -409,7 +409,7 @@ All components use these semantic tokens (mapped to your dark palette):
 --border: #242b39
 --input: #0f131b
 --ring: #7aa2ff        (focus ring)
-```
+```text
 
 ### Usage in Components
 
@@ -430,7 +430,7 @@ className="border-border"  // Explicit border color
 // Interactive
 className="hover:bg-secondary/50"  // Subtle hover
 className="focus-visible:ring-2 focus-visible:ring-ring"  // Focus ring
-```
+```text
 
 ---
 
@@ -460,7 +460,7 @@ import { Label } from '@/components/ui/label'
     <Label htmlFor="r2">Comfortable</Label>
   </div>
 </RadioGroup>
-```
+```text
 
 ### Popover (Generic)
 
@@ -481,7 +481,7 @@ import { Button } from '@/components/ui/button'
     </div>
   </PopoverContent>
 </Popover>
-```
+```text
 
 ---
 
@@ -548,7 +548,7 @@ await page.getByRole('navigation').getByText('Inbox').click()
 await page.getByPlaceholder('Search subject/body…').fill('interview')
 await page.getByRole('button', { name: 'Search' }).click()
 await page.getByRole('table').getByText('recruiting@example.com').click()
-```
+```text
 
 ---
 

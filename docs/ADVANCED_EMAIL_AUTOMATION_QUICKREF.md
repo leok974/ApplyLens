@@ -26,7 +26,7 @@ policy = {
 
 actions = apply_policies(email, [policy], now_iso="2025-10-02T00:00:00Z")
 # Returns: [ProposedAction(email_id='msg1', action='archive', ...)]
-```
+```text
 
 **Operators**: `=`, `!=`, `>`, `>=`, `<`, `<=`, `contains`, `in`, `regex`  
 **Logic**: `all` (AND), `any` (OR), nested conditions
@@ -41,7 +41,7 @@ actions = apply_policies(email, [policy], now_iso="2025-10-02T00:00:00Z")
 curl -X POST http://localhost:8003/unsubscribe/preview \
   -H "Content-Type: application/json" \
   -d '{"email_id": "msg1", "headers": {"List-Unsubscribe": "<https://ex.com/unsub>"}}'
-```
+```text
 
 **Execute**:
 
@@ -49,7 +49,7 @@ curl -X POST http://localhost:8003/unsubscribe/preview \
 curl -X POST http://localhost:8003/unsubscribe/execute \
   -H "Content-Type: application/json" \
   -d '{"email_id": "msg1", "headers": {"List-Unsubscribe": "<https://ex.com/unsub>"}}'
-```
+```text
 
 ---
 
@@ -59,7 +59,7 @@ curl -X POST http://localhost:8003/unsubscribe/execute \
 curl -X POST http://localhost:8003/nl/run \
   -H "Content-Type: application/json" \
   -d '{"text": "clean my promos older than 7 days"}'
-```
+```text
 
 **Supported Commands**:
 
@@ -108,7 +108,7 @@ pytest services/api/tests/ -v
 pytest services/api/tests/unit/test_policy_engine.py -v
 pytest services/api/tests/unit/test_unsubscribe.py -v
 pytest services/api/tests/e2e/ -v
-```
+```text
 
 ---
 
@@ -153,7 +153,7 @@ policy = {"id": "cleanup", "if": {...}, "then": {"action": "archive"}}
 actions = apply_policies(email, [policy], now_iso=now)
 
 # Execute via mail_tools API
-```
+```text
 
 ### 2. Bulk Unsubscribe
 
@@ -165,11 +165,11 @@ candidates = await find_unsubscribe_candidates(days=60)
 for email in candidates:
     result = perform_unsubscribe(email["headers"])
     # Show to user for approval
-```
+```text
 
 ### 3. User-Friendly Commands
 
-```
+```text
 User: "clean my promos older than 7 days"
   → NL Agent parses intent
   → Search finds expired promos
@@ -177,7 +177,7 @@ User: "clean my promos older than 7 days"
   → User reviews and approves
   → Mail tools executes
   → Audit log records everything
-```
+```text
 
 ---
 

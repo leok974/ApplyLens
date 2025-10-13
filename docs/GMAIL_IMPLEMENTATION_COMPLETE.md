@@ -40,7 +40,7 @@ fetch_thread_latest(thread_id: str) -> Dict | None
     
 sync_fetch_thread_latest(thread_id: str) -> Dict | None
     # Synchronous wrapper for FastAPI routes
-```
+```text
 
 **MIME Parsing Logic**:
 
@@ -65,7 +65,7 @@ if payload.gmail_thread_id and gmail_is_configured():
         email_data = {**gmail_content, **email_data}
 
 # Always continues with extraction (Gmail or fallback)
-```
+```text
 
 **Response Enhancement**:
 
@@ -77,7 +77,7 @@ if payload.gmail_thread_id and gmail_is_configured():
     "subject": "..."
   }
 }
-```
+```text
 
 #### POST `/api/applications/backfill-from-email`
 
@@ -96,7 +96,7 @@ if payload.gmail_thread_id and gmail_is_configured():
 except ValueError as e:
     if "gmail_not_configured" in str(e):
         raise HTTPException(400, detail="Gmail not configured")
-```
+```text
 
 ### 3. Frontend Updates
 
@@ -116,7 +116,7 @@ const payload: any = {
 };
 
 // Backfill function (same pattern)
-```
+```text
 
 **Benefits**:
 
@@ -153,7 +153,7 @@ GMAIL_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GMAIL_CLIENT_SECRET=your-client-secret
 GMAIL_REFRESH_TOKEN=1//your-refresh-token
 GMAIL_USER=your-email@gmail.com
-```
+```text
 
 **All 4 must be set for Gmail integration to work.**
 
@@ -216,7 +216,7 @@ curl -X POST http://localhost:8003/api/applications/extract \
     "subject": "Application for Senior Engineer"
   }
 }
-```
+```text
 
 ### Extract with Fallback Content
 
@@ -230,7 +230,7 @@ curl -X POST http://localhost:8003/api/applications/extract \
   }'
 
 # Works even without Gmail configured
-```
+```text
 
 ### Backfill from Gmail Thread
 
@@ -240,7 +240,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
   -d '{"gmail_thread_id": "18f2a3b4c5d6e7f8"}'
 
 # Creates application with extracted fields
-```
+```text
 
 ## Files Changed
 
@@ -314,7 +314,7 @@ if gmail_content:
     # Use Gmail content
 else:
     # Use request body (fallback)
-```
+```text
 
 **Error Cases**:
 
@@ -349,7 +349,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
 
 # 5. Verify in database
 sqlite3 your.db "SELECT * FROM applications WHERE thread_id='REAL_THREAD_ID'"
-```
+```text
 
 ### Finding Thread IDs
 
@@ -368,7 +368,7 @@ results = service.users().messages().list(
     q='from:recruiter@company.com'
 ).execute()
 thread_id = results['messages'][0]['threadId']
-```
+```text
 
 ## Security Considerations
 
@@ -421,20 +421,20 @@ thread_id = results['messages'][0]['threadId']
 ```bash
 cp .env.example .env
 nano .env  # Add Gmail credentials
-```
+```text
 
 **Step 3**: Restart API
 
 ```bash
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 **Step 4**: Test
 
 ```bash
 curl -X POST http://localhost:8003/api/applications/extract \
   -d '{"gmail_thread_id": "YOUR_THREAD_ID"}'
-```
+```text
 
 ### Backward Compatibility
 

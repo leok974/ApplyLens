@@ -74,7 +74,7 @@ This document tracks the completion of Phase-1 gaps identified in `PHASE_1_AUDIT
 curl -X PUT http://localhost:9200/_index_template/emails_v1 \
   -H 'Content-Type: application/json' \
   --data-binary @infra/elasticsearch/emails_v1.template.json
-```
+```text
 
 ---
 
@@ -168,7 +168,7 @@ curl "http://localhost:8000/api/search/?q=test&size=1"
 
 # Then explain that document
 curl "http://localhost:8000/api/search/explain/<doc_id>"
-```
+```text
 
 **Expected Response**:
 
@@ -187,7 +187,7 @@ curl "http://localhost:8000/api/search/explain/<doc_id>"
     "sender_domain": "example.com"
   }
 }
-```
+```text
 
 #### 2. Test quick action endpoints
 
@@ -211,7 +211,7 @@ curl -X POST "http://localhost:8000/api/search/actions/mark_suspicious" \
 curl -X POST "http://localhost:8000/api/search/actions/unsubscribe_dryrun" \
   -H "Content-Type: application/json" \
   -d '{"doc_id": "abc123", "note": "Too many emails"}'
-```
+```text
 
 **Expected Response** (all actions):
 
@@ -222,14 +222,14 @@ curl -X POST "http://localhost:8000/api/search/actions/unsubscribe_dryrun" \
   "doc_id": "abc123",
   "message": "Dry-run: Archive action recorded to audit log"
 }
-```
+```text
 
 #### 3. Verify audit log entries
 
 ```bash
 # Check applylens_audit index
 curl "http://localhost:9200/applylens_audit/_search?pretty"
-```
+```text
 
 **Expected**: JSON documents with `action`, `doc_id`, `note`, `timestamp` fields
 
@@ -243,7 +243,7 @@ curl "http://localhost:9200/applylens_audit/_search?pretty"
 cd apps/web
 npm install  # if not already done
 npm run dev
-```
+```text
 
 #### 2. Access InboxWithActions component
 
@@ -255,7 +255,7 @@ import InboxWithActions from './components/InboxWithActions'
 
 // Add route
 <Route path="/inbox-actions" element={<InboxWithActions />} />
-```
+```text
 
 Option B: Replace existing Inbox temporarily
 
@@ -265,7 +265,7 @@ import InboxWithActions from './components/InboxWithActions'
 
 // Use instead of <Inbox />
 <InboxWithActions />
-```
+```text
 
 #### 3. Test UI features
 
@@ -297,7 +297,7 @@ curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
 
 # Verify template was created
 curl "http://localhost:9200/_index_template/emails_v1?pretty"
-```
+```text
 
 #### 2. Test ESQL queries in Kibana
 
@@ -330,7 +330,7 @@ curl "http://localhost:9200/_index_template/emails_v1?pretty"
 ```bash
 cd infra
 docker compose restart api
-```
+```text
 
 ### 2. Apply ES index template
 
@@ -338,14 +338,14 @@ docker compose restart api
 curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
   -H "Content-Type: application/json" \
   --data-binary @elasticsearch/emails_v1.template.json
-```
+```text
 
 ### 3. Rebuild web app (if needed)
 
 ```bash
 cd apps/web
 npm run build
-```
+```text
 
 ### 4. Verify endpoints
 
@@ -358,7 +358,7 @@ curl "http://localhost:8000/api/search/?q=test&size=5"
 
 # Explain (replace <id> with actual doc ID)
 curl "http://localhost:8000/api/search/explain/<id>"
-```
+```text
 
 ---
 

@@ -20,11 +20,11 @@ The Tracker page now supports 5 different toast notification variants, each with
 
 **Example Messages:**
 
-```
+```text
 ✓ OpenAI added to tracker
 ✓ Status: Interview — Anthropic
 ✓ Status: Offer — Google
-```
+```text
 
 ---
 
@@ -40,11 +40,11 @@ The Tracker page now supports 5 different toast notification variants, each with
 
 **Example Messages:**
 
-```
+```text
 ✗ Status: Rejected — Meta
 ✗ Failed to update status
 ✗ Failed to delete application
-```
+```text
 
 ---
 
@@ -59,10 +59,10 @@ The Tracker page now supports 5 different toast notification variants, each with
 
 **Example Messages:**
 
-```
+```text
 ⚠ Status: On Hold — Stripe
 ⚠ Status: Ghosted — Databricks
-```
+```text
 
 ---
 
@@ -77,10 +77,10 @@ The Tracker page now supports 5 different toast notification variants, each with
 
 **Example Messages:**
 
-```
+```text
 ℹ Status: HR Screen — Tesla
 ℹ Application updated
-```
+```text
 
 ---
 
@@ -96,10 +96,10 @@ The Tracker page now supports 5 different toast notification variants, each with
 
 **Example Messages:**
 
-```
+```text
 • Status: Applied — Amazon
 • Deleted SpaceX
-```
+```text
 
 ---
 
@@ -116,7 +116,7 @@ The Tracker page now supports 5 different toast notification variants, each with
     </div>
   </div>
 )}
-```
+```text
 
 ### Auto-Dismiss Behavior
 
@@ -136,7 +136,7 @@ const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant> = {
   on_hold: 'warning',      // Yellow with ⚠
   ghosted: 'warning',      // Yellow with ⚠
 }
-```
+```text
 
 ---
 

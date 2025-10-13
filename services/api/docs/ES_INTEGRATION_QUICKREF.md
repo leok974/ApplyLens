@@ -8,13 +8,13 @@
 export ES_URL=http://localhost:9200
 export ES_API_KEY=your_key_here  # optional
 export ES_EMAIL_INDEX=emails_v1
-```
+```text
 
 ### 2. Install Dependencies
 
 ```bash
 pip install elasticsearch
-```
+```text
 
 ### 3. Test It
 
@@ -24,7 +24,7 @@ pytest tests/unit/test_search_es.py -v
 
 # All feature tests
 pytest tests/unit/ -k "search_es or policy_engine or unsubscribe" -v
-```
+```text
 
 ## Files Modified/Created
 
@@ -52,7 +52,7 @@ from app.logic.search import (
 emails = await find_expired_promos(days=7, limit=200)
 risky = await find_high_risk(limit=50, min_risk=80.0)
 stale = await find_unsubscribe_candidates(days=60, limit=200)
-```
+```text
 
 ## Policy Execution Endpoint
 
@@ -69,7 +69,7 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
   "es_filter": {"term": {"category": "promotions"}},
   "limit": 300
 }
-```
+```text
 
 **Response:**
 
@@ -87,7 +87,7 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
     }
   ]
 }
-```
+```text
 
 ## Common ES Filters
 
@@ -102,13 +102,13 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
     ]
   }
 }
-```
+```text
 
 ### High Risk
 
 ```json
 {"range": {"risk_score": {"gte": 80}}}
-```
+```text
 
 ### Stale Newsletters
 
@@ -121,15 +121,15 @@ stale = await find_unsubscribe_candidates(days=60, limit=200)
     ]
   }
 }
-```
+```text
 
 ## Test Results
 
-```
+```text
 Unit Tests: 16/16 ✅ (0.89s)
 Feature Tests: 44/44 ✅ (0.25s)
 E2E Tests: 19 created (require Docker)
-```
+```text
 
 ## cURL Examples
 
@@ -155,7 +155,7 @@ curl -X POST http://localhost:8000/policies/run \
     "es_filter": {"term": {"category": "promotions"}},
     "limit": 300
   }'
-```
+```text
 
 ### Flag High-Risk
 
@@ -174,7 +174,7 @@ curl -X POST http://localhost:8000/policies/run \
     "es_filter": {"range": {"risk_score": {"gte": 80}}},
     "limit": 50
   }'
-```
+```text
 
 ## Docker Commands
 
@@ -191,7 +191,7 @@ docker-compose logs -f api
 
 # Restart
 docker-compose restart api
-```
+```text
 
 ## Troubleshooting
 
@@ -201,7 +201,7 @@ docker-compose restart api
 
 ```bash
 pytest tests/unit/test_search_es.py -v
-```
+```text
 
 ### Issue: Elasticsearch connection error
 
@@ -210,7 +210,7 @@ pytest tests/unit/test_search_es.py -v
 ```bash
 echo $ES_URL
 # Should be: http://localhost:9200 or http://es:9200 (in Docker)
-```
+```text
 
 ### Issue: Import error for policy_exec router
 
@@ -230,7 +230,7 @@ pytest tests/unit/test_search_es.py -v --tb=short
 
 # 4. Coverage (if pytest-cov installed)
 pytest tests/unit/test_search_es.py --cov=app.logic.search --cov-report=term-missing
-```
+```text
 
 ## Status
 

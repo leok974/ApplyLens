@@ -26,7 +26,7 @@ Successfully integrated the ML labeling pipeline into the search API and fronten
 
 ```bash
 curl -X POST "http://localhost:8003/api/gmail/backfill?days=7"
-```
+```text
 
 **Result:** ✅ `96 emails inserted, 0 updated, 0 skipped`
 
@@ -34,7 +34,7 @@ curl -X POST "http://localhost:8003/api/gmail/backfill?days=7"
 
 ```bash
 curl -X POST "http://localhost:8003/api/ml/label/rebuild?limit=2000"
-```
+```text
 
 **Result:** ✅ `1,894 updated, 1,869 ES synced`
 
@@ -50,7 +50,7 @@ curl -X POST "http://localhost:8003/api/ml/label/rebuild?limit=2000"
 
 ```bash
 curl -X POST "http://localhost:8003/api/profile/rebuild"
-```
+```text
 
 **Result:** ✅ `403 emails processed`
 
@@ -58,7 +58,7 @@ curl -X POST "http://localhost:8003/api/profile/rebuild"
 
 ```bash
 curl "http://localhost:8003/api/profile/db-summary"
-```
+```text
 
 **Result:** ✅ Full profile with top senders, categories, interests
 
@@ -70,7 +70,7 @@ curl "http://localhost:8003/api/profile/db-summary"
 
 ```bash
 curl "http://localhost:8003/api/search/?q=interview&size=5"
-```
+```text
 
 **Result:** ✅ All results show `category` field populated
 
@@ -88,13 +88,13 @@ curl "http://localhost:8003/api/search/?q=interview&size=5"
     "expires_at": null
   }
 ]
-```
+```text
 
 #### Single Category Filter
 
 ```bash
 curl "http://localhost:8003/api/search/?q=email&categories=promotions&size=5"
-```
+```text
 
 **Result:** ✅ All 5 results have `category: "promotions"`
 
@@ -102,7 +102,7 @@ curl "http://localhost:8003/api/search/?q=email&categories=promotions&size=5"
 
 ```bash
 curl "http://localhost:8003/api/search/?q=email&categories=ats&categories=promotions&size=10"
-```
+```text
 
 **Result:** ✅ 219 total results, 10 returned (3 ats, 7 promotions)
 
@@ -124,7 +124,7 @@ Query: `application` (100 results)
 
 ```bash
 curl "http://localhost:9200/gmail_emails/_doc/199ce400fd0d65d0"
-```
+```text
 
 **Result:** ✅ Document has `category: "other"` field in ES
 
@@ -140,7 +140,7 @@ curl "http://localhost:9200/gmail_emails/_doc/199ce400fd0d65d0"
 
 ### Data Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ 1. Gmail Backfill                                               │
 │    POST /api/gmail/backfill?days=7                              │
@@ -172,7 +172,7 @@ curl "http://localhost:9200/gmail_emails/_doc/199ce400fd0d65d0"
 │    → Returns ML fields (category, expires_at, event_start_at)   │
 │    → Frontend displays badges and filters                       │
 └─────────────────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -205,7 +205,7 @@ for email_row in emails:
 if bulk_body:
     response = es_client.bulk(body=bulk_body, refresh=True)
     es_synced = len(bulk_body) // 2
-```
+```text
 
 **Key Features:**
 
@@ -228,7 +228,7 @@ hits.append(SearchHit(
     # ... other fields ...
     time_to_response_hours=time_to_response_hours,
 ))  # ❌ Missing ML fields
-```
+```text
 
 **After:**
 
@@ -245,7 +245,7 @@ hits.append(SearchHit(
     interests=source.get("interests", []),
     confidence=source.get("confidence"),
 ))  # ✅ Now includes ML fields
-```
+```text
 
 ---
 

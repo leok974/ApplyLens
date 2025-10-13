@@ -28,7 +28,7 @@ Phase 6 adds powerful personalization features that learn from user behavior and
 
 **Example**:
 
-```
+```text
 User approves archiving emails from "deals@groupon.com"
 → sender_domain:groupon.com weight increases (+0.2)
 → category:promo weight increases (+0.2)
@@ -36,7 +36,7 @@ User approves archiving emails from "deals@groupon.com"
 User rejects archiving "Interview Schedule" email
 → contains:interview weight decreases (-0.2)
 → System learns to never auto-archive interview emails
-```
+```text
 
 ### 2. Policy Performance Analytics
 
@@ -67,7 +67,7 @@ User rejects archiving "Interview Schedule" email
     "window_days": 30
   }
 ]
-```
+```text
 
 **Use Case**: Identify underperforming policies and tune confidence thresholds.
 
@@ -94,7 +94,7 @@ UNION ALL
 SELECT ... FROM lever_opportunities
 UNION ALL
 SELECT ... FROM workday_candidates
-```
+```text
 
 **Enrichment Job**: `analytics/enrich/ats_enrich_emails.py`
 
@@ -118,7 +118,7 @@ SELECT ... FROM workday_candidates
     }
   }
 }
-```
+```text
 
 **Ghosting Risk Calculation**:
 
@@ -132,7 +132,7 @@ def compute_ghosting_risk(row, now):
     
     # Recent activity or interview scheduled
     return 0.1
-```
+```text
 
 **Example Enriched Email**:
 
@@ -151,7 +151,7 @@ def compute_ghosting_risk(row, now):
     "ghosting_risk": 0.2
   }
 }
-```
+```text
 
 ### 4. RAG Boosting for Urgent Recruiter Emails
 
@@ -179,7 +179,7 @@ body = {
         }
     }
 }
-```
+```text
 
 **Result**: Urgent recruiter emails surface first in search and chat RAG retrieval.
 
@@ -205,7 +205,7 @@ body = {
 date,merchant,amount,email_id,subject,category
 2025-10-10,amazon.com,49.99,msg123,"Your Amazon order confirmation",commerce
 2025-10-12,uber.com,15.50,msg456,"Your trip receipt",finance
-```
+```text
 
 **Duplicate Detection**:
 
@@ -222,7 +222,7 @@ date,merchant,amount,email_id,subject,category
   ],
   "count": 1
 }
-```
+```text
 
 **Spending Summary**:
 
@@ -240,7 +240,7 @@ date,merchant,amount,email_id,subject,category
   },
   "avg_amount": 29.39
 }
-```
+```text
 
 ### 6. Networking Mode (Coming Soon)
 
@@ -267,17 +267,17 @@ CREATE TABLE user_weights (
     updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(user_id, feature)
 );
-```
+```text
 
 **Example Rows**:
 
-```
+```text
 | user_id          | feature                    | weight |
 |------------------|----------------------------|--------|
 | alice@co.com     | category:promo             | -0.8   |
 | alice@co.com     | sender_domain:linkedin.com | +1.2   |
 | alice@co.com     | contains:invoice           | +0.6   |
-```
+```text
 
 ### policy_stats
 
@@ -295,16 +295,16 @@ CREATE TABLE policy_stats (
     updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(policy_id, user_id)
 );
-```
+```text
 
 **Example Rows**:
 
-```
+```text
 | policy_id | user_id      | fired | approved | rejected | precision |
 |-----------|--------------|-------|----------|----------|-----------|
 | 5         | alice@co.com | 130   | 120      | 10       | 0.923     |
 | 7         | alice@co.com | 45    | 40       | 5        | 0.889     |
-```
+```text
 
 ## Files Added/Modified
 
@@ -366,7 +366,7 @@ CREATE TABLE policy_stats (
 ```bash
 cd services/api
 alembic upgrade head
-```
+```text
 
 ### 2. Update ES Mapping
 
@@ -374,7 +374,7 @@ alembic upgrade head
 curl -X PUT "http://localhost:9200/emails/_mapping" \
   -H "Content-Type: application/json" \
   -d @es/mappings/ats_fields.json
-```
+```text
 
 ### 3. Schedule ATS Enrichment
 
@@ -383,7 +383,7 @@ Add to cron (or Kubernetes CronJob):
 ```bash
 # Daily at 2am (after Fivetran sync)
 0 2 * * * cd /app/analytics/enrich && python ats_enrich_emails.py
-```
+```text
 
 ### 4. Register Money Router
 
@@ -393,7 +393,7 @@ In `services/api/app/main.py`:
 from .routers import money
 
 app.include_router(money.router)
-```
+```text
 
 ## Usage Examples
 
@@ -416,13 +416,13 @@ curl -X POST http://localhost:8003/actions/123/approve \
 # - Features: ["category:promo", "sender_domain:groupon.com"]
 # - Weights updated: category:promo += 0.2, sender_domain:groupon.com += 0.2
 # - Policy stats: fired=130, approved=121, precision=0.931
-```
+```text
 
 ### Example 2: View Policy Stats
 
 ```bash
 curl http://localhost:8003/policy/stats | jq .
-```
+```text
 
 ```json
 [
@@ -438,7 +438,7 @@ curl http://localhost:8003/policy/stats | jq .
     "updated_at": "2025-10-13T10:00:00Z"
   }
 ]
-```
+```text
 
 ### Example 3: ATS Enrichment
 
@@ -446,9 +446,9 @@ curl http://localhost:8003/policy/stats | jq .
 # Run enrichment job
 cd analytics/enrich
 python ats_enrich_emails.py
-```
+```text
 
-```
+```text
 ============================================================
 ATS Enrichment Job - Phase 6
 Started: 2025-10-13T02:00:00Z
@@ -469,7 +469,7 @@ Started: 2025-10-13T02:00:00Z
 Completed: 2025-10-13T02:05:23Z
 Enriched 5,678 emails with ATS data
 ============================================================
-```
+```text
 
 ### Example 4: Money Mode
 
@@ -482,7 +482,7 @@ curl http://localhost:8003/money/duplicates?window_days=7 | jq .
 
 # Get spending summary
 curl http://localhost:8003/money/summary | jq .
-```
+```text
 
 ```json
 {
@@ -499,7 +499,7 @@ curl http://localhost:8003/money/summary | jq .
   },
   "avg_amount": 38.84
 }
-```
+```text
 
 ## Performance
 
@@ -539,7 +539,7 @@ METRICS["policy_approved_total"] = Counter("policy_approved_total", "Approved", 
 METRICS["policy_rejected_total"] = Counter("policy_rejected_total", "Rejected", ["policy_id", "user"])
 METRICS["user_weight_updates"] = Counter("user_weight_updates_total", "Weight updates", ["user", "sign"])
 METRICS["ats_enriched_total"] = Counter("ats_enriched_total", "Emails enriched by ATS")
-```
+```text
 
 ## Future Enhancements
 
@@ -592,7 +592,7 @@ Future: Ensemble of models
 
 ```sql
 SELECT * FROM user_weights WHERE user_id = 'alice@co.com' LIMIT 10;
-```
+```text
 
 **Debug**: Look for `update_user_weights()` calls in logs during approve/reject.
 
@@ -602,7 +602,7 @@ SELECT * FROM user_weights WHERE user_id = 'alice@co.com' LIMIT 10;
 
 ```sql
 SELECT * FROM policy_stats WHERE user_id = 'alice@co.com';
-```
+```text
 
 **Debug**: Verify `_touch_policy_stats()` is called in propose/approve/reject endpoints.
 
@@ -612,13 +612,13 @@ SELECT * FROM policy_stats WHERE user_id = 'alice@co.com';
 
 ```bash
 curl "http://localhost:9200/emails/_search?q=ats.system:*" | jq '.hits.total'
-```
+```text
 
 **Check logs**:
 
 ```bash
 tail -f /var/log/cron.log | grep ats_enrich
-```
+```text
 
 ### Issue: Receipts CSV empty
 
@@ -626,7 +626,7 @@ tail -f /var/log/cron.log | grep ats_enrich
 
 ```bash
 curl "http://localhost:9200/emails/_search?q=category:finance" | jq '.hits.total'
-```
+```text
 
 **Test detection**:
 
@@ -634,7 +634,7 @@ curl "http://localhost:9200/emails/_search?q=category:finance" | jq '.hits.total
 from app.core.money import is_receipt
 email = {"subject": "Your Amazon order receipt", "category": "commerce"}
 print(is_receipt(email))  # Should be True
-```
+```text
 
 ## Summary
 
@@ -680,7 +680,7 @@ import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
 
 // In your page/component:
 <PolicyAccuracyPanel />
-```
+```text
 
 ### Assistant Mode Selector
 
@@ -695,17 +695,17 @@ import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
 **Wire to SSE**:
 The mode parameter is automatically added to the `/api/chat/stream` URL:
 
-```
+```text
 /api/chat/stream?q=<query>&mode=networking
 /api/chat/stream?q=<query>&mode=money
-```
+```text
 
 **Money Mode Extras**:
 When `mode=money` is selected, an "Export receipts (CSV)" link appears that downloads receipts directly:
 
-```
+```text
 <a href="/api/money/receipts.csv">Export receipts (CSV)</a>
-```
+```text
 
 **Implementation**:
 
@@ -722,7 +722,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
   <option value="networking">networking</option>
   <option value="money">money</option>
 </select>
-```
+```text
 
 ### Tests
 
@@ -746,7 +746,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 ```bash
 cd apps/web
 pnpm test
-```
+```text
 
 ## Polish & Final Touches
 
@@ -779,7 +779,7 @@ def estimate_confidence(policy, feats, aggs, neighbors, db=None, user=None, emai
         base += bump
     
     return max(0.01, min(0.99, base))
-```
+```text
 
 **Effect**:
 
@@ -817,7 +817,7 @@ user_weight_updates = Counter(
     "Total user weight updates from learning",
     ["user", "sign"]  # sign = "plus" or "minus"
 )
-```
+```text
 
 **Wired In**:
 
@@ -844,7 +844,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
   + (shouldExplain ? '&explain=1' : '')
   + (shouldRemember ? '&remember=1' : '')
   + (mode ? `&mode=${encodeURIComponent(mode)}` : '')
-```
+```text
 
 **Test**: `apps/web/tests/chat.modes.spec.ts`
 
@@ -854,7 +854,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 
 ```html
 <a href="/api/money/receipts.csv" target="_blank">Export receipts (CSV)</a>
-```
+```text
 
 **Money Tools Panel**: Added to chat sidebar with two quick view buttons:
 
@@ -882,7 +882,7 @@ async function loadSummary() {
 // Render JSON in collapsible pre blocks
 {dupes && <pre className="...">{JSON.stringify(dupes, null, 2)}</pre>}
 {summary && <pre className="...">{JSON.stringify(summary, null, 2)}</pre>}
-```
+```text
 
 ### Quick Smoke Test
 
@@ -906,7 +906,7 @@ Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
   -ContentType application/json -Body '{"query":"subject:meetup OR category:event","limit":10}'
 
 # Compare confidence values before/after approvals
-```
+```text
 
 **Expected**: Confidence scores for similar emails increase by ~0.05-0.15 after positive feedback.
 

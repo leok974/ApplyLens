@@ -45,7 +45,7 @@ Phase 4 adds intelligent, policy-driven email automation with human-in-the-loop 
 
 ```bash
 docker exec infra-api-1 alembic upgrade head
-```
+```text
 
 ### 3. Yardstick Policy Engine (`app/core/yardstick.py`)
 
@@ -74,7 +74,7 @@ docker exec infra-api-1 alembic upgrade head
     ]
   }
 }
-```
+```text
 
 **Example Context:**
 
@@ -87,7 +87,7 @@ docker exec infra-api-1 alembic upgrade head
   "age_days": 3,
   "quarantined": False
 }
-```
+```text
 
 ### 4. Action Executors (`app/core/executors.py`)
 
@@ -234,7 +234,7 @@ docker exec infra-api-1 alembic upgrade head
 
 ```bash
 docker exec infra-api-1 python -m app.seeds.policies
-```
+```text
 
 ## 🔄 Remaining Components (Frontend + Tests)
 
@@ -252,7 +252,7 @@ export async function createPolicy(policy: PolicyCreate): Promise<Policy>
 export async function updatePolicy(id: number, policy: PolicyUpdate): Promise<Policy>
 export async function deletePolicy(id: number): Promise<{ok: bool}>
 export async function testPolicy(id: number, emailIds?: number[]): Promise<{matches: number[], count: number}>
-```
+```text
 
 ### 8. ActionsTray Component (`apps/web/src/components/ActionsTray.tsx`)
 
@@ -290,7 +290,7 @@ export async function testPolicy(id: number, emailIds?: number[]): Promise<{matc
     ))}
   </div>
 </div>
-```
+```text
 
 ### 9. Backend Tests
 
@@ -309,7 +309,7 @@ def test_datetime_comparison()
 def test_special_value_now()
 def test_validate_condition_valid()
 def test_validate_condition_invalid()
-```
+```text
 
 #### `tests/test_actions_propose.py`
 
@@ -320,7 +320,7 @@ def test_propose_filters_by_confidence(client, db)
 def test_propose_stops_at_first_match(client, db)
 def test_propose_with_email_ids(client, db)
 def test_propose_with_no_policies_fails(client, db)
-```
+```text
 
 #### `tests/test_actions_approve_and_audit.py`
 
@@ -331,7 +331,7 @@ def test_approve_saves_screenshot(client, db)
 def test_reject_writes_audit(client, db)
 def test_approve_non_pending_fails(client, db)
 def test_reject_non_pending_fails(client, db)
-```
+```text
 
 ### 10. E2E Tests
 
@@ -362,7 +362,7 @@ test("always do this creates policy", async ({ page }) => {
   // Click "Always do this" button
   // Verify policy creation request
 })
-```
+```text
 
 #### `tests/policies.crud.spec.ts`
 
@@ -386,7 +386,7 @@ test("disable policy prevents proposals", async ({ page }) => {
   // Run propose
   // Verify no proposals created
 })
-```
+```text
 
 ### 11. SSE Events Endpoint (`app/routers/actions.py`)
 
@@ -422,7 +422,7 @@ async def action_events(request: Request):
             "Connection": "keep-alive",
         }
     )
-```
+```text
 
 **Frontend Integration:**
 
@@ -435,7 +435,7 @@ events.onmessage = (e) => {
     showNotification(`New action proposed: ${data.action}`)
   }
 }
-```
+```text
 
 ### 12. Documentation (`docs/PHASE_4_ACTIONS.md`)
 
@@ -462,19 +462,19 @@ events.onmessage = (e) => {
 from .routers import actions
 
 app.include_router(actions.router, prefix="/api")
-```
+```text
 
 ### 2. Apply Migration
 
 ```bash
 docker exec infra-api-1 alembic upgrade head
-```
+```text
 
 Expected output:
 
-```
+```text
 INFO  [alembic.runtime.migration] Running upgrade 0015 -> 0016, phase4 actions
-```
+```text
 
 ### 3. Seed Policies
 
@@ -489,7 +489,7 @@ try:
 finally:
     db.close()
 "
-```
+```text
 
 ### 4. Test Endpoints
 
@@ -510,14 +510,14 @@ $first = (curl http://localhost:8003/api/actions/tray | jq -r '.[0].id')
 curl -X POST "http://localhost:8003/api/actions/$first/approve" `
   -H "Content-Type: application/json" `
   -d '{}' | jq .
-```
+```text
 
 ### 5. Install Frontend Dependencies
 
 ```bash
 cd apps/web
 npm install html2canvas
-```
+```text
 
 ### 6. Add Navigation Icon
 
@@ -534,7 +534,7 @@ import { ActionsTray } from "@/components/ActionsTray"
 </button>
 
 {trayOpen && <ActionsTray onClose={() => setTrayOpen(false)} />}
-```
+```text
 
 ## Testing Workflow
 
@@ -583,7 +583,7 @@ docker exec infra-api-1 python -m pytest tests/test_actions_approve_and_audit.py
 cd apps/web
 npm run test:e2e -- actions.tray.spec.ts
 npm run test:e2e -- policies.crud.spec.ts
-```
+```text
 
 ## Security Considerations
 
@@ -639,7 +639,7 @@ actions_proposed = Counter("actions_proposed_total", "Total actions proposed", [
 actions_executed = Counter("actions_executed_total", "Total actions executed", ["action", "outcome"])
 actions_failed = Counter("actions_failed_total", "Total actions failed", ["action", "error_type"])
 policy_eval_duration = Histogram("policy_eval_duration_seconds", "Policy evaluation time")
-```
+```text
 
 **Grafana Dashboard:**
 

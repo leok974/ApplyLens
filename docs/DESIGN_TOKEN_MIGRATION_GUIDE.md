@@ -40,7 +40,7 @@
   <p className="text-slate-600 dark:text-slate-300 text-[13px] leading-relaxed">Preview text</p>
   <Archive className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" />
 </div>
-```
+```text
 
 **Key improvements:**
 
@@ -64,7 +64,7 @@
   <span className="bg-[color:hsl(var(--color-accent))]" />
   Today
 </div>
-```
+```text
 
 **Key improvements:**
 
@@ -91,7 +91,7 @@
     <Search />
   </Button>
 </header>
-```
+```text
 
 **Key improvements:**
 
@@ -114,7 +114,7 @@
   <Button variant="outline">Archive</Button>
   <Button variant="outline">Mark safe</Button>
 </div>
-```
+```text
 
 **Key improvements:**
 
@@ -138,7 +138,7 @@
 
 // AFTER: Soft default with gentle hover
 <Archive className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" />
-```
+```text
 
 **Pattern:**
 
@@ -177,7 +177,7 @@ className="border-border"
 // ✅ ALSO CORRECT (Semantic aliases defined in @theme)
 className="bg-card"         // Maps to --color-card
 className="text-foreground" // Maps to --color-foreground
-```
+```text
 
 ## Migration Pattern
 
@@ -235,4 +235,4 @@ After migration, verify:
 ```javascript
 // In console:
 document.documentElement.classList.toggle('dark')
-```
+```text

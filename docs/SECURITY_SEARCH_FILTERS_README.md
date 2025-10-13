@@ -98,27 +98,27 @@ Successfully implemented **High-Risk** and **Quarantined Only** filter chips for
 
 ### High-Risk Emails
 
-```
+```text
 Navigate to: /search?q=invoice&risk_min=80
 Click: "High Risk (≥80)" chip
 Result: Only emails with risk_score >= 80
-```
+```text
 
 ### Quarantined Emails
 
-```
+```text
 Navigate to: /search?q=test&quarantined=true
 Click: "Quarantined only" chip
 Result: Only quarantined emails
-```
+```text
 
 ### Both Filters
 
-```
+```text
 Navigate to: /search?q=security&risk_min=80&quarantined=true
 Click: Both chips
 Result: Emails that are BOTH high-risk AND quarantined
-```
+```text
 
 ## Testing
 
@@ -136,11 +136,11 @@ npm run test:e2e -- security-search-filters.spec.ts --headed
 
 # Debug mode
 npm run test:e2e -- security-search-filters.spec.ts --debug
-```
+```text
 
 ### Expected Test Results
 
-```
+```text
 ✓ High-Risk chip sets URL params and calls API with risk_min=80
 ✓ Quarantined chip sets quarantined=true
 ✓ Both filters can be active simultaneously
@@ -149,29 +149,29 @@ npm run test:e2e -- security-search-filters.spec.ts --debug
 ✓ Individual chips can be toggled independently
 
 6 passed (15s)
-```
+```text
 
 ## API Integration
 
 ### Endpoint
 
-```
+```text
 GET /api/search/
-```
+```text
 
 ### Query Parameters
 
-```
+```ini
 risk_min=80             # Minimum risk score
 risk_max=100            # Maximum risk score
 quarantined=true        # Filter quarantined emails
-```
+```text
 
 ### Example Request
 
 ```bash
 curl "http://localhost:8003/api/search/?q=invoice&risk_min=80&quarantined=true"
-```
+```text
 
 ### Expected Response
 
@@ -190,7 +190,7 @@ curl "http://localhost:8003/api/search/?q=invoice&risk_min=80&quarantined=true"
   ],
   "total": 1
 }
-```
+```text
 
 ## Backend Requirements
 
@@ -200,7 +200,7 @@ Backend migration `0015_add_security_fields` must be applied:
 
 ```bash
 docker exec infra-api-1 alembic upgrade head
-```
+```text
 
 ### API Endpoint
 

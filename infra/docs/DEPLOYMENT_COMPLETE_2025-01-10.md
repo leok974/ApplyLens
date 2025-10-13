@@ -25,7 +25,7 @@ Successfully completed schema migration to add missing `emails.category` column,
 ```bash
 $ docker-compose exec api alembic current
 0009_add_emails_category (head)
-```
+```text
 
 **Migration Chain:**
 
@@ -46,7 +46,7 @@ Missing dates[] (bills): 0
 Bills with dates[]:      1
 Bills with expires_at:   1
 Verdict: OK  @ 2025-10-10T16:06:33.872571Z
-```
+```text
 
 **Result:** All bills have dates populated, 0 missing.
 
@@ -60,7 +60,7 @@ Verdict: OK  @ 2025-10-10T16:06:33.872571Z
 
 **Available Endpoints (36 total):**
 
-```
+```text
 /analytics/dashboards/kpis.csv
 /analytics/latest
 /analytics/search
@@ -96,7 +96,7 @@ Verdict: OK  @ 2025-10-10T16:06:33.872571Z
 /suggest/
 /unsubscribe/execute
 /unsubscribe/preview
-```
+```bash
 
 **Service Status (docker-compose):**
 
@@ -132,7 +132,7 @@ Backfill completed.
 Scanned: 1 bills
 Updated: 0 bills
 Unchanged: 1 bills
-```
+```text
 
 **Result:**
 
@@ -150,7 +150,7 @@ Backfill Statistics:
 - Total documents: 1822
 - Documents with category: 1816 / 1822
 - Updated in this run: 6
-```
+```text
 
 **Category Distribution:**
 
@@ -178,19 +178,19 @@ from app.utils.schema_guard import require_min_migration
 
 # At start of job
 require_min_migration("0009_add_emails_category", "emails.category column")
-```
+```text
 
 **On Success:** Job proceeds normally  
 **On Failure:** Exits immediately with:
 
-```
+```text
 ❌ Schema validation failed:
 Database schema is too old. Current: 0008, Required: 0009
 
 Please run migrations:
   cd services/api
   alembic upgrade head
-```
+```text
 
 ### Where It's Used
 

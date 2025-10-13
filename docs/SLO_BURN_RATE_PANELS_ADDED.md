@@ -23,7 +23,7 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 
 ```promql
 (time() - max_over_time(timestamp(ALERTS{alertstate="firing"}[30d])))/60
-```
+```text
 
 **How It Works:**
 
@@ -58,7 +58,7 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[1h])) / 
  sum(rate(applylens_http_requests_total[1h]))) / 0.001
-```
+```text
 
 **Thresholds:**
 
@@ -93,7 +93,7 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[6h])) / 
  sum(rate(applylens_http_requests_total[6h]))) / 0.001
-```
+```text
 
 **Thresholds:**
 
@@ -115,13 +115,13 @@ Added 4 advanced SLO monitoring panels to the ApplyLens dashboard, bringing the 
 
 **Multi-Window Alerting Pattern:**
 
-```
+```text
 If (1h burn > 14.4×) OR (6h burn > 6×):
   → Page on-call (critical SLO threat)
 
 If (1h burn > 10×) AND (6h burn > 3×):
   → Create incident ticket (investigate)
-```
+```text
 
 ---
 
@@ -135,7 +135,7 @@ If (1h burn > 10×) AND (6h burn > 3×):
 
 ```promql
 avg_over_time(up{job="applylens-api"}[1h]) * 100
-```
+```text
 
 **Thresholds:**
 
@@ -217,7 +217,7 @@ Burn rate tells you **how fast** you're consuming that budget:
 
 SRE teams use **multiple time windows** for different purposes:
 
-```
+```text
 Fast Window (1h):
   ✅ Catches incidents quickly
   ❌ Sensitive to noise/spikes
@@ -229,7 +229,7 @@ Slow Window (6h):
 Best Practice: Use BOTH
   → 1h: Fast detection
   → 6h: Confirmation & stability
-```
+```text
 
 ### Example Alert Rules (to add to Prometheus)
 
@@ -257,7 +257,7 @@ Best Practice: Use BOTH
   annotations:
     summary: "Sustained error budget burn (6h window)"
     description: "Burning error budget 6× faster over 6 hours"
-```
+```text
 
 **Burn rate thresholds explained:**
 
@@ -294,7 +294,7 @@ Example:
   5xx rate = 0.005 (0.5%)
   Allowed = 0.001 (0.1% for 99.9% SLO)
   Burn rate = 0.005 / 0.001 = 5×
-```
+```text
 
 ---
 
@@ -315,7 +315,7 @@ Write-Host "`n✅ Errors sent. Check dashboard:" -ForegroundColor Green
 Write-Host "   • 1h burn rate should spike immediately" -ForegroundColor Cyan
 Write-Host "   • 6h burn rate should gradually increase" -ForegroundColor Cyan
 Write-Host "   • 1h uptime gauge should drop" -ForegroundColor Cyan
-```
+```text
 
 ### Test 2: Monitor After Stopping API
 
@@ -330,7 +330,7 @@ Start-Sleep -Seconds 120
 
 docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
 Write-Host "✅ API restarted - uptime recovering" -ForegroundColor Green
-```
+```text
 
 ### Test 3: Check Last Alert Fired
 
@@ -344,13 +344,13 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
 Start-Sleep -Seconds 10
 Write-Host "📊 Check 'Last Alert Fired' panel in dashboard" -ForegroundColor Cyan
 Write-Host "   Should show ~1-2 minutes ago" -ForegroundColor Gray
-```
+```text
 
 ---
 
 ## 🎨 Panel Layout
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │ Row 1: Traffic & Performance                        │
 │  [HTTP req/s          ] [HTTP latency p50/90/99   ] │
@@ -370,7 +370,7 @@ Write-Host "   Should show ~1-2 minutes ago" -ForegroundColor Gray
 │ Row 6: Short-term Health                            │
 │  [API Uptime 1h       ]                             │
 └─────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -421,7 +421,7 @@ Create alerts that fire when burn rate exceeds thresholds:
     severity: warning
   annotations:
     summary: "Sustained error budget burn (6× in 6h)"
-```
+```text
 
 ### 2. Error Budget Tracking Panel
 
@@ -432,7 +432,7 @@ Add a panel showing remaining error budget:
   "title": "Error Budget Remaining (30d)",
   "expr": "((0.001 * 30 * 24 * 60 * 60) - sum(increase(applylens_http_requests_total{status=~\"5..\"}[30d]))) / (sum(increase(applylens_http_requests_total[30d])) * 0.001) * 100"
 }
-```
+```text
 
 ### 3. Latency SLO
 
@@ -443,7 +443,7 @@ Add latency-based SLO (e.g., p99 < 500ms):
   "title": "Latency SLO (p99 < 500ms)",
   "expr": "(histogram_quantile(0.99, sum(rate(applylens_http_request_duration_seconds_bucket[1h])) by (le)) < 0.5) * 100"
 }
-```
+```text
 
 ---
 

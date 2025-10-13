@@ -39,7 +39,7 @@ Successfully implemented all Phase 4 enhancement features requested:
     "risk_score": 0.15
   }
 }
-```
+```text
 
 **Response:**
 
@@ -48,7 +48,7 @@ Successfully implemented all Phase 4 enhancement features requested:
   "ok": true,
   "policy_id": 42
 }
-```
+```text
 
 **Behavior:**
 
@@ -74,7 +74,7 @@ Successfully implemented all Phase 4 enhancement features requested:
     ]
   }
 }
-```
+```text
 
 ### Frontend Integration
 
@@ -93,7 +93,7 @@ export async function alwaysDoThis(
   if (!r.ok) throw new Error(`Failed to create always policy: ${r.statusText}`)
   return r.json()
 }
-```
+```text
 
 **UI Component:** `apps/web/src/components/ActionsTray.tsx`
 
@@ -110,7 +110,7 @@ export async function alwaysDoThis(
   <Sparkles className="h-3 w-3 mr-1" />
   Always do this
 </Button>
-```
+```text
 
 **Handler:**
 
@@ -137,7 +137,7 @@ async function handleAlways(action: ProposedAction) {
     setProcessing(null)
   }
 }
-```
+```text
 
 **User Flow:**
 
@@ -190,7 +190,7 @@ METRICS = {
     "actions_failed": actions_failed,
     "policy_evaluations": policy_evaluations,
 }
-```
+```text
 
 ### Metrics Integration
 
@@ -199,7 +199,7 @@ METRICS = {
 ```python
 # Track which policies generate proposals
 METRICS["actions_proposed"].labels(policy_name=policy.name).inc()
-```
+```text
 
 **Approve Endpoint:**
 
@@ -215,7 +215,7 @@ else:
         action_type=pa.action.value,
         error_type=error[:50] if error else "unknown"
     ).inc()
-```
+```text
 
 ### Metrics Endpoint
 
@@ -237,7 +237,7 @@ actions_executed_total{action_type="label_email",outcome="success"} 23.0
 # HELP actions_failed_total Total number of failed action executions
 # TYPE actions_failed_total counter
 actions_failed_total{action_type="unsubscribe_via_header",error_type="No List-Unsubscribe header found"} 3.0
-```
+```text
 
 ### Alerting Examples
 
@@ -265,7 +265,7 @@ groups:
           severity: info
         annotations:
           summary: "No actions proposed in last hour (policies may need tuning)"
-```
+```text
 
 **Grafana Dashboard Queries:**
 
@@ -279,7 +279,7 @@ rate(actions_executed_total{outcome="success"}[5m]) /
 
 # Top failing action types
 topk(5, sum by (action_type) (rate(actions_failed_total[1h])))
-```
+```text
 
 ---
 
@@ -298,7 +298,7 @@ $ curl -s http://localhost:8003/openapi.json | jq -r '.paths | keys[] | select(c
 /api/actions/{action_id}/always         # ← NEW
 /api/actions/{action_id}/approve
 /api/actions/{action_id}/reject
-```
+```text
 
 ### OpenAPI Documentation
 
@@ -336,7 +336,7 @@ $ curl -s http://localhost:8003/openapi.json | jq '.paths."/api/actions/{action_
     }
   }
 }
-```
+```text
 
 ---
 
@@ -369,7 +369,7 @@ export type ProposedAction = {
   email_sender?: string
   email_received_at?: string
 }
-```
+```text
 
 **Why:** The `features` field is needed for the "Always do this" button to extract stable characteristics (category, sender_domain) for policy creation.
 
@@ -398,7 +398,7 @@ export type ProposedAction = {
 
 **Visual Hierarchy:**
 
-```
+```text
 ┌─────────────────────────────────────┐
 │ Email: "50% off today only!"       │
 │ From: promos@example.com           │
@@ -408,7 +408,7 @@ export type ProposedAction = {
 │ [✓ Approve] [✗ Reject]            │  ← Primary actions
 │ [✨ Always do this]                │  ← New learned policy
 └─────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -422,12 +422,12 @@ NAME                  STATUS
 infra-api-1           Up 3 minutes         # ← Restarted successfully
 infra-db-1            Up 20 minutes
 infra-es-1            Up 19 minutes (healthy)
-```
+```bash
 
 ```bash
 $ curl -s http://localhost:8003/health
 {"status":"healthy"}
-```
+```bash
 
 ```bash
 $ curl -s http://localhost:8003/metrics | grep actions_
@@ -437,7 +437,7 @@ $ curl -s http://localhost:8003/metrics | grep actions_
 # TYPE actions_executed_total counter
 # HELP actions_failed_total Total number of failed action executions
 # TYPE actions_failed_total counter
-```
+```text
 
 ### Frontend Deployment
 
@@ -445,7 +445,7 @@ $ curl -s http://localhost:8003/metrics | grep actions_
 $ cd apps/web && npm run dev
   VITE v5.4.20  ready in 847 ms
   ➜  Local:   http://localhost:5175/
-```
+```text
 
 **UI Verification:**
 
@@ -468,13 +468,13 @@ $ cd apps/web && npm run dev
 curl -X POST http://localhost:8003/api/actions/propose \
   -H "Content-Type: application/json" \
   -d '{"email_ids": [1, 2, 3, 4, 5]}'
-```
+```text
 
 **Step 2: View Tray**
 
 ```bash
 curl http://localhost:8003/api/actions/tray?limit=100
-```
+```text
 
 **Step 3: Test "Always" Button**
 
@@ -494,20 +494,20 @@ curl -X POST "http://localhost:8003/api/actions/${ACTION_ID}/always" \
 
 # Response:
 # {"ok": true, "policy_id": 42}
-```
+```text
 
 **Step 4: Verify Policy Created**
 
 ```bash
 curl http://localhost:8003/api/actions/policies | jq '.[] | select(.name | contains("Learned"))'
-```
+```text
 
 **Step 5: Check Metrics**
 
 ```bash
 curl -s http://localhost:8003/metrics | grep actions_proposed_total
 # actions_proposed_total{policy_name="High-risk auto-quarantine"} 5.0
-```
+```text
 
 ### UI Testing Flow
 
@@ -559,7 +559,7 @@ def es_aggs_for_sender(domain: str | None, es) -> dict:
         "expired_count": res["aggregations"]["expired"]["doc_count"],
         "total_from_sender": total,
     }
-```
+```text
 
 **Benefit:** More context for confidence scoring
 
@@ -592,7 +592,7 @@ def test_always_creates_policy():
     # Verify policy exists
     r = client.get(f"/api/actions/policies/{policy_id}")
     assert r.json()["name"].startswith("Learned:")
-```
+```text
 
 #### C. E2E Tests
 
@@ -624,7 +624,7 @@ test('Always do this creates policy', async ({ page }) => {
     
     await expect(page.getByText('Policy created')).toBeVisible()
 })
-```
+```text
 
 #### D. PowerShell Quickruns
 
@@ -654,7 +654,7 @@ $body = @{
 curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
     -H "Content-Type: application/json" `
     -d $body | jq .
-```
+```text
 
 ---
 
@@ -738,7 +738,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
   expr: rate(actions_proposed_total[1d]) == 0
   for: 1d
   severity: warning
-```
+```text
 
 **Info Alerts:**
 
@@ -748,7 +748,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
   severity: info
   annotations:
     summary: "User created learned policy via Always button"
-```
+```text
 
 ---
 

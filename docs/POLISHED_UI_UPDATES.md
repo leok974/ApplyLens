@@ -15,7 +15,7 @@ This document describes the premium UI enhancements applied to the inbox interfa
 
 ```tsx
 <SenderAvatar from="careers@techcorp.com" size={32} />
-```
+```text
 
 ### 2. Density Toggle (`Segmented.tsx`)
 
@@ -35,7 +35,7 @@ This document describes the premium UI enhancements applied to the inbox interfa
     { value: "compact", label: "Compact" },
   ]}
 />
-```
+```text
 
 ### 3. Modern Card Styling (`EmailRow.tsx`)
 
@@ -79,7 +79,7 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
 
 ```tsx
 <div className="bg-slate-100 px-2 py-1">Today</div>
-```
+```text
 
 **After:**
 
@@ -88,7 +88,7 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
   <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
   Today
 </div>
-```
+```text
 
 ### 6. Improved Loading Skeletons
 
@@ -110,7 +110,7 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
   <div className="mt-3 h-3 w-3/4 rounded bg-slate-200/70" />
   <div className="mt-2 h-3 w-2/3 rounded bg-slate-200/70" />
 </div>
-```
+```text
 
 ### 7. Tasteful Background Gradient
 
@@ -118,7 +118,7 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
 
 ```tsx
 <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/70 dark:from-slate-950 dark:to-slate-950">
-```
+```text
 
 **Effect:**
 
@@ -157,7 +157,7 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
 
 ## 📁 File Structure
 
-```
+```text
 apps/web/src/
 ├── components/
 │   ├── inbox/
@@ -170,7 +170,7 @@ apps/web/src/
 │       └── ...
 └── pages/
     └── InboxPolishedDemo.tsx      # UPDATED: Gradient bg + density state
-```
+```text
 
 ## 🚀 Usage Examples
 
@@ -197,7 +197,7 @@ function InboxPage() {
     </div>
   );
 }
-```
+```text
 
 ### Individual Components
 
@@ -213,7 +213,7 @@ function InboxPage() {
   reason="ats"
   {...handlers}
 />
-```
+```text
 
 ## 🎯 Key Visual Improvements
 
@@ -264,7 +264,7 @@ const isCompact = density === "compact";
 // Modify these values:
 size={isCompact ? 28 : 32}  // Avatar size
 text-[13px] : text-sm       // Font sizes
-```
+```text
 
 ### Custom Badge Colors
 
@@ -275,7 +275,7 @@ myCategory: {
   label: "My Label", 
   className: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200" 
 }
-```
+```text
 
 ## ✅ Browser Support
 

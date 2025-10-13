@@ -6,7 +6,7 @@
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
-```
+```text
 
 ✅ Adds `first_user_reply_at`, `last_user_reply_at`, `user_reply_count` columns to emails table
 
@@ -14,7 +14,7 @@ docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.es_reindex_with_ats
-```
+```text
 
 ✅ Creates new index with reply metric fields (`replied`, `first_user_reply_at`, `last_user_reply_at`, `user_reply_count`)
 
@@ -22,7 +22,7 @@ docker compose -f infra/docker-compose.yml exec api python -m services.api.scrip
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.backfill_reply_metrics
-```
+```text
 
 ✅ Computes reply metrics for all existing emails (~1807 emails, ~156 threads)
 
@@ -30,7 +30,7 @@ docker compose -f infra/docker-compose.yml exec api python -m services.api.scrip
 
 ```bash
 docker compose -f infra/docker-compose.yml restart api
-```
+```text
 
 ---
 
@@ -42,13 +42,13 @@ docker compose -f infra/docker-compose.yml restart api
 docker compose -f infra/docker-compose.yml exec api psql "$DATABASE_URL" -c "
 SELECT COUNT(*) as total, COUNT(first_user_reply_at) as replied FROM emails;
 "
-```
+```text
 
 ### Test 2: Check Elasticsearch
 
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_search?size=1&q=replied:true" | jq '.hits.hits[0]._source | {subject, replied, user_reply_count, first_user_reply_at}'
-```
+```text
 
 ### Test 3: Test Search API
 
@@ -58,7 +58,7 @@ curl "http://localhost:8003/search?q=interview&replied=false&size=5"
 
 # Find threads you replied to
 curl "http://localhost:8003/search?q=offer&replied=true&size=5"
-```
+```text
 
 ---
 
@@ -78,7 +78,7 @@ if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
   def end   = doc['first_user_reply_at'].value.toInstant().toEpochMilli();
   if (end >= start) emit((end - start) / 3600000.0);
 }
-```
+```text
 
 ### Create Visualization
 
@@ -110,7 +110,7 @@ if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
 
 ```bash
 GMAIL_PRIMARY_ADDRESS=leoklemet.pa@gmail.com
-```
+```text
 
 **No replied=true results**: Backfill script didn't run or user has no replies
 

@@ -10,9 +10,9 @@
 
 The backfill job (`scripts/backfill_bill_dates.py`) was failing with:
 
-```
+```text
 psycopg2.errors.UndefinedColumn: column "category" does not exist
-```
+```text
 
 ### Root Cause
 
@@ -56,7 +56,7 @@ $ docker-compose exec db psql -U postgres -d applylens \
     -c "\d emails" | grep category
  category  | text  |  |  | 
     "ix_emails_category" btree (category)
-```
+```text
 
 ### 2. Schema Guard System ✅
 
@@ -88,7 +88,7 @@ def run():
         sys.exit(1)
     
     # Rest of the job...
-```
+```text
 
 **Benefits:**
 
@@ -114,7 +114,7 @@ def run():
     # No schema check - would fail hours later
     dry_run = os.getenv("DRY_RUN", "1") == "1"
     # ...
-```
+```text
 
 **After:**
 
@@ -131,7 +131,7 @@ def run():
     
     dry_run = os.getenv("DRY_RUN", "1") == "1"
     # ...
-```
+```text
 
 ### 4. Comprehensive Documentation ✅
 
@@ -164,7 +164,7 @@ def run():
 
 **Results:**
 
-```
+```text
 ✓ PASS: Get Current Migration
 ✓ PASS: Check Column Existence
 ✓ PASS: Require Minimum Migration
@@ -172,7 +172,7 @@ def run():
 ✓ PASS: Get Migration Info
 
 ✓ ALL TESTS PASSED
-```
+```text
 
 ---
 
@@ -204,7 +204,7 @@ alembic upgrade head
 # 2. Deploy code AFTER
 git pull
 docker-compose up -d --build
-```
+```text
 
 ### 2. Add Schema Guards to Long-Running Jobs
 
@@ -231,7 +231,7 @@ Add to GitHub Actions:
     from app.utils.schema_guard import require_min_migration
     require_min_migration('0009_add_emails_category')
     "
-```
+```text
 
 ### 4. Follow Pre-Deployment Checklist
 
@@ -274,7 +274,7 @@ docker-compose exec db psql -U postgres -d applylens \
 # Check column exists
 docker-compose exec db psql -U postgres -d applylens \
   -c "\d emails" | grep category
-```
+```text
 
 ### Verify Schema Guard Works
 
@@ -284,7 +284,7 @@ docker-compose exec api python scripts/verify_schema_guard.py
 
 # Expected output:
 # ✓ ALL TESTS PASSED
-```
+```text
 
 ### Test Backfill Script
 
@@ -297,7 +297,7 @@ docker-compose exec api \
 # Should see:
 # Checking database schema...
 # ✓ Database schema validation passed
-```
+```text
 
 ---
 

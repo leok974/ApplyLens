@@ -17,7 +17,7 @@ python -m app.scripts.update_es_mapping
 
 # Restart API
 docker-compose restart api
-```
+```text
 
 ### 2. Classify an Email
 
@@ -38,7 +38,7 @@ result = classify_email(email)
 #   "confidence": 0.9,
 #   "profile_tags": ["brand:amazon", "urgent"]
 # }
-```
+```text
 
 ### 3. Evaluate Policies
 
@@ -56,7 +56,7 @@ email = {
 
 actions = engine.evaluate_all(email)
 # [{"action": "archive", "policy_id": "promo-expired-archive"}]
-```
+```text
 
 ### 4. Preview Actions (API)
 
@@ -70,7 +70,7 @@ curl -X POST http://localhost:8000/mail/actions/preview \
       "confidence": 0.85
     }]
   }'
-```
+```text
 
 ### 5. Execute Actions (API)
 
@@ -86,7 +86,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
       "rationale": "Expired promotion"
     }]
   }'
-```
+```text
 
 ---
 
@@ -130,7 +130,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
   "if": {"category": "promotions", "expires_at": "<now"},
   "then": {"action": "archive", "confidence_min": 0.7}
 }
-```
+```text
 
 ### 2. High-Risk Quarantine
 
@@ -139,7 +139,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
   "if": {"risk_score": ">=80"},
   "then": {"action": "quarantine", "confidence_min": 0.5, "notify": true}
 }
-```
+```text
 
 ### 3. Bill Reminder
 
@@ -148,7 +148,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
   "if": {"category": "bills", "labels": "not_in paid"},
   "then": {"action": "label", "params": {"label": "needs_attention"}}
 }
-```
+```text
 
 ### 4. Application Priority
 
@@ -157,7 +157,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
   "if": {"category": "applications"},
   "then": {"action": "label", "params": {"label": "important"}}
 }
-```
+```text
 
 ---
 
@@ -190,13 +190,13 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 
 ```bash
 pytest services/api/tests/unit/test_classifier.py -v
-```
+```text
 
 ### E2E Tests
 
 ```bash
 pytest services/api/tests/e2e/ -v
-```
+```text
 
 ### Test Coverage
 
@@ -222,7 +222,7 @@ user_profile (
   user_id, interests[], brand_prefs[],
   active_categories[], mute_rules, open_rates
 )
-```
+```text
 
 ### New Email Columns
 
@@ -235,7 +235,7 @@ emails (
   profile_tags TEXT[],
   features_json JSONB
 )
-```
+```text
 
 ---
 
@@ -246,28 +246,28 @@ emails (
 ```python
 # Automatically runs via policy engine
 # No manual intervention needed
-```
+```text
 
 ### Quarantine Phishing
 
 ```python
 # High risk_score (>=80) triggers quarantine
 # User notified for review
-```
+```text
 
 ### Priority Job Emails
 
 ```python
 # ATS domains auto-labeled "important"
 # Never miss an interview
-```
+```text
 
 ### Bill Reminders
 
 ```python
 # Unpaid bills get "needs_attention" label
 # Visual reminder in inbox
-```
+```text
 
 ---
 

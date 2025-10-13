@@ -59,7 +59,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
     // Build final message with citations
   })
 }
-```
+```text
 
 **Wired Toggle to Auto-Propose**:
 
@@ -74,7 +74,7 @@ function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>) {
     send(input, { propose: fileActions })
   }
 }
-```
+```text
 
 ### 2. Backend: Streaming Endpoint
 
@@ -148,7 +148,7 @@ async def chat_stream(
             yield f'event: error\ndata: {json.dumps({"error": str(e)})}\n\n'
     
     return StreamingResponse(generate(), media_type="text/event-stream")
-```
+```text
 
 #### Integration with Phase 4 Approvals
 
@@ -158,7 +158,7 @@ The streaming endpoint uses the existing `approvals_bulk_insert()` function from
 from ..db import approvals_bulk_insert
 
 approvals_bulk_insert(approval_rows)
-```
+```text
 
 Actions are inserted into the `approvals_proposed` table with:
 
@@ -226,7 +226,7 @@ Validates:
 
 **Events**:
 
-```
+```text
 event: intent
 data: {"intent": "clean", "explanation": "Propose archiving old promotional emails"}
 
@@ -241,7 +241,7 @@ data: {"proposed": 5}
 
 event: done
 data: {"ok": true}
-```
+```text
 
 ### POST /api/chat (Legacy)
 
@@ -340,7 +340,7 @@ pwsh ./scripts/test-chat.ps1
 
 # Expected output:
 # ✅ All tests passed! (12/12)
-```
+```text
 
 ### Database Verification
 
@@ -357,7 +357,7 @@ LIMIT 10;
 -- confidence: 0.8
 -- rationale: 'Filed from chat: {query}'
 -- status: 'proposed'
-```
+```text
 
 ## Integration with Phase 4
 
@@ -408,7 +408,7 @@ The frontend uses the `API_BASE` from `@/lib/apiBase.ts`:
 
 ```typescript
 export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
-```
+```text
 
 ### Development
 
@@ -432,7 +432,7 @@ async def generate():
     # Stream LLM tokens in real-time
     async for token in llm.stream(prompt):
         yield f'event: token\ndata: {json.dumps({"token": token})}\n\n'
-```
+```text
 
 ### 2. Progress Bar for Long Operations
 
@@ -441,7 +441,7 @@ ev.addEventListener('progress', (e: any) => {
   const data = JSON.parse(e.data)
   setProgress(data.percent)  // 0-100
 })
-```
+```text
 
 ### 3. Batch Filing Confirmation Dialog
 
@@ -452,7 +452,7 @@ if (filedCount > 20) {
   const confirmed = window.confirm(`File ${filedCount} actions to Approvals?`)
   if (!confirmed) return
 }
-```
+```text
 
 ### 4. Action Preview Before Filing
 
@@ -464,7 +464,7 @@ ev.addEventListener('actions', (e: any) => {
   setActionPreview(actions)
   // Show preview modal
 })
-```
+```text
 
 ### 5. Undo Filed Actions
 
@@ -474,7 +474,7 @@ Add ability to quickly undo accidental filing:
 <button onClick={() => undoFiledActions(lastFiledIds)}>
   Undo filing
 </button>
-```
+```text
 
 ## Troubleshooting
 
@@ -494,7 +494,7 @@ docker-compose ps
 
 # Restart API
 docker-compose restart api
-```
+```text
 
 ### Issue: "filed event not received"
 
@@ -526,7 +526,7 @@ docker-compose restart api
 # Or restart frontend:
 cd d:\ApplyLens\apps\web
 npm run dev
-```
+```text
 
 ### Issue: "EventSource errors in console"
 
@@ -537,7 +537,7 @@ npm run dev
 ```powershell
 cd d:\ApplyLens\infra
 docker-compose logs -f api
-```
+```text
 
 ## Migration Notes
 
@@ -551,7 +551,7 @@ const response = await sendChatMessage({...})
 
 // Old: Manual "Run actions now" button required
 <button onClick={() => send(lastQuery, { propose: true })}>
-```
+```text
 
 **New (SSE with auto-propose)**:
 
@@ -565,7 +565,7 @@ ev.addEventListener('filed', ...)
   <input type="checkbox" checked={fileActions} ... />
   file actions to Approvals
 </label>
-```
+```text
 
 ### Backward Compatibility
 

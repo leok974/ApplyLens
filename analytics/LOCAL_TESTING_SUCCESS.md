@@ -104,7 +104,7 @@ dev:
   location: US
   timeout_seconds: 300
   maximum_bytes_billed: 1000000000  # 1GB limit
-```
+```text
 
 ### Local Prod Target (For Testing with Prod Settings)
 
@@ -119,7 +119,7 @@ local_prod:
   location: US
   timeout_seconds: 600
   maximum_bytes_billed: 10000000000  # 10GB limit
-```
+```text
 
 ## Running Locally
 
@@ -129,13 +129,13 @@ local_prod:
 cd D:\ApplyLens\analytics\dbt
 $env:PATH = "C:\Users\$env:USERNAME\AppData\Roaming\Python\Python313\Scripts;$env:PATH"
 $env:BQ_PROJECT = "applylens-gmail-1759983601"
-```
+```text
 
 ### Test Connection
 
 ```bash
 dbt debug --profiles-dir .
-```
+```text
 
 ### Run Models
 
@@ -148,20 +148,20 @@ dbt run --select marts --target dev --profiles-dir .
 
 # Specific model
 dbt run --select mrt_risk_daily --target dev --profiles-dir .
-```
+```text
 
 ### Train ML Models
 
 ```bash
 # Use Python script (recommended for BigQuery ML)
 python train_ml_models.py
-```
+```text
 
 ### Generate Predictions
 
 ```bash
 dbt run --select pred_email_count --target dev --profiles-dir .
-```
+```text
 
 ## Production Readiness
 
@@ -198,14 +198,14 @@ The workflows in `.github/workflows/analytics-ml.yml` and `analytics-sync.yml` a
 
 Sample output from `pred_email_count`:
 
-```
+```text
 Date         Predicted    Lower Bound  Upper Bound
 --------------------------------------------------
 2025-10-11   1.0          1.0          1.0
 2025-10-12   1.0          1.0          1.0
 2025-10-13   1.0          1.0          1.0
 ... (7 days total)
-```
+```text
 
 Note: Values are uniform (1.0) because test data is simple. With real production data, the ARIMA model will learn actual patterns and provide meaningful forecasts.
 

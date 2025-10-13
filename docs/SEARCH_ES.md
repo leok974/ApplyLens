@@ -22,7 +22,7 @@ elasticsearch:
     - "9200:9200"
   volumes:
     - es_data:/usr/share/elasticsearch/data
-```
+```text
 
 ## Index Configuration
 
@@ -95,7 +95,7 @@ PUT /emails_v1-000001
     }
   }
 }
-```
+```text
 
 ### Analyzers
 
@@ -158,7 +158,7 @@ def search_emails(query: str, user_id: str, filters: dict):
         })
     
     return es_client.search(index="emails_v1", body=body)
-```
+```text
 
 ### Aggregations (Facets)
 
@@ -199,7 +199,7 @@ def get_facets(user_id: str):
         "sender_domains": result["aggregations"]["by_sender_domain"]["buckets"],
         "risk_distribution": result["aggregations"]["risk_histogram"]["buckets"]
     }
-```
+```text
 
 ## Relevance Tuning
 
@@ -219,7 +219,7 @@ def get_facets(user_id: str):
     "prefix_length": 2             // First 2 chars must match exactly
   }
 }
-```
+```text
 
 ### Function Score
 
@@ -243,7 +243,7 @@ Boost recent emails:
         "boost_mode": "multiply"
     }
 }
-```
+```text
 
 ## Indexing Strategy
 
@@ -263,7 +263,7 @@ def bulk_index_emails(emails: List[dict]):
     ]
     
     helpers.bulk(es_client, actions, chunk_size=500)
-```
+```text
 
 ### Incremental Updates
 
@@ -274,7 +274,7 @@ def index_email(email: dict):
         id=email["id"],
         document=email
     )
-```
+```text
 
 ### Delete by Query
 
@@ -288,7 +288,7 @@ def delete_quarantined_emails():
             }
         }
     )
-```
+```text
 
 ## Reindexing
 
@@ -319,7 +319,7 @@ POST /_aliases
 
 # 4. Delete old index
 DELETE /emails_v1-000001
-```
+```text
 
 ## Performance Optimization
 
@@ -332,7 +332,7 @@ PUT /emails_v1/_settings
     "refresh_interval": "30s"  // Default: 1s (reduce for faster indexing)
   }
 }
-```
+```text
 
 ### Bulk Requests
 
@@ -348,7 +348,7 @@ es_client.index(
     routing=email["user_id"],  # Ensures co-location
     document=email
 )
-```
+```text
 
 ## Monitoring
 
@@ -356,13 +356,13 @@ es_client.index(
 
 ```bash
 curl http://localhost:9200/_cluster/health?pretty
-```
+```text
 
 ### Index Stats
 
 ```bash
 curl http://localhost:9200/emails_v1/_stats?pretty
-```
+```text
 
 ### Search Performance
 
@@ -371,7 +371,7 @@ curl http://localhost:9200/emails_v1/_stats?pretty
     "profile": True,  # Add to query for detailed timing
     "query": { ... }
 }
-```
+```text
 
 ## Common Queries
 
@@ -388,7 +388,7 @@ GET /emails_v1/_search
     }
   }
 }
-```
+```text
 
 ### Find Emails Without Applications
 
@@ -406,7 +406,7 @@ GET /emails_v1/_search
     }
   }
 }
-```
+```text
 
 ### Top Senders by Count
 
@@ -424,7 +424,7 @@ GET /emails_v1/_search
     }
   }
 }
-```
+```text
 
 ## See Also
 

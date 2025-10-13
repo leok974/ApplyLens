@@ -12,10 +12,10 @@ The frontend was calling `/api/gmail/status` but the backend had registered the 
 
 **Error in browser console**:
 
-```
+```text
 GET http://localhost:5175/api/gmail/status 404 (Not Found)
 Failed to fetch Gmail status
-```
+```text
 
 ---
 
@@ -26,7 +26,7 @@ In `services/api/app/main.py`, the `routes_gmail.router` was included without th
 ```python
 # ❌ Before (incorrect)
 app.include_router(routes_gmail.router)
-```
+```text
 
 This made the routes available at:
 
@@ -49,7 +49,7 @@ Added the `/api` prefix when including the `routes_gmail.router`:
 ```python
 # ✅ After (correct)
 app.include_router(routes_gmail.router, prefix="/api")
-```
+```text
 
 **File changed**: `services/api/app/main.py` (line 67)
 
@@ -77,13 +77,13 @@ All Gmail endpoints are now accessible under `/api/gmail/`:
   "has_refresh_token": true,
   "total": 1868
 }
-```
+```text
 
 **Test**:
 
 ```bash
 curl "http://localhost:8003/api/gmail/status"
-```
+```text
 
 ---
 
@@ -124,13 +124,13 @@ curl "http://localhost:8003/api/gmail/status"
   "page": 1,
   "limit": 50
 }
-```
+```text
 
 **Test**:
 
 ```bash
 curl "http://localhost:8003/api/gmail/inbox?page=1&limit=10"
-```
+```text
 
 ---
 
@@ -153,13 +153,13 @@ curl "http://localhost:8003/api/gmail/inbox?page=1&limit=10"
   "days": 60,
   "user_email": "user@example.com"
 }
-```
+```text
 
 **Test**:
 
 ```bash
 curl -X POST "http://localhost:8003/api/gmail/backfill?days=30"
-```
+```text
 
 ---
 
@@ -172,14 +172,14 @@ All endpoints tested and working:
 ```bash
 curl "http://localhost:8003/api/gmail/status"
 curl "http://localhost:8003/api/gmail/inbox?page=1&limit=2"
-```
+```text
 
 ✅ **Through Vite proxy** (port 5175):
 
 ```bash
 curl "http://localhost:5175/api/gmail/status"
 curl "http://localhost:5175/api/gmail/inbox?page=1&limit=2"
-```
+```text
 
 ---
 
@@ -215,7 +215,7 @@ export async function backfillGmail(days = 60): Promise<BackfillResponse> {
   if (!r.ok) throw new Error('Failed to backfill Gmail')
   return r.json()
 }
-```
+```text
 
 ---
 
@@ -227,7 +227,7 @@ The following routers also use the `/api` prefix:
 # main.py
 app.include_router(applications.router, prefix="/api")  # /api/applications
 app.include_router(routes_gmail.router, prefix="/api")  # /api/gmail (fixed)
-```
+```text
 
 **Routes without `/api` prefix** (intentional):
 
@@ -246,7 +246,7 @@ app.include_router(routes_gmail.router, prefix="/api")  # /api/gmail (fixed)
 
 ```bash
 docker compose restart api
-```
+```text
 
 **2. No frontend changes needed** - Already using correct paths
 

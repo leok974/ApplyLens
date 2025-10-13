@@ -18,7 +18,7 @@ curl -X PUT http://localhost:9200/_index_template/emails_v1 `
 
 # Verify template applied
 curl http://localhost:9200/_index_template/emails_v1?pretty
-```
+```text
 
 ### 2. Run Gmail Backfill Script
 
@@ -34,11 +34,11 @@ pip install -r requirements.txt
 
 # Run backfill (opens browser for OAuth first time)
 python gmail_backfill_to_es_bq.py
-```
+```text
 
 **Expected Output**:
 
-```
+```text
 🚀 Starting Gmail backfill (last 60 days)
    ES: http://localhost:9200/emails_v1-000001
    BQ: applylens-gmail-1759983601.applylens.public_emails
@@ -53,7 +53,7 @@ python gmail_backfill_to_es_bq.py
    ...
 
 ✅ Backfill complete — indexed 1,234 messages into ES + BQ
-```
+```text
 
 ### 3. Verify Data in Elasticsearch
 
@@ -68,7 +68,7 @@ curl "http://localhost:8000/search/?q=interview&size=5"
 
 # Test explain endpoint (get doc ID from search first)
 curl "http://localhost:8000/search/explain/<doc_id>"
-```
+```text
 
 ### 4. Test Web UI
 
@@ -80,7 +80,7 @@ npm install
 npm run dev
 
 # Navigate to: http://localhost:5173/inbox-actions
-```
+```text
 
 **UI Features to Test**:
 
@@ -110,7 +110,7 @@ open http://localhost:5601
 - Switch to ESQL mode
 - Copy queries from: infra/kibana/saved-queries.md
 - Save each query with descriptive name
-```
+```text
 
 ---
 
@@ -149,7 +149,7 @@ $env:BQ_TABLE="public_emails"
 # Gmail OAuth settings
 $env:GMAIL_CLIENT_SECRET="analytics/ingest/client_secret.json"
 $env:GMAIL_TOKEN_PATH="analytics/ingest/token.json"
-```
+```text
 
 ### API Environment Variables
 
@@ -159,7 +159,7 @@ Already configured in `infra/.env`:
 ES_URL=http://elasticsearch:9200
 ES_EMAIL_INDEX=emails_v1-000001
 CORS_ALLOW_ORIGINS=https://applylens.app,https://www.applylens.app
-```
+```text
 
 ---
 
@@ -172,16 +172,16 @@ Run automated test script:
 ```powershell
 cd D:\ApplyLens
 .\scripts\test-phase1-endpoints.ps1
-```
+```text
 
 **Expected Results**:
 
-```
+```text
 ✅ Passed: 6
 ❌ Failed: 0
 
 🎉 All tests passed! Phase-1 implementation is working.
-```
+```text
 
 ### Manual API Tests
 
@@ -217,7 +217,7 @@ curl -X POST "http://localhost:8000/search/actions/archive" `
 
 # 6. Verify audit log
 curl "http://localhost:9200/applylens_audit/_search?size=5&sort=timestamp:desc"
-```
+```text
 
 ### Web UI Tests
 
@@ -308,7 +308,7 @@ curl http://localhost:9200
 # If not running, start it
 cd infra
 docker compose up -d elasticsearch
-```
+```text
 
 ### Issue: Search returns 0 results
 

@@ -41,7 +41,7 @@ ingress:
     service: http://applylens-api.int:8003
   
   - service: http_status:404
-```
+```text
 
 ### 3. Production Environment Template
 
@@ -61,7 +61,7 @@ CORS_ALLOW_ORIGINS=https://applylens.app,https://www.applylens.app
 COOKIE_DOMAIN=.applylens.app
 COOKIE_SECURE=1
 COOKIE_SAMESITE=lax
-```
+```text
 
 ### 4. Cloudflare Tunnel Runbook
 
@@ -167,7 +167,7 @@ The tunnel configuration file is updated, but hostnames **must be configured man
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Cloudflare Edge Network                                     │
 │  - applylens.app         → Tunnel → applylens.int:80        │
@@ -192,7 +192,7 @@ The tunnel configuration file is updated, but hostnames **must be configured man
 │         └─ /kibana/       → Kibana (proxy)                  │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## Security Considerations
 
@@ -221,7 +221,7 @@ docker exec applylens-nginx ping -c 1 applylens-api.int
 
 # 4. Verify tunnel logs
 docker logs -f infra-cloudflared
-```
+```text
 
 ### Production Testing (After Merge & Deploy)
 
@@ -230,7 +230,7 @@ docker logs -f infra-cloudflared
 .\scripts\smoke-applylens.ps1
 
 # Expected output: All tests pass
-```
+```text
 
 ## Breaking Changes
 

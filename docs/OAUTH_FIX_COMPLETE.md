@@ -102,7 +102,7 @@ GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI_DEV=http://localhost:8003/auth/google/callback
 OAUTH_REDIRECT_URI=http://localhost:8003/auth/google/callback  # Legacy
-```
+```text
 
 **Production (.env.prod):**
 
@@ -111,13 +111,13 @@ GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI=https://api.applylens.app/auth/google/callback
 OAUTH_REDIRECT_URI=https://api.applylens.app/auth/google/callback  # Legacy
-```
+```text
 
 ### Google Cloud Console Configuration
 
 **Authorized Redirect URIs (add these):**
 
-```
+```text
 Production:
   https://api.applylens.app/auth/google/callback
   https://applylens.app/auth/google/callback
@@ -127,11 +127,11 @@ Development:
   http://localhost:8003/auth/google/callback
   http://localhost:5175/auth/google/callback
   http://127.0.0.1:8003/auth/google/callback
-```
+```text
 
 **Authorized JavaScript Origins:**
 
-```
+```text
 Production:
   https://applylens.app
   https://www.applylens.app
@@ -140,7 +140,7 @@ Development:
   http://localhost:5175
   http://localhost:8003
   http://127.0.0.1:5175
-```
+```text
 
 ---
 
@@ -229,7 +229,7 @@ Run smoke tests:
 # ✅ PASS: Redirect URI parameter present in OAuth URL
 # ✅ PASS: Client ID parameter present in OAuth URL
 # ✅ PASS: OAuth callback route is accessible (HTTP 400 expected without valid code)
-```
+```text
 
 ### Production Testing
 
@@ -395,7 +395,7 @@ See `infra/docs/OAUTH_SETUP.md` for detailed troubleshooting guide.
 
 **Commit Message**:
 
-```
+```text
 fix(auth): resolve Google OAuth redirect_uri_mismatch + harden config
 
 - Add GOOGLE_REDIRECT_URI / GOOGLE_REDIRECT_URI_DEV envs
@@ -409,7 +409,7 @@ fix(auth): resolve Google OAuth redirect_uri_mismatch + harden config
 - Validate OAuth configuration on startup
 
 Fixes #XXX
-```
+```text
 
 ---
 

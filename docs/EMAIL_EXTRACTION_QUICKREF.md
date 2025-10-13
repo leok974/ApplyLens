@@ -12,7 +12,7 @@ python -m uvicorn app.main:app --reload --port 8003
 # Terminal 2: Start Vite frontend
 cd apps/web
 npm run dev
-```
+```text
 
 ### Access Points
 
@@ -37,7 +37,7 @@ npm run dev
   "text": "Email body...",
   "html": "<html>..."
 }
-```
+```text
 
 **Response**:
 
@@ -49,7 +49,7 @@ npm run dev
   "source_confidence": 0.95,
   "debug": { ... }
 }
-```
+```text
 
 **Confidence Levels**:
 
@@ -72,7 +72,7 @@ npm run dev
   "text": "Email body...",
   "headers": {}
 }
-```
+```text
 
 **Response**:
 
@@ -90,7 +90,7 @@ npm run dev
   "extracted": { ... },
   "updated": false
 }
-```
+```text
 
 **Logic**:
 
@@ -118,7 +118,7 @@ interface CreateFromEmailButtonProps {
   onPrefill?: (prefill) => void; // Callback for prefill
   onCreated?: () => void;        // Callback after save
 }
-```
+```text
 
 **Usage in Tracker**:
 
@@ -133,7 +133,7 @@ interface CreateFromEmailButtonProps {
     onCreated={() => fetchRows()}
   />
 )}
-```
+```text
 
 **Buttons**:
 
@@ -151,7 +151,7 @@ const openCreateWithPrefill = (prefill?: Partial<typeof form>) => {
   }
   ;(document.getElementById('create-dialog') as any)?.showModal?.()
 }
-```
+```text
 
 **Purpose**: Merge extracted fields into form and open create dialog
 
@@ -213,7 +213,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
     "from": "recruiter@acme.ai",
     "text": "Thanks for your application..."
   }'
-```
+```text
 
 ### Check Database
 
@@ -233,7 +233,7 @@ FROM applications
 WHERE thread_id IS NOT NULL 
 GROUP BY thread_id 
 HAVING COUNT(*) > 1;
-```
+```text
 
 ## 🐛 Debugging
 
@@ -243,7 +243,7 @@ HAVING COUNT(*) > 1;
 # Start with debug logging
 cd services/api
 uvicorn app.main:app --reload --port 8003 --log-level debug
-```
+```text
 
 ### Frontend Console
 
@@ -301,7 +301,7 @@ Open browser DevTools (F12):
 ```python
 # services/api/app/settings.py
 API_PORT: int = 8003
-```
+```text
 
 ### Frontend Proxy
 
@@ -315,7 +315,7 @@ server: {
     }
   }
 }
-```
+```text
 
 ## 💡 Tips
 
@@ -357,7 +357,7 @@ sqlite3 applylens.db "SELECT * FROM applications ORDER BY id DESC LIMIT 5"
 # Run tests
 cd services/api && pytest tests/test_email_parsing.py
 cd apps/web && npm run test:e2e
-```
+```text
 
 ## 📚 Related Docs
 

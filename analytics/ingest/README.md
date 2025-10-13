@@ -24,14 +24,14 @@ This script fetches emails from Gmail API and indexes them into both Elasticsear
 curl -X PUT http://localhost:9200/_index_template/emails_v1 \
   -H 'Content-Type: application/json' \
   --data-binary @../../infra/elasticsearch/emails_v1.template.json
-```
+```text
 
 ### 2. Install Dependencies
 
 ```bash
 cd analytics/ingest
 pip install -r requirements.txt
-```
+```text
 
 ### 3. Set Up Gmail OAuth
 
@@ -41,7 +41,7 @@ Place your `client_secret.json` file in this directory (or set `GMAIL_CLIENT_SEC
 
 ```bash
 python gmail_backfill_to_es_bq.py
-```
+```text
 
 The script will:
 
@@ -71,7 +71,7 @@ export BQ_TABLE=public_emails
 # Gmail OAuth settings
 export GMAIL_CLIENT_SECRET=client_secret.json
 export GMAIL_TOKEN_PATH=token.json
-```
+```text
 
 ## 📊 Verification
 
@@ -88,7 +88,7 @@ curl -s "http://localhost:8000/search/?q=promo&size=5" | jq
 
 # Get a specific document
 curl -s http://localhost:9200/emails_v1-000001/_doc/<email_id> | jq
-```
+```text
 
 ### BigQuery
 
@@ -103,7 +103,7 @@ bq query --project_id=applylens-gmail-1759983601 \
    FROM applylens.public_emails 
    ORDER BY received_at DESC 
    LIMIT 10'
-```
+```text
 
 ## 📝 Fields Indexed
 
@@ -157,7 +157,7 @@ Make sure Elasticsearch is running:
 
 ```bash
 curl http://localhost:9200
-```
+```text
 
 ### Rate Limiting
 
@@ -169,13 +169,13 @@ The script respects Gmail API rate limits. For large backfills (>10k emails), co
 
 ## 📚 Architecture
 
-```
+```text
 Gmail API
     ↓
 Python Script
     ├─→ Elasticsearch (emails_v1-000001)
     └─→ BigQuery (applylens.public_emails)
-```
+```text
 
 ## 🔐 Security Notes
 
@@ -206,7 +206,7 @@ To run this periodically (e.g., daily):
 ```bash
 # Add to crontab (runs daily at 2 AM)
 0 2 * * * cd /path/to/analytics/ingest && python gmail_backfill_to_es_bq.py >> backfill.log 2>&1
-```
+```text
 
 ### Windows (Task Scheduler)
 

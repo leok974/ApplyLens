@@ -33,7 +33,7 @@ cat analytics/outputs/dashboards/kpis.csv
 curl http://localhost:8003/analytics/latest
 curl "http://localhost:8003/analytics/search?q=seo&k=5"
 curl http://localhost:8003/analytics/dashboards/kpis.csv
-```
+```text
 
 ---
 
@@ -195,7 +195,7 @@ print('✓ Recommendations:', rec.weight_diffs if rec else None)
 curl http://localhost:8003/analytics/latest
 curl "http://localhost:8003/analytics/search?q=test&k=3"
 curl http://localhost:8003/analytics/dashboards/kpis.csv
-```
+```text
 
 ---
 
@@ -210,7 +210,7 @@ try:
     app.include_router(analytics_router)
 except ImportError:
     pass  # Graceful fallback
-```
+```text
 
 ### Pipeline (Auto-export)
 
@@ -218,7 +218,7 @@ except ImportError:
 # analytics/pipeline.py
 from analytics.dashboards.exporter import export_csv_series
 export_csv_series(DATA_DIR, OUT_DIR / "dashboards")
-```
+```text
 
 ### Reports (Auto-recommendations)
 
@@ -229,7 +229,7 @@ try:
     # Add recommendations section
 except Exception:
     # Fail gracefully
-```
+```text
 
 ---
 
@@ -242,7 +242,7 @@ date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 2025-10-01,95.2,98.5,245,12
 2025-10-02,96.1,97.8,238,8
 2025-10-03,94.5,96.2,252,15
-```
+```text
 
 ### Recommendations
 
@@ -261,7 +261,7 @@ Elevate attention to pages implicated by SEO/Test failures; prefer stable varian
 - /pricing (+0.10) from 2 failure signals
 - /checkout (+0.15) from 3 failure signals
 - Playwright drop → prefer stability variant (+0.10)
-```
+```text
 
 ---
 

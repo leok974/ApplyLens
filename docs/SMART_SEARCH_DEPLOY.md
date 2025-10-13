@@ -13,7 +13,7 @@ Run the reindex script to create a new index with ATS search-time synonyms:
 ```bash
 # From repo root
 python -m services.api.scripts.es_reindex_with_ats
-```
+```text
 
 **What it does:**
 
@@ -24,9 +24,9 @@ python -m services.api.scripts.es_reindex_with_ats
 
 **Output:**
 
-```
+```text
 Alias gmail_emails -> gmail_emails_v2 (from gmail_emails)
-```
+```text
 
 ---
 
@@ -41,7 +41,7 @@ docker compose restart api
 # OR local development
 cd services/api
 uvicorn app.main:app --reload --port 8001
-```
+```text
 
 ---
 
@@ -51,7 +51,7 @@ uvicorn app.main:app --reload --port 8001
 
 ```bash
 curl -s "http://127.0.0.1:8001/search?q=interview" | jq '.hits[0] | {subject, labels, score}'
-```
+```text
 
 ### ATS Synonym Expansion
 
@@ -59,7 +59,7 @@ Test that "workday" matches emails with "myworkdayjobs":
 
 ```bash
 curl -s "http://127.0.0.1:8001/search?q=workday%20invite" | jq '.hits[] | {subject, sender, score}'
-```
+```text
 
 Expected: Results include emails from `myworkdayjobs.com`, `wd5.myworkday.com`, etc.
 
@@ -69,7 +69,7 @@ Search for a common term and check that offers score highest:
 
 ```bash
 curl -s "http://127.0.0.1:8001/search?q=application" | jq '.hits[] | {subject, labels, score}' | head -20
-```
+```text
 
 Expected order:
 
@@ -84,7 +84,7 @@ Search and compare scores by date:
 
 ```bash
 curl -s "http://127.0.0.1:8001/search?q=status&size=20" | jq '.hits[] | {subject, received_at, score}' | grep -A 2 -B 2 "2025-10"
-```
+```text
 
 Expected: Recent emails (< 7 days) score higher than old emails (> 14 days)
 
@@ -97,7 +97,7 @@ cd services/api
 
 # Run the scoring test
 pytest -q tests/test_search_scoring.py
-```
+```text
 
 **Test verifies:**
 
@@ -186,7 +186,7 @@ SEARCH_FIELDS = [
     "sender^1.5",        # Adjust sender boost
     "to"
 ]
-```
+```text
 
 After changing tunables:
 
@@ -203,7 +203,7 @@ After changing tunables:
 
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_settings" | jq '.*.settings.index.analysis.analyzer.ats_search_analyzer'
-```
+```text
 
 **Test analyzer:**
 
@@ -213,7 +213,7 @@ curl -X POST "http://localhost:9200/gmail_emails/_analyze" -H 'Content-Type: app
   "analyzer": "ats_search_analyzer",
   "text": "workday lever"
 }'
-```
+```text
 
 Should return tokens: `[workday, myworkdayjobs, wd1.myworkday, ..., lever, lever.co, hire.lever.co]`
 
@@ -228,7 +228,7 @@ Should return tokens: `[workday, myworkdayjobs, wd1.myworkday, ..., lever, lever
 
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_search?size=1" | jq '.hits.hits[0]._source.labels'
-```
+```text
 
 **Check function_score in API logs:**
 
@@ -240,7 +240,7 @@ curl -s "http://localhost:9200/gmail_emails/_search?size=1" | jq '.hits.hits[0].
 
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_mapping" | jq '.*.mappings.properties.received_at'
-```
+```text
 
 Should be: `{"type": "date"}`
 
@@ -248,7 +248,7 @@ Should be: `{"type": "date"}`
 
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_search?size=1" | jq '.hits.hits[0]._source.received_at'
-```
+```text
 
 Should be: `"2025-10-09T12:00:00Z"` (ISO 8601)
 
@@ -263,7 +263,7 @@ Current settings (from reindex script):
 ```python
 "number_of_shards": 1,
 "number_of_replicas": 0,
-```
+```text
 
 **For production:**
 

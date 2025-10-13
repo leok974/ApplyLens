@@ -52,7 +52,7 @@ Lightweight React component:
 import { initTheme } from './lib/theme'
 
 initTheme() // Call before ReactDOM.createRoot()
-```
+```text
 
 ### Add Toggle to UI
 
@@ -65,7 +65,7 @@ import ThemeToggle from './ThemeToggle'
   </div>
   <ThemeToggle />
 </nav>
-```
+```text
 
 ### Manual Theme Control
 
@@ -78,7 +78,7 @@ toggleTheme()
 // Set specific theme
 applyTheme('dark')
 applyTheme('light')
-```
+```text
 
 ## Features
 
@@ -110,7 +110,7 @@ applyTheme('light')
 
 ### E2E Tests
 
-```
+```text
 ✓ details-panel.spec.ts (3.7s)
 ✓ inbox.smoke.spec.ts (1.7s)
 ✓ theme.spec.ts (2.0s) ← Theme toggle validated
@@ -119,7 +119,7 @@ applyTheme('light')
 ✓ tracker.spec.ts (1.8s)
 
 6 passed (4.7s) ✅
-```
+```text
 
 ### Manual Checklist
 
@@ -160,7 +160,7 @@ applyTheme('light')
 # Delete these if you had them:
 rm apps/web/src/components/theme/ThemeProvider.tsx
 rm apps/web/src/components/theme/ModeToggle.tsx
-```
+```text
 
 ### Update Imports
 
@@ -172,7 +172,7 @@ const { theme, setTheme } = useTheme()
 // New
 import { toggleTheme } from '@/lib/theme'
 toggleTheme() // Just call it!
-```
+```text
 
 ### Remove Provider Wrapper
 
@@ -184,7 +184,7 @@ toggleTheme() // Just call it!
 
 // New (no wrapper!)
 <App />
-```
+```text
 
 ## Deployment
 

@@ -137,7 +137,7 @@ Added:
 ```bash
 cd analytics/ingest
 python gmail_backfill_to_es_bq.py
-```
+```text
 
 ### 2. Apply Labels
 
@@ -145,7 +145,7 @@ python gmail_backfill_to_es_bq.py
 curl -X POST "http://localhost:8003/labels/apply" \
   -H "Content-Type: application/json" \
   -d '{}'
-```
+```text
 
 ### 3. View Results
 
@@ -155,7 +155,7 @@ curl "http://localhost:8003/profile/summary?days=60"
 
 # Get label statistics
 curl "http://localhost:8003/profile/stats"
-```
+```text
 
 ### 4. **Optional: Train ML Model**
 
@@ -186,7 +186,7 @@ python train_ml.py \
 # Step 3: Restart API with model
 export LABEL_MODEL_PATH=services/api/app/labeling/label_model.joblib
 docker compose restart api
-```
+```text
 
 ### 5. Build UI Components
 
@@ -213,7 +213,7 @@ docker compose restart api
 
 ## 📊 Architecture Overview
 
-```
+```text
 Gmail Emails (via backfill)
     ↓
 Elasticsearch (emails_v1-000001)
@@ -242,7 +242,7 @@ Profile Analytics API
     ├─ Top senders
     ├─ Time series
     └─ Sender breakdown by category
-```
+```text
 
 ## 🔗 API Documentation
 
@@ -258,25 +258,25 @@ Profile Analytics API
 curl -X POST "http://localhost:8003/labels/apply" \
   -H "Content-Type: application/json" \
   -d '{"query": {"match_all": {}}, "batch_size": 200}'
-```
+```text
 
 **Get Profile Summary**:
 
 ```bash
 curl "http://localhost:8003/profile/summary?days=60" | jq
-```
+```text
 
 **Get Newsletter Senders**:
 
 ```bash
 curl "http://localhost:8003/profile/senders?category=newsletter&days=60" | jq
-```
+```text
 
 **Get Time Series**:
 
 ```bash
 curl "http://localhost:8003/profile/time-series?days=30&interval=1d" | jq
-```
+```text
 
 ## 🐛 Known Issues
 

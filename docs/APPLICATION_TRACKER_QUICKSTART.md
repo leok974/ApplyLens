@@ -26,7 +26,7 @@ POST http://localhost:8003/gmail/backfill
   "user_email": "you@example.com",
   "days": 60
 }
-```
+```text
 
 This will:
 
@@ -39,25 +39,25 @@ This will:
 
 ```bash
 GET http://localhost:8003/applications
-```
+```text
 
 Filter by status:
 
 ```bash
 GET http://localhost:8003/applications?status=interview
-```
+```text
 
 Filter by company:
 
 ```bash
 GET http://localhost:8003/applications?company=Google
-```
+```text
 
 ### 3. Get Application Details
 
 ```bash
 GET http://localhost:8003/applications/{id}
-```
+```text
 
 Returns:
 
@@ -74,7 +74,7 @@ Returns:
   "created_at": "2025-10-01T12:00:00Z",
   "updated_at": "2025-10-08T15:30:00Z"
 }
-```
+```text
 
 ### 4. Update Application Status
 
@@ -84,7 +84,7 @@ PATCH http://localhost:8003/applications/{id}
   "status": "offer",
   "notes": "Received offer, need to negotiate salary"
 }
-```
+```text
 
 Available statuses:
 
@@ -101,7 +101,7 @@ If an email wasn't automatically linked, you can manually create an application:
 
 ```bash
 POST http://localhost:8003/applications/from-email/{email_id}
-```
+```text
 
 Returns:
 
@@ -110,7 +110,7 @@ Returns:
   "application_id": 5,
   "linked_email_id": 123
 }
-```
+```text
 
 ### 6. Search with Filters
 
@@ -120,7 +120,7 @@ GET http://localhost:8003/search?q=software engineer&company=Google
 
 # Search for interviews from Lever
 GET http://localhost:8003/search?q=interview&source=lever&label_filter=interview
-```
+```text
 
 ### 7. Create Application Manually
 
@@ -133,13 +133,13 @@ POST http://localhost:8003/applications
   "status": "applied",
   "notes": "Applied via LinkedIn, waiting for response"
 }
-```
+```text
 
 ### 8. Delete Application
 
 ```bash
 DELETE http://localhost:8003/applications/{id}
-```
+```text
 
 ## Data Extracted from Emails
 
@@ -198,7 +198,7 @@ When creating applications from emails:
     ➕ Create Application
   </button>
 )}
-```
+```text
 
 ### Create Tracker Page (`/tracker`)
 
@@ -277,7 +277,7 @@ function TrackerPage() {
     </div>
   );
 }
-```
+```text
 
 ## Example Workflow
 
@@ -315,19 +315,19 @@ function TrackerPage() {
 
 ### emails table
 
-```
+```text
 id, gmail_id, thread_id, subject, body_text, 
 sender, recipient, received_at, labels, label_heuristics, raw,
 company, role, source, source_confidence, application_id
-```
+```text
 
 ### applications table
 
-```
+```text
 id, company, role, source, source_confidence, 
 thread_id, last_email_id, status, notes, 
 created_at, updated_at
-```
+```text
 
 ### Relationships
 
@@ -337,7 +337,7 @@ created_at, updated_at
 
 ## API Endpoints Summary
 
-```
+```text
 # Gmail Operations
 POST   /gmail/auth                     - Start OAuth flow
 POST   /gmail/backfill                 - Sync emails (auto-creates apps)
@@ -359,7 +359,7 @@ GET    /search?q=...                   - Full-text search
 GET    /search?q=...&company=Google    - Filter by company
 GET    /search?q=...&source=lever      - Filter by ATS source
 GET    /search?q=...&label_filter=interview - Filter by label
-```
+```text
 
 ## Testing
 
@@ -367,7 +367,7 @@ GET    /search?q=...&label_filter=interview - Filter by label
 
 ```bash
 docker compose exec api python -m tests.test_applications
-```
+```text
 
 ### Manual Testing via API Docs
 
@@ -397,7 +397,7 @@ curl http://localhost:8003/applications
 curl -X PATCH http://localhost:8003/applications/1 \
   -H "Content-Type: application/json" \
   -d '{"status": "interview"}'
-```
+```text
 
 ## Troubleshooting
 

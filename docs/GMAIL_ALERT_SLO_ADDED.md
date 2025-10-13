@@ -109,7 +109,7 @@ If no users have connected Gmail yet, the alert will fire after 15 minutes:
 ```promql
 # Check current Gmail connected status
 applylens_gmail_connected
-```
+```text
 
 If no results or all values are 0, the alert will fire.
 
@@ -136,7 +136,7 @@ $gmailMetric.data.result | ForEach-Object {
 $alertQuery = "max_over_time(applylens_gmail_connected[15m])"
 $result = Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$alertQuery"
 Write-Host "Max Gmail connected over 15m: $($result.data.result[0].value[1])"
-```
+```text
 
 ---
 
@@ -149,7 +149,7 @@ Write-Host "Max Gmail connected over 15m: $($result.data.result[0].value[1])"
 $cred = New-Object PSCredential("admin",(ConvertTo-SecureString "admin" -AsPlainText -Force))
 $rules = Invoke-RestMethod -Uri http://localhost:3000/api/v1/provisioning/alert-rules -Credential $cred
 $rules | Where-Object { $_.uid -eq "applens_gmail_disconnected" } | Select-Object title, uid, folderUID
-```
+```text
 
 **Or via UI:**
 
@@ -196,7 +196,7 @@ Based on your SLO, you can calculate error budget:
 ```promql
 # Error budget remaining (if SLO is 99.9%)
 (avg_over_time(up{job="applylens-api"}[30d]) - 0.999) * 100
-```
+```text
 
 If this is positive, you're meeting your SLO.  
 If negative, you've exhausted your error budget.
@@ -253,7 +253,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=applylens_gmail_conn
 
 # Check alert evaluation
 docker logs infra-grafana 2>&1 | Select-String "applens_gmail_disconnected"
-```
+```text
 
 ### SLO Panel Showing No Data
 
@@ -263,7 +263,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=up{job=`"applylens-a
 
 # For shorter time range (if 30d is too long)
 # Edit dashboard panel query to: avg_over_time(up{job="applylens-api"}[7d]) * 100
-```
+```text
 
 ### Panel Not Appearing
 

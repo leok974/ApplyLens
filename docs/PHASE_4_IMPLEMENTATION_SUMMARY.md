@@ -55,7 +55,7 @@ curl -X POST http://localhost:8003/api/actions/123/always \
 
 # Response:
 # {"ok": true, "policy_id": 42}
-```
+```text
 
 #### B. Prometheus Metrics Module
 
@@ -94,7 +94,7 @@ const result = await alwaysDoThis(actionId, {
   sender_domain: "example.com"
 })
 console.log(`Created policy: ${result.policy_id}`)
-```
+```text
 
 #### B. Updated ActionsTray Component
 
@@ -109,7 +109,7 @@ console.log(`Created policy: ${result.policy_id}`)
 
 **Visual:**
 
-```
+```text
 ┌─────────────────────────────────────┐
 │ Email Subject                      │
 │ From: sender@example.com           │
@@ -118,7 +118,7 @@ console.log(`Created policy: ${result.policy_id}`)
 │ [✓ Approve] [✗ Reject]            │
 │ [✨ Always do this]                │  ← NEW
 └─────────────────────────────────────┘
-```
+```text
 
 ### 3. Documentation
 
@@ -215,7 +215,7 @@ $ curl -s http://localhost:8003/metrics | grep actions_
 # HELP actions_proposed_total Total number of action proposals created
 # HELP actions_executed_total Total number of successfully executed actions
 # HELP actions_failed_total Total number of failed action executions
-```
+```text
 
 ### Frontend Deployment ✅
 
@@ -229,7 +229,7 @@ $ cd apps/web && npm run dev
 # ✓ No TypeScript errors
 # ✓ No lint warnings
 # ✓ No React console errors
-```
+```text
 
 ### Test Policy Created ✅
 
@@ -246,7 +246,7 @@ $ curl -s http://localhost:8003/api/actions/policies | jq '.[] | select(.name | 
     "exists": ["email_id"]
   }
 }
-```
+```text
 
 ---
 
@@ -265,7 +265,7 @@ PS> pwsh ./scripts/test-always-feature.ps1
 ✓ Created 0 proposed action(s)  # No emails yet
 ✓ Found 0 pending action(s)
 === Test Status: Partial (no data to test) ===
-```
+```text
 
 **Note:** Test passes but can't test /always endpoint because there are no emails in database yet. This is expected for a fresh setup.
 
@@ -303,7 +303,7 @@ PS> pwsh ./scripts/test-always-feature.ps1
 
 ### Request Flow
 
-```
+```text
 User clicks "Always do this"
        ↓
 ActionsTray.handleAlways()
@@ -326,7 +326,7 @@ ActionsTray shows success toast
 ActionsTray.handleApprove() (auto-approve)
        ↓
 Action executed + screenshot captured
-```
+```text
 
 ### Data Model
 
@@ -346,7 +346,7 @@ Action executed + screenshot captured
     }
   }
 }
-```
+```text
 
 **Policy (created by /always):**
 
@@ -364,11 +364,11 @@ Action executed + screenshot captured
     ]
   }
 }
-```
+```text
 
 ### Metrics Flow
 
-```
+```text
 User approves action
        ↓
 actions.py:approve() called
@@ -392,7 +392,7 @@ GET /metrics exposes counters
 Prometheus scrapes endpoint
        ↓
 Grafana visualizes metrics
-```
+```text
 
 ---
 
@@ -539,7 +539,7 @@ docker compose exec db psql -U applylens -c "SELECT * FROM policies"
 
 # Check API
 curl http://localhost:8003/docs
-```
+```text
 
 ---
 
@@ -602,6 +602,6 @@ pwsh ./scripts/create-test-policy.ps1
 
 # Open UI
 start http://localhost:5175
-```
+```text
 
 **Happy automating! ✨**

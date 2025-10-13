@@ -14,7 +14,7 @@ This module provides robust date extraction from bill and payment emails using a
 
 ## Architecture
 
-```
+```text
 Email Ingestion Flow:
 ┌─────────────────────────────────────────────────────┐
 │ Gmail API → gmail_service.py                        │
@@ -37,32 +37,32 @@ Email Ingestion Flow:
 │   - ES|QL query: Bills due in next 7 days          │
 │   - Time series visualization by due date           │
 └─────────────────────────────────────────────────────┘
-```
+```text
 
 ## Supported Date Formats
 
 ### 1. mm/dd or mm/dd/yyyy
 
-```
+```text
 "Payment due by 10/15/2025" → 2025-10-15T00:00:00Z
 "Due: 10/15" → 2025-10-15T00:00:00Z (defaults to email received year)
 "Pay by 2/28/25" → 2025-02-28T00:00:00Z (2-digit year → 20xx)
-```
+```text
 
 ### 2. Month dd, yyyy
 
-```
+```text
 "Payment due Oct 15, 2025" → 2025-10-15T00:00:00Z
 "Due by December 25" → 2025-12-25T00:00:00Z (defaults to received year)
 "Amount due: Jan 1, 2026" → 2026-01-01T00:00:00Z
-```
+```text
 
 ### 3. dd Month yyyy
 
-```
+```text
 "Due on 15 Oct 2025" → 2025-10-15T00:00:00Z
 "Payment by 25 Dec" → 2025-12-25T00:00:00Z
-```
+```text
 
 ## Usage
 
@@ -95,7 +95,7 @@ amounts = extract_money_amounts(email_text)
 # Check if email is bill-related
 is_bill = is_bill_related("Bill Statement", email_text)
 # Returns: True
-```
+```text
 
 ### Elasticsearch Document Structure
 
@@ -114,7 +114,7 @@ is_bill = is_bill_related("Bill Statement", email_text)
   "expires_at": "2025-10-15T00:00:00Z",
   "category": "bills"
 }
-```
+```text
 
 ## Deployment
 
@@ -123,7 +123,7 @@ is_bill = is_bill_related("Bill Statement", email_text)
 ```bash
 cd services/api
 python -m app.scripts.update_es_mapping
-```
+```text
 
 This adds:
 
@@ -151,7 +151,7 @@ curl -X PUT "$ES_URL/emails_v1/_settings" `
   -d '{
     "index.default_pipeline": "emails_due_simple"
   }'
-```
+```text
 
 ### 3. Import Kibana Dashboard
 
@@ -168,7 +168,7 @@ curl -X PUT "$ES_URL/emails_v1/_settings" `
 curl -X POST "http://localhost:5601/api/saved_objects/_import" `
   -H "kbn-xsrf: true" `
   --form file=@kibana/bills-due-next7d.ndjson
-```
+```text
 
 ### 4. Backfill Existing Emails (Optional)
 
@@ -177,7 +177,7 @@ To extract dates from already-indexed emails:
 ```bash
 cd services/api
 python -m app.scripts.backfill_bill_dates
-```
+```text
 
 ## Testing
 
@@ -186,7 +186,7 @@ python -m app.scripts.backfill_bill_dates
 ```bash
 cd services/api
 pytest tests/unit/test_due_date_extractor.py -v
-```
+```text
 
 **Coverage:**
 
@@ -208,7 +208,7 @@ docker-compose up -d db es kibana
 
 cd ../services/api
 pytest tests/e2e/test_ingest_bill_dates.py -v
-```
+```text
 
 **Coverage:**
 
@@ -234,7 +234,7 @@ DUE_SENTENCE_RX = re.compile(
          )""",
     re.I | re.X
 )
-```
+```text
 
 **Keywords matched:**
 
@@ -265,7 +265,7 @@ Painless script that:
 
 ```javascript
 /due[^\n\r\.:]{0,80}?(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/
-```
+```text
 
 Only handles mm/dd format (simpler than Python for performance).
 
@@ -295,7 +295,7 @@ bills = find_bills_due_before(
 #   },
 #   "sort": [{"dates": "asc"}]
 # }
-```
+```text
 
 ## Performance Considerations
 
@@ -339,7 +339,7 @@ bills = find_bills_due_before(
 
 **Input:**
 
-```
+```text
 Subject: Your Electric Bill is Ready
 Body:
   Thank you for being a valued customer.
@@ -348,7 +348,7 @@ Body:
   Due Date: October 15, 2025
   
   Please pay by the due date to avoid late fees.
-```
+```text
 
 **Extracted:**
 
@@ -358,13 +358,13 @@ Body:
   "money_amounts": [{"amount": 127.43, "currency": "USD"}],
   "expires_at": "2025-10-15T00:00:00Z"
 }
-```
+```text
 
 ### Example 2: Credit Card Statement
 
 **Input:**
 
-```
+```text
 Subject: Your Credit Card Statement
 Body:
   Statement Period: Sep 1 - Sep 30, 2025
@@ -372,7 +372,7 @@ Body:
   Payment Due: 10/25/2025
   Minimum Payment: $35.00
   Statement Balance: $1,432.89
-```
+```text
 
 **Extracted:**
 
@@ -385,13 +385,13 @@ Body:
   ],
   "expires_at": "2025-10-25T00:00:00Z"
 }
-```
+```text
 
 ### Example 3: Multiple Payment Dates
 
 **Input:**
 
-```
+```text
 Subject: Payment Plan Reminder
 Body:
   Your payment plan schedule:
@@ -399,7 +399,7 @@ Body:
   First payment due: 10/15/2025 - $50.00
   Second payment due: 11/15/2025 - $50.00  
   Final payment due: 12/15/2025 - $50.00
-```
+```text
 
 **Extracted:**
 
@@ -413,7 +413,7 @@ Body:
   "money_amounts": [{"amount": 50.0, "currency": "USD"}],
   "expires_at": "2025-10-15T00:00:00Z"
 }
-```
+```text
 
 ## Future Enhancements
 

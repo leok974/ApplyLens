@@ -9,7 +9,7 @@ Complete monitoring setup for ApplyLens with Prometheus metrics collection and G
 ```powershell
 cd D:\ApplyLens\infra
 docker compose up -d prometheus grafana
-```
+```text
 
 Wait ~10 seconds for services to start, then access:
 
@@ -57,14 +57,14 @@ The imported dashboard includes:
 
 ```promql
 sum by (method,status_code) (rate(applylens_http_requests_total[5m]))
-```
+```text
 
 **Error rate (5xx as percentage):**
 
 ```promql
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))
-```
+```text
 
 **Latency percentiles:**
 
@@ -77,7 +77,7 @@ histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_second
 
 # p99
 histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 ### Backfill Metrics
 
@@ -85,19 +85,19 @@ histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_secon
 
 ```promql
 increase(applylens_backfill_requests_total{result="rate_limited"}[15m])
-```
+```text
 
 **Emails inserted per minute:**
 
 ```promql
 rate(applylens_backfill_inserted_total[1m]) * 60
-```
+```text
 
 **Backfill outcomes (last hour):**
 
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
-```
+```text
 
 ### System Health
 
@@ -105,25 +105,25 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 
 ```promql
 applylens_gmail_connected
-```
+```text
 
 **Count of connected users:**
 
 ```promql
 sum(max_over_time(applylens_gmail_connected[10m]))
-```
+```text
 
 **All systems operational (DB + ES):**
 
 ```promql
 min(applylens_db_up) and min(applylens_es_up)
-```
+```text
 
 **Any system down:**
 
 ```promql
 (min(applylens_db_up) == 0) or (min(applylens_es_up) == 0)
-```
+```text
 
 ## Alerting Rules
 
@@ -180,7 +180,7 @@ receivers:
         channel: '#alerts'
         title: 'ApplyLens Alert'
         text: '{{ range .Alerts }}{{ .Annotations.summary }}: {{ .Annotations.description }}{{ end }}'
-```
+```bash
 
 2. Add Alertmanager to `docker-compose.yml`:
 
@@ -191,7 +191,7 @@ alertmanager:
   volumes:
     - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
   ports: ["9093:9093"]
-```
+```text
 
 3. Update `prometheus.yml`:
 
@@ -200,7 +200,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets: ['alertmanager:9093']
-```
+```text
 
 ## Testing Queries in Prometheus
 
@@ -208,7 +208,7 @@ alerting:
 
 ```powershell
 start http://localhost:9090/graph
-```
+```text
 
 ### 2. Try These Queries
 
@@ -216,26 +216,26 @@ start http://localhost:9090/graph
 
 ```promql
 {__name__=~"applylens_.*"}
-```
+```text
 
 **HTTP requests in last 5 minutes:**
 
 ```promql
 rate(applylens_http_requests_total[5m])
-```
+```text
 
 **Current system health:**
 
 ```promql
 applylens_db_up
 applylens_es_up
-```
+```text
 
 **Backfill activity:**
 
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
-```
+```text
 
 ### 3. Switch to Graph View
 
@@ -245,7 +245,7 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 
 ## Architecture
 
-```
+```text
 ┌─────────────┐
 │  ApplyLens  │  Exposes /metrics endpoint
 │     API     │  Port 8003
@@ -265,18 +265,18 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 │   Grafana   │  Visualizes dashboards
 │             │  Port 3000
 └─────────────┘
-```
+```text
 
 ### File Structure
 
-```
+```bash
 infra/
 ├── docker-compose.yml           # Added prometheus + grafana services
 └── prometheus/
     ├── prometheus.yml           # Scrape config
     ├── alerts.yml               # Alert rules
     └── grafana-dashboard.json   # Pre-configured dashboard
-```
+```text
 
 ## Performance & Cardinality
 
@@ -331,7 +331,7 @@ location /metrics {
     
     proxy_pass http://api:8003;
 }
-```
+```text
 
 Or add basic auth in FastAPI:
 
@@ -347,7 +347,7 @@ def metrics(credentials: HTTPBasicCredentials = Depends(security)):
             compare_digest(credentials.password, os.getenv("METRICS_PASSWORD"))):
         raise HTTPException(status_code=401)
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-```
+```text
 
 ### 2. Persistent Storage
 
@@ -366,7 +366,7 @@ grafana:
 volumes:
   prometheus_data:
   grafana_data:
-```
+```text
 
 ### 3. Configure Retention
 
@@ -378,7 +378,7 @@ prometheus:
     - --config.file=/etc/prometheus/prometheus.yml
     - --storage.tsdb.retention.time=30d    # Keep 30 days
     - --storage.tsdb.retention.size=10GB   # Max 10GB
-```
+```text
 
 ### 4. External Access
 
@@ -391,7 +391,7 @@ grafana:
     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     - GF_SERVER_ROOT_URL=https://grafana.yourdomain.com
     - GF_AUTH_ANONYMOUS_ENABLED=false
-```
+```text
 
 ## Troubleshooting
 
@@ -410,7 +410,7 @@ docker exec infra-prometheus wget -O- http://api:8003/metrics
 
 # 3. View Prometheus logs
 docker logs infra-prometheus
-```
+```text
 
 **Fix:** Ensure API container is running and on same network.
 
@@ -429,7 +429,7 @@ start http://localhost:9090/graph
 # Run: applylens_http_requests_total
 
 # 3. Check time range in Grafana (top-right)
-```
+```text
 
 **Fix:** Ensure Prometheus is scraping successfully (check /targets page).
 
@@ -448,7 +448,7 @@ curl http://localhost:8003/gmail/status
 
 # Run backfill to update counters
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
-```
+```text
 
 ### Alerts Not Firing
 
@@ -463,7 +463,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # 3. View Prometheus logs
 docker logs infra-prometheus --tail 50
-```
+```text
 
 **Fix:** Ensure `alerts.yml` syntax is correct and referenced in `prometheus.yml`.
 
@@ -484,7 +484,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus
 # View logs
 docker logs infra-prometheus --tail 50
 docker logs infra-grafana --tail 50
-```
+```text
 
 ### Validate Configuration
 
@@ -497,7 +497,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # Check Prometheus targets
 curl http://localhost:9090/api/v1/targets | ConvertFrom-Json
-```
+```text
 
 ### Query Metrics via API
 
@@ -508,7 +508,7 @@ curl "http://localhost:9090/api/v1/query?query=$query"
 
 # Range query (last 1 hour)
 curl "http://localhost:9090/api/v1/query_range?query=$query&start=$(Get-Date -UFormat %s -Date (Get-Date).AddHours(-1))&end=$(Get-Date -UFormat %s)&step=60s"
-```
+```text
 
 ### Export/Import Dashboards
 
@@ -519,7 +519,7 @@ curl "http://localhost:9090/api/v1/query_range?query=$query&start=$(Get-Date -UF
 # Import via CLI (requires Grafana API key)
 $headers = @{ "Authorization" = "Bearer YOUR_API_KEY" }
 Invoke-RestMethod -Uri "http://localhost:3000/api/dashboards/db" -Method POST -Headers $headers -ContentType "application/json" -InFile "dashboard.json"
-```
+```text
 
 ## Next Steps
 

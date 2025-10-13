@@ -144,7 +144,7 @@ Complete guide including:
 
 ## Test Results
 
-```
+```text
 === Phase 5 Chat Assistant - API Tests ===
 
 1. Health Check                           ✅ PASSED
@@ -166,7 +166,7 @@ Complete guide including:
   📊 Total:   12
 
 🎉 All tests passed!
-```
+```text
 
 ---
 
@@ -276,7 +276,7 @@ Complete guide including:
 
 ### Example 1: Basic Query
 
-```
+```text
 User: "Summarize recent emails about job applications"
 Intent: summarize
 Response: "Found 23 emails. Top matches:
@@ -285,37 +285,37 @@ Response: "Found 23 emails. Top matches:
   ..."
 Citations: 10 emails
 Actions: 0 proposed
-```
+```text
 
 ### Example 2: Exception Handling
 
-```
+```text
 User: "Clean up promos older than a week unless they're from Best Buy"
 Intent: clean
 Response: "Found 47 promotional emails older than a week (respecting exceptions: best buy). Proposing to archive 47."
 Actions: 47 archive_email actions
-```
+```text
 
 ### Example 3: Date Extraction
 
-```
+```text
 User: "What bills are due before Friday? Create calendar reminders"
 Intent: calendar
 Response: "📅 Prepared 3 calendar reminders for Friday, October 18:
   • [Electric bill due] — billing@electric.com — Oct 1, 2025
   ..."
 Actions: 3 create_calendar_event actions
-```
+```text
 
 ### Example 4: Suspicious Emails
 
-```
+```text
 User: "Show suspicious emails from new domains this week and explain why"
 Intent: flag
 Response: "⚠️ Found 2 suspicious emails this week:
   • [Urgent: verify account] — noreply@suspicious.com
     → 🔴 Very high risk (95/100) | Possible phishing"
-```
+```text
 
 ---
 
@@ -331,7 +331,7 @@ if actions:
     # Send to Phase 4 for approval
     await propose_actions_to_phase4(actions)
     answer += "\n\nℹ️ Actions sent to approval tray for review."
-```
+```text
 
 This allows users to:
 

@@ -33,7 +33,7 @@ Added two new endpoints to the existing applications router:
   "text": "Thanks for applying...",
   "html": ""
 }
-```
+```text
 
 **Response Example**:
 
@@ -50,7 +50,7 @@ Added two new endpoints to the existing applications router:
     "has_html": false
   }
 }
-```
+```text
 
 #### POST `/api/applications/backfill-from-email`
 
@@ -73,7 +73,7 @@ Added two new endpoints to the existing applications router:
   "headers": {},
   "text": "Thanks for applying..."
 }
-```
+```text
 
 **Response Example**:
 
@@ -97,7 +97,7 @@ Added two new endpoints to the existing applications router:
   },
   "updated": false
 }
-```
+```text
 
 ### 2. Frontend Components (React/TypeScript)
 
@@ -131,7 +131,7 @@ interface CreateFromEmailButtonProps {
   onPrefill?: (prefill: { company?: string; role?: string; source?: string }) => void;
   onCreated?: () => void;
 }
-```
+```text
 
 **Key Methods**:
 
@@ -181,7 +181,7 @@ type ToastOptions = {
   description?: string
   variant?: ToastVariant
 }
-```
+```text
 
 ## Extraction Heuristics
 
@@ -225,7 +225,7 @@ class Application(Base):
     source_confidence = Column(Float, default=0.0)  # Already exists!
     thread_id = Column(String(128), index=True)
     # ... other fields
-```
+```text
 
 **No migration needed** - column already exists in production schema.
 
@@ -297,7 +297,7 @@ class Application(Base):
 
 ### API Flow
 
-```
+```text
 Frontend (port 5175)
     ↓ HTTP POST /api/applications/extract
 Vite Proxy
@@ -307,7 +307,7 @@ FastAPI Backend (port 8003)
     ↓ Return ExtractResult
 Frontend
     ↓ Display in UI / Prefill form
-```
+```text
 
 ## Known Issues / Future Work
 
@@ -340,7 +340,7 @@ None required for basic functionality. Uses existing FastAPI settings.
 ```python
 # services/api/app/settings.py
 API_PORT: int = 8003
-```
+```text
 
 ### Frontend Proxy
 
@@ -355,7 +355,7 @@ server: {
     }
   }
 }
-```
+```text
 
 ## Usage Examples
 
@@ -388,7 +388,7 @@ curl -X POST http://localhost:8003/api/applications/extract \
     "text": "Thanks for your application...",
     "headers": {}
   }'
-```
+```text
 
 **Test backfill endpoint**:
 
@@ -401,7 +401,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
     "from": "jane@acme.ai",
     "text": "Thanks for your application..."
   }'
-```
+```text
 
 ## Performance Considerations
 

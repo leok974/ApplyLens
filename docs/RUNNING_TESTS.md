@@ -17,7 +17,7 @@ docker compose up -d
 
 # Run test inside API container
 docker compose exec api pytest tests/test_search_scoring.py -v
-```
+```text
 
 ## Option 2: Local with Virtual Environment
 
@@ -36,7 +36,7 @@ export ES_ENABLED=true
 
 # Run test
 pytest tests/test_search_scoring.py -v
-```
+```text
 
 ## Option 3: Unit Test Only (No ES Required)
 
@@ -81,7 +81,7 @@ curl "http://localhost:8001/search?q=test&size=5"
 
 # Verify response structure
 curl "http://localhost:8001/search?q=interview" | jq '.hits[0] | keys'
-```
+```text
 
 This validates:
 

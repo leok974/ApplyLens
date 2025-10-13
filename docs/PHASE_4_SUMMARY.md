@@ -45,7 +45,7 @@ A complete DSL interpreter for policy evaluation:
     ]
   }
 }
-```
+```text
 
 **Key Functions:**
 
@@ -222,7 +222,7 @@ Added actions router to FastAPI:
 ```python
 from .routers import actions
 app.include_router(actions.router, prefix="/api")
-```
+```text
 
 ### 10. Package Installation ✅
 
@@ -230,11 +230,11 @@ Installed `html2canvas` for screenshot capture:
 
 ```bash
 npm install html2canvas
-```
+```text
 
 ## 📊 Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                         Frontend UI                          │
 ├─────────────────────────────────────────────────────────────┤
@@ -262,13 +262,13 @@ npm install html2canvas
 │ • Confidence      │  │ • Quarantine     │  │ • audit_     │
 └───────────────────┘  └──────────────────┘  │   actions    │
                                               └──────────────┘
-```
+```text
 
 ## 🔄 Data Flow
 
 ### Propose Actions Flow
 
-```
+```text
 1. User triggers propose (manual or scheduled)
 2. Router loads emails (by IDs or query)
 3. Router loads enabled policies (ordered by priority)
@@ -280,11 +280,11 @@ npm install html2canvas
       - Create ProposedAction
       - Short-circuit (skip remaining policies)
 5. Return created action IDs
-```
+```text
 
 ### Approve Action Flow
 
-```
+```text
 1. User clicks "Approve" in tray
 2. Frontend captures screenshot with html2canvas
 3. POST /api/actions/{id}/approve with Base64 PNG
@@ -296,11 +296,11 @@ npm install html2canvas
 9. Router writes AuditAction record
 10. Router updates ProposedAction status
 11. Frontend removes from tray, shows toast
-```
+```text
 
 ### Policy Evaluation Flow
 
-```
+```text
 1. Policy condition (JSON DSL)
 2. Email context (dict of attributes)
 3. Yardstick._eval(condition, context)
@@ -310,7 +310,7 @@ npm install html2canvas
    d. Handle special values ("now")
    e. Parse ISO datetimes
 4. Return True/False
-```
+```text
 
 ## 🎯 Key Design Decisions
 
@@ -377,7 +377,7 @@ cd d:/ApplyLens/apps/web
 npm run dev
 
 # 7. Open http://localhost:5175 and click "Actions" button
-```
+```text
 
 ## 🧪 Testing
 

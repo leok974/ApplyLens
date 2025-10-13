@@ -23,6 +23,7 @@ How would this affect users, package maintainers, and adapter maintainers?
 ## Considered Options
 
 For each category of functionality, there are four main options for its future home:
+
 - stay in `dbt_utils`
 - move to its own stand-alone package or another existing repository (e.g. [dbt-expectations](https://github.com/calogica/dbt-expectations) in the case of tests, and [dbt-labs-experimental-features](https://github.com/dbt-labs/dbt-labs-experimental-features) in the case of experiments)
 - move to definition in Core, implementation in adapters

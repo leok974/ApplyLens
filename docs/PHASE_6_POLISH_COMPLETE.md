@@ -40,7 +40,7 @@ def estimate_confidence(
     - Heuristic adjustments (promo ratio, risk score)
     - User weight bump: ±0.15 max
     """
-```
+```text
 
 **Key Features:**
 
@@ -67,7 +67,7 @@ policy_fired_total        # Incremented when policy creates proposal
 policy_approved_total     # Incremented when user approves
 policy_rejected_total     # Incremented when user rejects
 user_weight_updates       # Incremented on approve/reject with sign
-```
+```text
 
 **Already Wired In:**
 
@@ -101,7 +101,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 {mode === 'money' && (
   <a href="/api/money/receipts.csv">Export receipts (CSV)</a>
 )}
-```
+```text
 
 **Already Implemented:** Complete in commit 13212e3
 
@@ -124,7 +124,7 @@ async function loadSummary() {
   const r = await fetch('/api/money/summary')
   setSummary(await r.json())
 }
-```
+```text
 
 **UI Panel:**
 
@@ -138,7 +138,7 @@ async function loadSummary() {
   {dupes && <pre>{JSON.stringify(dupes, null, 2)}</pre>}
   {summary && <pre>{JSON.stringify(summary, null, 2)}</pre>}
 </div>
-```
+```text
 
 **Location:** Chat sidebar, below Policy Accuracy Panel
 
@@ -182,7 +182,7 @@ test('mode=money is appended to SSE URL and shows export link', async ({ page })
   await expect.poll(()=>requestedUrl.includes('mode=money')).toBeTruthy()
   await expect(page.getByText('Export receipts (CSV)')).toBeVisible()
 })
-```
+```text
 
 **Already Exists:** `apps/web/tests/chat-modes.spec.ts` (6 tests)
 
@@ -211,17 +211,17 @@ test('mode=money is appended to SSE URL and shows export link', async ({ page })
 ```bash
 cd services/api
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 **Expected Output:**
 
-```
+```text
 test_confidence_bump_from_user_weights PASSED
 test_confidence_without_user_weights PASSED
 test_confidence_negative_weights PASSED
 test_confidence_high_risk_override PASSED
 test_confidence_without_db_params PASSED
-```
+```text
 
 ### E2E Tests
 
@@ -232,7 +232,7 @@ cd apps/web
 pnpm test chat.modes.spec.ts
 pnpm test chat-modes.spec.ts
 pnpm test policy-panel.spec.ts
-```
+```text
 
 ### Smoke Test
 
@@ -258,11 +258,11 @@ Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
   -ContentType application/json -Body '{"query":"subject:meetup","limit":10}'
 
 # Expected: Confidence increases by ~0.05-0.15
-```
+```text
 
 ## File Changes Summary
 
-```
+```text
 M  PHASE_6_PERSONALIZATION.md              (+135 lines)
 A  PHASE_6_UX_COMPLETE.md                  (+305 lines)
 M  apps/web/src/components/MailChat.tsx    (+34 lines)
@@ -271,13 +271,13 @@ M  services/api/app/routers/actions.py     (+70 lines)
 A  services/api/tests/test_confidence_learning.py (+252 lines)
 
 Total: 6 files changed, 809 insertions, 6 deletions
-```
+```text
 
 ## Architecture
 
 ### Confidence Estimation Flow
 
-```
+```text
 User approves action
     ↓
 update_user_weights() updates DB
@@ -293,11 +293,11 @@ score_ctx_with_user() sums weights
 Applies bump: 0.05 * sum, capped ±0.15
     ↓
 Returns personalized confidence
-```
+```text
 
 ### Metrics Collection Flow
 
-```
+```text
 Policy fires → policy_fired_total++
     ↓
 User reviews proposal
@@ -307,11 +307,11 @@ User reviews proposal
     │
     └─ Reject → policy_rejected_total++
                  user_weight_updates(sign="minus")++
-```
+```text
 
 ### Chat Mode Flow
 
-```
+```text
 User selects mode
     ↓
 mode state updated
@@ -325,7 +325,7 @@ SSE stream established
 Backend applies mode-specific boosting
     ↓
 Results streamed back
-```
+```text
 
 ## Deployment Checklist
 

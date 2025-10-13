@@ -44,7 +44,7 @@ Phase 5 transforms ApplyLens into a conversational mailbox assistant. Users can 
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                         Frontend                             │
 │  ┌────────────┐  ┌────────────┐  ┌────────────────────────┐ │
@@ -82,7 +82,7 @@ Phase 5 transforms ApplyLens into a conversational mailbox assistant. Users can 
 │               ├── citations (source emails)                  │
 │               └── search_stats                               │
 └──────────────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -112,7 +112,7 @@ INTENTS = {
     "calendar": [r"\bcalendar\b", r"\bdue\b.*\b(date|before|by)\b"],
     # ... more patterns
 }
-```
+```text
 
 **Fallback:** Defaults to `summarize` if no pattern matches.
 
@@ -140,7 +140,7 @@ rag_search(
     },
     k=50
 )
-```
+```text
 
 **Returns:**
 
@@ -152,7 +152,7 @@ rag_search(
     "query": "job applications from August",
     "filters": {...}
 }
-```
+```text
 
 ### 3. Text Embeddings (`app/core/text.py`)
 
@@ -182,7 +182,7 @@ response = ollama.embeddings(
     prompt=text
 )
 return response['embedding']
-```
+```text
 
 ### 4. Mail Tools (`app/core/mail_tools.py`)
 
@@ -192,23 +192,23 @@ return response['embedding']
 
 Returns concise bullet-point summary of top matching emails.
 
-```
+```text
 Found 127 emails. Top matches:
 • [Interview confirmation] — recruiter@company.com — Oct 10, 2025 (#12345)
 • [Application status] — hr@company.com — Oct 9, 2025 (#12346)
 ...
-```
+```text
 
 #### `find_emails(rag, user_text)`
 
 Lists emails with match reasons (category, risk score, labels).
 
-```
+```text
 Found 45 matching emails:
 • [Interview reminder] — recruiter@company.com — Oct 10, 2025
   → category: jobs | labels: interview
 ...
-```
+```text
 
 #### `clean_promos(rag, user_text)`
 
@@ -230,7 +230,7 @@ Proposes archiving old promotional emails (>7 days) with **exception handling**.
     "params": {"reason": "Old promotional email", "category": "promo"}
   }
 ]
-```
+```text
 
 #### `unsubscribe_inactive(rag, user_text)`
 
@@ -242,12 +242,12 @@ Proposes unsubscribing from newsletters not engaged with in 60+ days.
 
 Surfaces high-risk emails from last 7 days with explanations.
 
-```
+```text
 ⚠️ Found 3 suspicious emails this week:
 • [Urgent: verify account] — noreply@suspicious.com — Oct 10, 2025
   → 🔴 Very high risk (95/100) | Possible phishing
 ...
-```
+```text
 
 #### `follow_up(rag, user_text)`
 
@@ -283,7 +283,7 @@ Creates calendar reminders from emails.
     }
   }
 ]
-```
+```text
 
 #### `create_tasks(rag, user_text)`
 
@@ -310,7 +310,7 @@ Main conversational endpoint.
   },
   "max_results": 50
 }
-```
+```text
 
 **Response:**
 
@@ -336,7 +336,7 @@ Main conversational endpoint.
     "filters": {"category": "bills"}
   }
 }
-```
+```text
 
 #### `GET /api/chat/intents`
 
@@ -356,7 +356,7 @@ Lists all available intents with descriptions.
   },
   ...
 }
-```
+```text
 
 #### `GET /api/chat/health`
 
@@ -399,7 +399,7 @@ interface ChatResponse {
   citations: Citation[]
   search_stats: {...}
 }
-```
+```text
 
 ### 2. MailChat Component (`components/MailChat.tsx`)
 
@@ -422,7 +422,7 @@ const QUICK_ACTIONS = [
   {label: 'Clean Promos', text: 'Clean up promos older than a week unless they\'re from Best Buy.', icon: '🧹'},
   // ... 5 more
 ]
-```
+```text
 
 ### 3. Chat Page (`pages/ChatPage.tsx`)
 
@@ -447,15 +447,15 @@ Simple page wrapper rendering `<MailChat />`.
 
 **Query:**
 
-```
+```text
 Summarize recent emails about my job applications.
-```
+```text
 
 **Intent:** `summarize`
 
 **Response:**
 
-```
+```text
 Found 23 emails. Top matches:
 • [Interview invitation] — recruiter@tech.com — Oct 10, 2025 (#45678)
 • [Application received] — hr@startup.com — Oct 9, 2025 (#45679)
@@ -466,21 +466,21 @@ Sources:
 • Interview invitation — recruiter@tech.com (Oct 10, 2025)
 • Application received — hr@startup.com (Oct 9, 2025)
 ...
-```
+```text
 
 ### Example 2: Bills with Calendar Reminders
 
 **Query:**
 
-```
+```text
 What bills are due before Friday? Create calendar reminders.
-```
+```text
 
 **Intent:** `calendar`
 
 **Response:**
 
-```
+```text
 *Create calendar event reminders from email content*
 
 📅 Prepared 3 calendar reminders for Friday, October 18:
@@ -494,25 +494,25 @@ What bills are due before Friday? Create calendar reminders.
 • Electric bill due Oct 15 — billing@electric.com (Oct 1, 2025)
 • Credit card payment due — statements@bank.com (Oct 2, 2025)
 • Internet service bill — billing@isp.com (Oct 3, 2025)
-```
+```text
 
 ### Example 3: Clean Promos with Exception
 
 **Query:**
 
-```
+```text
 Clean up promos older than a week unless they're from Best Buy.
-```
+```text
 
 **Intent:** `clean`
 
 **Response:**
 
-```
+```text
 Found 47 promotional emails older than a week (respecting exceptions: best buy). Proposing to archive 47.
 
 **47 actions proposed**
-```
+```text
 
 **Actions:**
 
@@ -522,21 +522,21 @@ Found 47 promotional emails older than a week (respecting exceptions: best buy).
   {"action": "archive_email", "email_id": "11112", "params": {"reason": "Old promotional email"}},
   ...
 ]
-```
+```text
 
 ### Example 4: Suspicious Emails
 
 **Query:**
 
-```
+```text
 Show suspicious emails from new domains this week and explain why.
-```
+```text
 
 **Intent:** `flag`
 
 **Response:**
 
-```
+```text
 ⚠️ Found 2 suspicious emails this week:
 • [Urgent: verify your account] — noreply@suspicious-domain.com — Oct 10, 2025 (#99999)
   → 🔴 Very high risk (95/100) | Suspicious category | Possible phishing
@@ -546,21 +546,21 @@ Show suspicious emails from new domains this week and explain why.
 **Sources:**
 • Urgent: verify your account — noreply@suspicious-domain.com (Oct 10, 2025)
 • You've won a prize! — winner@new-domain.net (Oct 9, 2025)
-```
+```text
 
 ### Example 5: Unsubscribe from Inactive Newsletters
 
 **Query:**
 
-```
+```text
 Unsubscribe from newsletters I haven't opened in 60 days.
-```
+```text
 
 **Intent:** `unsubscribe`
 
 **Response:**
 
-```
+```text
 Found 12 inactive newsletters. Proposing 12 unsubscribe actions.
 
 Examples:
@@ -569,42 +569,42 @@ Examples:
 • [Marketing Updates] — marketing@company.com — Jul 15, 2025 (#77779)
 
 **12 actions proposed**
-```
+```text
 
 ### Example 6: Find Specific Emails
 
 **Query:**
 
-```
+```text
 Find interviews from August with confirmed times.
-```
+```text
 
 **Intent:** `find`
 
 **Response:**
 
-```
+```text
 Found 5 matching emails:
 • [Interview scheduled: Aug 15 at 2pm] — recruiter@tech.com — Aug 10, 2025
   → category: jobs | labels: interview
 • [Confirmed: Video interview Aug 20] — hr@startup.com — Aug 12, 2025
   → category: jobs | labels: interview, confirmed
 ...
-```
+```text
 
 ### Example 7: Follow-up Suggestions
 
 **Query:**
 
-```
+```text
 Which recruiters haven't replied in 5 days? Draft follow-ups.
-```
+```text
 
 **Intent:** `follow-up`
 
 **Response:**
 
-```
+```text
 💬 Emails needing follow-up:
 
 • [Application for Senior Engineer] — recruiter@tech.com — Oct 5, 2025 (#55555)
@@ -612,21 +612,21 @@ Which recruiters haven't replied in 5 days? Draft follow-ups.
 
 • [Interview thank you] — hr@company.com — Oct 4, 2025 (#55556)
   → Draft: "Hi,\n\nFollowing up on \"Interview thank you...\n\nBest regards"
-```
+```text
 
 ### Example 8: Create Tasks
 
 **Query:**
 
-```
+```text
 Create tasks from emails about pending action items.
-```
+```text
 
 **Intent:** `task`
 
 **Response:**
 
-```
+```text
 ✅ Prepared 4 tasks from emails:
 • [Complete onboarding documents] — hr@company.com — Oct 10, 2025 (#88888)
 • [Review contract terms] — legal@startup.com — Oct 9, 2025 (#88889)
@@ -634,7 +634,7 @@ Create tasks from emails about pending action items.
 • [Schedule team meeting] — manager@company.com — Oct 7, 2025 (#88891)
 
 **4 actions proposed**
-```
+```text
 
 ---
 
@@ -660,7 +660,7 @@ if actions:
     
     # Update answer to mention approval workflow
     answer += "\n\nℹ️ Actions sent to approval tray for review."
-```
+```text
 
 This allows users to:
 
@@ -694,7 +694,7 @@ This allows users to:
 ```bash
 cd services/api
 pytest tests/test_chat.py -v
-```
+```text
 
 ### PowerShell Smoke Test (`scripts/test-chat.ps1`)
 
@@ -711,11 +711,11 @@ pytest tests/test_chat.py -v
 ```powershell
 cd d:/ApplyLens
 pwsh ./scripts/test-chat.ps1
-```
+```text
 
 **Expected Output:**
 
-```
+```text
 === Phase 5 Chat Assistant - API Tests ===
 
 1. Health Check
@@ -749,7 +749,7 @@ Testing: Summarize Intent
   📊 Total:   12
 
 🎉 All tests passed!
-```
+```text
 
 ### Frontend Testing
 
@@ -821,7 +821,7 @@ Testing: Summarize Intent
   },
   "max_results": 50
 }
-```
+```text
 
 **Response:**
 
@@ -854,7 +854,7 @@ Testing: Summarize Intent
     "filters": {}
   }
 }
-```
+```text
 
 ### GET /api/chat/intents
 
@@ -869,7 +869,7 @@ Testing: Summarize Intent
     "description": "string"
   }
 }
-```
+```text
 
 ### GET /api/chat/health
 
@@ -882,7 +882,7 @@ Testing: Summarize Intent
   "status": "ok",
   "service": "chat"
 }
-```
+```text
 
 ---
 
@@ -907,7 +907,7 @@ curl http://localhost:9200/emails/_count
 
 # Check API logs
 docker compose logs api
-```
+```text
 
 ### Issue: No search results returned
 
@@ -927,7 +927,7 @@ curl http://localhost:9200/emails/_search?size=0
 curl -X POST http://localhost:9200/emails/_search \
   -H 'Content-Type: application/json' \
   -d '{"query": {"match_all": {}}, "size": 1}'
-```
+```text
 
 ### Issue: Semantic search not working
 
@@ -943,7 +943,7 @@ curl -X POST http://localhost:9200/emails/_search \
 # 1. Add body_vector field to ES mapping (dense_vector)
 # 2. Replace embed_query() in text.py with real embeddings
 # 3. Re-index all emails with vectors
-```
+```text
 
 ### Issue: Intent detection wrong
 
@@ -974,7 +974,7 @@ curl http://localhost:8003/api/chat/health
 
 # Test API directly
 Invoke-WebRequest -Uri "http://localhost:8003/api/chat/health"
-```
+```text
 
 ---
 
@@ -995,7 +995,7 @@ def embed_query(text: str) -> list[float]:
         input=text
     )
     return response.data[0].embedding
-```
+```text
 
 ### 2. LLM-Based Intent Detection
 
@@ -1012,7 +1012,7 @@ def detect_intent_llm(text: str) -> str:
         ]
     )
     return response.choices[0].message.content.strip().lower()
-```
+```text
 
 ### 3. Streaming Responses
 
@@ -1034,7 +1034,7 @@ async def chat_stream(req: ChatRequest):
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
     
     return StreamingResponse(generate(), media_type="text/event-stream")
-```
+```text
 
 ### 4. Multi-Modal Search
 
@@ -1044,7 +1044,7 @@ Add image/attachment search:
 # Search for "emails with PDFs"
 # Search for "emails with receipts"
 # Search for "contracts sent last month"
-```
+```text
 
 ### 5. Conversation Memory
 
@@ -1054,7 +1054,7 @@ Store conversation history in database for context:
 # Track user preferences
 # Remember previous queries
 # Suggest follow-up questions
-```
+```text
 
 ### 6. Voice Input
 
@@ -1067,7 +1067,7 @@ recognition.onresult = (event) => {
   const transcript = event.results[0][0].transcript
   sendChatMessage(transcript)
 }
-```
+```text
 
 ---
 

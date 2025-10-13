@@ -12,7 +12,7 @@
 
 **2. Created Grafana Auto-Provisioning Structure:**
 
-```
+```text
 infra/grafana/
 └── provisioning/
     ├── datasources/
@@ -21,7 +21,7 @@ infra/grafana/
         ├── applylens.yml               # Dashboard provider config
         └── json/
             └── applylens-overview.json # 6-panel dashboard
-```
+```text
 
 **3. Updated Prometheus Configuration:**
 
@@ -131,7 +131,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # Hot reload (instant!)
 Invoke-WebRequest -Method POST http://localhost:9090/-/reload
-```
+```bash
 
 **Enabled by:** `--web.enable-lifecycle` flag in docker-compose.yml
 
@@ -147,7 +147,7 @@ datasources:
     type: prometheus
     url: http://prometheus:9090
     isDefault: true
-```
+```text
 
 ### 3. Auto-Provisioned Dashboard
 
@@ -162,7 +162,7 @@ providers:
     type: file
     options:
       path: /etc/grafana/provisioning/dashboards/json
-```
+```text
 
 ### 4. Grafana Plugins
 
@@ -197,7 +197,7 @@ Pre-installed plugin: `grafana-piechart-panel`
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/targets"
 $target = $response.data.activeTargets | Where-Object { $_.labels.job -eq "applylens-api" }
 $target | Select-Object scrapeUrl, health, lastError | Format-Table
-```
+```text
 
 **Expected:** `health: up`
 
@@ -208,7 +208,7 @@ $response = Invoke-RestMethod "http://localhost:9090/api/v1/rules"
 $rules = $response.data.groups | Where-Object { $_.name -eq "applylens" }
 Write-Host "Found $($rules.rules.Count) alert rules"
 $rules.rules | ForEach-Object { "  • $($_.name) [$($_.labels.severity)]" }
-```
+```text
 
 **Expected:** 6 rules (2 critical, 3 warning, 1 info)
 
@@ -218,7 +218,7 @@ $rules.rules | ForEach-Object { "  • $($_.name) [$($_.labels.severity)]" }
 $cred = New-Object PSCredential("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force))
 $dashboards = Invoke-RestMethod -Uri "http://localhost:3000/api/search" -Credential $cred
 $dashboards | Where-Object { $_.title -match "ApplyLens" } | Select-Object title, folderTitle, uid
-```
+```text
 
 **Expected:** "ApplyLens API Overview" in "ApplyLens" folder
 
@@ -240,13 +240,13 @@ Start-Sleep -Seconds 20
 $query = "sum(rate(applylens_http_requests_total[5m]))"
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query"
 Write-Host "Request rate: $($response.data.result[0].value[1]) req/s"
-```
+```text
 
 ---
 
 ## 📁 File Structure
 
-```
+```text
 D:\ApplyLens\
 ├── infra/
 │   ├── docker-compose.yml                           ✅ Updated (lifecycle + plugins)
@@ -266,7 +266,7 @@ D:\ApplyLens\
     ├── MONITORING_SETUP.md                          ✅ Existing
     ├── PROMETHEUS_METRICS.md                        ✅ Existing
     └── PROMQL_RECIPES.md                            ✅ Existing
-```
+```text
 
 ---
 
@@ -302,7 +302,7 @@ grafana:
   environment:
     - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-```
+```text
 
 **2. Restrict /metrics Endpoint:**
 
@@ -325,7 +325,7 @@ services:
     networks: [monitoring]
   api:
     networks: [monitoring, public]
-```
+```text
 
 **4. Enable TLS:**
 
@@ -342,14 +342,14 @@ services:
 
 ```powershell
 docker logs infra-grafana | Select-String "provisioning|dashboard"
-```
+```text
 
 **Expected output:**
 
-```
+```ini
 logger=provisioning.dashboard level=info msg="starting to provision dashboards"
 logger=provisioning.dashboard level=info msg="finished to provision dashboards"
-```
+```text
 
 **If dashboard missing:**
 
@@ -359,7 +359,7 @@ Test-Path D:\ApplyLens\infra\grafana\provisioning\dashboards\json\applylens-over
 
 # Restart Grafana
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
-```
+```text
 
 ### Hot Reload Not Working
 
@@ -369,7 +369,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
 docker inspect infra-prometheus | ConvertFrom-Json | 
     Select-Object -ExpandProperty Args | 
     Where-Object { $_ -match "lifecycle" }
-```
+```text
 
 **Expected:** `--web.enable-lifecycle`
 
@@ -378,7 +378,7 @@ docker inspect infra-prometheus | ConvertFrom-Json |
 ```powershell
 Invoke-WebRequest -Method POST http://localhost:9090/-/reload
 # Should return 200 OK
-```
+```text
 
 ### Alerts Not Evaluating
 
@@ -386,7 +386,7 @@ Invoke-WebRequest -Method POST http://localhost:9090/-/reload
 
 ```powershell
 docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
-```
+```text
 
 **Expected:** `SUCCESS: 6 rules found`
 
@@ -394,7 +394,7 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 ```powershell
 start http://localhost:9090/alerts
-```
+```text
 
 ---
 

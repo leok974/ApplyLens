@@ -36,7 +36,7 @@ This checklist covers security hardening, performance optimization, and observab
 ```powershell
 curl -I http://applylens.app/ | Select-String Location
 # Should see: Location: https://applylens.app/
-```
+```text
 
 ### 3. Enable HSTS (HTTP Strict Transport Security)
 
@@ -51,20 +51,20 @@ curl -I http://applylens.app/ | Select-String Location
 
 ```nginx
 add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-```
+```text
 
 3. Restart nginx:
 
 ```bash
 docker compose restart nginx
-```
+```text
 
 **Test:**
 
 ```powershell
 curl -I https://applylens.app/ | Select-String Strict-Transport
 # Should see: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-```
+```text
 
 **⚠️ Warning:** Only enable after you're certain ALL subdomains support HTTPS. HSTS tells browsers to NEVER access your site over HTTP for 1 year (max-age=31536000).
 
@@ -131,7 +131,7 @@ curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-statu
 
 curl -I https://api.applylens.app/ready | Select-String cf-cache-status
 # Should see: cf-cache-status: DYNAMIC (not cached)
-```
+```text
 
 ### 6. Enable Brotli Compression
 
@@ -204,7 +204,7 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
 # Spam the API to trigger rate limit
 1..250 | ForEach-Object { curl -s https://api.applylens.app/ready -o $null -w "%{http_code} " }
 # Should see mostly 200s, then 429s after ~200 requests
-```
+```text
 
 ### 9. Enable Security Level
 
@@ -254,7 +254,7 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
 ```powershell
 curl -I https://www.applylens.app/ | Select-String Location
 # Should see: Location: https://applylens.app/ (if redirecting www → root)
-```
+```text
 
 ---
 
@@ -273,7 +273,7 @@ map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
 }
-```
+```text
 
 **Then in each proxied location block:**
 
@@ -291,7 +291,7 @@ location /grafana/ {
     proxy_set_header X-Forwarded-Host  $host;
     proxy_set_header X-Forwarded-Prefix /grafana;
 }
-```
+```text
 
 ### 12. Add Security Headers
 
@@ -313,7 +313,7 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsaf
 
 # Remove server version
 server_tokens off;
-```
+```text
 
 **Include in main config:**
 
@@ -322,7 +322,7 @@ http {
     include /etc/nginx/snippets/security-headers.conf;
     # ... rest of config
 }
-```
+```text
 
 ### 13. Enable Nginx Status Page (for monitoring)
 
@@ -340,13 +340,13 @@ location /nginx_status {
     allow 172.24.0.0/16;  # Docker network
     deny all;
 }
-```
+```text
 
 **Test:**
 
 ```bash
 docker exec applylens-nginx curl http://localhost/nginx_status
-```
+```text
 
 ---
 
@@ -359,7 +359,7 @@ docker exec applylens-nginx curl http://localhost/nginx_status
 
 ```bash
 docker compose -f infra/docker-compose.yml logs -f cloudflared
-```
+```text
 
 **Look for:**
 
@@ -396,7 +396,7 @@ docker compose -f infra/docker-compose.yml logs -f cloudflared
       - "9113:9113"
     depends_on:
       - nginx
-```
+```text
 
 **Then add to Prometheus scrape config:**
 
@@ -405,7 +405,7 @@ scrape_configs:
   - job_name: 'nginx'
     static_configs:
       - targets: ['nginx-exporter:9113']
-```
+```text
 
 ---
 
@@ -424,13 +424,13 @@ curl -I https://applylens.app/ | Select-String Strict-Transport
 
 # Check TLS version
 openssl s_client -connect applylens.app:443 -tls1_2 2>&1 | Select-String "Protocol"
-```
+```text
 
 ### Security Headers
 
 ```powershell
 curl -I https://applylens.app/ | Select-String "X-Frame-Options|X-Content-Type-Options|X-XSS-Protection"
-```
+```text
 
 ### Caching
 
@@ -440,7 +440,7 @@ curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-statu
 
 # Second request (HIT)
 curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-status
-```
+```text
 
 ### Rate Limiting
 
@@ -451,14 +451,14 @@ curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-statu
     Write-Host "Request $_: $status"
 }
 # Should see 429 after ~200 requests
-```
+```text
 
 ### Bot Protection
 
 ```powershell
 # Check for CF bot challenge headers
 curl -I https://applylens.app/ -A "BadBot/1.0" | Select-String cf-mitigated
-```
+```text
 
 ---
 

@@ -12,14 +12,14 @@ All three patches have been successfully applied to ApplyLens:
 
 All tests passed successfully:
 
-```
+```text
 Running application tests...
 ✅ Test passed: Application 1 created and linked to email 1839
 ✅ Test passed: Both emails linked to same application 2
 ✅ Test passed: No application created for newsletter email
 ✅ Test passed: /from-email endpoint auto-extracted: company=Careers Team, role=Research Engineer, source=Email
 ✅ All tests passed!
-```
+```text
 
 ### Test Coverage
 
@@ -85,7 +85,7 @@ Running application tests...
 ```bash
 # Frontend running at:
 http://localhost:5175/tracker
-```
+```text
 
 ### API Endpoints
 
@@ -104,14 +104,14 @@ POST http://localhost:8003/applications/from-email
   "subject": "Application for Software Engineer",
   "body_text": "Thank you for applying..."
 }
-```
+```text
 
 ### Run Tests
 
 ```bash
 cd infra
 docker compose exec api sh -c 'PYTHONPATH=/app python tests/test_applications.py'
-```
+```text
 
 ## Documentation
 

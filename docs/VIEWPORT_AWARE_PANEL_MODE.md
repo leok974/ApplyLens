@@ -19,7 +19,7 @@ This ensures optimal UX across all devices while respecting user preference on d
 
 ```typescript
 const DESKTOP_BP = 1024; // 1024px breakpoint (lg)
-```
+```text
 
 **Why 1024px?**
 
@@ -50,7 +50,7 @@ React.useEffect(() => {
     mq.removeEventListener?.("change", onMQ);
   };
 }, []);
-```
+```text
 
 **Two-layer approach**:
 
@@ -62,7 +62,7 @@ React.useEffect(() => {
 ```typescript
 // Effective mode: force overlay on small screens, keep saved preference for desktop
 const effectiveMode: PanelMode = isDesktop ? panelMode : "overlay";
-```
+```text
 
 **Logic**:
 
@@ -77,7 +77,7 @@ const effectiveMode: PanelMode = isDesktop ? panelMode : "overlay";
 React.useEffect(() => {
   if (isDesktop && panelMode === "split") setOpenPanel(true);
 }, [isDesktop, panelMode]);
-```
+```text
 
 **Why this is needed**:
 
@@ -107,7 +107,7 @@ React.useEffect(() => {
     </>
   )}
 </Button>
-```
+```text
 
 **Key changes**:
 
@@ -130,7 +130,7 @@ React.useEffect(() => {
     {/* ... */}
   </div>
 )}
-```
+```text
 
 **Changed**: `panelMode === "split"` → `effectiveMode === "split"`
 
@@ -213,34 +213,34 @@ This ensures the layout respects the calculated effective mode, not just the sav
 
 **Desktop - Overlay Mode**:
 
-```
+```text
 ┌──────────────────────────┐
 │ ⚏  Split Panel          │  <- Enabled, outline variant
 └──────────────────────────┘
-```
+```text
 
 **Desktop - Split Mode**:
 
-```
+```text
 ┌──────────────────────────┐
 │ ⛶  Overlay Panel        │  <- Enabled, outline variant
 └──────────────────────────┘
-```
+```text
 
 **Mobile - Any Mode**:
 
-```
+```text
 ┌──────────────────────────┐
 │ ⚏  Split Panel          │  <- Disabled, secondary variant (dimmed)
 └──────────────────────────┘
    [Hidden on < md screens]
-```
+```text
 
 ### Layout Transitions
 
 **Desktop → Mobile (window shrink)**:
 
-```
+```text
 Before (≥1024px, split mode):
 ┌─────────────────────────────────────┐
 │  List          │  Panel (docked)    │
@@ -252,11 +252,11 @@ After (<1024px, forced overlay):
 │  List (full width)                  │
 │                                      │
 └─────────────────────────────────────┘
-```
+```text
 
 **Mobile → Desktop (window expand)**:
 
-```
+```text
 Before (<1024px, forced overlay):
 ┌─────────────────────────────────────┐
 │  List (full width)                  │
@@ -268,7 +268,7 @@ After (≥1024px, reads preference = split):
 │  List          │  Panel (auto-open) │
 │                │                     │
 └─────────────────────────────────────┘
-```
+```text
 
 ## Performance Optimizations
 
@@ -293,7 +293,7 @@ After (≥1024px, reads preference = split):
 const [isDesktop, setIsDesktop] = React.useState<boolean>(
   typeof window !== "undefined" ? window.innerWidth >= DESKTOP_BP : true
 );
-```
+```text
 
 **SSR-safe**:
 
@@ -315,7 +315,7 @@ const [isDesktop, setIsDesktop] = React.useState<boolean>(
 
 ```typescript
 title={!isDesktop ? "Available on larger screens" : ""}
-```
+```text
 
 - Explains why button is disabled
 - Only shown on mobile/narrow screens
@@ -359,7 +359,7 @@ title={!isDesktop ? "Available on larger screens" : ""}
 ```typescript
 const saved = localStorage.getItem(MODE_KEY) as PanelMode | null;
 return saved === "split" || saved === "overlay" ? saved : "overlay";
-```
+```text
 
 - Explicit validation
 - Falls back to "overlay" default
@@ -467,7 +467,7 @@ Allow users to configure breakpoint:
 
 ```typescript
 const DESKTOP_BP = parseInt(localStorage.getItem("inbox:desktopBp") || "1024");
-```
+```text
 
 **Settings UI**:
 
@@ -491,7 +491,7 @@ Save separate preferences per device class:
 localStorage.setItem("inbox:panelMode:mobile", "overlay");
 localStorage.setItem("inbox:panelMode:tablet", "split");
 localStorage.setItem("inbox:panelMode:desktop", "split");
-```
+```text
 
 ### Transition Animation
 
@@ -501,7 +501,7 @@ Smooth layout transitions on resize:
 .layout-grid {
   transition: grid-template-columns 300ms ease;
 }
-```
+```text
 
 **Caveat**: May cause performance issues on low-end devices
 

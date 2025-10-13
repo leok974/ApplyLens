@@ -68,7 +68,7 @@ interface InlineNoteProps {
   /** Optional snippet chips for quick text insertion */
   snippets?: string[]
 }
-```
+```text
 
 **Snippet Chips Feature:**
 
@@ -89,7 +89,7 @@ export const NOTE_SNIPPETS: string[] = [
   'Referred by X',
   'Declined offer',
 ]
-```
+```text
 
 **Environment Variable Override:**
 
@@ -98,7 +98,7 @@ Customize snippets per environment without code changes:
 ```bash
 # .env.local
 VITE_TRACKER_SNIPPETS="Custom 1|Custom 2|Custom 3"
-```
+```text
 
 See `TRACKER_CONFIG_SYSTEM.md` for complete configuration documentation.
 
@@ -142,7 +142,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
   snippets={['Custom 1', 'Custom 2']}
   // ... other props
 />
-```
+```text
 
 **Snippet Chips Implementation:**
 
@@ -175,7 +175,7 @@ function insertSnippet(snippet: string) {
     ))}
   </div>
 ) : null}
-```
+```text
 
 **Implementation Pattern:**
 
@@ -211,7 +211,7 @@ function insertSnippet(snippet: string) {
     }}
   />
 )}
-```
+```text
 
 ---
 
@@ -270,7 +270,7 @@ function insertSnippet(snippet: string) {
     />
   </div>
 </div>
-```
+```text
 
 **Toast Integration:**
 
@@ -331,17 +331,17 @@ npm install -D @playwright/test
 npx playwright install chromium
 npx playwright test tests/e2e/tracker-notes.spec.ts
 npx playwright test tests/e2e/tracker-note-snippets.spec.ts
-```
+```text
 
 **Expected Results:**
 
-```
+```text
 ✓ Tracker inline notes › quick-edit saves on blur and shows toast
 ✓ Tracker inline notes › Cmd+Enter saves, Escape cancels
 ✓ Tracker note snippets › click snippet chip inserts text, autosaves on blur, shows toast, persists preview
 
 3 tests passed (3.2s)
-```
+```text
 
 ---
 
@@ -354,7 +354,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 .hover\:bg-white:hover {
   background: white;
 }
-```
+```text
 
 **Purpose:** Ensure consistent button hover behavior when placed on gray table rows. Provides subtle visual feedback without overwhelming the row hover effect.
 
@@ -362,7 +362,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 
 ```tsx
 <a className="... bg-white border hover:bg-white ...">Thread</a>
-```
+```text
 
 ---
 
@@ -419,7 +419,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 {
   "notes": "Updated note text"
 }
-```
+```text
 
 **Response:**
 
@@ -432,7 +432,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
   "updated_at": "2025-10-01T12:05:00Z",
   ...
 }
-```
+```text
 
 ### Error Handling
 
@@ -442,7 +442,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 await updateApplication(r.id, { notes: next })
 showToast(`Note saved — ${r.company}`, 'success')
 await fetchRows() // Reload to get updated timestamp
-```
+```text
 
 **Error Case:**
 
@@ -451,7 +451,7 @@ catch (error) {
   console.error('Failed to save note:', error)
   showToast('Save failed', 'error')
 }
-```
+```text
 
 **Network Errors:**
 
@@ -517,7 +517,7 @@ catch (error) {
 cd apps/web
 npx playwright test tests/e2e/tracker-notes.spec.ts
 npx playwright test tests/e2e/tracker-note-snippets.spec.ts
-```
+```text
 
 **Coverage:**
 
@@ -618,7 +618,7 @@ try {
   setText(value) // Rollback
   showToast('Save failed', 'error')
 }
-```
+```text
 
 **Debouncing:**
 
@@ -628,7 +628,7 @@ const debouncedSave = useDebouncedCallback(
   (text: string) => void commit(text),
   500
 )
-```
+```text
 
 ---
 
@@ -651,7 +651,7 @@ const debouncedSave = useDebouncedCallback(
   Followed up with recruiter…
   <span>Last updated 10/01/2025</span>
 </button>
-```
+```text
 
 **Editor Mode:**
 
@@ -663,7 +663,7 @@ const debouncedSave = useDebouncedCallback(
 <span aria-live="polite">
   {loading ? 'Saving…' : ''}
 </span>
-```
+```text
 
 ### Focus Management
 

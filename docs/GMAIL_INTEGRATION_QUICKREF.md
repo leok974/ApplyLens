@@ -8,7 +8,7 @@
 # Visit: https://console.cloud.google.com/
 # Create project → Enable Gmail API → Create OAuth client (Desktop app)
 # Download credentials.json
-```
+```text
 
 ### 2. Generate Refresh Token
 
@@ -28,7 +28,7 @@ flow = InstalledAppFlow.from_client_secrets_file(
 creds = flow.run_local_server(port=0)
 print('GMAIL_REFRESH_TOKEN=' + creds.refresh_token)
 "
-```
+```text
 
 ### 3. Configure Environment
 
@@ -40,13 +40,13 @@ GMAIL_CLIENT_SECRET=your-client-secret
 GMAIL_REFRESH_TOKEN=1//your-refresh-token
 GMAIL_USER=your-email@gmail.com
 EOF
-```
+```text
 
 ### 4. Restart API
 
 ```bash
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 ## 🔥 Usage
 
@@ -70,7 +70,7 @@ curl -X POST http://localhost:8003/api/applications/extract \
     "subject": "Application for Senior Engineer"
   }
 }
-```
+```text
 
 ### Test Backfill Endpoint
 
@@ -92,7 +92,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
   "extracted": { ... },
   "updated": false
 }
-```
+```text
 
 ## 🔍 Finding Thread IDs
 
@@ -124,7 +124,7 @@ results = service.users().messages().list(
 
 for msg in results.get('messages', []):
     print(msg['threadId'])
-```
+```text
 
 ## 🎯 Environment Variables
 
@@ -160,7 +160,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
 
 # 5. Verify in database
 sqlite3 your.db "SELECT * FROM applications WHERE thread_id='REAL_THREAD_ID'"
-```
+```text
 
 ## 🚨 Troubleshooting
 
@@ -177,7 +177,7 @@ export GMAIL_REFRESH_TOKEN="..."
 export GMAIL_USER="you@gmail.com"
 
 # Restart API
-```
+```text
 
 ### "Invalid credentials" Error
 
@@ -194,7 +194,7 @@ print(creds.refresh_token)
 "
 
 # Update .env with new token
-```
+```text
 
 ### "Thread not found" Error
 
@@ -216,7 +216,7 @@ If Gmail not configured or thread fetch fails, API uses request body:
   "from": "fallback@example.com",
   "text": "Fallback content"
 }
-```
+```text
 
 ### Latest Message
 
@@ -287,7 +287,7 @@ Gmail integration fetches the **latest message** in the thread (sorted by `inter
   "text": "...",
   "headers": { ... }
 }
-```
+```text
 
 ### After
 
@@ -302,7 +302,7 @@ Gmail integration fetches the **latest message** in the thread (sorted by `inter
   "subject": "...",  // Used if Gmail not configured
   "from": "..."
 }
-```
+```text
 
 ## 🎉 Benefits
 
