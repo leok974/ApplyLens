@@ -58,7 +58,6 @@ async def test_metrics_endpoint(monkeypatch):
     - 18 bills with expires_at
     """
     # Import app here to avoid circular imports
-    from app.main import app
     
     # Mock the ES client
     monkeypatch.setattr(V, "es", lambda: FakeES())
@@ -91,7 +90,6 @@ async def test_metrics_refresh_endpoint(monkeypatch):
     This is useful for precomputing metrics on a schedule instead of
     refreshing on every scrape.
     """
-    from app.main import app
     
     # Mock the ES client
     monkeypatch.setattr(V, "es", lambda: FakeES())
@@ -106,7 +104,6 @@ async def test_metrics_refresh_endpoint(monkeypatch):
 @pytest.mark.asyncio
 async def test_metrics_content_type(monkeypatch):
     """Test that /metrics endpoint returns correct Prometheus content type."""
-    from app.main import app
     
     monkeypatch.setattr(V, "es", lambda: FakeES())
     
@@ -130,7 +127,6 @@ async def test_metrics_zero_missing(monkeypatch):
     - 100 bills with dates
     - 100 bills with expires_at (100% coverage)
     """
-    from app.main import app
     
     class PerfectES:
         """ES client that returns perfect backfill results."""

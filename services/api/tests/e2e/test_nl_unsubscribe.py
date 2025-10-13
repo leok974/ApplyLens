@@ -5,12 +5,9 @@ Tests natural language parsing for unsubscribe and suspicious email commands.
 """
 
 import pytest
-from httpx import AsyncClient
-from app.main import app
-
 
 @pytest.mark.asyncio
-async def test_nl_unsubscribe_candidates(monkeypatch):
+async def test_nl_unsubscribe_candidates(monkeypatch, async_client):
     """Test that 'unsubscribe' command generates unsubscribe actions."""
     async def fake_candidates(days: int):
         return [{
@@ -22,22 +19,20 @@ async def test_nl_unsubscribe_candidates(monkeypatch):
     import app.logic.search as S
     monkeypatch.setattr(S, "find_unsubscribe_candidates", fake_candidates)
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/nl/run", json={
-            "text": "unsubscribe from newsletters I haven't opened in 60 days"
-        })
+    r = await async_client.post("/nl/run", json={
+        "text": "unsubscribe from newsletters I haven't opened in 60 days"
+    })
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["intent"] == "unsubscribe_stale"
-        assert j["count"] == 1
-        assert len(j["proposed_actions"]) == 1
-        assert j["proposed_actions"][0]["action"] == "unsubscribe"
-        assert j["proposed_actions"][0]["email_id"] == "news_1"
-
+    assert r.status_code == 200
+    j = r.json()
+    assert j["intent"] == "unsubscribe_stale"
+    assert j["count"] == 1
+    assert len(j["proposed_actions"]) == 1
+    assert j["proposed_actions"][0]["action"] == "unsubscribe"
+    assert j["proposed_actions"][0]["email_id"] == "news_1"
 
 @pytest.mark.asyncio
-async def test_nl_unsubscribe_custom_days(monkeypatch):
+async def test_nl_unsubscribe_custom_days(monkeypatch, async_client):
     """Test that custom days parameter is parsed for unsubscribe."""
     calls = []
     
@@ -48,18 +43,16 @@ async def test_nl_unsubscribe_custom_days(monkeypatch):
     import app.logic.search as S
     monkeypatch.setattr(S, "find_unsubscribe_candidates", track_days)
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/nl/run", json={
-            "text": "unsubscribe from emails I haven't opened in 90 days"
-        })
+    r = await async_client.post("/nl/run", json={
+        "text": "unsubscribe from emails I haven't opened in 90 days"
+    })
         
-        assert r.status_code == 200
-        assert len(calls) == 1
-        assert calls[0] == 90  # Should parse "90 days"
-
+    assert r.status_code == 200
+    assert len(calls) == 1
+    assert calls[0] == 90  # Should parse "90 days"
 
 @pytest.mark.asyncio
-async def test_nl_unsubscribe_default_days(monkeypatch):
+async def test_nl_unsubscribe_default_days(monkeypatch, async_client):
     """Test that default of 60 days is used for unsubscribe when not specified."""
     calls = []
     
@@ -70,15 +63,13 @@ async def test_nl_unsubscribe_default_days(monkeypatch):
     import app.logic.search as S
     monkeypatch.setattr(S, "find_unsubscribe_candidates", track_days)
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/nl/run", json={"text": "unsubscribe from old newsletters"})
+    r = await async_client.post("/nl/run", json={"text": "unsubscribe from old newsletters"})
         
-        assert r.status_code == 200
-        assert calls[0] == 60  # Default
-
+    assert r.status_code == 200
+    assert calls[0] == 60  # Default
 
 @pytest.mark.asyncio
-async def test_nl_unsubscribe_multiple_candidates(monkeypatch):
+async def test_nl_unsubscribe_multiple_candidates(monkeypatch, async_client):
     """Test generating unsubscribe actions for multiple senders."""
     async def multiple_senders(days: int):
         return [
@@ -90,23 +81,21 @@ async def test_nl_unsubscribe_multiple_candidates(monkeypatch):
     import app.logic.search as S
     monkeypatch.setattr(S, "find_unsubscribe_candidates", multiple_senders)
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/nl/run", json={"text": "unsubscribe from old stuff"})
+    r = await async_client.post("/nl/run", json={"text": "unsubscribe from old stuff"})
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["count"] == 3
-        assert len(j["proposed_actions"]) == 3
+    assert r.status_code == 200
+    j = r.json()
+    assert j["count"] == 3
+    assert len(j["proposed_actions"]) == 3
         
-        # Check all are unsubscribe actions
-        for action in j["proposed_actions"]:
-            assert action["action"] == "unsubscribe"
-            assert action["policy_id"] == "unsubscribe-stale"
-            assert action["confidence"] == 0.9
-
+    # Check all are unsubscribe actions
+    for action in j["proposed_actions"]:
+        assert action["action"] == "unsubscribe"
+        assert action["policy_id"] == "unsubscribe-stale"
+        assert action["confidence"] == 0.9
 
 @pytest.mark.asyncio
-async def test_nl_show_suspicious_emails(monkeypatch):
+async def test_nl_show_suspicious_emails(monkeypatch, async_client):
     """Test 'show suspicious' command returns high-risk emails."""
     async def fake_high_risk():
         return [
@@ -117,20 +106,18 @@ async def test_nl_show_suspicious_emails(monkeypatch):
     import app.logic.search as S
     monkeypatch.setattr(S, "find_high_risk", fake_high_risk)
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/nl/run", json={"text": "show me suspicious emails"})
+    r = await async_client.post("/nl/run", json={"text": "show me suspicious emails"})
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["intent"] == "show_suspicious"
-        assert j["count"] == 2
-        assert len(j["emails"]) == 2
-        assert j["emails"][0]["id"] == "phish_1"
-        assert j["emails"][1]["id"] == "phish_2"
-
+    assert r.status_code == 200
+    j = r.json()
+    assert j["intent"] == "show_suspicious"
+    assert j["count"] == 2
+    assert len(j["emails"]) == 2
+    assert j["emails"][0]["id"] == "phish_1"
+    assert j["emails"][1]["id"] == "phish_2"
 
 @pytest.mark.asyncio
-async def test_nl_show_suspicious_variations(monkeypatch):
+async def test_nl_show_suspicious_variations(monkeypatch, async_client):
     """Test various phrasings for showing suspicious emails."""
     async def fake_high_risk():
         return [{"id": "phish_1", "risk_score": 90, "category": "security"}]
@@ -146,32 +133,27 @@ async def test_nl_show_suspicious_variations(monkeypatch):
         "find spam and malware"
     ]
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        for text in variations:
-            r = await ac.post("/nl/run", json={"text": text})
-            assert r.status_code == 200
-            assert r.json()["intent"] == "show_suspicious"
-
+    for text in variations:
+        r = await async_client.post("/nl/run", json={"text": text})
+        assert r.status_code == 200
+        assert r.json()["intent"] == "show_suspicious"
 
 @pytest.mark.asyncio
-async def test_nl_fallback_unrecognized_command():
+async def test_nl_fallback_unrecognized_command(async_client):
     """Test that unrecognized commands return fallback message."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/nl/run", json={"text": "make me a sandwich"})
+    r = await async_client.post("/nl/run", json={"text": "make me a sandwich"})
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["intent"] == "fallback"
-        assert "didn't understand" in j["message"].lower()
-
+    assert r.status_code == 200
+    j = r.json()
+    assert j["intent"] == "fallback"
+    assert "didn't understand" in j["message"].lower()
 
 @pytest.mark.asyncio
-async def test_nl_summarize_bills_placeholder():
+async def test_nl_summarize_bills_placeholder(async_client):
     """Test that bills command returns coming soon message."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/nl/run", json={"text": "summarize my bills due next week"})
+    r = await async_client.post("/nl/run", json={"text": "summarize my bills due next week"})
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["intent"] == "summarize_bills"
-        assert "coming soon" in j["message"].lower()
+    assert r.status_code == 200
+    j = r.json()
+    assert j["intent"] == "summarize_bills"
+    assert "coming soon" in j["message"].lower()

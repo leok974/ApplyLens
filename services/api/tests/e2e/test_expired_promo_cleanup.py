@@ -9,14 +9,11 @@ Tests the full flow:
 5. Audit log records the action
 """
 import pytest
-from httpx import AsyncClient
 from datetime import datetime, timedelta
-from app.main import app
 from app.logic.policy import create_default_engine
 
-
 @pytest.mark.asyncio
-async def test_expired_promo_is_proposed_for_archive(monkeypatch):
+async def test_expired_promo_is_proposed_for_archive(monkeypatch, async_client):
     """
     Test that expired promotional emails are automatically proposed for archiving
     
@@ -48,39 +45,37 @@ async def test_expired_promo_is_proposed_for_archive(monkeypatch):
     assert archive_action["policy_id"] == "promo-expired-archive"
     
     # Now test via API
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Preview the action
-        preview_payload = {
-            "actions": [
-                {
-                    "email_id": "email_1",
-                    "action": "archive",
-                    "policy_id": "promo-expired-archive",
-                    "confidence": 0.9,
-                    "rationale": "Expired promotion (expires_at < now)"
-                }
-            ]
-        }
+    # Preview the action
+    preview_payload = {
+        "actions": [
+            {
+                "email_id": "email_1",
+                "action": "archive",
+                "policy_id": "promo-expired-archive",
+                "confidence": 0.9,
+                "rationale": "Expired promotion (expires_at < now)"
+            }
+        ]
+    }
         
-        prev_response = await ac.post("/mail/actions/preview", json=preview_payload)
-        assert prev_response.status_code == 200
+    prev_response = await async_client.post("/mail/actions/preview", json=preview_payload)
+    assert prev_response.status_code == 200
         
-        prev_data = prev_response.json()
-        assert prev_data["count"] == 1
-        assert prev_data["results"][0]["allowed"] is True
-        assert "expired" in prev_data["results"][0]["explain"].lower() or "ok" in prev_data["results"][0]["explain"].lower()
+    prev_data = prev_response.json()
+    assert prev_data["count"] == 1
+    assert prev_data["results"][0]["allowed"] is True
+    assert "expired" in prev_data["results"][0]["explain"].lower() or "ok" in prev_data["results"][0]["explain"].lower()
         
-        # Execute the action
-        exec_response = await ac.post("/mail/actions/execute", json=preview_payload)
-        assert exec_response.status_code == 200
+    # Execute the action
+    exec_response = await async_client.post("/mail/actions/execute", json=preview_payload)
+    assert exec_response.status_code == 200
         
-        exec_data = exec_response.json()
-        assert exec_data["applied"] >= 1, "Should have applied the archive action"
-        assert exec_data["failed"] == 0, "No actions should have failed"
-
+    exec_data = exec_response.json()
+    assert exec_data["applied"] >= 1, "Should have applied the archive action"
+    assert exec_data["failed"] == 0, "No actions should have failed"
 
 @pytest.mark.asyncio
-async def test_non_expired_promo_not_archived():
+async def test_non_expired_promo_not_archived(async_client):
     """
     Test that non-expired promotions are NOT archived
     """
@@ -102,9 +97,8 @@ async def test_non_expired_promo_not_archived():
     archive_action = next((a for a in actions if a["action"] == "archive" and a["policy_id"] == "promo-expired-archive"), None)
     assert archive_action is None, "Should NOT archive non-expired promotions"
 
-
 @pytest.mark.asyncio
-async def test_low_confidence_blocks_action():
+async def test_low_confidence_blocks_action(async_client):
     """
     Test that low-confidence classifications don't trigger actions
     """
@@ -125,9 +119,8 @@ async def test_low_confidence_blocks_action():
     archive_action = next((a for a in actions if a["action"] == "archive"), None)
     assert archive_action is None, "Low confidence should prevent action"
 
-
 @pytest.mark.asyncio
-async def test_batch_processing():
+async def test_batch_processing(async_client):
     """
     Test processing multiple emails at once
     """
@@ -164,72 +157,67 @@ async def test_batch_processing():
         archive_actions = [a for a in results["email_6"] if a["policy_id"] == "promo-expired-archive"]
         assert len(archive_actions) == 0
 
-
 @pytest.mark.asyncio
-async def test_action_audit_logging(monkeypatch):
+async def test_action_audit_logging(monkeypatch, async_client):
     """
     Test that executed actions are logged to the audit table
     """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Execute an action
-        payload = {
-            "actions": [
-                {
-                    "email_id": "email_7",
-                    "action": "archive",
-                    "policy_id": "promo-expired-archive",
-                    "confidence": 0.88,
-                    "rationale": "Test: expired promotional email"
-                }
-            ]
-        }
+    # Execute an action
+    payload = {
+        "actions": [
+            {
+                "email_id": "email_7",
+                "action": "archive",
+                "policy_id": "promo-expired-archive",
+                "confidence": 0.88,
+                "rationale": "Test: expired promotional email"
+            }
+        ]
+    }
         
-        exec_response = await ac.post("/mail/actions/execute", json=payload)
-        assert exec_response.status_code == 200
+    exec_response = await async_client.post("/mail/actions/execute", json=payload)
+    assert exec_response.status_code == 200
         
-        # Check audit history
-        history_response = await ac.get("/mail/actions/history/email_7")
-        assert history_response.status_code == 200
+    # Check audit history
+    history_response = await async_client.get("/mail/actions/history/email_7")
+    assert history_response.status_code == 200
         
-        history_data = history_response.json()
-        assert "actions" in history_data
+    history_data = history_response.json()
+    assert "actions" in history_data
         
-        # Should have at least one action logged
-        if len(history_data["actions"]) > 0:
-            action_log = history_data["actions"][0]
-            assert action_log["action"] == "archive"
-            assert action_log["policy_id"] == "promo-expired-archive"
-            assert action_log["actor"] == "agent"  # Automated action
-            assert action_log["confidence"] == 0.88
-
+    # Should have at least one action logged
+    if len(history_data["actions"]) > 0:
+        action_log = history_data["actions"][0]
+        assert action_log["action"] == "archive"
+        assert action_log["policy_id"] == "promo-expired-archive"
+        assert action_log["actor"] == "agent"  # Automated action
+        assert action_log["confidence"] == 0.88
 
 @pytest.mark.asyncio
-async def test_preview_safety_checks():
+async def test_preview_safety_checks(async_client):
     """
     Test that preview endpoint applies safety guardrails
     """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Test 1: Very low confidence should be blocked
-        low_conf_payload = {
-            "actions": [
-                {
-                    "email_id": "email_8",
-                    "action": "delete",  # High-risk action
-                    "confidence": 0.3,  # Too low
-                }
-            ]
-        }
+    # Test 1: Very low confidence should be blocked
+    low_conf_payload = {
+        "actions": [
+            {
+                "email_id": "email_8",
+                "action": "delete",  # High-risk action
+                "confidence": 0.3,  # Too low
+            }
+        ]
+    }
         
-        prev_response = await ac.post("/mail/actions/preview", json=low_conf_payload)
-        assert prev_response.status_code == 200
+    prev_response = await async_client.post("/mail/actions/preview", json=low_conf_payload)
+    assert prev_response.status_code == 200
         
-        prev_data = prev_response.json()
-        assert prev_data["results"][0]["allowed"] is False
-        assert "confidence" in prev_data["results"][0]["explain"].lower()
-
+    prev_data = prev_response.json()
+    assert prev_data["results"][0]["allowed"] is False
+    assert "confidence" in prev_data["results"][0]["explain"].lower()
 
 @pytest.mark.asyncio
-async def test_multiple_policies_can_trigger():
+async def test_multiple_policies_can_trigger(async_client):
     """
     Test that an email can trigger multiple policies
     """

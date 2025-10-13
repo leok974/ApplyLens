@@ -10,10 +10,7 @@ Tests monkey-patch the ES client so no running cluster is needed.
 """
 
 import pytest
-from httpx import AsyncClient
-from app.main import app
 import app.logic.search as S
-
 
 class FakeES:
     """Mock Elasticsearch client."""
@@ -24,9 +21,8 @@ class FakeES:
     def search(self, index, body):
         return {"hits": {"hits": self._hits}}
 
-
 @pytest.mark.asyncio
-async def test_policy_exec_generates_proposals(monkeypatch):
+async def test_policy_exec_generates_proposals(monkeypatch, async_client):
     """Test that /policies/run generates correct proposed actions."""
     # Fake ES results: one expired promo, one fresh promo
     fake_hits = [
@@ -76,31 +72,29 @@ async def test_policy_exec_generates_proposals(monkeypatch):
         "limit": 200,
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/policies/run", json=payload)
+    r = await async_client.post("/policies/run", json=payload)
         
-        assert r.status_code == 200
-        data = r.json()
+    assert r.status_code == 200
+    data = r.json()
         
-        # Verify response structure
-        assert data["policy_set_id"] == "cleanup-promos"
-        assert data["evaluated"] == 2
+    # Verify response structure
+    assert data["policy_set_id"] == "cleanup-promos"
+    assert data["evaluated"] == 2
         
-        # Only the expired one should produce an action
-        ids = [a["email_id"] for a in data["proposed_actions"]]
-        assert "p_exp" in ids
-        assert "p_ok" not in ids
+    # Only the expired one should produce an action
+    ids = [a["email_id"] for a in data["proposed_actions"]]
+    assert "p_exp" in ids
+    assert "p_ok" not in ids
         
-        # Verify action details
-        action = data["proposed_actions"][0]
-        assert action["action"] == "archive"
-        assert action["policy_id"] == "promo-expired-archive"
-        assert action["confidence"] >= 0.8
-        assert action["rationale"] == "expired promotion"
-
+    # Verify action details
+    action = data["proposed_actions"][0]
+    assert action["action"] == "archive"
+    assert action["policy_id"] == "promo-expired-archive"
+    assert action["confidence"] >= 0.8
+    assert action["rationale"] == "expired promotion"
 
 @pytest.mark.asyncio
-async def test_policy_exec_multiple_policies(monkeypatch):
+async def test_policy_exec_multiple_policies(monkeypatch, async_client):
     """Test policy execution with multiple policies."""
     fake_hits = [
         {
@@ -156,22 +150,20 @@ async def test_policy_exec_multiple_policies(monkeypatch):
         "limit": 100,
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/policies/run", json=payload)
+    r = await async_client.post("/policies/run", json=payload)
         
-        assert r.status_code == 200
-        data = r.json()
+    assert r.status_code == 200
+    data = r.json()
         
-        assert data["evaluated"] == 2
-        assert len(data["proposed_actions"]) == 1  # Only high_risk matches
+    assert data["evaluated"] == 2
+    assert len(data["proposed_actions"]) == 1  # Only high_risk matches
         
-        action = data["proposed_actions"][0]
-        assert action["email_id"] == "high_risk"
-        assert action["action"] == "quarantine"
-
+    action = data["proposed_actions"][0]
+    assert action["email_id"] == "high_risk"
+    assert action["action"] == "quarantine"
 
 @pytest.mark.asyncio
-async def test_policy_exec_no_matches(monkeypatch):
+async def test_policy_exec_no_matches(monkeypatch, async_client):
     """Test policy execution when no emails match policies."""
     fake_hits = [
         {
@@ -201,18 +193,16 @@ async def test_policy_exec_no_matches(monkeypatch):
         "limit": 100,
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/policies/run", json=payload)
+    r = await async_client.post("/policies/run", json=payload)
         
-        assert r.status_code == 200
-        data = r.json()
+    assert r.status_code == 200
+    data = r.json()
         
-        assert data["evaluated"] == 1
-        assert len(data["proposed_actions"]) == 0  # No matches
-
+    assert data["evaluated"] == 1
+    assert len(data["proposed_actions"]) == 0  # No matches
 
 @pytest.mark.asyncio
-async def test_policy_exec_empty_results(monkeypatch):
+async def test_policy_exec_empty_results(monkeypatch, async_client):
     """Test policy execution when ES returns no results."""
     fake_hits = []
     
@@ -233,18 +223,16 @@ async def test_policy_exec_empty_results(monkeypatch):
         "limit": 100,
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/policies/run", json=payload)
+    r = await async_client.post("/policies/run", json=payload)
         
-        assert r.status_code == 200
-        data = r.json()
+    assert r.status_code == 200
+    data = r.json()
         
-        assert data["evaluated"] == 0
-        assert len(data["proposed_actions"]) == 0
-
+    assert data["evaluated"] == 0
+    assert len(data["proposed_actions"]) == 0
 
 @pytest.mark.asyncio
-async def test_policy_exec_complex_filters(monkeypatch):
+async def test_policy_exec_complex_filters(monkeypatch, async_client):
     """Test policy execution with complex ES filter."""
     fake_hits = [
         {
@@ -292,22 +280,20 @@ async def test_policy_exec_complex_filters(monkeypatch):
         "limit": 200,
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/policies/run", json=payload)
+    r = await async_client.post("/policies/run", json=payload)
         
-        assert r.status_code == 200
-        data = r.json()
+    assert r.status_code == 200
+    data = r.json()
         
-        assert data["evaluated"] == 1
-        assert len(data["proposed_actions"]) == 1
+    assert data["evaluated"] == 1
+    assert len(data["proposed_actions"]) == 1
         
-        action = data["proposed_actions"][0]
-        assert action["email_id"] == "promo1"
-        assert action["action"] == "archive"
-
+    action = data["proposed_actions"][0]
+    assert action["email_id"] == "promo1"
+    assert action["action"] == "archive"
 
 @pytest.mark.asyncio
-async def test_policy_exec_with_limit(monkeypatch):
+async def test_policy_exec_with_limit(monkeypatch, async_client):
     """Test that policy execution respects the limit parameter."""
     # Create many fake hits
     fake_hits = [
@@ -339,19 +325,17 @@ async def test_policy_exec_with_limit(monkeypatch):
         "limit": 100,
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/policies/run", json=payload)
+    r = await async_client.post("/policies/run", json=payload)
         
-        assert r.status_code == 200
-        data = r.json()
+    assert r.status_code == 200
+    data = r.json()
         
-        # Note: In our mock, we still return all 500, but in real ES the limit would apply
-        # This test verifies the parameter is passed correctly
-        assert data["evaluated"] == 500  # Mock returns all
-
+    # Note: In our mock, we still return all 500, but in real ES the limit would apply
+    # This test verifies the parameter is passed correctly
+    assert data["evaluated"] == 500  # Mock returns all
 
 @pytest.mark.asyncio
-async def test_policy_exec_conditional_logic(monkeypatch):
+async def test_policy_exec_conditional_logic(monkeypatch, async_client):
     """Test policy execution with complex conditional logic (any/all/nested)."""
     fake_hits = [
         {
@@ -400,13 +384,12 @@ async def test_policy_exec_conditional_logic(monkeypatch):
         "limit": 100,
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/policies/run", json=payload)
+    r = await async_client.post("/policies/run", json=payload)
         
-        assert r.status_code == 200
-        data = r.json()
+    assert r.status_code == 200
+    data = r.json()
         
-        assert data["evaluated"] == 2
-        # Both should match: e1 has high risk, both have expired dates
-        # (assuming "now" is after 2025-09-01)
-        assert len(data["proposed_actions"]) >= 1
+    assert data["evaluated"] == 2
+    # Both should match: e1 has high risk, both have expired dates
+    # (assuming "now" is after 2025-09-01)
+    assert len(data["proposed_actions"]) >= 1

@@ -5,12 +5,9 @@ Tests the complete unsubscribe workflow including preview and execute endpoints.
 """
 
 import pytest
-from httpx import AsyncClient
-from app.main import app
-
 
 @pytest.mark.asyncio
-async def test_unsubscribe_preview_with_http():
+async def test_unsubscribe_preview_with_http(async_client):
     """Test previewing unsubscribe with HTTP target."""
     payload = {
         "email_id": "e1",
@@ -19,18 +16,16 @@ async def test_unsubscribe_preview_with_http():
         }
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/preview", json=payload)
+    r = await async_client.post("/unsubscribe/preview", json=payload)
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["email_id"] == "e1"
-        assert j["result"]["http"] == "https://example.com/unsub?x=1"
-        assert j["result"]["performed"] is None  # Preview doesn't execute
-
+    assert r.status_code == 200
+    j = r.json()
+    assert j["email_id"] == "e1"
+    assert j["result"]["http"] == "https://example.com/unsub?x=1"
+    assert j["result"]["performed"] is None  # Preview doesn't execute
 
 @pytest.mark.asyncio
-async def test_unsubscribe_preview_with_both_targets():
+async def test_unsubscribe_preview_with_both_targets(async_client):
     """Test previewing unsubscribe with both mailto and HTTP targets."""
     payload = {
         "email_id": "e2",
@@ -39,18 +34,16 @@ async def test_unsubscribe_preview_with_both_targets():
         }
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/preview", json=payload)
+    r = await async_client.post("/unsubscribe/preview", json=payload)
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["result"]["mailto"] == "unsub@ex.com"
-        assert j["result"]["http"] == "https://ex.com/unsub"
-        assert j["result"]["performed"] is None
-
+    assert r.status_code == 200
+    j = r.json()
+    assert j["result"]["mailto"] == "unsub@ex.com"
+    assert j["result"]["http"] == "https://ex.com/unsub"
+    assert j["result"]["performed"] is None
 
 @pytest.mark.asyncio
-async def test_unsubscribe_execute_with_http(monkeypatch):
+async def test_unsubscribe_execute_with_http(monkeypatch, async_client):
     """Test executing unsubscribe with HTTP target."""
     class MockResponse:
         status_code = 204
@@ -74,22 +67,20 @@ async def test_unsubscribe_execute_with_http(monkeypatch):
         }
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/execute", json=payload)
+    r = await async_client.post("/unsubscribe/execute", json=payload)
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["result"]["performed"] == "http"
-        assert j["result"]["status"] in (200, 204)
+    assert r.status_code == 200
+    j = r.json()
+    assert j["result"]["performed"] == "http"
+    assert j["result"]["status"] in (200, 204)
         
-        # Check audit was called
-        assert len(audit_calls) == 1
-        assert audit_calls[0]["email_id"] == "e1"
-        assert audit_calls[0]["action"] == "unsubscribe"
-
+    # Check audit was called
+    assert len(audit_calls) == 1
+    assert audit_calls[0]["email_id"] == "e1"
+    assert audit_calls[0]["action"] == "unsubscribe"
 
 @pytest.mark.asyncio
-async def test_unsubscribe_execute_with_mailto(monkeypatch):
+async def test_unsubscribe_execute_with_mailto(monkeypatch, async_client):
     """Test executing unsubscribe with mailto target."""
     # Stub audit_action
     import app.routers.unsubscribe as R
@@ -103,21 +94,19 @@ async def test_unsubscribe_execute_with_mailto(monkeypatch):
         }
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/execute", json=payload)
+    r = await async_client.post("/unsubscribe/execute", json=payload)
         
-        assert r.status_code == 200
-        j = r.json()
-        assert j["result"]["performed"] == "mailto"
-        assert j["result"]["status"] == "queued"
+    assert r.status_code == 200
+    j = r.json()
+    assert j["result"]["performed"] == "mailto"
+    assert j["result"]["status"] == "queued"
         
-        # Check audit
-        assert len(audit_calls) == 1
-        assert audit_calls[0]["action"] == "unsubscribe"
-
+    # Check audit
+    assert len(audit_calls) == 1
+    assert audit_calls[0]["action"] == "unsubscribe"
 
 @pytest.mark.asyncio
-async def test_unsubscribe_execute_no_targets(monkeypatch):
+async def test_unsubscribe_execute_no_targets(monkeypatch, async_client):
     """Test executing unsubscribe with no targets fails."""
     # Stub audit_action
     import app.routers.unsubscribe as R
@@ -130,15 +119,13 @@ async def test_unsubscribe_execute_no_targets(monkeypatch):
         }
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        r = await ac.post("/unsubscribe/execute", json=payload)
+    r = await async_client.post("/unsubscribe/execute", json=payload)
         
-        assert r.status_code == 400
-        assert "No List-Unsubscribe targets found" in r.json()["detail"]
-
+    assert r.status_code == 400
+    assert "No List-Unsubscribe targets found" in r.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_unsubscribe_preview_vs_execute_difference(monkeypatch):
+async def test_unsubscribe_preview_vs_execute_difference(monkeypatch, async_client):
     """Test that preview doesn't execute but execute does."""
     class MockResponse:
         status_code = 200
@@ -167,13 +154,12 @@ async def test_unsubscribe_preview_vs_execute_difference(monkeypatch):
         }
     }
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Preview should not make HTTP calls
-        r_prev = await ac.post("/unsubscribe/preview", json=payload)
-        assert r_prev.status_code == 200
-        assert len(http_calls) == 0  # No HTTP calls made
+    # Preview should not make HTTP calls
+    r_prev = await async_client.post("/unsubscribe/preview", json=payload)
+    assert r_prev.status_code == 200
+    assert len(http_calls) == 0  # No HTTP calls made
         
-        # Execute should make HTTP calls
-        r_exec = await ac.post("/unsubscribe/execute", json=payload)
-        assert r_exec.status_code == 200
-        assert len(http_calls) > 0  # HTTP calls made
+    # Execute should make HTTP calls
+    r_exec = await async_client.post("/unsubscribe/execute", json=payload)
+    assert r_exec.status_code == 200
+    assert len(http_calls) > 0  # HTTP calls made
