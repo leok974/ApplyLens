@@ -358,7 +358,7 @@ import re  # noqa: E402
 from collections import Counter  # noqa: E402
 
 from app.db import get_db  # noqa: E402
-from app.models import (
+from app.models import (  # noqa: E402
     Email,
     ProfileSenderStats,
     ProfileCategoryStats,
