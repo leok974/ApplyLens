@@ -1,23 +1,23 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { searchEmails, unifiedSuggest, SearchHit } from '../lib/api'
 import SearchResultsHeader from '../components/SearchResultsHeader'
 import EmailLabels from '../components/EmailLabels'
-import { LabelFilterChips } from '../components/LabelFilterChips'
-import { DateRangeControls } from '../components/DateRangeControls'
-import { RepliedFilterChips } from '../components/RepliedFilterChips'
-import { SortControl, SortKey } from '../components/SortControl'
+import { SearchFilters } from '../components/SearchFilters'
+import { SearchControls } from '../components/search/SearchControls'
+import { SecurityFilterControls } from '../components/search/SecurityFilterControls'
+import { SortKey } from '../components/SortControl'
 import { getRecencyScale } from '../state/searchPrefs'
 import { loadUiState, saveUiState, RepliedFilter } from '../state/searchUi'
 import { safeFormatDate } from '../lib/date'
-
-function allowOnlyMark(html: string) {
-  // strips all tags except <mark>…</mark>
-  return html
-    .replace(/<(?!(\/?mark\b))[^>]*>/gi, '') // drop any non-<mark> tags
-    .replace(/ on\w+="[^"]*"/gi, '');        // drop inline event handlers if any
-}
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { formatDistanceToNowStrict, format } from 'date-fns'
+import { toMarkedHTML } from '@/lib/highlight'
 
 export default function Search() {
+  const [searchParams] = useSearchParams()
   const [q, setQ] = useState('Interview')
   const [hits, setHits] = useState<SearchHit[]>([])
   const [sugs, setSugs] = useState<string[]>([])
@@ -25,6 +25,22 @@ export default function Search() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [total, setTotal] = useState<number | undefined>(undefined)
+  
+  // Parse ML filter params from URL
+  const categories = useMemo(() => 
+    (searchParams.get("cat") ?? "").split(",").filter(Boolean), 
+    [searchParams]
+  )
+  const hideExpired = searchParams.get("hideExpired") !== "0"
+  
+  // Security filter params from URL
+  const [highRisk, setHighRisk] = useState(() => {
+    const riskMin = searchParams.get("risk_min")
+    return riskMin ? Number(riskMin) >= 80 : false
+  })
+  const [quarantinedOnly, setQuarantinedOnly] = useState(() => {
+    return searchParams.get("quarantined") === "true"
+  })
   
   // Initialize from localStorage (sticky)
   const init = useMemo(() => loadUiState(), [])
@@ -46,7 +62,22 @@ export default function Search() {
     try {
       const scale = getRecencyScale()
       const repliedParam = replied === "all" ? undefined : replied === "true"
-      const res = await searchEmails(q, 20, undefined, scale, labels, dates.from, dates.to, repliedParam, sort)
+      const res = await searchEmails(
+        q, 
+        20, 
+        undefined, 
+        scale, 
+        labels, 
+        dates.from, 
+        dates.to, 
+        repliedParam, 
+        sort,
+        categories,
+        hideExpired,
+        highRisk ? 80 : undefined,
+        undefined,
+        quarantinedOnly ? true : undefined
+      )
       setHits(res)
       setTotal(res.length) // Note: API should return total count
     } catch (e:any) {
@@ -71,10 +102,10 @@ export default function Search() {
 
   useEffect(() => { onSearch() }, [])
   
-  // Re-run search when filters change
+  // Re-run search when filters change (including ML filters and security filters)
   useEffect(() => {
     if (q.trim()) onSearch()
-  }, [labels, dates, replied, sort])
+  }, [labels, dates, replied, sort, categories, hideExpired, highRisk, quarantinedOnly])
 
   // Persist to localStorage whenever user changes filters/sort
   useEffect(() => {
@@ -98,9 +129,16 @@ export default function Search() {
     if (dates.to) params.set('date_to', dates.to)
     if (replied !== 'all') params.set('replied', replied)
     params.set('sort', sort)
+    // Security filters
+    if (highRisk) {
+      params.set('risk_min', '80')
+    }
+    if (quarantinedOnly) {
+      params.set('quarantined', 'true')
+    }
     const url = `/search?${params.toString()}`
     window.history.replaceState(null, '', url)
-  }, [q, labels, dates.from, dates.to, replied, sort])
+  }, [q, labels, dates.from, dates.to, replied, sort, highRisk, quarantinedOnly])
 
   return (
     <div>
@@ -113,80 +151,70 @@ export default function Search() {
           font-weight: 500;
         }
       `}</style>
-      <form onSubmit={onSearch} style={{ display: 'flex', gap: 8, marginBottom: 12, position: 'relative' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <input
+      <form onSubmit={onSearch} className="flex gap-2 mb-3 relative">
+        <div className="relative flex-1">
+          <Input
             value={q}
             onChange={e => onChange(e.target.value)}
             placeholder="Search subject and body…"
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #ccc', borderRadius: 8 }}
+            className="w-full"
           />
           {sugs.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderTop: 'none', zIndex: 10, borderRadius: '0 0 8px 8px', maxHeight: '300px', overflowY: 'auto' }}>
-              {sugs.map((s, i) => (
-                <div key={i} style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: i < sugs.length - 1 ? '1px solid #eee' : 'none' }} onMouseDown={() => { setQ(s); setSugs([]); setTimeout(() => onSearch(), 0) }}>
+            <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-b-lg z-10 max-h-[300px] overflow-y-auto shadow-lg">
+              {sugs.map((s: string, i: number) => (
+                <div 
+                  key={`sug-${i}-${s}`} 
+                  className="px-3 py-2 cursor-pointer hover:bg-secondary border-b last:border-b-0 border-border" 
+                  onMouseDown={() => { setQ(s); setSugs([]); setTimeout(() => onSearch(), 0) }}
+                >
                   {s}
                 </div>
               ))}
             </div>
           )}
         </div>
-        <button type="submit" style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #111', background: '#111', color: '#fff' }}>
-          Search
-        </button>
+        <Button type="submit">Search</Button>
       </form>
 
       {dym.length > 0 && (
-        <div style={{ marginBottom: 12, fontSize: 14, color: '#555' }}>
-          Did you mean: {dym.map((d, i) => (
-            <button key={i} onClick={() => { setQ(d); setDym([]); setTimeout(() => onSearch(), 0) }} style={{ background: 'transparent', border: 'none', color: '#0a58ca', cursor: 'pointer', padding: 0, marginRight: 8, textDecoration: 'underline' }}>
+        <div className="mb-3 text-sm text-muted-foreground">
+          Did you mean: {dym.map((d: string, i: number) => (
+            <Button
+              key={`dym-${i}-${d}`}
+              variant="link"
+              size="sm"
+              className="h-auto p-0 mr-2"
+              onClick={() => { setQ(d); setDym([]); setTimeout(() => onSearch(), 0) }}
+            >
               {d}
-            </button>
+            </Button>
           ))}
         </div>
       )}
 
-      <div style={{ marginBottom: 16, padding: 12, background: '#f8f9fa', borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Filter by label:</div>
-          <LabelFilterChips value={labels} onChange={setLabels} />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Filter by date:</div>
-          <DateRangeControls from={dates.from} to={dates.to} onChange={setDates} />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Filter by reply status:</div>
-          <RepliedFilterChips value={replied} onChange={setReplied} />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 6, color: '#555' }}>Sort results:</div>
-          <SortControl value={sort} onChange={setSort} />
-        </div>
-        {(labels.length > 0 || dates.from || dates.to || replied !== 'all' || sort !== 'relevance') && (
-          <div style={{ textAlign: 'right' }}>
-            <button
-              onClick={() => {
-                setLabels([])
-                setDates({})
-                setReplied('all')
-                setSort('relevance')
-              }}
-              style={{
-                fontSize: 12,
-                color: '#6c757d',
-                textDecoration: 'underline',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              Clear all filters
-            </button>
-          </div>
-        )}
+      {/* ML-powered category filters & hide expired toggle */}
+      <SearchControls />
+
+      {/* Security filters */}
+      <div className="mt-3">
+        <SecurityFilterControls
+          highRisk={highRisk}
+          onHighRiskChange={setHighRisk}
+          quarantinedOnly={quarantinedOnly}
+          onQuarantinedOnlyChange={setQuarantinedOnly}
+        />
       </div>
+
+      <SearchFilters
+        labels={labels}
+        onLabelsChange={setLabels}
+        dates={dates}
+        onDatesChange={setDates}
+        replied={replied}
+        onRepliedChange={setReplied}
+        sort={sort}
+        onSortChange={setSort}
+      />
 
       {loading && <div>Searching…</div>}
       {err && <div style={{ color: 'crimson' }}>Error: {err}</div>}
@@ -196,8 +224,12 @@ export default function Search() {
         <SearchResultsHeader query={q} total={total} showHint />
       )}
 
-      <div>
-        {hits.map(h => {
+      <div data-testid="results">
+        {hits.map((h: any, i: number) => {
+          // Ensure unique key even when id is missing/null
+          const rawId = h?.id ?? h?._id ?? h?._source?.id ?? null;
+          const safeKey = rawId ? `search-${String(rawId)}` : `row-${i}`;
+          
           // Format time-to-response as a compact badge if present
           const ttrH: number | null = typeof h.time_to_response_hours === 'number' ? h.time_to_response_hours : null
           const ttrText = ttrH == null
@@ -209,40 +241,67 @@ export default function Search() {
                 : `${Math.round(ttrH / 24)}d`)
           
           return (
-            <div key={h.id} style={{ border: '1px solid #ddd', borderRadius: 12, padding: 12, marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'start' }}>
-                <div style={{ flex: 1 }}>
-                  <strong>{h.subject || '(no subject)'}</strong>
-                  <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+            <div 
+              key={safeKey} 
+              data-testid={`result-${i}`}
+              data-id={rawId || `fallback-${i}`}
+              className="surface-card density-x density-y mb-3 transition-all hover:shadow-lg"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 
+                    data-testid="subject"
+                    className="font-semibold leading-snug text-[color:hsl(var(--foreground))]"
+                    dangerouslySetInnerHTML={toMarkedHTML(h.subject_highlight ?? h.subject ?? '(no subject)')}
+                  />
+                  <div className="mt-1 text-xs text-[color:hsl(var(--muted-foreground))]">
                     {h.sender || h.from_addr} · {safeFormatDate(h.received_at) ?? '—'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                  <span style={{ opacity: 0.6, fontSize: 11 }}>score: {h.score?.toFixed?.(2)}</span>
+                <div className="flex shrink-0 flex-row items-center gap-2">
+                  <span className="text-[11px] text-[color:hsl(var(--muted-foreground))]">
+                    score: {h.score?.toFixed?.(2)}
+                  </span>
                   <EmailLabels labels={h.label_heuristics || (h.label ? [h.label] : [])} />
+                  
+                  {/* ML Category Badge (Phase 35) */}
+                  {h.category && (
+                    <Badge data-testid="badge-category" variant="secondary" className="text-[10px] capitalize h-5">
+                      {h.category}
+                    </Badge>
+                  )}
+                  
+                  {/* Expiry Badge (Phase 35) */}
+                  {h.expires_at && (
+                    <Badge data-testid="badge-expires" className="bg-amber-100 text-amber-900 border-amber-300 text-[10px] h-5">
+                      ⏰ {formatDistanceToNowStrict(new Date(h.expires_at), { addSuffix: true })}
+                    </Badge>
+                  )}
+                  
+                  {/* Event Badge (Phase 35) */}
+                  {h.event_start_at && (
+                    <Badge data-testid="badge-event" className="bg-sky-100 text-sky-900 border-sky-300 text-[10px] h-5">
+                      📅 {format(new Date(h.event_start_at), "MMM d")}
+                    </Badge>
+                  )}
+                  
                   <span
                     title={h.first_user_reply_at ? `Replied ${ttrText} after receipt` : (h.replied ? 'Replied' : 'No reply yet')}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      borderRadius: 9999,
-                      padding: '2px 8px',
-                      fontSize: 10,
-                      fontWeight: 500,
-                      border: '1px solid',
-                      ...(h.replied
-                        ? { backgroundColor: '#dbeafe', borderColor: '#93c5fd' }
-                        : { backgroundColor: '#f3f4f6', borderColor: '#d1d5db', opacity: 0.8 })
-                    }}
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                      h.replied
+                        ? 'border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
+                        : 'border-gray-300 bg-gray-100 text-gray-700 opacity-80 dark:border-gray-700 dark:bg-gray-800/40 dark:text-gray-300'
+                    }`}
                   >
                     {h.replied ? `TTR ${ttrText}` : 'No reply'}
                   </span>
                 </div>
               </div>
-              {h.highlight?.body_text && (
+              {h.body_highlight && (
                 <div
-                  style={{ marginTop: 6, fontSize: 14 }}
-                  dangerouslySetInnerHTML={{ __html: allowOnlyMark(h.highlight.body_text.join(' … ')) }}
+                  data-testid="snippet"
+                  className="mt-2 text-sm text-[color:hsl(var(--muted-foreground))]"
+                  dangerouslySetInnerHTML={toMarkedHTML(h.body_highlight)}
                 />
               )}
             </div>

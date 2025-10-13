@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { searchEmails, explainEmail, actions, SearchHit, ExplainResponse } from '../lib/api'
 import { safeFormatDate } from '../lib/date'
+import { Alert, AlertDescription } from './ui/alert'
+import { Info } from 'lucide-react'
 
 export default function InboxWithActions() {
   const [q, setQ] = useState('')
@@ -240,10 +242,13 @@ export default function InboxWithActions() {
       </div>
 
       {/* Info Note */}
-      <div className="mt-4 p-4 rounded bg-blue-50 border border-blue-200 text-sm text-blue-900">
-        <strong>ℹ️ Dry-run mode:</strong> Quick actions (Archive, Mark Safe/Suspicious, Unsubscribe) are
-        recorded to the audit log but don't modify Gmail yet. This is for testing and demonstration purposes.
-      </div>
+      <Alert className="mt-4">
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Dry-run mode:</strong> Quick actions (Archive, Mark Safe/Suspicious, Unsubscribe) are
+          recorded to the audit log but don't modify Gmail yet. This is for testing and demonstration purposes.
+        </AlertDescription>
+      </Alert>
     </div>
   )
 }

@@ -1,0 +1,37 @@
+{
+  "properties": {
+    "ats": {
+      "properties": {
+        "system": {
+          "type": "keyword",
+          "doc_values": true,
+          "ignore_above": 256
+        },
+        "application_id": {
+          "type": "keyword",
+          "doc_values": true
+        },
+        "stage": {
+          "type": "keyword",
+          "doc_values": true,
+          "ignore_above": 256
+        },
+        "last_stage_change": {
+          "type": "date"
+        },
+        "interview_date": {
+          "type": "date"
+        },
+        "company": {
+          "type": "keyword",
+          "doc_values": true,
+          "ignore_above": 256
+        },
+        "ghosting_risk": {
+          "type": "float",
+          "doc_values": true
+        }
+      }
+    }
+  }
+}

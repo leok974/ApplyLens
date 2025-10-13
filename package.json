@@ -1,0 +1,41 @@
+{
+  "name": "applylens-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ApplyLens - Intelligent Job Application Tracking",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:update": "playwright test -u",
+    "phase2:export": "cross-env ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 python services/api/app/labeling/export_weak_labels.py --days 60 --limit 40000 --limit-per-cat 8000 --out /tmp/weak_labels.jsonl",
+    "phase2:train": "python services/api/app/labeling/train_ml.py /tmp/weak_labels.jsonl services/api/app/labeling/label_model.joblib",
+    "phase2:apply": "curl -s -X POST \"http://localhost:8003/labels/apply\" -H \"Content-Type: application/json\" -d \"{}\"",
+    "phase2:stats": "curl -s \"http://localhost:8003/labels/stats\" | jq .",
+    "phase2:profile": "curl -s \"http://localhost:8003/profile/summary?days=60\" | jq .",
+    "phase2:all": "npm run phase2:export && npm run phase2:train && npm run phase2:apply && npm run phase2:stats",
+    "phase2:help": "echo \"Phase-2 Email Categorization Scripts:\" && echo \"  npm run phase2:export  - Export weak labels from ES\" && echo \"  npm run phase2:train   - Train ML model from JSONL\" && echo \"  npm run phase2:apply   - Apply labels to ES docs\" && echo \"  npm run phase2:stats   - Show label statistics\" && echo \"  npm run phase2:profile - Show profile summary\" && echo \"  npm run phase2:all     - Run complete pipeline\"",
+    "phase2:clean": "rm -f /tmp/weak_labels.jsonl"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.7.2",
+    "cross-env": "^7.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/applylens.git"
+  },
+  "keywords": [
+    "email",
+    "categorization",
+    "machine-learning",
+    "elasticsearch",
+    "job-applications"
+  ],
+  "author": "ApplyLens Team",
+  "license": "MIT"
+}

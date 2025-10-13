@@ -40,11 +40,21 @@ class SearchHit(BaseModel):
     score: float
     snippet: Optional[str] = None
     highlight: dict = {}
+    # Highlight fields for easy access
+    subject_highlight: Optional[str] = None
+    body_highlight: Optional[str] = None
     # Reply metrics
     first_user_reply_at: Optional[str] = None
     user_reply_count: int = 0
     replied: bool = False
     time_to_response_hours: Optional[float] = None
+    # ML-powered fields (Phase 35)
+    category: Optional[str] = None
+    expires_at: Optional[str] = None
+    event_start_at: Optional[str] = None
+    event_end_at: Optional[str] = None
+    interests: List[str] = []
+    confidence: Optional[float] = None
 
 
 class SearchResponse(BaseModel):
@@ -66,7 +76,12 @@ def search(
     sort: str = Query("relevance", description="relevance|received_desc|received_asc|ttr_asc|ttr_desc"),
     label_filter: Optional[str] = Query(None, description="Filter by label_heuristics: interview, offer, rejection, application_receipt, newsletter_ads"),
     company: Optional[str] = Query(None, description="Filter by company name"),
-    source: Optional[str] = Query(None, description="Filter by source (e.g., lever, workday)")
+    source: Optional[str] = Query(None, description="Filter by source (e.g., lever, workday)"),
+    categories: Optional[List[str]] = Query(None, description="Filter by ML category (ats, bills, banks, events, promotions)"),
+    hide_expired: bool = Query(True, description="Hide expired emails (expires_at < now) and past events (event_start_at < now)"),
+    risk_min: Optional[int] = Query(None, ge=0, le=100, description="Minimum risk score (0-100)"),
+    risk_max: Optional[int] = Query(None, ge=0, le=100, description="Maximum risk score (0-100)"),
+    quarantined: Optional[bool] = Query(None, description="Filter by quarantine status: true|false")
 ):
     """
     Smart search with:
@@ -120,6 +135,46 @@ def search(
         filters.append({"term": {"company": company}})
     if source:
         filters.append({"term": {"source": source}})
+    
+    # Add ML category filter (Phase 35)
+    if categories:
+        filters.append({"terms": {"category": categories}})
+    
+    # Add risk score filter (Security)
+    if risk_min is not None or risk_max is not None:
+        risk_range = {}
+        if risk_min is not None:
+            risk_range["gte"] = risk_min
+        if risk_max is not None:
+            risk_range["lte"] = risk_max
+        filters.append({"range": {"risk_score": risk_range}})
+    
+    # Add quarantine filter (Security)
+    if quarantined is not None:
+        filters.append({"term": {"quarantined": quarantined}})
+    
+    # Add hide expired filter (Phase 35)
+    if hide_expired:
+        # Exclude emails where expires_at is in the past
+        filters.append({
+            "bool": {
+                "should": [
+                    {"bool": {"must_not": {"exists": {"field": "expires_at"}}}},
+                    {"range": {"expires_at": {"gte": "now"}}}
+                ],
+                "minimum_should_match": 1
+            }
+        })
+        # Exclude emails where event_start_at is in the past
+        filters.append({
+            "bool": {
+                "should": [
+                    {"bool": {"must_not": {"exists": {"field": "event_start_at"}}}},
+                    {"range": {"event_start_at": {"gte": "now"}}}
+                ],
+                "minimum_should_match": 1
+            }
+        })
     
     # --- Build sort ---
     es_sort = None
@@ -246,11 +301,21 @@ def search(
             score=h.get("_score") or 0.0,  # ES returns null for custom sorts
             snippet=snippet,
             highlight=highlight,
+            # Highlight fields for easy access
+            subject_highlight=highlight.get("subject", [None])[0] if "subject" in highlight else None,
+            body_highlight=" ... ".join(highlight.get("body_text", [])) if "body_text" in highlight else None,
             # Reply metrics
             first_user_reply_at=source.get("first_user_reply_at"),
             user_reply_count=source.get("user_reply_count", 0),
             replied=source.get("replied", False),
             time_to_response_hours=time_to_response_hours,
+            # ML fields (Phase 37)
+            category=source.get("category"),
+            expires_at=source.get("expires_at"),
+            event_start_at=source.get("event_start_at"),
+            event_end_at=source.get("event_end_at"),
+            interests=source.get("interests", []),
+            confidence=source.get("confidence"),
         ))
     
     return SearchResponse(

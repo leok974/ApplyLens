@@ -1,0 +1,139 @@
+{
+  "index_patterns": ["gmail_emails*", "emails-*"],
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0
+      }
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "gmail_id": {
+          "type": "keyword"
+        },
+        "thread_id": {
+          "type": "keyword"
+        },
+        "subject": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "body_text": {
+          "type": "text"
+        },
+        "sender": {
+          "type": "keyword"
+        },
+        "recipient": {
+          "type": "keyword"
+        },
+        "received_at": {
+          "type": "date"
+        },
+        "labels": {
+          "type": "keyword"
+        },
+        "label_heuristics": {
+          "type": "keyword"
+        },
+        "company": {
+          "type": "keyword"
+        },
+        "role": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "source": {
+          "type": "keyword"
+        },
+        "category": {
+          "type": "keyword"
+        },
+        "risk_score": {
+          "type": "integer"
+        },
+        "quarantined": {
+          "type": "boolean"
+        },
+        "flags": {
+          "type": "nested",
+          "properties": {
+            "signal": {
+              "type": "keyword"
+            },
+            "evidence": {
+              "type": "text"
+            },
+            "weight": {
+              "type": "short"
+            }
+          }
+        },
+        "auth_results": {
+          "properties": {
+            "spf": {
+              "type": "keyword"
+            },
+            "dkim": {
+              "type": "keyword"
+            },
+            "dmarc": {
+              "type": "keyword"
+            }
+          }
+        },
+        "url_hosts": {
+          "type": "keyword"
+        },
+        "domain_tld": {
+          "type": "keyword"
+        },
+        "domain_first_seen_at": {
+          "type": "date"
+        },
+        "domain_first_seen_days_ago": {
+          "type": "integer"
+        },
+        "attachment_types": {
+          "type": "keyword"
+        },
+        "expires_at": {
+          "type": "date"
+        },
+        "event_start_at": {
+          "type": "date"
+        },
+        "event_location": {
+          "type": "text"
+        },
+        "due_date": {
+          "type": "date"
+        },
+        "amount_cents": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "priority": 200,
+  "version": 1,
+  "_meta": {
+    "description": "Template for ApplyLens email documents with security analysis fields",
+    "managed_by": "applylens-api"
+  }
+}

@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import ThemeToggle from './ThemeToggle'
 
 export default function Nav() {
   const { pathname } = useLocation()
@@ -13,11 +14,15 @@ export default function Nav() {
     }}>{label}</Link>
   )
   return (
-    <nav style={{ padding: 12, borderBottom: '1px solid #ddd' }}>
-      {link('/', 'Inbox')}
-      {link('/search', 'Search')}
-      {link('/tracker', 'Tracker')}
-      {link('/settings', 'Settings')}
+    <nav style={{ padding: 12, borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center' }}>
+      <div style={{ flex: 1 }}>
+        {link('/', 'Inbox')}
+        {link('/inbox-actions', 'Inbox (Actions)')}
+        {link('/search', 'Search')}
+        {link('/tracker', 'Tracker')}
+        {link('/settings', 'Settings')}
+      </div>
+      <ThemeToggle />
     </nav>
   )
 }

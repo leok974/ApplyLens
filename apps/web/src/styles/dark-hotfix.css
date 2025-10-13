@@ -1,0 +1,350 @@
+/* --- ApplyLens Dark Hotfix v2 (global overrides) --- */
+:root {
+  --bg: #0b0d12;
+  --surface: #10141b;
+  --elev-1: #141821;
+  --elev-2: #171c26;
+  --border: #242b39;
+  --border-muted: #1b2230;
+  --text: #e7ebf3;
+  --subtext: #aeb8c7;
+  --accent: #2b66ff;
+  --accent-600: #1f55e6;
+  --accent-700: #1646c7;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --badge: #1d2736;
+  --badge-border: #2a3343;
+  --input: #0f131b;
+  --ring: #7aa2ff;
+}
+
+/* root + app frame */
+html.dark, html.dark body, html.dark #root { background: var(--bg); color: var(--text); }
+
+/* ---------- GLOBAL TAILWIND OVERRIDES (no component edits needed) ---------- */
+/* Light backgrounds → dark surfaces */
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-slate-50,
+html.dark .bg-neutral-50 { background-color: var(--elev-1) !important; }
+
+/* Secondary containers / hovers */
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-neutral-50:hover { background-color: var(--elev-2) !important; }
+
+/* Borders / dividers */
+html.dark .border,
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-slate-200,
+html.dark .divide-y > * + * { border-color: var(--border) !important; }
+html.dark hr, html.dark .divide-gray-200 { border-color: var(--border-muted) !important; }
+
+/* Text colors */
+html.dark .text-gray-900,
+html.dark .text-slate-900 { color: var(--text) !important; }
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+html.dark .text-slate-600,
+html.dark .text-slate-500 { color: var(--subtext) !important; }
+
+/* Shadows feel softer in dark */
+html.dark .shadow, html.dark .shadow-sm, html.dark .shadow-md {
+  box-shadow: 0 1px 0 rgba(0,0,0,.45), 0 12px 24px rgba(0,0,0,.25) !important;
+}
+
+/* Scrollbar (WebKit + Firefox) */
+html.dark * {
+  scrollbar-color: var(--border) transparent;
+}
+html.dark ::-webkit-scrollbar { height: 10px; width: 10px; }
+html.dark ::-webkit-scrollbar-track { background: transparent; }
+html.dark ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+html.dark ::-webkit-scrollbar-thumb:hover { background: #2a3343; }
+
+/* ---------- BUTTONS (covers Tailwind utilities + common classnames) ---------- */
+/* base */
+html.dark button,
+html.dark .btn,
+html.dark a[role="button"] {
+  background: var(--elev-1) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+}
+html.dark button:hover,
+html.dark .btn:hover,
+html.dark a[role="button"]:hover { background: var(--elev-2) !important; }
+html.dark button:disabled,
+html.dark .btn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* primary (blue) — match your Sync buttons */
+html.dark .btn-primary,
+html.dark .bg-blue-600,
+html.dark .bg-indigo-600 {
+  background: var(--accent) !important;
+  border-color: var(--accent-600) !important;
+  color: white !important;
+}
+html.dark .btn-primary:hover,
+html.dark .bg-blue-600:hover,
+html.dark .bg-indigo-600:hover { background: var(--accent-600) !important; }
+html.dark .btn-primary:active { background: var(--accent-700) !important; }
+
+/* outline/ghost */
+html.dark .btn-outline,
+html.dark .border-gray-300.bg-transparent {
+  background: transparent !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+html.dark .btn-ghost,
+html.dark .bg-transparent { background: transparent !important; color: var(--text) !important; }
+
+/* semantic helpers */
+html.dark .btn-danger { background: color-mix(in oklab, var(--danger) 25%, black); color: #fff; border-color: color-mix(in oklab, var(--danger) 55%, black); }
+html.dark .btn-success { background: color-mix(in oklab, var(--success) 25%, black); color: #fff; border-color: color-mix(in oklab, var(--success) 55%, black); }
+html.dark .btn-warning { background: color-mix(in oklab, var(--warning) 25%, black); color: #131313; border-color: color-mix(in oklab, var(--warning) 55%, black); }
+
+/* Focus ring */
+html.dark :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* ---------- FORMS ---------- */
+html.dark input, html.dark select, html.dark textarea {
+  background: var(--input) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+html.dark input::placeholder, html.dark textarea::placeholder { color: var(--subtext) !important; }
+html.dark .form-help, html.dark .help-text { color: var(--subtext) !important; }
+
+/* ---------- NAV / TABS / CHIPS ---------- */
+html.dark .nav, html.dark .tabs { background: var(--surface) !important; border-color: var(--border) !important; }
+html.dark .tab, html.dark .chip, html.dark .badge, html.dark .rounded-full.px-2, html.dark .rounded-full.px-3 {
+  background: var(--badge) !important; border: 1px solid var(--badge-border) !important; color: var(--text) !important;
+}
+html.dark .tab-active, html.dark .chip-active, html.dark .badge-primary {
+  background: color-mix(in oklab, var(--accent) 18%, black) !important; border-color: var(--accent-600) !important;
+}
+
+/* ---------- MENUS / DROPDOWNS / MODALS / TOASTS ---------- */
+html.dark .menu, html.dark .dropdown-menu, html.dark .context-menu,
+html.dark .modal, html.dark .dialog, html.dark .toast, html.dark .tooltip {
+  background: var(--elev-1) !important; color: var(--text) !important; border: 1px solid var(--border) !important;
+}
+html.dark .modal-header, html.dark .dropdown-divider { border-color: var(--border-muted) !important; }
+
+/* ---------- TABLES / LISTS ---------- */
+html.dark table { color: var(--text); }
+html.dark thead, html.dark .table-header { background: var(--surface) !important; }
+html.dark tbody tr { border-color: var(--border-muted) !important; }
+html.dark tbody tr:hover { background: var(--elev-2) !important; }
+
+/* ---------- CODE / KBD ---------- */
+html.dark code, html.dark pre, html.dark kbd {
+  background: #0e1420 !important; color: #d8e3ff !important; border: 1px solid var(--border) !important;
+}
+
+/* ---------- MISC READABILITY ---------- */
+html.dark .leading-snug, html.dark .leading-normal { line-height: 1.55 !important; }
+html.dark .text-sm.muted, html.dark .muted { color: var(--subtext) !important; }
+
+/* optional higher contrast toggle: add class="contrast-plus" to <html> */
+html.dark.contrast-plus {
+  --elev-1:#10141c; --elev-2:#0f1420; --border:#2b3547; --text:#f1f5ff;
+}
+
+/* ==================== EXTENSIONS: finish dark pass ==================== */
+
+/* 1) Top nav pills/links */
+html.dark nav a,
+html.dark .topbar a,
+html.dark .tabs a,
+html.dark a.nav-link {
+  background: var(--elev-1) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+}
+html.dark nav a:hover,
+html.dark .topbar a:hover,
+html.dark .tabs a:hover,
+html.dark a.nav-link:hover { background: var(--elev-2) !important; }
+
+/* 2) Info/alert "pastel" blocks (bg-*-50/100/200) */
+:root {
+  --blue-soft: color-mix(in oklab, var(--accent) 12%, black);
+  --blue-soft-border: color-mix(in oklab, var(--accent) 45%, black);
+  --green-soft: color-mix(in oklab, #22c55e 14%, black);
+  --green-soft-border: color-mix(in oklab, #22c55e 40%, black);
+  --yellow-soft: color-mix(in oklab, #f59e0b 12%, black);
+  --yellow-soft-border: color-mix(in oklab, #f59e0b 38%, black);
+  --red-soft: color-mix(in oklab, #ef4444 14%, black);
+  --red-soft-border: color-mix(in oklab, #ef4444 42%, black);
+  --cyan-soft: color-mix(in oklab, #06b6d4 14%, black);
+  --purple-soft: color-mix(in oklab, #8b5cf6 14%, black);
+  --pink-soft: color-mix(in oklab, #ec4899 14%, black);
+}
+
+/* Blue family */
+html.dark .bg-blue-50, html.dark .bg-blue-100, html.dark .bg-blue-200,
+html.dark .bg-sky-50, html.dark .bg-sky-100, html.dark .bg-sky-200,
+html.dark .bg-indigo-50, html.dark .bg-indigo-100, html.dark .bg-indigo-200,
+html.dark .bg-cyan-50, html.dark .bg-cyan-100, html.dark .bg-cyan-200 {
+  background: var(--blue-soft) !important;
+  color: #dfe9ff !important;
+  border: 1px solid var(--blue-soft-border) !important;
+}
+
+/* Green family */
+html.dark .bg-green-50, html.dark .bg-green-100, html.dark .bg-green-200,
+html.dark .bg-emerald-50, html.dark .bg-emerald-100, html.dark .bg-emerald-200,
+html.dark .bg-teal-50, html.dark .bg-teal-100, html.dark .bg-teal-200 {
+  background: var(--green-soft) !important;
+  color: #e3ffe9 !important;
+  border: 1px solid var(--green-soft-border) !important;
+}
+
+/* Yellow/Amber/Orange family */
+html.dark .bg-yellow-50, html.dark .bg-yellow-100, html.dark .bg-yellow-200,
+html.dark .bg-amber-50,  html.dark .bg-amber-100,  html.dark .bg-amber-200,
+html.dark .bg-orange-50, html.dark .bg-orange-100, html.dark .bg-orange-200 {
+  background: var(--yellow-soft) !important;
+  color: #fff4cf !important;
+  border: 1px solid var(--yellow-soft-border) !important;
+}
+
+/* Red/Rose family */
+html.dark .bg-red-50, html.dark .bg-red-100, html.dark .bg-red-200,
+html.dark .bg-rose-50, html.dark .bg-rose-100, html.dark .bg-rose-200 {
+  background: var(--red-soft) !important;
+  color: #ffe1e1 !important;
+  border: 1px solid var(--red-soft-border) !important;
+}
+
+/* Purple/Pink accent pastels */
+html.dark .bg-purple-50, html.dark .bg-purple-100, html.dark .bg-purple-200 {
+  background: var(--purple-soft) !important; color:#efe7ff !important; border:1px solid color-mix(in oklab, #8b5cf6 40%, black) !important;
+}
+html.dark .bg-pink-50, html.dark .bg-pink-100, html.dark .bg-pink-200 {
+  background: var(--pink-soft) !important; color:#ffe0f0 !important; border:1px solid color-mix(in oklab, #ec4899 40%, black) !important;
+}
+
+/* Greys that sneak through */
+html.dark .bg-gray-50, html.dark .bg-gray-100, html.dark .bg-gray-200,
+html.dark .bg-slate-50, html.dark .bg-slate-100, html.dark .bg-slate-200,
+html.dark .bg-neutral-50, html.dark .bg-neutral-100, html.dark .bg-neutral-200 {
+  background: var(--elev-1) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* 3) Common empty-state + notice patterns */
+html.dark .alert, 
+html.dark .callout, 
+html.dark .empty-state,
+html.dark .notice {
+  background: var(--elev-1) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* 4) Date pickers (react-day-picker / react-datepicker) */
+html.dark .rdp, 
+html.dark .react-datepicker {
+  background: var(--elev-1) !important; color: var(--text) !important; border:1px solid var(--border) !important;
+}
+html.dark .rdp-months, html.dark .react-datepicker__header { background: var(--surface) !important; border-color: var(--border) !important; }
+html.dark .rdp-day_selected, 
+html.dark .react-datepicker__day--selected, 
+html.dark .react-datepicker__day--keyboard-selected {
+  background: var(--accent) !important; color: white !important;
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+/* NOTE: These utility classes have been replaced by shadcn/ui components.
+   Keeping the definitions below commented out for legacy reference.
+   New components use Tailwind utilities directly in JSX/TSX files.
+
+.nav-link {
+  rounded-xl border border-[var(--border)] bg-[var(--elev1)] px-3 py-2 text-sm hover:bg-[var(--elev2)] transition;
+}
+
+.btn {
+  inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--elev1)] px-3 py-2 text-sm hover:bg-[var(--elev2)] transition;
+}
+
+.btn-primary {
+  inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm text-white transition;
+  background: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 55%, black);
+}
+
+.btn-primary:hover {
+  background: color-mix(in oklab, var(--accent) 85%, black);
+}
+
+.btn-outline {
+  bg-transparent text-[color:var(--text)] hover:bg-[var(--elev2)];
+}
+
+.badge {
+  inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--elev2)] px-2 py-0.5 text-xs;
+}
+
+input, 
+select, 
+textarea {
+  rounded-lg border border-[var(--border)] bg-[var(--input)] text-[color:var(--text)] placeholder-[color:var(--subtext)] focus:ring-2 focus:ring-[var(--ring)] focus:border-[var(--ring)];
+}
+*/
+
+/* ==================== FINAL CATCH-ALL OVERRIDES ==================== */
+/* Kill lingering pastel/gray utility backgrounds in dark */
+html.dark .prose,
+html.dark .prose * {
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-links: hsl(var(--foreground));
+}
+
+/* Comprehensive gray/neutral backgrounds */
+html.dark .bg-gray-50, html.dark .bg-gray-100, html.dark .bg-gray-200,
+html.dark .bg-slate-50, html.dark .bg-slate-100, html.dark .bg-slate-200,
+html.dark .bg-neutral-50, html.dark .bg-neutral-100, html.dark .bg-neutral-200,
+html.dark .bg-zinc-50, html.dark .bg-zinc-100, html.dark .bg-zinc-200 {
+  background: var(--elev-1) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Common blue info shades that sometimes appear in custom CSS */
+html.dark [class*="bg-blue-50"], 
+html.dark [class*="bg-blue-100"], 
+html.dark [class*="bg-blue-200"] {
+  background: color-mix(in oklab, var(--accent) 12%, black) !important;
+  color: #dfe9ff !important;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, black) !important;
+}
+
+/* Ensure light text colors are replaced */
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: var(--subtext) !important;
+}
+
+html.dark .text-gray-400,
+html.dark .text-slate-400 {
+  color: color-mix(in oklab, var(--subtext) 70%, var(--bg)) !important;
+}

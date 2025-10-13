@@ -16,6 +16,13 @@ export type Email = {
   role?: string
   source?: string
   application_id?: number | null
+  // ML-powered fields (Phase 35)
+  category?: string
+  expires_at?: string | null
+  event_start_at?: string | null
+  event_end_at?: string | null
+  interests?: string[]
+  confidence?: number
 }
 
 export async function fetchEmails(): Promise<Email[]> {
@@ -36,11 +43,40 @@ export type SearchHit = {
   received_at: string
   score: number
   highlight?: { subject?: string[]; body_text?: string[] }
+  // Highlight fields for easy access
+  subject_highlight?: string
+  body_highlight?: string
   // Reply metrics
   first_user_reply_at?: string
   user_reply_count?: number
   replied?: boolean
   time_to_response_hours?: number | null
+  // ML-powered fields (Phase 35)
+  category?: string
+  expires_at?: string | null
+  event_start_at?: string | null
+  event_end_at?: string | null
+  interests?: string[]
+  confidence?: number
+}
+
+export type SearchParams = {
+  q: string
+  size?: number
+  limit?: number
+  labelFilter?: string
+  scale?: string
+  labels?: string[]
+  dateFrom?: string
+  dateTo?: string
+  replied?: boolean
+  sort?: string
+  categories?: string[]
+  hideExpired?: boolean
+  // Security filters
+  risk_min?: number     // 0–100
+  risk_max?: number     // 0–100
+  quarantined?: boolean // true / false
 }
 
 export async function searchEmails(
@@ -52,7 +88,12 @@ export async function searchEmails(
   dateFrom?: string,
   dateTo?: string,
   replied?: boolean,
-  sort?: string
+  sort?: string,
+  categories?: string[],
+  hideExpired?: boolean,
+  risk_min?: number,
+  risk_max?: number,
+  quarantined?: boolean
 ): Promise<SearchHit[]> {
   let url = `/api/search/?q=${encodeURIComponent(query)}&limit=${limit}`
   if (labelFilter) {
@@ -78,8 +119,59 @@ export async function searchEmails(
   if (sort && sort !== 'relevance') {
     url += `&sort=${encodeURIComponent(sort)}`
   }
+  if (categories && categories.length > 0) {
+    categories.forEach(c => {
+      url += `&categories=${encodeURIComponent(c)}`
+    })
+  }
+  if (hideExpired !== undefined) {
+    url += `&hide_expired=${hideExpired}`
+  }
+  // Security filters
+  if (typeof risk_min === 'number') {
+    url += `&risk_min=${risk_min}`
+  }
+  if (typeof risk_max === 'number') {
+    url += `&risk_max=${risk_max}`
+  }
+  if (typeof quarantined === 'boolean') {
+    url += `&quarantined=${quarantined}`
+  }
   const r = await fetch(url)
   if (!r.ok) throw new Error('Search failed')
+  const data = await r.json()
+  return data.hits as SearchHit[]
+}
+
+// New search function with params object
+export async function searchEmailsWithParams(params: SearchParams): Promise<SearchHit[]> {
+  const { q, size, limit, risk_min, risk_max, quarantined } = params
+  const sp = new URLSearchParams({ q })
+  
+  const actualLimit = size ?? limit ?? 10
+  sp.set('limit', String(actualLimit))
+  
+  if (params.labelFilter) sp.set('label_filter', params.labelFilter)
+  if (params.scale) sp.set('scale', params.scale)
+  if (params.labels && params.labels.length > 0) {
+    params.labels.forEach(l => sp.append('labels', l))
+  }
+  if (params.dateFrom) sp.set('date_from', params.dateFrom)
+  if (params.dateTo) sp.set('date_to', params.dateTo)
+  if (params.replied !== undefined) sp.set('replied', String(params.replied))
+  if (params.sort && params.sort !== 'relevance') sp.set('sort', params.sort)
+  if (params.categories && params.categories.length > 0) {
+    params.categories.forEach(c => sp.append('categories', c))
+  }
+  if (params.hideExpired !== undefined) sp.set('hide_expired', String(params.hideExpired))
+  
+  // Security filters
+  if (typeof risk_min === 'number') sp.set('risk_min', String(risk_min))
+  if (typeof risk_max === 'number') sp.set('risk_max', String(risk_max))
+  if (typeof quarantined === 'boolean') sp.set('quarantined', String(quarantined))
+  
+  const r = await fetch(`/api/search/?${sp.toString()}`, { credentials: 'include' })
+  if (!r.ok) throw new Error(`Search failed (${r.status})`)
   const data = await r.json()
   return data.hits as SearchHit[]
 }
@@ -156,6 +248,35 @@ export async function backfillGmail(days = 60, userEmail?: string): Promise<Back
   if (!r.ok) throw new Error('Backfill failed')
   return r.json()
 }
+
+// Phase 2: ML Labeling and Profile APIs
+export type LabelRebuildResponse = {
+  updated: number
+  categories: Record<string, number>
+}
+
+export type ProfileRebuildResponse = {
+  user_email: string
+  emails_processed: number
+  senders: number
+  categories: number
+  interests: number
+}
+
+async function post(url: string, init: RequestInit = {}) {
+  const r = await fetch(url, { method: 'POST', ...init })
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
+  return r.json().catch(() => ({}))
+}
+
+export const sync7d = () => post('/api/gmail/backfill?days=7')
+export const sync60d = () => post('/api/gmail/backfill?days=60')
+
+export const relabel = (limit = 2000): Promise<LabelRebuildResponse> => 
+  post(`/api/ml/label/rebuild?limit=${limit}`)
+
+export const rebuildProfile = (userEmail: string): Promise<ProfileRebuildResponse> =>
+  post(`/profile/rebuild?user_email=${encodeURIComponent(userEmail)}`)
 
 export function initiateGmailAuth() {
   window.location.href = '/api/auth/google/login'
@@ -257,6 +378,39 @@ export async function explainEmail(id: string): Promise<ExplainResponse> {
   return r.json()
 }
 
+// Get email by ID (for details panel)
+
+export type EmailDetailResponse = {
+  id: string
+  subject: string
+  from_addr?: string
+  from?: string
+  to_addr?: string
+  to?: string
+  received_at?: string
+  date?: string
+  labels?: string[]
+  gmail_labels?: string[]
+  risk?: "low"|"med"|"high"
+  reason?: string
+  body_html?: string
+  body_text?: string
+  thread_id?: string
+  unsubscribe_url?: string | null
+}
+
+export async function getEmailById(id: string): Promise<EmailDetailResponse> {
+  const r = await fetch(`/api/search/by_id/${encodeURIComponent(id)}`)
+  if (!r.ok) throw new Error(`Failed to fetch email: ${r.status}`)
+  return r.json()
+}
+
+export async function getThread(threadId: string) {
+  const r = await fetch(`/api/threads/${encodeURIComponent(threadId)}?limit=20`);
+  if (!r.ok) throw new Error("Failed to fetch thread");
+  return r.json(); // expect { messages: [{id, from, date, snippet, body_html, body_text}, ...] oldest..newest }
+}
+
 // Quick Actions (dry-run mode)
 
 export type ActionResponse = {
@@ -281,4 +435,50 @@ export const actions = {
   markSafe: (id: string, note?: string) => postAction('mark_safe', id, note),
   markSuspicious: (id: string, note?: string) => postAction('mark_suspicious', id, note),
   unsubscribeDry: (id: string, note?: string) => postAction('unsubscribe_dryrun', id, note),
+}
+
+// ---------- Applications API (Paginated) ----------
+
+export type AppsSort = "updated_at" | "applied_at" | "company" | "status"
+export type AppsOrder = "asc" | "desc"
+
+export interface ListApplicationsParams {
+  limit?: number
+  status?: string | null
+  sort?: AppsSort
+  order?: AppsOrder
+  cursor?: string | null
+}
+
+export interface ApplicationRow {
+  id: string
+  company?: string
+  role?: string
+  status?: string
+  applied_at?: string
+  updated_at?: string
+  source?: string
+}
+
+export interface ListApplicationsResponse {
+  items: ApplicationRow[]
+  next_cursor?: string | null
+  sort: AppsSort
+  order: AppsOrder
+  total?: number | null
+}
+
+export async function listApplicationsPaged(
+  params: ListApplicationsParams = {}
+): Promise<ListApplicationsResponse> {
+  const q = new URLSearchParams()
+  if (params.limit) q.set("limit", String(params.limit))
+  if (params.status) q.set("status", params.status)
+  if (params.sort) q.set("sort", params.sort)
+  if (params.order) q.set("order", params.order)
+  if (params.cursor) q.set("cursor", params.cursor)
+
+  const r = await fetch(`/api/applications?${q.toString()}`)
+  if (!r.ok) throw new Error("Failed to list applications")
+  return r.json()
 }
