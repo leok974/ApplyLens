@@ -4,7 +4,7 @@ Phase 6: Online learner for per-user personalization.
 Learns feature weights from user approve/reject feedback using online gradient descent.
 """
 from sqlalchemy.orm import Session
-from ..models.personalization import UserWeight
+from ..models import UserWeight
 from datetime import datetime
 from typing import List, Dict, Any
 

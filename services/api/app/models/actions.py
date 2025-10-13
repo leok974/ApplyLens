@@ -13,7 +13,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
 
-from .base import Base
+from ..db import Base
 
 
 class ActionType(str, enum.Enum):
