@@ -88,6 +88,10 @@ app.include_router(actions.router, prefix="/api")
 from .routers import chat
 app.include_router(chat.router, prefix="/api")
 
+# Phase 6 - Money Mode (Receipt tracking)
+from .routers import money
+app.include_router(money.router, prefix="/api")
+
 # Email automation system
 try:
     from .routers.mail_tools import router as mail_tools_router

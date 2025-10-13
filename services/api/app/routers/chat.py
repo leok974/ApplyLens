@@ -8,7 +8,7 @@ Provides POST /chat endpoint that:
 4. Returns structured response with answer, actions, and citations
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional, Dict, Any
 from datetime import datetime
@@ -299,6 +299,7 @@ async def chat_stream(
     q: str,
     propose: int = 0,
     remember: int = 0,
+    mode: str = Query(None, description="Special mode: networking|money"),
     es=Depends(get_es),
     user=Depends(get_current_user)
 ):
@@ -309,6 +310,7 @@ async def chat_stream(
     - q: The user query text
     - propose: If 1, file actions to Approvals tray
     - remember: If 1, learn exceptions from the query (e.g., "unless Best Buy")
+    - mode: Optional mode (networking|money) for specialized boosts
     
     Events emitted:
     - intent: {"intent": "clean", "explanation": "..."}
@@ -344,7 +346,8 @@ async def chat_stream(
                 es=es,
                 query=q,
                 filters={},
-                k=50
+                k=50,
+                mode=mode  # Phase 6: Pass mode for specialized boosts
             )
             
             # Route to appropriate tool

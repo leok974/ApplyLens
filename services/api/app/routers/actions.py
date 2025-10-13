@@ -23,8 +23,10 @@ import os
 
 from ..db import get_db
 from ..models import Email, ProposedAction, AuditAction, Policy, ActionType
+from ..models.personalization import PolicyStats
 from ..core.yardstick import evaluate_policy, validate_condition
 from ..core.executors import execute_action
+from ..core.learner import update_user_weights, featureize
 from ..telemetry.metrics import METRICS
 
 router = APIRouter(prefix="/actions", tags=["actions"])
@@ -238,6 +240,49 @@ def save_screenshot(data_url: Optional[str]) -> Optional[str]:
         return None
 
 
+def _touch_policy_stats(
+    db: Session,
+    user_email: str,
+    policy_id: int,
+    fired: int = 0,
+    approved: int = 0,
+    rejected: int = 0
+) -> None:
+    """
+    Update policy statistics for personalization.
+    
+    Increments counters and recomputes precision.
+    
+    Args:
+        db: Database session
+        user_email: User identifier
+        policy_id: Policy ID that fired/was approved/rejected
+        fired: Increment fired counter by this amount
+        approved: Increment approved counter by this amount
+        rejected: Increment rejected counter by this amount
+    """
+    ps = db.query(PolicyStats).filter_by(
+        policy_id=policy_id,
+        user_id=user_email
+    ).one_or_none()
+    
+    if not ps:
+        ps = PolicyStats(policy_id=policy_id, user_id=user_email)
+        db.add(ps)
+    
+    # Increment counters
+    ps.fired += fired
+    ps.approved += approved
+    ps.rejected += rejected
+    
+    # Recompute precision: approved / fired
+    denom = max(1, ps.fired)
+    ps.precision = ps.approved / denom
+    ps.updated_at = datetime.utcnow()
+    
+    db.commit()
+
+
 def get_current_user():
     """
     Get current user (stub - replace with actual auth).
@@ -310,6 +355,10 @@ def propose_actions(
                     # Track metric
                     METRICS["actions_proposed"].labels(policy_name=policy.name).inc()
                     
+                    # Phase 6: Track policy fired
+                    _touch_policy_stats(db, user.email, policy.id, fired=1)
+                    METRICS["policy_fired_total"].labels(policy_id=str(policy.id), user=user.email).inc()
+                    
                     break  # Stop at first matching policy
     
     db.commit()
@@ -377,6 +426,17 @@ def approve_action(
     pa.status = "executed" if success else "failed"
     db.commit()
     
+    # Phase 6: Learn from approve feedback
+    email = db.get(Email, pa.email_id)
+    if email:
+        update_user_weights(db, user.email, email, label=+1)  # +1 for approve
+        METRICS["user_weight_updates"].labels(user=user.email, sign="plus").inc()
+    
+    # Phase 6: Update policy stats
+    if hasattr(pa, 'policy_id') and pa.policy_id:
+        _touch_policy_stats(db, user.email, pa.policy_id, approved=1)
+        METRICS["policy_approved_total"].labels(policy_id=str(pa.policy_id), user=user.email).inc()
+    
     # Track metrics
     if success:
         METRICS["actions_executed"].labels(
@@ -438,6 +498,17 @@ def reject_action(
     )
     db.add(audit)
     db.commit()
+    
+    # Phase 6: Learn from reject feedback
+    email = db.get(Email, pa.email_id)
+    if email:
+        update_user_weights(db, user.email, email, label=-1)  # -1 for reject
+        METRICS["user_weight_updates"].labels(user=user.email, sign="minus").inc()
+    
+    # Phase 6: Update policy stats
+    if hasattr(pa, 'policy_id') and pa.policy_id:
+        _touch_policy_stats(db, user.email, pa.policy_id, rejected=1)
+        METRICS["policy_rejected_total"].labels(policy_id=str(pa.policy_id), user=user.email).inc()
     
     return {"ok": True}
 

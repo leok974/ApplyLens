@@ -15,7 +15,8 @@ def rag_search(
     query: str,
     filters: Optional[Dict[str, Any]] = None,
     k: int = 50,
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None,
+    mode: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Perform hybrid keyword + semantic search over emails.
@@ -96,12 +97,38 @@ def rag_search(
     if user_id:
         must.append({"term": {"user_id": user_id}})
     
+    # Phase 6: ATS boosting - Boost urgent recruiter emails
+    should: List[Dict[str, Any]] = [
+        # High ghosting risk (likely being ghosted)
+        {"range": {"ats.ghosting_risk": {"gte": 0.6}}},
+        # Critical stages (Onsite, Offer)
+        {"terms": {"ats.stage": ["Onsite", "Offer", "Final Round", "Negotiation"]}}
+    ]
+    
+    # Phase 6: Mode-specific boosts
+    if mode == "networking":
+        should.extend([
+            {"term": {"category": "event"}},
+            {"match": {"subject": "meetup"}},
+            {"match": {"subject": "conference"}},
+            {"match": {"subject": "webinar"}}
+        ])
+    elif mode == "money":
+        should.extend([
+            {"match": {"subject": "receipt"}},
+            {"match": {"subject": "invoice"}},
+            {"match": {"subject": "payment"}},
+            {"term": {"category": "finance"}}
+        ])
+    
     # Keyword search
     body: Dict[str, Any] = {
         "size": k,
         "query": {
             "bool": {
-                "must": must if must else [{"match_all": {}}]
+                "must": must if must else [{"match_all": {}}],
+                "should": should,  # Optional boosts
+                "minimum_should_match": 0  # Don't require should clauses
             }
         },
         "sort": [

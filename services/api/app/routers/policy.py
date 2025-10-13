@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from typing import List, Dict, Any
 from app.db import get_db
 from app.models import SecurityPolicy
+from app.models.actions import Policy
+from app.models.personalization import PolicyStats
 from app.schemas import SecurityPoliciesIn, SecurityPoliciesOut
 
 router = APIRouter(prefix="/policy", tags=["policy"])
@@ -62,3 +65,46 @@ def put_security_policy(payload: SecurityPoliciesIn, db: Session = Depends(get_d
     db.commit()
     db.refresh(p)
     return _coerce_out(p)
+
+
+def get_current_user():
+    """Get current user (stub - replace with actual auth)."""
+    return type("User", (), {"email": "user@example.com"})()
+
+
+@router.get("/stats")
+def policy_stats(db: Session = Depends(get_db), user=Depends(get_current_user)) -> List[Dict[str, Any]]:
+    """
+    Get policy performance statistics for the current user.
+    
+    Returns list of policies with their performance metrics:
+    - policy_id: Policy ID
+    - name: Policy name
+    - precision: Ratio of approved to fired proposals
+    - approved: Total approved proposals
+    - rejected: Total rejected proposals
+    - fired: Total times policy proposed an action
+    
+    Sorted by fired count (most active first).
+    """
+    rows = db.query(PolicyStats).filter_by(user_id=user.email).all()
+    
+    out = []
+    for r in rows:
+        pol = db.query(Policy).get(r.policy_id)
+        out.append({
+            "policy_id": r.policy_id,
+            "name": getattr(pol, "name", "Unknown Policy"),
+            "precision": round(r.precision, 3),
+            "approved": r.approved,
+            "rejected": r.rejected,
+            "fired": r.fired,
+            "recall": round(r.recall, 3),
+            "window_days": r.window_days,
+            "updated_at": r.updated_at.isoformat() if r.updated_at else None
+        })
+    
+    # Sort by fired count (most active first)
+    out.sort(key=lambda x: x["fired"], reverse=True)
+    
+    return out
