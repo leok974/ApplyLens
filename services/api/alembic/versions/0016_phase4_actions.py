@@ -6,33 +6,25 @@ Create Date: 2025-10-12
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy.dialects.postgresql import TIMESTAMP, ENUM
 
 revision = "0016_phase4_actions"
 down_revision = "0015_add_security_policies"
 branch_labels = None
 depends_on = None
 
+# Reference the existing actiontype enum (created in 0002b)
+actiontype_enum = ENUM(
+    "label_email", "archive_email", "move_to_folder", "unsubscribe_via_header",
+    "create_calendar_event", "create_task", "block_sender", "quarantine_attachment",
+    name="actiontype",
+    create_type=False  # Don't create, it already exists
+)
+
 
 def upgrade():
-    # Create ActionType enum (idempotent - may already exist from 0002b)
-    op.execute("""
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'actiontype') THEN
-        CREATE TYPE actiontype AS ENUM (
-            'label_email',
-            'archive_email',
-            'move_to_folder',
-            'unsubscribe_via_header',
-            'create_calendar_event',
-            'create_task',
-            'block_sender',
-            'quarantine_attachment'
-        );
-      END IF;
-    END$$;
-    """)
+    # Note: actiontype enum already created in migration 0002b
+    # No need to create it here - just reference the existing type
     
     # Create policies table
     op.create_table(
@@ -42,12 +34,7 @@ def upgrade():
         sa.Column("enabled", sa.Boolean, server_default="true", nullable=False),
         sa.Column("priority", sa.Integer, server_default="100", nullable=False),
         sa.Column("condition", sa.JSON, nullable=False),
-        sa.Column("action", sa.Enum(
-            "label_email", "archive_email", "move_to_folder", "unsubscribe_via_header",
-            "create_calendar_event", "create_task", "block_sender", "quarantine_attachment",
-            name="actiontype",
-            create_type=False  # Don't create the enum, it already exists from 0002b or the IF NOT EXISTS above
-        ), nullable=False),
+        sa.Column("action", actiontype_enum, nullable=False),
         sa.Column("confidence_threshold", sa.Float, server_default="0.7", nullable=False),
         sa.Column("created_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
@@ -58,7 +45,7 @@ def upgrade():
         "proposed_actions",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("email_id", sa.Integer, index=True, nullable=False),
-        sa.Column("action", sa.Enum(name="actiontype", create_type=False), nullable=False),
+        sa.Column("action", actiontype_enum, nullable=False),
         sa.Column("params", sa.JSON, server_default="{}"),
         sa.Column("confidence", sa.Float, nullable=False),
         sa.Column("rationale", sa.JSON, server_default="{}"),
@@ -74,7 +61,7 @@ def upgrade():
         "audit_actions",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("email_id", sa.Integer, index=True, nullable=False),
-        sa.Column("action", sa.Enum(name="actiontype", create_type=False), nullable=False),
+        sa.Column("action", actiontype_enum, nullable=False),
         sa.Column("params", sa.JSON, server_default="{}"),
         sa.Column("actor", sa.String, nullable=False),
         sa.Column("outcome", sa.String, nullable=False),
