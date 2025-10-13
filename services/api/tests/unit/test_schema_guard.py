@@ -10,7 +10,6 @@ from app.utils.schema_guard import (
     require_min_migration,
     require_columns,
     check_column_exists,
-    get_current_migration,
 )
 
 

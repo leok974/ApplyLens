@@ -19,7 +19,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
 from app.models import Base
-from app.db import get_db
 from app.main import app  # FastAPI instance
 
 
@@ -163,13 +162,13 @@ pytest_plugins = []
 
 # Check for optional pytest plugins
 try:
-    import pytest_env
+    import pytest_env  # noqa: F401
     pytest_plugins.append('pytest_env')
 except ImportError:
     pass
 
 try:
-    import pytest_asyncio
+    import pytest_asyncio  # noqa: F401
     pytest_plugins.append('pytest_asyncio')
 except ImportError:
     pass

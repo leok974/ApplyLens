@@ -11,8 +11,8 @@ from pathlib import Path
 scripts_dir = Path(__file__).parent.parent.parent / "scripts"
 sys.path.insert(0, str(scripts_dir))
 
-import emit_backfill_health as E
-import validate_backfill as V
+import emit_backfill_health as E  # noqa: E402
+import validate_backfill as V  # noqa: E402
 
 
 class FakeES:

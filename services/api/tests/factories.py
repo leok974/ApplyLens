@@ -20,7 +20,6 @@ Usage:
 import factory
 from factory import fuzzy
 from datetime import datetime, timedelta
-from typing import Optional
 
 from app.models import Email, Policy, ActionType
 from app.models.personalization import UserWeight

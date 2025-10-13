@@ -3,7 +3,6 @@ Test policy CRUD endpoints
 
 Tests the GET and PUT /api/policy/security endpoints for security policies.
 """
-import pytest
 from fastapi.testclient import TestClient
 
 

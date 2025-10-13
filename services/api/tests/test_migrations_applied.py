@@ -5,10 +5,8 @@ This test fails fast if Alembic migrations haven't been applied,
 preventing cryptic errors later in the test suite.
 """
 
-import pytest
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-from alembic import command
 from sqlalchemy import inspect, text
 
 
