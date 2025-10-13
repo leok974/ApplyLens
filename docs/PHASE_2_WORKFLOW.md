@@ -27,7 +27,7 @@ curl "http://localhost:8003/labels/stats" | jq
 
 # 3. View profile
 curl "http://localhost:8003/profile/summary?days=60" | jq
-```
+```text
 
 **Expected Results**:
 
@@ -97,7 +97,7 @@ curl "http://localhost:8003/labels/stats" | jq
 
 # 6. View profile
 curl "http://localhost:8003/profile/summary?days=60" | jq
-```
+```text
 
 **Expected Results**:
 
@@ -118,7 +118,7 @@ python export_weak_labels.py \
     --limit 40000 \
     --limit-per-cat 8000 \
     --out /tmp/weak_labels.jsonl
-```
+```text
 
 ### All Data (No Time Filter)
 
@@ -126,7 +126,7 @@ python export_weak_labels.py \
 python export_weak_labels.py \
     --days 0 \
     --out /tmp/all_labels.jsonl
-```
+```text
 
 ### Include Unlabeled (for "other" category)
 
@@ -135,7 +135,7 @@ python export_weak_labels.py \
     --days 60 \
     --include-unlabeled \
     --out /tmp/with_other.jsonl
-```
+```text
 
 ### Small Test Export
 
@@ -145,7 +145,7 @@ python export_weak_labels.py \
     --limit 5000 \
     --limit-per-cat 1000 \
     --out /tmp/test_labels.jsonl
-```
+```text
 
 ### Custom Elasticsearch Connection
 
@@ -155,7 +155,7 @@ ES_EMAIL_INDEX=emails_v1-000001 \
 python export_weak_labels.py \
     --days 60 \
     --out /tmp/weak_labels.jsonl
-```
+```text
 
 ---
 
@@ -165,7 +165,7 @@ python export_weak_labels.py \
 
 ```bash
 curl "http://localhost:8003/profile/summary?days=60" | jq
-```
+```text
 
 **Response**:
 
@@ -185,7 +185,7 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
     {"sender_domain": "example.com", "count": 42}
   ]
 }
-```
+```text
 
 ### Senders by Category
 
@@ -198,13 +198,13 @@ curl "http://localhost:8003/profile/senders?category=newsletter&days=60" | jq
 
 # Promo senders only
 curl "http://localhost:8003/profile/senders?category=promo&days=60" | jq
-```
+```text
 
 ### Category Details
 
 ```bash
 curl "http://localhost:8003/profile/categories/newsletter?days=30" | jq
-```
+```text
 
 **Response**:
 
@@ -225,7 +225,7 @@ curl "http://localhost:8003/profile/categories/newsletter?days=30" | jq
     }
   ]
 }
-```
+```text
 
 ### Time Series
 
@@ -238,7 +238,7 @@ curl "http://localhost:8003/profile/time-series?days=7&interval=1h" | jq
 
 # Weekly for last 90 days
 curl "http://localhost:8003/profile/time-series?days=90&interval=1w" | jq
-```
+```text
 
 ---
 
@@ -253,7 +253,7 @@ curl "http://localhost:9200/emails_v1-000001/_count"
 # If 404, run Gmail backfill first
 cd analytics/ingest
 python gmail_backfill_to_es_bq.py
-```
+```text
 
 ### Training: "No valid training examples"
 
@@ -263,7 +263,7 @@ head -n 5 /tmp/weak_labels.jsonl | jq
 
 # Verify weak_label field exists
 jq -r '.weak_label' /tmp/weak_labels.jsonl | sort | uniq -c
-```
+```text
 
 ### Labels: "Model not found"
 
@@ -274,7 +274,7 @@ ls -lh services/api/app/labeling/label_model.joblib
 # Set environment variable
 export LABEL_MODEL_PATH=/app/app/labeling/label_model.joblib
 docker compose restart api
-```
+```text
 
 ### API: "404 Not Found on ES"
 
@@ -289,7 +289,7 @@ curl "http://localhost:9200/_cat/indices/emails*"
 curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
   -H 'Content-Type: application/json' \
   --data-binary @infra/elasticsearch/emails_v1.template.json
-```
+```text
 
 ---
 

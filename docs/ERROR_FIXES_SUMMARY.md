@@ -11,11 +11,11 @@
 
 **Problem**: TypeScript couldn't find Node.js types for Playwright test files
 
-```
+```text
 Cannot find name 'process'. Do you need to install type definitions for node?
 Cannot find module 'node:url' or its corresponding type declarations.
 Cannot find namespace 'NodeJS'.
-```
+```text
 
 **Solution**: Updated `tsconfig.node.json` to include Playwright files and Node types
 
@@ -28,7 +28,7 @@ Cannot find namespace 'NodeJS'.
   },
   "include": ["vite.config.ts", "playwright.config.ts", "tests/**/*"]  // Added test files
 }
-```
+```text
 
 **Impact**:
 
@@ -43,9 +43,9 @@ Cannot find namespace 'NodeJS'.
 
 **Problem**: `reducedMotion` property doesn't exist in Playwright config
 
-```
+```text
 'reducedMotion' does not exist in type 'UseOptions'
-```
+```text
 
 **Solution**: Removed unsupported `reducedMotion` option
 
@@ -70,7 +70,7 @@ Cannot find namespace 'NodeJS'.
     colorScheme: 'dark',  // ✅ Valid option
   },
 }
-```
+```text
 
 **Impact**:
 
@@ -87,7 +87,7 @@ Cannot find namespace 'NodeJS'.
 
 ```css
 Unknown at rule @tailwind
-```
+```text
 
 **Status**: ⚠️ Can be ignored
 
@@ -106,7 +106,7 @@ Unknown at rule @tailwind
 ```python
 Import "elasticsearch" could not be resolved
 Import "google_auth_oauthlib.flow" could not be resolved
-```
+```text
 
 **Status**: ⚠️ Expected behavior
 
@@ -121,7 +121,7 @@ cd services/api
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
-```
+```text
 
 ---
 
@@ -132,7 +132,7 @@ pip install -r requirements.txt
 ```typescript
 Cannot find name 'describe'
 Cannot find name 'expect'
-```
+```text
 
 **Status**: ⚠️ Not in current scope
 
@@ -157,7 +157,7 @@ npm run test:e2e
 # Backend (in Docker)
 cd ../../infra
 docker compose exec api python -c "from app.routers.search import LABEL_WEIGHTS; print(LABEL_WEIGHTS)"
-```
+```text
 
 ### Expected Results
 

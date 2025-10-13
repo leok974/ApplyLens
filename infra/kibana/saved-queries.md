@@ -25,7 +25,7 @@ FROM emails_v1-*
 | STATS count = COUNT(*) BY sender_domain, category
 | SORT count DESC
 | LIMIT 25
-```
+```text
 
 **Usage**:
 
@@ -54,7 +54,7 @@ FROM emails_v1-*
 | STATS count = COUNT(*) BY sender_domain
 | SORT count DESC
 | LIMIT 25
-```
+```text
 
 **Usage**:
 
@@ -85,7 +85,7 @@ FROM emails_v1-*
 | EVAL days_active = (last_seen - first_seen) / 86400000
 | SORT count DESC
 | LIMIT 50
-```
+```text
 
 **Usage**:
 
@@ -109,7 +109,7 @@ FROM emails_v1-*
   BY sender_domain, list_unsubscribe
 | SORT count DESC
 | LIMIT 100
-```
+```text
 
 **Usage**:
 
@@ -136,7 +136,7 @@ FROM emails_v1-*
     ELSE "unknown" END
 | SORT count DESC
 | LIMIT 50
-```
+```text
 
 **Usage**:
 
@@ -158,7 +158,7 @@ FROM emails_v1-*
 | STATS count = COUNT(*) BY labels
 | SORT count DESC
 | LIMIT 20
-```
+```text
 
 **Usage**:
 
@@ -181,7 +181,7 @@ FROM emails_v1-*
        day_of_week = DATE_EXTRACT("dow", received_at)
 | STATS count = COUNT(*) BY hour_of_day, day_of_week
 | SORT count DESC
-```
+```text
 
 **Usage**:
 
@@ -210,7 +210,7 @@ FROM emails_v1-*
         example_subjects = VALUES(subject, 5)
   BY label_heuristics
 | SORT count DESC
-```
+```text
 
 **Usage**:
 
@@ -233,7 +233,7 @@ FROM emails_v1-*
 | STATS count = COUNT(*) BY urls
 | SORT count DESC
 | LIMIT 50
-```
+```text
 
 **Usage**:
 
@@ -262,7 +262,7 @@ FROM emails_v1-*
   BY sender_domain, subject
 | SORT earliest_expiry ASC
 | LIMIT 25
-```
+```text
 
 **Implementation Steps**:
 
@@ -277,7 +277,9 @@ FROM emails_v1-*
 1. **Navigate to Discover**
 
    ```
+
    Kibana → Analytics → Discover
+
    ```
 
 2. **Switch to ESQL Mode**
@@ -317,7 +319,7 @@ curl -X POST "http://localhost:5601/api/saved_objects/_export" \
     "type": "search",
     "includeReferencesDeep": true
   }' > infra/kibana/exports/saved_searches.ndjson
-```
+```text
 
 ### Import Saved Queries
 
@@ -327,7 +329,7 @@ To import on a new Kibana instance:
 curl -X POST "http://localhost:5601/api/saved_objects/_import" \
   -H "kbn-xsrf: true" \
   --form file=@infra/kibana/exports/saved_searches.ndjson
-```
+```text
 
 ---
 

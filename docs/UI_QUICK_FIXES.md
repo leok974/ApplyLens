@@ -17,7 +17,7 @@ Added future flags to silence React Router deprecation warnings:
     v7_relativeSplatPath: true,
   }}
 >
-```
+```text
 
 This opts into React Router v7 behavior now, preventing console warnings.
 
@@ -36,7 +36,7 @@ Added to HTML:
 
 ```html
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-```
+```text
 
 This fixes the 404 error for favicon.ico in the browser console.
 
@@ -51,7 +51,7 @@ Created utility functions to safely format dates and avoid showing "1969/1970" f
 ```typescript
 export function safeFormatDate(iso?: string | null): string | null
 export function relativeTime(iso?: string | null): string | null
-```
+```text
 
 Features:
 
@@ -75,7 +75,7 @@ After restarting the web container:
 ```bash
 cd infra
 docker compose restart web
-```
+```text
 
 Expected results:
 
@@ -99,7 +99,7 @@ Open <http://localhost:5175/> and verify:
 
 ## Files Changed
 
-```
+```text
 apps/web/
 ├── index.html                           # Added favicon link
 ├── src/
@@ -113,7 +113,7 @@ apps/web/
 │       └── Search.tsx                   # Use safeFormatDate()
 └── public/
     └── favicon.svg                      # NEW: SVG favicon
-```
+```text
 
 ---
 

@@ -4,9 +4,9 @@
 
 ## Endpoint Specification
 
-```
+```text
 GET /api/threads/:threadId
-```
+```text
 
 ### Query Parameters
 
@@ -47,7 +47,7 @@ GET /api/threads/:threadId
     }
   ]
 }
-```
+```text
 
 ## Implementation Options
 
@@ -95,7 +95,7 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
     ]
     
     return {"messages": messages}
-```
+```text
 
 ### Option 2: Database Query (Alternative)
 
@@ -137,7 +137,7 @@ async def get_thread(
     ]
     
     return {"messages": messages}
-```
+```text
 
 ### Option 3: Gmail API (Real-time)
 
@@ -185,7 +185,7 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
         })
     
     return {"messages": messages}
-```
+```text
 
 ## Error Handling
 
@@ -204,7 +204,7 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch thread: {str(e)}")
-```
+```text
 
 ## Performance Considerations
 
@@ -263,7 +263,7 @@ curl http://localhost:8000/api/threads/thread_abc123?limit=10
     }
   ]
 }
-```
+```text
 
 ### Test with Python
 
@@ -272,7 +272,7 @@ import requests
 
 response = requests.get("http://localhost:8000/api/threads/thread_abc123")
 print(response.json())
-```
+```text
 
 ## Integration Points
 
@@ -288,7 +288,7 @@ class Email(Base):
     thread_id = Column(String, index=True)  # <-- Add index for performance
     from_addr = Column(String)
     # ... other fields
-```
+```text
 
 ### 2. Add to Router
 
@@ -297,7 +297,7 @@ class Email(Base):
 from .threads import router as threads_router
 
 app.include_router(threads_router, prefix="/api")
-```
+```text
 
 ### 3. Update Elasticsearch Index
 
@@ -313,7 +313,7 @@ Ensure `thread_id` is indexed:
     }
   }
 }
-```
+```text
 
 ## Migration Path
 

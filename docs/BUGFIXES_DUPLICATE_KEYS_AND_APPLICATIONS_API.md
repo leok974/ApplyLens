@@ -32,7 +32,7 @@ React console warning: **"Two children with the same key, null"**
     <div key={h.id}>...</div>
   )
 })}
-```
+```text
 
 **After**:
 
@@ -46,7 +46,7 @@ React console warning: **"Two children with the same key, null"**
     <div key={safeKey}>...</div>
   )
 })}
-```
+```text
 
 **Why this works**:
 
@@ -62,7 +62,7 @@ React console warning: **"Two children with the same key, null"**
 {sugs.map((s, i) => (
   <div key={i}>...</div>
 ))}
-```
+```text
 
 **After**:
 
@@ -70,7 +70,7 @@ React console warning: **"Two children with the same key, null"**
 {sugs.map((s: string, i: number) => (
   <div key={`sug-${i}-${s}`}>...</div>
 ))}
-```
+```text
 
 **Why this works**:
 
@@ -86,7 +86,7 @@ React console warning: **"Two children with the same key, null"**
 {dym.map((d, i) => (
   <button key={i}>...</button>
 ))}
-```
+```text
 
 **After**:
 
@@ -94,7 +94,7 @@ React console warning: **"Two children with the same key, null"**
 {dym.map((d: string, i: number) => (
   <button key={`dym-${i}-${d}`}>...</button>
 ))}
-```
+```text
 
 #### D. EmailLabels Component
 
@@ -104,7 +104,7 @@ React console warning: **"Two children with the same key, null"**
 {ordered.map((l: string) => (
   <span key={l}>...</span>
 ))}
-```
+```text
 
 **After**:
 
@@ -112,7 +112,7 @@ React console warning: **"Two children with the same key, null"**
 {ordered.map((l: string, idx: number) => (
   <span key={`${l}-${idx}`}>...</span>
 ))}
-```
+```text
 
 **Why this matters**:
 
@@ -150,13 +150,13 @@ React console warning: **"Two children with the same key, null"**
 
 ```python
 from .routers import emails, search, suggest
-```
+```text
 
 **After**:
 
 ```python
 from .routers import emails, search, suggest, applications
-```
+```text
 
 #### Step 2: Include the Router
 
@@ -168,7 +168,7 @@ app.include_router(emails.router)
 app.include_router(search.router)
 app.include_router(suggest.router)
 app.include_router(auth_google.router)
-```
+```text
 
 **After**:
 
@@ -179,7 +179,7 @@ app.include_router(search.router)
 app.include_router(suggest.router)
 app.include_router(applications.router, prefix="/api")
 app.include_router(auth_google.router)
-```
+```text
 
 **Note**: Added `prefix="/api"` to match existing router pattern
 
@@ -239,7 +239,7 @@ const fetchRows = async () => {
     setLoading(false)
   }
 }
-```
+```text
 
 **After**:
 
@@ -262,7 +262,7 @@ const fetchRows = async () => {
     setLoading(false)
   }
 }
-```
+```text
 
 **Improvements**:
 
@@ -343,7 +343,7 @@ const fetchRows = async () => {
 
 ```bash
 docker start infra-api-1
-```
+```text
 
 ### Test 4: Autocomplete Keys
 
@@ -367,7 +367,7 @@ docker start infra-api-1
 ```bash
 cd D:\ApplyLens\infra
 docker compose up -d --build api web
-```
+```text
 
 **Build Time**: 11.5 seconds  
 **Status**: ✅ Successful
@@ -381,16 +381,16 @@ docker compose up -d --build api web
 
 ```bash
 docker ps --filter "name=infra-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-```
+```text
 
 **Expected Output**:
 
-```
+```text
 NAMES                 STATUS                    PORTS
 infra-web-1           Up X seconds              0.0.0.0:5175->5175/tcp
 infra-api-1           Up X seconds              0.0.0.0:8003->8003/tcp
 ...
-```
+```text
 
 ---
 
@@ -403,7 +403,7 @@ infra-api-1           Up X seconds              0.0.0.0:8003->8003/tcp
 ```tsx
 const rawId = doc?.id ?? doc?._id ?? doc?._source?.id ?? null;
 const safeKey = rawId ? String(rawId) : `row-${index}`;
-```
+```text
 
 **Benefits**:
 
@@ -419,7 +419,7 @@ const safeKey = rawId ? String(rawId) : `row-${index}`;
 {items.map((item, idx) => (
   <div key={`${item.id}-${idx}`}>
 ))}
-```
+```text
 
 **When to use**:
 
@@ -434,7 +434,7 @@ const safeKey = rawId ? String(rawId) : `row-${index}`;
 ```tsx
 const data = await fetchData()
 setState(Array.isArray(data) ? data : [])
-```
+```text
 
 **Benefits**:
 
@@ -455,7 +455,7 @@ try {
   setState([])  // Safe default
   showUserFeedback('Something went wrong')
 }
-```
+```text
 
 **Benefits**:
 
@@ -481,7 +481,7 @@ If issues arise, revert with:
 git revert <commit-hash>
 cd D:\ApplyLens\infra
 docker compose up -d --build api web
-```
+```text
 
 **Or**: Restore from previous container images
 
@@ -499,7 +499,7 @@ export function safeKey(obj: any, index: number, prefix = 'item'): string {
   const rawId = obj?.id ?? obj?._id ?? obj?._source?.id ?? null;
   return rawId ? String(rawId) : `${prefix}-${index}`;
 }
-```
+```text
 
 **Usage**:
 
@@ -507,7 +507,7 @@ export function safeKey(obj: any, index: number, prefix = 'item'): string {
 {items.map((item, i) => (
   <div key={safeKey(item, i, 'email')}>
 ))}
-```
+```text
 
 ### 2. API Response Schema Validation
 
@@ -525,7 +525,7 @@ const ApplicationSchema = z.object({
 
 const data = await fetchApplications();
 const validated = z.array(ApplicationSchema).parse(data);
-```
+```text
 
 **Benefits**:
 
@@ -544,7 +544,7 @@ const validated = z.array(ApplicationSchema).parse(data);
     {/* app content */}
   </Router>
 </ErrorBoundary>
-```
+```text
 
 ### 4. API Mocking for Development
 
@@ -560,7 +560,7 @@ export async function listApplications() {
   }
   // real fetch...
 }
-```
+```text
 
 ---
 

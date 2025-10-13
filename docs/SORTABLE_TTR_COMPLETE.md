@@ -35,7 +35,7 @@ def search(
     sort: str = Query("relevance", description="relevance|received_desc|received_asc|ttr_asc|ttr_desc"),  # NEW
     # ... other params
 ):
-```
+```text
 
 #### 2. Implemented Elasticsearch script-based sorting
 
@@ -44,7 +44,7 @@ def search(
 ```python
 if sort in ("received_desc", "received_asc"):
     es_sort = [{"received_at": {"order": "desc" if sort == "received_desc" else "asc"}}]
-```
+```text
 
 **For TTR sorting** (using Painless script):
 
@@ -72,7 +72,7 @@ elif sort in ("ttr_asc", "ttr_desc"):
             }
         }
     }]
-```
+```text
 
 **Key script logic**:
 
@@ -90,7 +90,7 @@ body = {
     **({"sort": es_sort} if es_sort else {}),  # NEW: Add sort if not relevance
     "highlight": { ... }
 }
-```
+```text
 
 #### 4. Fixed score handling for custom sorts
 
@@ -98,7 +98,7 @@ When ES uses custom sort, it returns `_score: null`. Fixed:
 
 ```python
 score=h.get("_score") or 0.0,  # ES returns null for custom sorts
-```
+```text
 
 ---
 
@@ -135,7 +135,7 @@ export function SortControl({
     </label>
   )
 }
-```
+```text
 
 #### 2. Updated Search page
 
@@ -145,13 +145,13 @@ export function SortControl({
 
 ```typescript
 const [sort, setSort] = useState<SortKey>("relevance")
-```
+```text
 
 **Added to API call**:
 
 ```typescript
 const res = await searchEmails(q, 20, undefined, scale, labels, dates.from, dates.to, repliedParam, sort)
-```
+```text
 
 **Added to useEffect dependencies**:
 
@@ -159,7 +159,7 @@ const res = await searchEmails(q, 20, undefined, scale, labels, dates.from, date
 useEffect(() => {
   if (q.trim()) onSearch()
 }, [labels, dates, replied, sort])  // Auto-refresh on sort change
-```
+```text
 
 **Added to UI**:
 
@@ -170,7 +170,7 @@ useEffect(() => {
   </div>
   <SortControl value={sort} onChange={setSort} />
 </div>
-```
+```text
 
 #### 3. Updated API client
 
@@ -190,7 +190,7 @@ export async function searchEmails(
   replied?: boolean,
   sort?: string  // NEW
 ): Promise<SearchHit[]>
-```
+```text
 
 **Added to URL construction**:
 
@@ -198,7 +198,7 @@ export async function searchEmails(
 if (sort && sort !== 'relevance') {
   url += `&sort=${encodeURIComponent(sort)}`
 }
-```
+```text
 
 ---
 
@@ -208,39 +208,39 @@ All 5 sort modes tested successfully:
 
 ### ✅ Test 1: Fastest response (ttr_asc + replied=true)
 
-```
+```text
 Found 3 replied emails sorted by fastest TTR
-```
+```text
 
 ### ✅ Test 2: Slowest / no-reply first (ttr_desc)
 
-```
+```text
 Found 3 emails with slowest TTR or no reply on top
-```
+```text
 
 ### ✅ Test 3: Newest first (received_desc)
 
-```
+```text
 Results:
 1. 2025-10-09T17:20:11
 2. 2025-10-08T17:14:24
 3. 2025-10-08T17:14:21
-```
+```text
 
 ### ✅ Test 4: Oldest first (received_asc)
 
-```
+```text
 Results:
 1. 2025-08-10T10:00:00
 2. 2025-08-11T10:00:00
 3. 2025-08-11T15:28:17
-```
+```text
 
 ### ✅ Test 5: Relevance (default)
 
-```
+```text
 Results sorted by ES score (label boosts + recency decay)
-```
+```text
 
 ---
 
@@ -291,43 +291,43 @@ Results sorted by ES score (label boosts + recency decay)
 
 ### 1. Find Unreplied Emails Needing Follow-up
 
-```
+```text
 Filter: "Not replied"
 Sort: "Slowest / no-reply first"
 → Shows all unreplied emails, oldest first
-```
+```text
 
 ### 2. Analyze Response Times
 
-```
+```text
 Filter: "Replied"
 Sort: "Fastest response"
 → See your quickest responses, identify patterns
-```
+```text
 
 ### 3. Review Chronologically
 
-```
+```text
 Sort: "Oldest"
 → Go through emails in order received
-```
+```text
 
 ### 4. Find Recent Offers
 
-```
+```text
 Query: "offer"
 Filter: Label = "offer"
 Sort: "Newest"
 → Most recent offers at top
-```
+```text
 
 ### 5. Triage Workflow
 
-```
+```text
 Sort: "Slowest / no-reply first"
 → Unreplied emails bubble to top automatically
 → Reply to them, watch them disappear from top
-```
+```text
 
 ---
 
@@ -350,7 +350,7 @@ curl "http://localhost:8003/search?q=application&sort=received_asc&size=3"
 
 # Relevance (default)
 curl "http://localhost:8003/search?q=interview&sort=relevance&size=3"
-```
+```text
 
 ### Python Test Script
 
@@ -358,7 +358,7 @@ Run comprehensive tests:
 
 ```bash
 python test_sort_functionality.py
-```
+```text
 
 ---
 

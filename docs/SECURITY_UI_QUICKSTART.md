@@ -16,7 +16,7 @@ import { RiskBadge } from "@/components/security/RiskBadge";
     <RiskBadge score={email.risk_score} quarantined={email.quarantined} />
   )}
 </div>
-```
+```text
 
 #### 2. Add Security Panel to Email Details
 
@@ -41,7 +41,7 @@ import { SecurityPanel } from "@/components/security/SecurityPanel";
     />
   )}
 </div>
-```
+```text
 
 #### 3. Add Security Settings Page
 
@@ -50,7 +50,7 @@ Already implemented at `/settings/security` route!
 ```typescript
 // Just navigate users to:
 <Link to="/settings/security">Security Settings</Link>
-```
+```text
 
 ---
 
@@ -82,7 +82,7 @@ Your email API responses should include:
     }
   ]
 }
-```
+```text
 
 **Endpoints that should return this:**
 
@@ -117,7 +117,7 @@ def rescan_email(email_id: str, db: Session = Depends(get_db)):
         "quarantined": result.quarantined,
         "flags": result.flags
     }
-```
+```text
 
 #### 3. Security Stats Endpoint (ALREADY IMPLEMENTED ✅)
 
@@ -135,7 +135,7 @@ def get_security_stats(db: Session = Depends(get_db)):
         "average_risk_score": average_risk,
         "high_risk_count": high_risk
     }
-```
+```text
 
 #### 4. Policy Endpoints (TODO - NEEDS IMPLEMENTATION ⚠️)
 
@@ -166,7 +166,7 @@ def get_security_policies(db: Session = Depends(get_db)):
             "threshold": policy.auto_unsubscribe_threshold
         }
     }
-```
+```text
 
 **PUT /api/policy/security**
 
@@ -193,7 +193,7 @@ def save_security_policies(
     # apply_policies_to_existing_emails.delay()
     
     return {"status": "ok"}
-```
+```text
 
 **Create the Pydantic models:**
 
@@ -208,7 +208,7 @@ class SecurityPoliciesInput(BaseModel):
     autoQuarantineHighRisk: bool
     autoArchiveExpiredPromos: bool
     autoUnsubscribeInactive: AutoUnsubscribeConfig
-```
+```text
 
 **Create the database model:**
 
@@ -223,7 +223,7 @@ class SecurityPolicy(Base):
     auto_unsubscribe_enabled = Column(Boolean, default=False)
     auto_unsubscribe_threshold = Column(Integer, default=10)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-```
+```text
 
 ---
 
@@ -234,7 +234,7 @@ class SecurityPolicy(Base):
 ```bash
 cd apps/web
 pnpm exec playwright test tests/security-ui.spec.ts
-```
+```text
 
 ### Manual Testing Checklist
 
@@ -272,7 +272,7 @@ pnpm exec playwright test tests/security-ui.spec.ts
 ```typescript
 // Check in browser console:
 console.log(email.risk_score); // Should be a number
-```
+```text
 
 ### Issue: SecurityPanel not appearing
 
@@ -293,7 +293,7 @@ console.log(email.risk_score); // Should be a number
 ```typescript
 // Check network tab in browser DevTools
 // POST /api/security/rescan/{id} should return 200
-```
+```text
 
 ### Issue: Policy save fails with 404
 
@@ -305,7 +305,7 @@ console.log(email.risk_score); // Should be a number
 
 ## Architecture Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                      Frontend (React)                    │
 ├─────────────────────────────────────────────────────────┤
@@ -359,7 +359,7 @@ console.log(email.risk_score); // Should be a number
          │    * quarantined  │
          │    * flags (JSONB)│
          └───────────────────┘
-```
+```text
 
 ---
 
@@ -376,7 +376,7 @@ import { memo } from 'react';
 export const EmailRow = memo(function EmailRow(props) {
   // ... component code
 });
-```
+```text
 
 ### 2. Lazy Load Evidence Modal
 
@@ -396,7 +396,7 @@ React.useEffect(() => {
     localStorage.setItem('security-policies', JSON.stringify(p));
   });
 }, []);
-```
+```text
 
 ### 4. Debounce Policy Input
 
@@ -407,7 +407,7 @@ const debouncedSave = useDebouncedCallback(
   () => savePolicies(pol),
   1000
 );
-```
+```text
 
 ---
 
@@ -420,7 +420,7 @@ Edit `RiskBadge.tsx`:
 ```typescript
 // Change from 80/40 to 70/30:
 const level = score >= 70 ? "high" : score >= 30 ? "med" : "low";
-```
+```text
 
 ### Add More Policy Options
 
@@ -433,7 +433,7 @@ Edit `PolicyPanel.tsx`:
   <Switch id="autoBlockSuspicious" checked={pol.autoBlockSuspicious}
           onCheckedChange={(v)=>update("autoBlockSuspicious", v)} />
 </div>
-```
+```text
 
 Update types in `security.ts`:
 
@@ -444,7 +444,7 @@ export type SecurityPolicies = {
   autoUnsubscribeInactive: { enabled: boolean; threshold: number };
   autoBlockSuspicious: boolean; // New!
 };
-```
+```text
 
 ### Change Badge Colors
 
@@ -456,7 +456,7 @@ const color =
   level === "high" ? "bg-purple-500/20 text-purple-300 border-purple-600/40" :
   level === "med"  ? "bg-blue-500/20 text-blue-300 border-blue-600/40" :
                      "bg-green-500/20 text-green-300 border-green-600/40";
-```
+```text
 
 ---
 

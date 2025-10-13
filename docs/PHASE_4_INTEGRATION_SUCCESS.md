@@ -47,11 +47,11 @@ Successfully integrated **Phase 4: Agentic Actions & Approval Loop** into the ru
 
 In the header, you should see:
 
-```
+```json
 [Sync 7 days] [Sync 60 days] [✨ Actions] [Theme Toggle]
                                     ↑
                               Click this!
-```
+```text
 
 ### 3. Click the "Actions" Button
 
@@ -69,7 +69,7 @@ To see the tray in action, we need to create some proposed actions. You can:
 # Create test proposals (if you have matching emails)
 $body = @{limit=50} | ConvertTo-Json
 curl -X POST http://localhost:8003/api/actions/propose -H "Content-Type: application/json" -d $body
-```
+```text
 
 **Option B: Insert test data directly**
 
@@ -84,7 +84,7 @@ INSERT INTO proposed_actions (
     1, 'pending', 
     '{}'
 );
-```
+```text
 
 **Option C: Wait for real emails**
 
@@ -122,17 +122,17 @@ Once you have actions in the tray:
 
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "\dt policies; \dt proposed_actions; \dt audit_actions;"
-```
+```text
 
 ### View Policies
 
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, name, enabled, priority, action FROM policies ORDER BY priority;"
-```
+```text
 
 Expected output:
 
-```
+```text
  id |               name                | enabled | priority |         action
 ----+-----------------------------------+---------+----------+------------------------
   2 | High-risk quarantine              | t       |       10 | quarantine_attachment
@@ -140,19 +140,19 @@ Expected output:
   4 | Create event from invitation      | f       |       40 | create_calendar_event
   1 | Promo auto-archive                | t       |       50 | archive_email
   5 | Auto-unsubscribe inactive senders | f       |       60 | unsubscribe_via_header
-```
+```text
 
 ### View Proposed Actions
 
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, email_id, action, status, confidence FROM proposed_actions ORDER BY created_at DESC LIMIT 10;"
-```
+```text
 
 ### View Audit Trail
 
 ```powershell
 docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, email_id, action, outcome, actor, created_at FROM audit_actions ORDER BY created_at DESC LIMIT 10;"
-```
+```text
 
 ## 🔧 API Testing Commands
 
@@ -160,26 +160,26 @@ docker exec -it infra-db-1 psql -U postgres -d applylens -c "SELECT id, email_id
 
 ```powershell
 curl http://localhost:8003/api/actions/policies | ConvertFrom-Json | ConvertTo-Json -Depth 5
-```
+```text
 
 ### List Enabled Policies Only
 
 ```powershell
 curl "http://localhost:8003/api/actions/policies?enabled_only=true" | ConvertFrom-Json | ConvertTo-Json
-```
+```text
 
 ### Get Pending Actions (Tray)
 
 ```powershell
 curl http://localhost:8003/api/actions/tray | ConvertFrom-Json | ConvertTo-Json -Depth 5
-```
+```text
 
 ### Propose Actions
 
 ```powershell
 $body = @{limit=50} | ConvertTo-Json
 curl -X POST http://localhost:8003/api/actions/propose -H "Content-Type: application/json" -d $body | ConvertFrom-Json | ConvertTo-Json
-```
+```text
 
 ### Approve Action (Example)
 
@@ -191,7 +191,7 @@ $actionId = $actions[0].id
 # Approve it
 $body = @{} | ConvertTo-Json
 curl -X POST "http://localhost:8003/api/actions/$actionId/approve" -H "Content-Type: application/json" -d $body
-```
+```text
 
 ### Reject Action (Example)
 
@@ -202,14 +202,14 @@ $actionId = $actions[0].id
 
 # Reject it
 curl -X POST "http://localhost:8003/api/actions/$actionId/reject"
-```
+```text
 
 ### Test Policy Against Emails
 
 ```powershell
 $body = @{limit=20} | ConvertTo-Json
 curl -X POST "http://localhost:8003/api/actions/policies/1/test" -H "Content-Type: application/json" -d $body | ConvertFrom-Json | ConvertTo-Json
-```
+```text
 
 ### Create Custom Policy
 
@@ -226,7 +226,7 @@ $policy = @{
 } | ConvertTo-Json -Depth 5
 
 curl -X POST http://localhost:8003/api/actions/policies -H "Content-Type: application/json" -d $policy
-```
+```text
 
 ## 📈 What's Working
 
@@ -307,7 +307,9 @@ Current `build_rationale()` uses simple heuristics:
 1. **Run Email Sync**
 
    ```
+
    Click "Sync 7 days" button in UI
+
    ```
 
 2. **Run ML Labeling**
@@ -422,8 +424,8 @@ The foundation is solid and the system is production-ready for human-in-the-loop
 
 **Next command to run:**
 
-```
+```text
 Open: http://localhost:5175
 Click: "Actions" button in header
 Enjoy: Your agentic email assistant!
-```
+```text

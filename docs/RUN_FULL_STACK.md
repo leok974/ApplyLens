@@ -9,7 +9,7 @@ Quick reference for starting and managing the complete ApplyLens application.
 ```powershell
 # Start everything
 cd d:/ApplyLens/infra && docker compose up -d && cd ../apps/web && npm run dev
-```
+```text
 
 ---
 
@@ -20,7 +20,7 @@ cd d:/ApplyLens/infra && docker compose up -d && cd ../apps/web && npm run dev
 ```powershell
 cd d:/ApplyLens/infra
 docker compose up -d
-```
+```text
 
 **Services started:**
 
@@ -34,14 +34,14 @@ docker compose up -d
 
 ```powershell
 docker compose ps
-```
+```text
 
 ### 2. Start Frontend
 
 ```powershell
 cd d:/ApplyLens/apps/web
 npm run dev
-```
+```text
 
 **Service started:**
 
@@ -62,7 +62,7 @@ docker compose ps
 
 # Frontend
 Get-Process -Name node -ErrorAction SilentlyContinue
-```
+```text
 
 ### Health Checks
 
@@ -78,7 +78,7 @@ curl http://localhost:9200/_cluster/health
 
 # Frontend
 curl http://localhost:5175
-```
+```text
 
 ---
 
@@ -90,14 +90,14 @@ curl http://localhost:5175
 # Press Ctrl+C in terminal where npm run dev is running
 # Or kill process:
 Get-Process -Name node | Stop-Process -Force
-```
+```text
 
 ### Stop Backend
 
 ```powershell
 cd d:/ApplyLens/infra
 docker compose down
-```
+```text
 
 ### Stop All (Clean Shutdown)
 
@@ -108,7 +108,7 @@ Get-Process -Name node | Stop-Process -Force
 # Then backend
 cd d:/ApplyLens/infra
 docker compose down
-```
+```text
 
 ---
 
@@ -119,14 +119,14 @@ docker compose down
 ```powershell
 cd d:/ApplyLens/infra
 docker compose restart api
-```
+```text
 
 ### Restart All Backend
 
 ```powershell
 cd d:/ApplyLens/infra
 docker compose restart
-```
+```text
 
 ### Restart Frontend
 
@@ -135,7 +135,7 @@ docker compose restart
 # Then restart:
 cd d:/ApplyLens/apps/web
 npm run dev
-```
+```text
 
 ---
 
@@ -153,7 +153,7 @@ docker compose logs -f
 docker compose logs -f api
 docker compose logs -f db
 docker compose logs -f es
-```
+```text
 
 ### Frontend Logs
 
@@ -176,7 +176,7 @@ Get-Process -Id <PID> | Stop-Process -Force
 
 # Then restart
 docker compose restart api
-```
+```text
 
 ### Database Connection Failed
 
@@ -194,7 +194,7 @@ docker compose up -d db
 # Wait 10 seconds, then restart API
 Start-Sleep -Seconds 10
 docker compose restart api
-```
+```text
 
 ### Frontend Proxy Errors
 
@@ -211,7 +211,7 @@ cd d:/ApplyLens/infra
 docker compose up -d api
 
 # Check vite.config.ts proxy settings
-```
+```text
 
 ### Out of Memory (Elasticsearch)
 
@@ -228,7 +228,7 @@ docker compose logs es
 
 # Or disable ES for minimal stack:
 docker compose -f docker-compose.minimal.yml up -d
-```
+```text
 
 ---
 
@@ -264,7 +264,7 @@ docker compose -f docker-compose.minimal.yml up -d
 ```powershell
 cd d:/ApplyLens
 pwsh ./scripts/create-test-policy.ps1
-```
+```text
 
 2. **Open UI:** <http://localhost:5175>
 
@@ -276,14 +276,14 @@ pwsh ./scripts/create-test-policy.ps1
 
 ```powershell
 curl http://localhost:8003/metrics | Select-String -Pattern "actions_"
-```
+```text
 
 ### Run Full Test Suite
 
 ```powershell
 cd d:/ApplyLens
 pwsh ./scripts/test-always-feature.ps1
-```
+```text
 
 ---
 
@@ -302,7 +302,7 @@ npm run dev
 
 # Open browser
 start http://localhost:5175
-```
+```text
 
 ### 2. Code Changes
 
@@ -312,14 +312,14 @@ start http://localhost:5175
 # Changes are auto-reloaded (uvicorn --reload)
 # If not, restart:
 docker compose restart api
-```
+```text
 
 **Frontend changes:**
 
 ```powershell
 # Changes are auto-reloaded (HMR)
 # Already running in terminal
-```
+```text
 
 ### 3. Testing
 
@@ -331,7 +331,7 @@ pytest
 # Frontend tests
 cd d:/ApplyLens/apps/web
 npm test
-```
+```text
 
 ### 4. End of Day
 
@@ -341,7 +341,7 @@ npm test
 # Stop backend (optional, can leave running)
 cd d:/ApplyLens/infra
 docker compose down
-```
+```text
 
 ---
 
@@ -354,14 +354,14 @@ cd d:/ApplyLens/apps/web
 npm run build
 
 # Output: dist/ folder
-```
+```text
 
 ### Run Production Stack
 
 ```powershell
 cd d:/ApplyLens/infra
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
+```text
 
 ### Health Check
 
@@ -372,7 +372,7 @@ docker compose ps
 # Test endpoints
 curl http://localhost:8003/docs
 curl http://localhost:5175
-```
+```text
 
 ---
 
@@ -407,7 +407,7 @@ cd d:/ApplyLens && pwsh ./scripts/create-test-policy.ps1
 
 # Test Phase 4
 cd d:/ApplyLens && pwsh ./scripts/test-always-feature.ps1
-```
+```text
 
 ---
 
@@ -424,7 +424,7 @@ Write-Host "  API Docs:  http://localhost:8003/docs" -ForegroundColor Green
 Write-Host "  Metrics:   http://localhost:8003/metrics" -ForegroundColor Green
 Write-Host "  ES:        http://localhost:9200" -ForegroundColor Green
 Write-Host "  Ollama:    http://localhost:11434" -ForegroundColor Green
-```
+```text
 
 ### Phase 4 Status
 
@@ -435,7 +435,7 @@ $pending = curl -s http://localhost:8003/api/actions/tray | jq '. | length'
 Write-Host "Phase 4:" -ForegroundColor Cyan
 Write-Host "  Policies:  $policies" -ForegroundColor Yellow
 Write-Host "  Pending:   $pending" -ForegroundColor Yellow
-```
+```text
 
 ---
 
@@ -463,7 +463,7 @@ Write-Host "  Pending:   $pending" -ForegroundColor Yellow
 
 ```powershell
 cd d:/ApplyLens/infra && docker compose up -d && cd ../apps/web && npm run dev
-```
+```text
 
 **Access:**
 
@@ -474,6 +474,6 @@ cd d:/ApplyLens/infra && docker compose up -d && cd ../apps/web && npm run dev
 
 ```powershell
 cd d:/ApplyLens && pwsh ./scripts/test-always-feature.ps1
-```
+```text
 
 🎉 **You're all set!**

@@ -53,7 +53,7 @@ function applyTheme(theme: Theme) {
   const isDark = theme === "dark" || (theme === "system" && prefersDark);
   root.classList.toggle("dark", isDark);
 }
-```
+```text
 
 **Key Features:**
 
@@ -83,7 +83,7 @@ export function ModeToggle() {
     </DropdownMenu>
   );
 }
-```
+```text
 
 **User Interactions:**
 
@@ -99,7 +99,7 @@ export function ModeToggle() {
     <App />
   </BrowserRouter>
 </ThemeProvider>
-```
+```text
 
 The ThemeProvider wraps the entire application, ensuring theme context is available everywhere.
 
@@ -109,19 +109,19 @@ The ThemeProvider wraps the entire application, ensuring theme context is availa
 
 ```typescript
 <div className="h-screen w-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-```
+```text
 
 ### Header Bar
 
 ```typescript
 <div className="flex items-center gap-3 px-4 py-3 border-b bg-white dark:bg-slate-900">
-```
+```text
 
 ### Sidebar
 
 ```typescript
 <div className="w-64 border-r bg-white dark:bg-slate-900 p-3 space-y-2">
-```
+```text
 
 ### Automatic Dark Mode (shadcn components)
 
@@ -150,7 +150,7 @@ Defined in `apps/web/src/index.css`:
   --primary: 210 40% 98%;            /* Light indigo */
   /* ... more dark mode colors */
 }
-```
+```text
 
 Tailwind reads these variables:
 
@@ -169,7 +169,7 @@ theme: {
     }
   }
 }
-```
+```text
 
 ## Usage
 
@@ -189,7 +189,7 @@ function MyComponent() {
     </div>
   );
 }
-```
+```text
 
 ### Adding Dark Mode to New Components
 
@@ -199,7 +199,7 @@ function MyComponent() {
   <h1 className="text-indigo-600 dark:text-indigo-400">Title</h1>
   <p className="text-slate-600 dark:text-slate-400">Content</p>
 </div>
-```
+```text
 
 ### Using CSS Variables
 
@@ -209,7 +209,7 @@ function MyComponent() {
   <Button variant="default">Uses --primary</Button>
   <Card className="bg-card text-card-foreground">Uses --card</Card>
 </div>
-```
+```text
 
 ## Testing
 
@@ -306,14 +306,14 @@ function MyComponent() {
 
 ```javascript
 localStorage.getItem("theme") // Should be "light", "dark", or "system"
-```
+```text
 
 **Fix**: Clear localStorage and reload
 
 ```javascript
 localStorage.removeItem("theme");
 location.reload();
-```
+```text
 
 ### Dark mode not applying
 
@@ -321,7 +321,7 @@ location.reload();
 
 ```javascript
 document.documentElement.classList.contains("dark") // Should be true in dark mode
-```
+```text
 
 **Fix**: Verify ThemeProvider is wrapping the app in main.tsx
 
@@ -331,7 +331,7 @@ document.documentElement.classList.contains("dark") // Should be true in dark mo
 
 ```javascript
 window.matchMedia("(prefers-color-scheme: dark)").matches
-```
+```text
 
 **Fix**: Fall back to explicit light/dark mode if system detection fails
 
@@ -348,7 +348,7 @@ window.matchMedia("(prefers-color-scheme: dark)").matches
 
 // ✅ Good - uses CSS variables
 <div className="bg-background">
-```
+```text
 
 ## Performance Considerations
 

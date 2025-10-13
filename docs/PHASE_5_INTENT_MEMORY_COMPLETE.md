@@ -33,7 +33,7 @@ October 12, 2025
   "count_matches": 42,
   "count_actions": 5
 }
-```
+```text
 
 **Storage**:
 
@@ -67,7 +67,7 @@ def explain_intent_tokens(text: str) -> list[str]:
     - "Unless Best Buy" → ["unless best buy"]
     - "Flag suspicious domains" → ["suspicious", "domains"]
     """
-```
+```text
 
 **Frontend**:
 
@@ -78,14 +78,14 @@ def explain_intent_tokens(text: str) -> list[str]:
 
 **Example**:
 
-```
+```text
 Query: "Clean up promos older than a week unless they're from Best Buy"
 
 Intent Tokens:
 ┌─────────┐ ┌──────────────┐ ┌─────────────────────────┐
 │ clean up│ │ before friday│ │ unless best buy         │
 └─────────┘ └──────────────┘ └─────────────────────────┘
-```
+```text
 
 ### 3. Memory of Preferences (Brand Exception Learning)
 
@@ -105,7 +105,7 @@ def extract_unless_brands(text: str) -> list[str]:
     - "unless from Best Buy and Costco" → ["best buy", "costco"]
     - "unless they're from LinkedIn and GitHub" → ["linkedin", "github"]
     """
-```
+```text
 
 **Policy Creation**:
 
@@ -124,7 +124,7 @@ Policy(
         ]
     }
 )
-```
+```text
 
 **How It Works**:
 
@@ -190,17 +190,17 @@ Policy(
 
 **intent_explain**:
 
-```
+```text
 event: intent_explain
 data: {"tokens": ["clean up", "before friday", "unless best buy"]}
-```
+```text
 
 **memory**:
 
-```
+```text
 event: memory
 data: {"kept_brands": ["best buy", "costco"]}
-```
+```text
 
 ### New Query Parameters
 
@@ -225,7 +225,7 @@ data: {"kept_brands": ["best buy", "costco"]}
     "count_actions": 5
   }
 }
-```
+```text
 
 **AuditAction (outcome="proposed")**:
 
@@ -240,7 +240,7 @@ data: {"kept_brands": ["best buy", "costco"]}
     "transcript": {...}  // Same as above
   }
 }
-```
+```text
 
 **Policy (learned exception)**:
 
@@ -258,7 +258,7 @@ data: {"kept_brands": ["best buy", "costco"]}
     ]
   }
 }
-```
+```text
 
 ## User Experience
 
@@ -325,7 +325,7 @@ print(extract_unless_brands('Clean promos unless Best Buy and Costco'))"
 
 # Expected output:
 # ['best buy', 'costco']
-```
+```text
 
 **API Tests** (SSE):
 
@@ -350,7 +350,7 @@ curl -N "http://localhost:8003/api/chat/stream?q=Clean%20unless%20Best%20Buy&rem
 # event: answer
 # event: memory  ← NEW ({"kept_brands": ["best buy"]})
 # event: done
-```
+```text
 
 ### Frontend Tests
 
@@ -371,7 +371,7 @@ curl -N "http://localhost:8003/api/chat/stream?q=Clean%20unless%20Best%20Buy&rem
 ```powershell
 cd d:\ApplyLens\apps\web
 npx playwright test tests/chat-intent.spec.ts
-```
+```text
 
 ### Database Verification
 
@@ -387,7 +387,7 @@ ORDER BY created_at DESC
 LIMIT 5;
 
 -- Expected: JSON with "via":"chat" and full transcript
-```
+```text
 
 **Check Learned Policies**:
 
@@ -401,7 +401,7 @@ ORDER BY created_at DESC
 LIMIT 10;
 
 -- Expected: Policies with regex conditions for brands
-```
+```text
 
 ## Integration with Phase 4
 
@@ -433,7 +433,7 @@ FROM audit_actions
 WHERE why->'transcript'->>'via' = 'chat'
   AND why->'transcript'->>'query' LIKE '%promo%'
 ORDER BY created_at DESC;
-```
+```text
 
 ### Memory Learning
 
@@ -452,7 +452,7 @@ ORDER BY created_at DESC;
 
 **View Learned Preferences**:
 
-```
+```text
 GET /api/actions/policies
 
 [
@@ -470,7 +470,7 @@ GET /api/actions/policies
     }
   }
 ]
-```
+```text
 
 ## Performance & Safety
 
@@ -512,7 +512,7 @@ Policy(
     priority=5,  # ← ADJUST THIS
     ...
 )
-```
+```text
 
 **Recommendation**:
 
@@ -540,7 +540,7 @@ params={"label": "kept_by_preference"}
 # Option 3: Star the email
 action=ActionType.label_email,  # Or add star action if available
 params={"star": true}
-```
+```text
 
 ## Troubleshooting
 
@@ -571,13 +571,13 @@ python -c "from app.core.intent import extract_unless_brands; \
 print(extract_unless_brands('YOUR QUERY HERE'))"
 
 # Expected: ['brand1', 'brand2']
-```
+```text
 
 **Verify Policy Created**:
 
 ```sql
 SELECT * FROM policies WHERE name LIKE 'Learned:%' ORDER BY created_at DESC LIMIT 5;
-```
+```text
 
 ### Issue: "Learned policy doesn't prevent archive"
 
@@ -612,7 +612,7 @@ approvals_bulk_insert(rows)
 from ..models import ProposedAction, AuditAction
 db.add(ProposedAction(...))
 db.add(AuditAction(...))
-```
+```text
 
 ## Future Enhancements
 
@@ -623,7 +623,7 @@ Show confidence percentage for intent detection:
 ```tsx
 <div>Intent: clean (92% confident)</div>
 <div>Tokens: clean up, before friday</div>
-```
+```text
 
 ### 2. Token Highlighting
 
@@ -632,7 +632,7 @@ Highlight matched tokens in the user's query:
 ```tsx
 "<span class='highlight'>Clean up</span> promos 
 <span class='highlight'>before Friday</span>"
-```
+```text
 
 ### 3. Edit Learned Preferences
 
@@ -645,17 +645,17 @@ UI to manage learned policies:
   <li>Costco <button>Remove</button></li>
 </ul>
 <button>Add new exception</button>
-```
+```text
 
 ### 4. Transcript Search
 
 Search audit trail by query content:
 
-```
+```text
 GET /api/actions/audit?transcript_search=promos
 
 Returns all actions from queries containing "promos"
-```
+```text
 
 ### 5. Memory Expiration
 
@@ -669,7 +669,7 @@ Policy(
 )
 
 # Cron job: Delete policies where expires_at < now() AND last_matched_at IS NULL
-```
+```text
 
 ## Migration Notes
 

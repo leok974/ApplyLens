@@ -41,7 +41,7 @@ Check connection status:
 
 ```powershell
 curl http://localhost:8003/gmail/status
-```
+```text
 
 Should return:
 
@@ -53,7 +53,7 @@ Should return:
   "has_refresh_token": true,
   "total": 0
 }
-```
+```text
 
 ## 📧 Next Steps: Backfill Emails
 
@@ -61,7 +61,7 @@ Should return:
 
 ```powershell
 curl -Method POST "http://localhost:8003/gmail/backfill?days=7"
-```
+```text
 
 This will:
 
@@ -79,20 +79,20 @@ Expected output:
   "days": 7,
   "user_email": "your-email@gmail.com"
 }
-```
+```text
 
 ### 2. Check Applications Created
 
 ```powershell
 curl http://localhost:8003/applications | ConvertFrom-Json | Format-Table company, role, status, source
-```
+```text
 
 ### 3. View in UI
 
 ```powershell
 start http://localhost:5175/inbox
 start http://localhost:5175/tracker
-```
+```text
 
 **Inbox** (<http://localhost:5175/inbox>):
 
@@ -122,7 +122,7 @@ curl http://localhost:8003/gmail/inbox?limit=10 | ConvertFrom-Json
 
 # List applications
 curl http://localhost:8003/applications | ConvertFrom-Json
-```
+```text
 
 ### Search Examples
 
@@ -135,14 +135,14 @@ curl "http://localhost:8003/search?q=engineer&company=Google" | ConvertFrom-Json
 
 # Search by source
 curl "http://localhost:8003/search?q=application&source=lever" | ConvertFrom-Json
-```
+```text
 
 ### Full Backfill (60 days)
 
 ```powershell
 # This may take 30-60 seconds for 100-200 emails
 curl -Method POST "http://localhost:8003/gmail/backfill?days=60"
-```
+```text
 
 ## 🔧 Troubleshooting
 
@@ -157,7 +157,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart api
 
 # Try OAuth again
 start http://localhost:8003/auth/google/login
-```
+```text
 
 ### If credentials not found
 
@@ -167,7 +167,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml exec api ls -la /secrets
 
 # Check .env configuration
 Get-Content D:\ApplyLens\infra\.env | Select-String "GOOGLE"
-```
+```text
 
 ### If backfill fails
 
@@ -177,7 +177,7 @@ curl http://localhost:8003/gmail/status
 
 # Check API logs for errors
 docker compose -f D:\ApplyLens\infra\docker-compose.yml logs api --tail=100 | Select-String "error"
-```
+```text
 
 ### Reset ES index (if needed)
 
@@ -186,7 +186,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml logs api --tail=100 | Se
 curl -Method DELETE http://localhost:9200/gmail_emails
 
 # Next backfill will recreate it automatically
-```
+```text
 
 ## 📊 What to Expect
 
@@ -247,7 +247,7 @@ $body = @{
 curl -Method POST http://localhost:8003/applications `
   -ContentType "application/json" `
   -Body $body
-```
+```text
 
 ### Update Application Status
 
@@ -257,7 +257,7 @@ $update = @{ status = "interview" } | ConvertTo-Json
 curl -Method PATCH http://localhost:8003/applications/1 `
   -ContentType "application/json" `
   -Body $update
-```
+```text
 
 ### Link Email to Application
 
@@ -267,7 +267,7 @@ $email_id = 5
 
 # Create/link application
 curl -Method POST "http://localhost:8003/applications/from-email/$email_id"
-```
+```text
 
 ## 📝 API Documentation
 

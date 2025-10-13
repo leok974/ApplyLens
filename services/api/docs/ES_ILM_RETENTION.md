@@ -36,7 +36,7 @@ curl -X PUT "http://localhost:9200/_index_template/actions_audit_v1_tpl" \
     }
   }
 }'
-```
+```text
 
 ## Verify Policy
 
@@ -49,7 +49,7 @@ curl "http://localhost:9200/_index_template/actions_audit_v1_tpl"
 
 # Check index settings (after creating new index)
 curl "http://localhost:9200/actions_audit_v1/_settings"
-```
+```text
 
 ## Alternative Retention Periods
 
@@ -67,7 +67,7 @@ curl "http://localhost:9200/actions_audit_v1/_settings"
     }
   }
 }
-```
+```text
 
 ### 90 Day with Rollover
 
@@ -90,7 +90,7 @@ curl "http://localhost:9200/actions_audit_v1/_settings"
     }
   }
 }
-```
+```text
 
 ## Notes
 

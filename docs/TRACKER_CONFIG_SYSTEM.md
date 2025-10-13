@@ -33,7 +33,7 @@ export const NOTE_SNIPPETS: string[] = [
   'Referred by X',
   'Declined offer',
 ]
-```
+```text
 
 ### Environment Variable Override
 
@@ -59,7 +59,7 @@ You can customize snippets per environment using the `VITE_TRACKER_SNIPPETS` env
 ```bash
 # Only show essential snippets during development
 VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail"
-```
+```text
 
 ### Example 2: Production Environment (Full Set)
 
@@ -68,7 +68,7 @@ VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail"
 ```bash
 # Show complete set of snippets in production
 VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruiter screen scheduled|Sent take-home|Referred by X|Declined offer"
-```
+```text
 
 ### Example 3: Custom Workflow
 
@@ -77,7 +77,7 @@ VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruit
 ```bash
 # Custom snippets for sales pipeline
 VITE_TRACKER_SNIPPETS="Demo scheduled|Proposal sent|Contract signed|Payment received|Closed - Lost"
-```
+```text
 
 ### Example 4: No Environment Variable
 
@@ -101,7 +101,7 @@ export const NOTE_SNIPPETS: string[] = ENV_SNIPPETS
       'Follow-up scheduled',
       // ... other defaults
     ]
-```
+```text
 
 ### 2. Tracker Integration
 
@@ -113,7 +113,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
   snippets={NOTE_SNIPPETS}
   // ... other props
 />
-```
+```text
 
 ### 3. Runtime Evaluation
 
@@ -131,7 +131,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
 ```bash
 cd apps/web
 cp .env.example .env.local
-```
+```text
 
 ### Step 2: Set Snippets
 
@@ -139,13 +139,13 @@ Edit `.env.local`:
 
 ```bash
 VITE_TRACKER_SNIPPETS="Custom 1|Custom 2|Custom 3"
-```
+```text
 
 ### Step 3: Restart Dev Server
 
 ```bash
 npm run dev
-```
+```text
 
 **Important:** Environment variables are read at build/start time. You must restart the dev server for changes to take effect.
 
@@ -166,14 +166,14 @@ npm run dev
 ```bash
 # .env.development
 VITE_TRACKER_SNIPPETS="Test 1|Test 2"
-```
+```text
 
 **Production:** Full set for end users
 
 ```bash
 # .env.production
 VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruiter screen scheduled|Sent take-home|Referred by X|Declined offer"
-```
+```text
 
 ### Scenario 2: Team-Specific Workflows
 
@@ -181,13 +181,13 @@ VITE_TRACKER_SNIPPETS="Sent thank-you|Follow-up scheduled|Left voicemail|Recruit
 
 ```bash
 VITE_TRACKER_SNIPPETS="Technical screen passed|Coding challenge sent|System design completed|Team match scheduled|Offer extended"
-```
+```text
 
 **Team B (Sales Pipeline):**
 
 ```bash
 VITE_TRACKER_SNIPPETS="Discovery call|Demo scheduled|Proposal sent|Contract negotiation|Closed-won|Closed-lost"
-```
+```text
 
 ### Scenario 3: Industry-Specific
 
@@ -195,13 +195,13 @@ VITE_TRACKER_SNIPPETS="Discovery call|Demo scheduled|Proposal sent|Contract nego
 
 ```bash
 VITE_TRACKER_SNIPPETS="Application submitted|Shortlisted|Interview scheduled|Campus visit|Offer received|Accepted position"
-```
+```text
 
 **Freelance:**
 
 ```bash
 VITE_TRACKER_SNIPPETS="Inquiry received|Proposal sent|Contract signed|Milestone completed|Payment received|Project closed"
-```
+```text
 
 ### Scenario 4: Multi-Tenant Deployment
 
@@ -213,7 +213,7 @@ docker run -e VITE_TRACKER_SNIPPETS="Snippet A1|Snippet A2" applylens-web
 
 # Tenant B
 docker run -e VITE_TRACKER_SNIPPETS="Snippet B1|Snippet B2" applylens-web
-```
+```text
 
 ---
 
@@ -235,7 +235,7 @@ export async function loadSnippetsFromAPI() {
 export const NOTE_SNIPPETS: string[] = runtimeSnippets || [
   // ... defaults
 ]
-```
+```text
 
 ### Conditional Logic
 
@@ -246,7 +246,7 @@ const isAdmin = localStorage.getItem('userRole') === 'admin'
 export const NOTE_SNIPPETS: string[] = isAdmin
   ? ['Admin action 1', 'Admin action 2']
   : ['User action 1', 'User action 2']
-```
+```text
 
 ### Dynamic Import
 
@@ -257,7 +257,7 @@ const featureFlags = JSON.parse(localStorage.getItem('features') || '{}')
 export const NOTE_SNIPPETS: string[] = featureFlags.experimentalSnippets
   ? ['Experimental 1', 'Experimental 2']
   : ['Standard 1', 'Standard 2']
-```
+```text
 
 ---
 
@@ -274,7 +274,7 @@ export const STATUS_LABEL: Record<string, string> = {
   interview: 'Interviewing',
   // ...
 }
-```
+```text
 
 ### Toast Variants
 
@@ -285,7 +285,7 @@ export const STATUS_TO_VARIANT: Record<string, ToastVariant> = {
   interview: 'success',
   // ...
 }
-```
+```text
 
 ### Table Columns
 
@@ -297,7 +297,7 @@ export const VISIBLE_COLUMNS = [
   'notes',
   'actions',
 ]
-```
+```text
 
 ### Filters
 
@@ -306,7 +306,7 @@ export const DEFAULT_FILTERS = {
   status: 'all',
   dateRange: 'last-30-days',
 }
-```
+```text
 
 ---
 
@@ -323,7 +323,7 @@ npm run dev
 
 # Test E2E with custom config
 VITE_TRACKER_SNIPPETS="Sent thank-you" npx playwright test
-```
+```text
 
 ### Verify Configuration Loading
 
@@ -338,7 +338,7 @@ export const NOTE_SNIPPETS: string[] = ENV_SNIPPETS
   : [/* defaults */]
 
 console.log('NOTE_SNIPPETS:', NOTE_SNIPPETS)
-```
+```text
 
 ---
 
@@ -351,7 +351,7 @@ console.log('NOTE_SNIPPETS:', NOTE_SNIPPETS)
 ```bash
 # Stop server (Ctrl+C)
 npm run dev
-```
+```text
 
 ### Issue: Environment variable not recognized
 
@@ -396,7 +396,7 @@ npm run dev
 <InlineNote
   snippets={['Custom 1', 'Custom 2']}
 />
-```
+```text
 
 **After:**
 
@@ -406,7 +406,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
 <InlineNote
   snippets={NOTE_SNIPPETS}
 />
-```
+```text
 
 ### From Component Props
 
@@ -423,7 +423,7 @@ function ParentComponent() {
 function ChildComponent({ snippets }) {
   return <InlineNote snippets={snippets} />
 }
-```
+```text
 
 **After:**
 
@@ -433,7 +433,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
 function ChildComponent() {
   return <InlineNote snippets={NOTE_SNIPPETS} />
 }
-```
+```text
 
 ---
 

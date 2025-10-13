@@ -109,7 +109,7 @@ Total updated: 1225
 Unchanged: 625
 Duration: 0.64 seconds
 Rate: 2892.0 emails/sec
-```
+```text
 
 ### Database Statistics
 
@@ -122,7 +122,7 @@ WHERE risk_score > 0;
 -- count: 1850
 -- avg: 39.2
 -- max: 100.0
-```
+```text
 
 ### API Endpoint Tests
 
@@ -139,7 +139,7 @@ WHERE risk_score > 0;
   },
   "last_computed": "2025-10-10T12:50:00.404204-04:00"
 }
-```
+```text
 
 #### Risk Summary (365 days)
 
@@ -167,7 +167,7 @@ WHERE risk_score > 0;
     }
   ]
 }
-```
+```text
 
 #### Risk Trends (30 days, weekly)
 
@@ -188,7 +188,7 @@ WHERE risk_score > 0;
     }
   ]
 }
-```
+```text
 
 #### Manual Recompute
 
@@ -203,16 +203,16 @@ WHERE risk_score > 0;
     "duration_seconds": 0.42
   }
 }
-```
+```text
 
 ### Prometheus Metrics
 
-```
+```text
 applylens_risk_recompute_requests_total 1.0
 applylens_risk_recompute_duration_seconds_sum 1.08
 applylens_risk_emails_scored_total 1850.0
 applylens_risk_score_avg 0.0
-```
+```text
 
 ## Risk Score Distribution
 

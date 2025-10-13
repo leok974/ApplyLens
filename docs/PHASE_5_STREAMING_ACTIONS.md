@@ -65,7 +65,7 @@ January 2025
     Run actions now
   </button>
 </div>
-```
+```text
 
 ### Key Layout Features
 
@@ -85,7 +85,7 @@ January 2025
 ```typescript
 const [lastQuery, setLastQuery] = useState<string>('')
 const [fileActions, setFileActions] = useState(false)
-```
+```text
 
 **Modified send() Function**:
 
@@ -104,7 +104,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
   
   // ... rest of logic ...
 }
-```
+```text
 
 **New Icons**:
 
@@ -130,7 +130,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
   "messages": [...],
   "propose": true  // Optional, triggers action filing
 }
-```
+```text
 
 **Note**: This implementation uses the existing POST endpoint. Future streaming implementation (EventSource/SSE) would use `GET /api/chat/stream?q=...&propose=1` as mentioned in the original request.
 
@@ -235,7 +235,7 @@ ev.addEventListener('filed', (e: any) => {
   const data = JSON.parse(e.data)
   // Update UI with filed action confirmation
 })
-```
+```text
 
 **Benefits**:
 
@@ -252,7 +252,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
   const shouldPropose = opts?.propose ?? fileActions
   // Use shouldPropose when making API call
 }
-```
+```text
 
 ### 3. Action Count Badge
 
@@ -265,7 +265,7 @@ Show action count in UI header:
     <span className="badge">{actionCount} actions</span>
   )}
 </div>
-```
+```text
 
 ### 4. Confirmation Dialog
 
@@ -276,7 +276,7 @@ if (opts?.propose && response.actions.length > 10) {
   const confirmed = window.confirm(`File ${response.actions.length} actions?`)
   if (!confirmed) return
 }
-```
+```text
 
 ### 5. Integration with Actions Tray
 
@@ -324,7 +324,7 @@ CREATE TABLE approvals (
   approved_at TIMESTAMPTZ,
   executed_at TIMESTAMPTZ
 )
-```
+```text
 
 ## Documentation Updates
 
@@ -350,11 +350,11 @@ The chat assistant can automatically file proposed actions to the Approvals tray
 
 ### Future: Automatic Filing
 Check "file actions to Approvals" to automatically file actions on every query.
-```
+```text
 
 ## Commit Message
 
-```
+```text
 feat(chat): add "Run actions now" for action filing
 
 Add ability to replay queries with automatic action filing to
@@ -381,7 +381,7 @@ Testing:
 - Last query tracking works correctly
 - Replay with propose=true shows confirmation
 - Layout responsive on narrow screens
-```
+```text
 
 ## Summary
 

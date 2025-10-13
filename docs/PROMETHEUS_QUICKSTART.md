@@ -10,19 +10,19 @@
 
 ```promql
 applylens_db_up
-```
+```text
 
 Should show: **1** (database is up)
 
 ```promql
 applylens_es_up
-```
+```text
 
 Should show: **1** (Elasticsearch is up)
 
 ```promql
 applylens_gmail_connected{user_email="leoklemet.pa@gmail.com"}
-```
+```text
 
 Should show: **1** (Gmail connected)
 
@@ -32,13 +32,13 @@ Should show: **1** (Gmail connected)
 
 ```promql
 sum(rate(applylens_http_requests_total[5m]))
-```
+```text
 
 Shows: **Requests per second** (over last 5 minutes)
 
 ```promql
 sum by (status_code) (rate(applylens_http_requests_total[5m]))
-```
+```text
 
 Shows: **Requests per second by status code** (200, 404, 500, etc.)
 
@@ -48,13 +48,13 @@ Shows: **Requests per second by status code** (200, 404, 500, etc.)
 
 ```promql
 histogram_quantile(0.95, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 Shows: **p95 latency in seconds** (95% of requests are faster than this)
 
 ```promql
 histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 Shows: **p99 latency** (99% of requests are faster than this)
 
@@ -64,13 +64,13 @@ Shows: **p99 latency** (99% of requests are faster than this)
 
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
-```
+```text
 
 Shows: **Backfill requests in last hour** (ok, rate_limited, error, bad_request)
 
 ```promql
 rate(applylens_backfill_inserted_total[5m]) * 60
-```
+```text
 
 Shows: **Emails inserted per minute**
 
@@ -97,7 +97,7 @@ Shows: **Emails inserted per minute**
 ```promql
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m])) * 100
-```
+```text
 
 Shows: **5xx error rate as percentage**
 
@@ -105,7 +105,7 @@ Shows: **5xx error rate as percentage**
 
 ```promql
 topk(5, sum by (path) (increase(applylens_http_requests_total[1h])))
-```
+```text
 
 Shows: **Top 5 endpoints by request count (last hour)**
 
@@ -113,7 +113,7 @@ Shows: **Top 5 endpoints by request count (last hour)**
 
 ```promql
 min(applylens_db_up) * min(applylens_es_up)
-```
+```text
 
 Shows: **1 if all up, 0 if any down**
 
@@ -136,7 +136,7 @@ Run this in PowerShell to populate metrics:
 Start-Sleep -Seconds 35
 
 # Now run queries in Prometheus UI
-```
+```text
 
 ---
 

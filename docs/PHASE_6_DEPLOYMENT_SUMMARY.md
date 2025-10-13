@@ -14,7 +14,7 @@ All Phase 6 features successfully deployed and tested.
 
 ```bash
 docker-compose exec api alembic stamp 0017_phase6_personalization
-```
+```text
 
 - **Status:** Tables already existed, marked migration as applied
 - **Tables Created:**
@@ -27,7 +27,7 @@ docker-compose exec api alembic stamp 0017_phase6_personalization
 curl -X PUT "http://localhost:9200/emails/_mapping" \
   -H "Content-Type: application/json" \
   -d @services/api/es/mappings/ats_fields.json
-```
+```text
 
 - **Status:** ✅ Acknowledged
 - **Fields Added:**
@@ -61,7 +61,7 @@ curl -X PUT "http://localhost:9200/emails/_mapping" \
 ```bash
 docker-compose up -d db es
 docker-compose restart api
-```
+```text
 
 - **Status:** All services running
 - PostgreSQL: ✅ Port 5433
@@ -72,7 +72,7 @@ docker-compose restart api
 
 ```powershell
 pwsh ./scripts/test-phase6.ps1
-```
+```text
 
 **Results: 10/10 Tests Passing**
 
@@ -171,7 +171,7 @@ crontab -e
 # Add these lines:
 0 2 * * * cd /app && python analytics/enrich/ats_enrich_emails.py
 15 2 * * * cd /app && python services/api/app/cron/recompute_policy_stats.py
-```
+```text
 
 ### 2. Generate Test Data
 
@@ -191,7 +191,7 @@ python analytics/enrich/ats_enrich_emails.py
 
 # Check enriched emails
 curl "http://localhost:9200/emails/_search?q=ats.system:*" | jq '.hits.total.value'
-```
+```text
 
 ### 4. Monitor Metrics
 
@@ -199,7 +199,7 @@ curl "http://localhost:9200/emails/_search?q=ats.system:*" | jq '.hits.total.val
 # Check Prometheus metrics
 curl http://localhost:8003/metrics | grep policy_fired_total
 curl http://localhost:8003/metrics | grep user_weight_updates
-```
+```text
 
 ### 5. Test Money Mode
 
@@ -212,7 +212,7 @@ curl http://localhost:8003/api/money/duplicates?window_days=7 | jq .
 
 # Get summary
 curl http://localhost:8003/api/money/summary | jq .
-```
+```text
 
 ## Troubleshooting
 
@@ -257,7 +257,7 @@ GET /api/chat/stream?q=<query>&mode=networking
 
 # Metrics
 GET /metrics
-```
+```text
 
 ## Database Schema
 
@@ -272,7 +272,7 @@ CREATE TABLE user_weights (
     updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(user_id, feature)
 );
-```
+```text
 
 ### policy_stats
 
@@ -290,7 +290,7 @@ CREATE TABLE policy_stats (
     updated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(policy_id, user_id)
 );
-```
+```text
 
 ## Commit History
 

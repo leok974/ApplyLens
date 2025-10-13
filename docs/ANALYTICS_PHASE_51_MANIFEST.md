@@ -146,7 +146,7 @@
   "login flow test": "/login",
   "checkout test": "/checkout"
 }
-```
+```text
 
 ---
 
@@ -280,7 +280,7 @@ try:
     app.include_router(analytics_router)
 except ImportError:
     pass  # Analytics module not available
-```
+```text
 
 ---
 
@@ -300,7 +300,7 @@ except ImportError:
 
 ## Directory Structure Created
 
-```
+```text
 analytics/
 ├── README.md                          # Directory documentation
 ├── ARCHITECTURE.md                    # Architecture diagrams
@@ -331,7 +331,7 @@ services/api/app/routers/
 ├── ANALYTICS_PHASE_51_COMPLETE.md     # Full guide
 ├── ANALYTICS_PHASE_51_QUICKSTART.md   # Quick runbook
 └── ANALYTICS_PHASE_51_SUMMARY.md      # Summary
-```
+```text
 
 ---
 
@@ -397,7 +397,7 @@ grep -A 5 "Phase 51.2" services/api/app/main.py
 
 # Count lines of code
 find analytics/ -name "*.py" -exec wc -l {} + | tail -1
-```
+```text
 
 ---
 

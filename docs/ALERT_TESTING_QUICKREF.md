@@ -18,7 +18,7 @@ Write-Host "Alert Rules: " -NoNewline; Write-Host "✅ $ruleCount evaluating" -F
 try { iwr http://localhost:8003/debug/500 -UseBasicParsing 2>$null } catch { if ($_.Exception.Response.StatusCode -eq 500) { Write-Host "Debug /500: ✅ Working" -ForegroundColor Green } }
 
 Write-Host "`n✅ All systems ready for testing!`n" -ForegroundColor Green
-```
+```text
 
 ---
 
@@ -28,7 +28,7 @@ Write-Host "`n✅ All systems ready for testing!`n" -ForegroundColor Green
 
 ```powershell
 python D:\ApplyLens\tools\grafana_webhook.py
-```
+```text
 
 **What it does:**
 
@@ -49,7 +49,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml stop api
 Start-Sleep -Seconds 70
 start http://localhost:3000/alerting/list
 docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
-```
+```text
 
 **Expected:** Alert fires after 1 minute, webhook receives notification
 
@@ -64,7 +64,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
     if ($_ % 40 -eq 0) { Write-Host "Sent $_..." }
 }
 Write-Host "✅ Errors sent. Wait ~5 minutes for alert." -ForegroundColor Green
-```
+```text
 
 **Expected:** Alert fires after 5 minutes of sustained >5% error rate
 
@@ -79,7 +79,7 @@ Start-Sleep -Seconds 5
 try { iwr "http://localhost:8003/gmail/backfill?days=2" -Method POST -UseBasicParsing } catch { Write-Host "✓ Failed as expected" }
 docker compose -f D:\ApplyLens\infra\docker-compose.yml start es
 Write-Host "✅ Error recorded. Wait ~10 minutes for alert." -ForegroundColor Green
-```
+```text
 
 **Expected:** Alert fires after 10 minutes of errors detected
 
@@ -117,7 +117,7 @@ Write-Host "   • T+1m:  API Down alert fires 🔥" -ForegroundColor Gray
 Write-Host "   • T+5m:  High Error Rate alert fires 🔥" -ForegroundColor Gray
 Write-Host "   • T+10m: Backfill Errors alert fires 🔥" -ForegroundColor Gray
 Write-Host "`nWatch: http://localhost:3000/alerting/list`n" -ForegroundColor White
-```
+```text
 
 ---
 
@@ -132,7 +132,7 @@ start http://localhost:3000/alerting/notifications
 
 # 3. Click "Default" → "Test" button
 # 4. Check webhook terminal for payload
-```
+```text
 
 ---
 
@@ -148,7 +148,7 @@ Write-Host "Error Rate: $([math]::Round($errorRate.data.result[0].value[1], 2))%
 
 # Backfill errors
 irm "http://localhost:9090/api/v1/query?query=applylens_backfill_requests_total{result=`"error`"}" | % data | % result | % value
-```
+```text
 
 ---
 
@@ -161,7 +161,7 @@ notepad D:\ApplyLens\infra\prometheus\alerts.yml
 # Reload (instant)
 iwr -Method POST http://localhost:9090/-/reload
 Write-Host "✅ Prometheus reloaded" -ForegroundColor Green
-```
+```text
 
 ---
 
@@ -178,14 +178,14 @@ Write-Host "✅ Prometheus reloaded" -ForegroundColor Green
 
 ## 🔗 Essential URLs
 
-```
+```text
 Prometheus:          http://localhost:9090
 Grafana Alerts:      http://localhost:3000/alerting/list
 Contact Points:      http://localhost:3000/alerting/notifications
 Notification Routes: http://localhost:3000/alerting/routes
 API Metrics:         http://localhost:8003/metrics
 Debug 500 Endpoint:  http://localhost:8003/debug/500
-```
+```text
 
 ---
 
@@ -203,7 +203,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml stop es; try { iwr "http
 
 # Check all alert states
 (irm http://localhost:9090/api/v1/rules).data.groups.rules | ? name -like "ApplyLens*" | select name, state, health | ft
-```
+```text
 
 ---
 

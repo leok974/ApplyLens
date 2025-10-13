@@ -26,7 +26,7 @@ sum(rate(applylens_http_requests_total{status_code=~"2.."}[5m]))
 
 # Only errors (5xx)
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m]))
-```
+```text
 
 ### Error Rate
 
@@ -42,7 +42,7 @@ sum(rate(applylens_http_requests_total{status_code=~"4.."}[5m]))
 # Total error rate (4xx + 5xx)
 sum(rate(applylens_http_requests_total{status_code=~"[45].."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))
-```
+```text
 
 ### Request Latency
 
@@ -65,7 +65,7 @@ rate(applylens_http_request_duration_seconds_sum[5m])
 
 # Latency by endpoint
 histogram_quantile(0.9, sum by (le, path) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 ### Top Endpoints by Traffic
 
@@ -75,7 +75,7 @@ topk(10, sum by (path) (increase(applylens_http_requests_total[1h])))
 
 # Slowest endpoints (p99 latency)
 topk(5, histogram_quantile(0.99, sum by (le, path) (rate(applylens_http_request_duration_seconds_bucket[5m]))))
-```
+```text
 
 ### In-Flight Requests
 
@@ -85,7 +85,7 @@ sum(applylens_http_requests_in_progress)
 
 # By method
 sum by (method) (applylens_http_requests_in_progress)
-```
+```text
 
 ---
 
@@ -103,7 +103,7 @@ sum by (result) (rate(applylens_backfill_requests_total[5m]))
 # Success rate (percentage)
 sum(rate(applylens_backfill_requests_total{result="ok"}[5m])) 
 / sum(rate(applylens_backfill_requests_total[5m]))
-```
+```text
 
 ### Backfill Outcomes
 
@@ -119,7 +119,7 @@ increase(applylens_backfill_requests_total{result="error"}[1h])
 
 # Bad requests (last 1 hour)
 increase(applylens_backfill_requests_total{result="bad_request"}[1h])
-```
+```text
 
 ### Email Insertion Rate
 
@@ -136,7 +136,7 @@ increase(applylens_backfill_inserted_total[24h])
 # Average emails per successful backfill
 increase(applylens_backfill_inserted_total[1h]) 
 / increase(applylens_backfill_requests_total{result="ok"}[1h])
-```
+```text
 
 ---
 
@@ -150,7 +150,7 @@ applylens_db_up
 
 # Database uptime percentage (last hour)
 avg_over_time(applylens_db_up[1h]) * 100
-```
+```text
 
 ### Elasticsearch Status
 
@@ -160,7 +160,7 @@ applylens_es_up
 
 # Elasticsearch uptime percentage (last hour)
 avg_over_time(applylens_es_up[1h]) * 100
-```
+```text
 
 ### Overall System Health
 
@@ -173,7 +173,7 @@ min(applylens_db_up) and min(applylens_es_up)
 
 # All systems operational (1 = yes, 0 = no)
 min(applylens_db_up) * min(applylens_es_up)
-```
+```text
 
 ---
 
@@ -193,7 +193,7 @@ sum(applylens_gmail_connected)
 
 # Maximum connection status over last 10 minutes
 max_over_time(applylens_gmail_connected[10m])
-```
+```text
 
 ---
 
@@ -208,7 +208,7 @@ sum(rate(applylens_http_requests_total{status_code=~"[23].."}[5m]))
 
 # Uptime (based on successful scrapes)
 avg_over_time(up{job="applylens-api"}[1h]) * 100
-```
+```text
 
 ### Latency SLO
 
@@ -220,7 +220,7 @@ sum(rate(applylens_http_request_duration_seconds_bucket{le="0.5"}[5m]))
 # Percentage of requests under 1 second
 sum(rate(applylens_http_request_duration_seconds_bucket{le="1.0"}[5m])) 
 / sum(rate(applylens_http_request_duration_seconds_count[5m])) * 100
-```
+```text
 
 ### Error Budget
 
@@ -231,7 +231,7 @@ sum(rate(applylens_http_request_duration_seconds_bucket{le="1.0"}[5m]))
   sum(rate(applylens_http_requests_total{status_code=~"[23].."}[30d])) 
   / sum(rate(applylens_http_requests_total[30d]))
 )) * 100
-```
+```text
 
 ---
 
@@ -243,35 +243,35 @@ sum(rate(applylens_http_request_duration_seconds_bucket{le="1.0"}[5m]))
 # Alert if 5xx errors > 5% for 5 minutes
 (sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
  / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))) > 0.05
-```
+```text
 
 ### High Latency Alert
 
 ```promql
 # Alert if p99 latency > 2 seconds
 histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m]))) > 2
-```
+```text
 
 ### Backfill Failures
 
 ```promql
 # Alert if any backfill errors in last 10 minutes
 increase(applylens_backfill_requests_total{result="error"}[10m]) > 0
-```
+```text
 
 ### Gmail Disconnected
 
 ```promql
 # Alert if Gmail disconnected for 15 minutes
 max_over_time(applylens_gmail_connected[15m]) < 1
-```
+```text
 
 ### Dependencies Down
 
 ```promql
 # Alert if DB or ES is down
 (min(applylens_db_up) == 0) or (min(applylens_es_up) == 0)
-```
+```text
 
 ---
 
@@ -285,7 +285,7 @@ sum(increase(applylens_http_requests_total[1h]))
 
 # Peak hour (highest request count)
 max_over_time(sum(rate(applylens_http_requests_total[1h]))[24h:1h])
-```
+```text
 
 ### Daily Patterns
 
@@ -295,7 +295,7 @@ sum(increase(applylens_http_requests_total[1d]))
 
 # Average daily request count (last 7 days)
 avg_over_time(sum(increase(applylens_http_requests_total[1d]))[7d:1d])
-```
+```text
 
 ### Comparing Time Periods
 
@@ -307,7 +307,7 @@ sum(rate(applylens_http_requests_total[5m]))
 # Compare today vs yesterday (same hour)
 sum(increase(applylens_http_requests_total[1h])) 
 / sum(increase(applylens_http_requests_total[1h] offset 24h))
-```
+```text
 
 ---
 
@@ -321,14 +321,14 @@ abs(
   sum(rate(applylens_http_requests_total[5m])) 
   - avg_over_time(sum(rate(applylens_http_requests_total[5m]))[7d:5m])
 ) / avg_over_time(sum(rate(applylens_http_requests_total[5m]))[7d:5m]) > 0.5
-```
+```text
 
 ### Heatmap Data (for Grafana)
 
 ```promql
 # Request duration histogram buckets
 sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m]))
-```
+```text
 
 ### Cardinality Check
 
@@ -341,14 +341,14 @@ count(sum by (path) (applylens_http_requests_total))
 
 # Count unique status codes
 count(sum by (status_code) (applylens_http_requests_total))
-```
+```text
 
 ### Resource Usage Prediction
 
 ```promql
 # Predict metric value in 1 hour using linear regression
 predict_linear(applylens_backfill_inserted_total[1h], 3600)
-```
+```text
 
 ---
 
@@ -361,21 +361,21 @@ Use these in Grafana dashboard variables for dynamic filtering:
 ```promql
 # Query: label_values(applylens_http_requests_total, instance)
 # Usage: {instance="$instance"}
-```
+```text
 
 ### Path Variable
 
 ```promql
 # Query: label_values(applylens_http_requests_total, path)
 # Usage: {path="$path"}
-```
+```text
 
 ### Status Code Variable
 
 ```promql
 # Query: label_values(applylens_http_requests_total, status_code)
 # Usage: {status_code="$status"}
-```
+```text
 
 ---
 
@@ -394,7 +394,7 @@ function Query-Prometheus {
 Query-Prometheus "applylens_http_requests_total"
 Query-Prometheus "rate(applylens_http_requests_total[5m])"
 Query-Prometheus "histogram_quantile(0.95, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))"
-```
+```text
 
 ---
 

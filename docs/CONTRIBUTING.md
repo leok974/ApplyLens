@@ -46,7 +46,7 @@ npm run test:e2e
 ruff check .
 black --check .
 npm run lint
-```
+```text
 
 ### 3. Commit
 
@@ -54,7 +54,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
 git commit -m "feat(search): add fuzzy matching"
-```
+```text
 
 **Commit Types:**
 
@@ -70,7 +70,7 @@ git commit -m "feat(search): add fuzzy matching"
 
 ```bash
 git push origin feature/my-feature
-```
+```text
 
 Then create a Pull Request on GitHub targeting the `develop` branch.
 
@@ -101,14 +101,14 @@ def calculate_risk_score(
 # Bad
 def calcRisk(e,w):  # Poor naming, no types, no docstring
     return sum([x*y for x,y in zip(w,e)])
-```
+```text
 
 **Linter:** `ruff`
 
 ```bash
 ruff check .
 ruff check . --fix  # Auto-fix
-```
+```text
 
 **Type Hints:** Use type annotations for all functions
 
@@ -121,7 +121,7 @@ def get_emails(
     limit: int = 20
 ) -> List[Email]:
     ...
-```
+```text
 
 ### TypeScript/React (Frontend)
 
@@ -149,7 +149,7 @@ export function EmailList({ emails, onSelect, isLoading = false }: EmailListProp
 export function EmailList(props: any) {  // No interface, 'any' type
   return <div>{props.emails.map(e => <div>{e.subject}</div>)}</div>;  // No keys
 }
-```
+```text
 
 **Component Structure:**
 
@@ -181,7 +181,7 @@ export function MyComponent({ title }: Props) {
     </div>
   );
 }
-```
+```text
 
 ### CSS/Tailwind
 
@@ -193,7 +193,7 @@ Use Tailwind utility classes:
 
 // Avoid inline styles
 <div style={{ display: 'flex', padding: '16px' }}>  // Bad
-```
+```text
 
 ## Testing Guidelines
 
@@ -231,7 +231,7 @@ def test_calculate_risk_score_safe_email(db_session):
     risk_score = calculate_risk_score(email, user_weights)
     
     assert risk_score < 20
-```
+```text
 
 ### Frontend (Playwright)
 
@@ -257,7 +257,7 @@ test.describe('Email Search', () => {
     expect(categories.every(c => c === 'Application')).toBe(true);
   });
 });
-```
+```text
 
 ## Documentation
 
@@ -277,7 +277,7 @@ def normalize_score(raw_score: float) -> float:
 def normalize_score(raw_score: float) -> float:
     # Calculate 100 divided by 1 plus e to the power of negative raw_score
     return 100 / (1 + math.exp(-raw_score))
-```
+```text
 
 ### API Documentation
 
@@ -311,7 +311,7 @@ async def get_email(
     if not email:
         raise HTTPException(status_code=404, detail="Email not found")
     return email
-```
+```text
 
 ## Pull Request Guidelines
 
@@ -350,7 +350,7 @@ Added fuzzy matching to email search for better typo tolerance.
 
 ## Screenshots
 [Before/After images]
-```
+```text
 
 ### Code Review
 
@@ -390,7 +390,7 @@ Risk score should be a number between 0-100.
 
 **Additional context**
 Happens only for emails with no sender_domain.
-```
+```text
 
 ### Feature Requests
 
@@ -406,7 +406,7 @@ Manual scrolling, but inefficient for large inboxes.
 
 **Additional context**
 Calendar UI like Gmail's date filter would be ideal.
-```
+```text
 
 ## Development Tools
 
@@ -432,7 +432,7 @@ pre-commit install
 
 # Run manually
 pre-commit run --all-files
-```
+```text
 
 Create `.pre-commit-config.yaml`:
 
@@ -454,7 +454,7 @@ repos:
     hooks:
       - id: eslint
         files: \.(js|ts|tsx)$
-```
+```text
 
 ## License
 

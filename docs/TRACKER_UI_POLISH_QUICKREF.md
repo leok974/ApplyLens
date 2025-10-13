@@ -36,7 +36,7 @@
 cd D:\ApplyLens\infra
 docker compose up -d
 # Visit: http://localhost:5175/tracker
-```
+```text
 
 ### Run E2E Tests
 
@@ -45,7 +45,7 @@ cd apps/web
 npm install -D @playwright/test
 npx playwright install
 npx playwright test tests/e2e/tracker-status.spec.ts
-```
+```text
 
 ---
 
@@ -96,7 +96,7 @@ data-testid="tracker-search-input"  // Search input
 data-testid="tracker-search-btn"    // Search button
 data-testid="tracker-status-filter" // Status dropdown
 data-testid="tracker-new-btn"       // New button
-```
+```text
 
 ### Table
 
@@ -105,7 +105,7 @@ data-testid="tracker-row-{id}"      // Each row
 data-testid="status-select-{id}"    // Status dropdown per row
 data-testid="status-chip-{status}"  // Status chip
 data-testid="note-btn-{id}"         // Note button per row
-```
+```text
 
 ### Create Dialog
 
@@ -114,7 +114,7 @@ data-testid="create-company"  // Company input
 data-testid="create-role"     // Role input
 data-testid="create-source"   // Source input
 data-testid="create-save"     // Save button
-```
+```text
 
 ---
 
@@ -124,7 +124,7 @@ data-testid="create-save"     // Save button
 
 ```tsx
 className="sticky top-0 z-10"
-```
+```text
 
 Header stays visible while scrolling
 
@@ -135,7 +135,7 @@ Header stays visible while scrolling
   <StatusChip status={status} />
   <select value={status} onChange={...} />
 </div>
-```
+```text
 
 Visual indicator + quick action
 
@@ -143,7 +143,7 @@ Visual indicator + quick action
 
 ```tsx
 showToast(`Status: Interview — ${company}`, 'success')
-```
+```text
 
 User knows exactly what happened
 
@@ -153,7 +153,7 @@ User knows exactly what happened
 {statusFilter || search 
   ? 'Try adjusting your filters' 
   : 'Create your first application'}
-```
+```text
 
 Helpful based on context
 
@@ -198,7 +198,7 @@ dialog::backdrop {
 dialog {
   border: 0;
 }
-```
+```text
 
 ---
 

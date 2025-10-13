@@ -18,9 +18,9 @@ Security search filters allow you to quickly find high-risk and quarantined emai
 
 **URL Example:**
 
-```
+```text
 /search?q=invoice&risk_min=80
-```
+```text
 
 ### Quarantined Only Filter
 
@@ -34,9 +34,9 @@ Security search filters allow you to quickly find high-risk and quarantined emai
 
 **URL Example:**
 
-```
+```text
 /search?q=test&quarantined=true
-```
+```text
 
 ### Using Both Filters
 
@@ -49,15 +49,15 @@ Security search filters allow you to quickly find high-risk and quarantined emai
 
 **URL Example:**
 
-```
+```text
 /search?q=security&risk_min=80&quarantined=true
-```
+```text
 
 ## 🎨 Visual Guide
 
 ### Filter Chips
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │  🛡️ Security filters:                               │
 │                                                      │
@@ -65,7 +65,7 @@ Security search filters allow you to quickly find high-risk and quarantined emai
 │   Toggle ON for red    Toggle ON for amber          │
 │   Toggle OFF for gray  Toggle OFF for gray          │
 └─────────────────────────────────────────────────────┘
-```
+```text
 
 ### Active State
 
@@ -99,7 +99,7 @@ Copy the URL from your browser to share filtered search results with others!
 
 ```bash
 npm run test:e2e -- security-search-filters.spec.ts
-```
+```text
 
 ### Manual Test Checklist
 
@@ -123,7 +123,7 @@ curl "http://localhost:8003/api/search/?q=test&quarantined=true"
 
 # Both filters
 curl "http://localhost:8003/api/search/?q=security&risk_min=80&quarantined=true"
-```
+```text
 
 ### Response Format
 
@@ -142,46 +142,46 @@ curl "http://localhost:8003/api/search/?q=security&risk_min=80&quarantined=true"
   ],
   "total": 1
 }
-```
+```text
 
 ## 🎓 Examples
 
 ### Example 1: Find All High-Risk Emails
 
-```
+```text
 1. Go to /search
 2. Clear search box (or search for "*")
 3. Toggle "High Risk (≥80)" ON
 4. View all high-risk emails
-```
+```text
 
 ### Example 2: Review Quarantined Invoices
 
-```
+```text
 1. Go to /search
 2. Type "invoice" in search box
 3. Toggle "Quarantined only" ON
 4. Press Enter
 5. Review quarantined invoice emails
-```
+```text
 
 ### Example 3: Investigate Critical Threats
 
-```
+```text
 1. Go to /search
 2. Type "phishing" or "suspicious"
 3. Toggle BOTH chips ON
 4. View emails that are both high-risk and quarantined
-```
+```text
 
 ### Example 4: Share Filtered Results
 
-```
+```text
 1. Apply your desired filters
 2. Copy URL from browser address bar
 3. Send to colleague
 4. They see same filtered results when they open the link
-```
+```text
 
 ## 🔧 Troubleshooting
 

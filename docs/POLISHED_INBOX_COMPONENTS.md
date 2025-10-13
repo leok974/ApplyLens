@@ -33,7 +33,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 <Badge variant="promo" size="sm">Promotion</Badge>
 <Badge variant="ats">Application</Badge>
 <Badge variant="danger" size="sm">high risk</Badge>
-```
+```text
 
 ---
 
@@ -52,7 +52,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 ```tsx
 <Skeleton className="h-4 w-40" />
 <Skeleton className="mt-2 h-4 w-3/4" />
-```
+```text
 
 ---
 
@@ -73,7 +73,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 ```tsx
 <Label htmlFor="email">Email address</Label>
 <Input id="email" type="email" />
-```
+```text
 
 ---
 
@@ -95,7 +95,7 @@ Successfully implemented a complete set of polished, production-ready inbox comp
 
 ```tsx
 <Switch checked={enabled} onCheckedChange={setEnabled} />
-```
+```text
 
 ---
 
@@ -132,7 +132,7 @@ type Props = {
   onSus?: () => void;
   onExplain?: () => void;
 };
-```
+```text
 
 **Usage**:
 
@@ -147,7 +147,7 @@ type Props = {
   onSelect={() => setSelected(email.id)}
   onArchive={() => handleArchive(email.id)}
 />
-```
+```text
 
 ---
 
@@ -175,7 +175,7 @@ type Props = {
   onSus?: (id: string) => void;
   onExplain?: (id: string) => void;
 }
-```
+```text
 
 **Usage**:
 
@@ -190,7 +190,7 @@ type Props = {
   onSus={handleSuspicious}
   onExplain={handleExplain}
 />
-```
+```text
 
 ---
 
@@ -218,7 +218,7 @@ type Props = {
   onApply: () => void;
   onReset: () => void;
 }
-```
+```text
 
 **Usage**:
 
@@ -235,7 +235,7 @@ type Props = {
   onApply={runSearch}
   onReset={clearFilters}
 />
-```
+```text
 
 ---
 
@@ -304,7 +304,7 @@ type Props = {
 
 ```bash
 npm install @radix-ui/react-label @radix-ui/react-switch
-```
+```text
 
 These were added to support the Label and Switch components.
 
@@ -312,7 +312,7 @@ These were added to support the Label and Switch components.
 
 ## File Structure
 
-```
+```text
 apps/web/src/
 ├── components/
 │   ├── inbox/                    # NEW DIRECTORY
@@ -331,7 +331,7 @@ apps/web/src/
 │   ├── InboxPolished.tsx        # ✅ (existing)
 │   └── InboxPolishedDemo.tsx    # ✅ NEW (demo page)
 └── App.tsx                      # ✅ UPDATED (added route)
-```
+```text
 
 ---
 
@@ -399,7 +399,7 @@ export default function MyInbox() {
     </div>
   );
 }
-```
+```text
 
 ---
 
@@ -431,7 +431,7 @@ export default function MyInbox() {
 
 // Chevron icon
 "text-slate-300 dark:text-slate-600"
-```
+```text
 
 ### FiltersPanel
 
@@ -450,7 +450,7 @@ export default function MyInbox() {
 
 // Toggle label
 "text-slate-700 dark:text-slate-200"
-```
+```text
 
 ### Header
 
@@ -463,7 +463,7 @@ export default function MyInbox() {
 
 // Logo icon
 "text-indigo-600 dark:text-indigo-400"
-```
+```text
 
 ---
 
@@ -545,7 +545,7 @@ import { EmailList } from "@/components/inbox/EmailList";
   onSus={onMarkSuspicious}
   onExplain={onExplain}
 />
-```
+```text
 
 ---
 

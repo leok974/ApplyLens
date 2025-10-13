@@ -13,10 +13,10 @@ Successfully implemented a production-ready analytics pipeline integrating Fivet
 
 **Architecture**:
 
-```
+```text
 PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
   (Source)   (Sync)    (Warehouse) (Transform) (Store)     (Visualize)
-```
+```text
 
 **Key Deliverables**:
 
@@ -58,7 +58,7 @@ PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
 -- Read-only user for Fivetran
 CREATE USER fivetran_user WITH PASSWORD 'secure_password';
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO fivetran_user;
-```
+```text
 
 **Tables to Sync**:
 
@@ -93,7 +93,7 @@ models:
   marts:
     +schema: marts
     +materialized: table
-```
+```text
 
 **BigQuery Connection**:
 
@@ -132,7 +132,7 @@ CASE
   WHEN risk_score < 90 THEN 'high'
   ELSE 'critical'
 END
-```
+```text
 
 **Materialization**: View in `staging` schema
 
@@ -158,7 +158,7 @@ CASE
   WHEN status IN ('applied', 'submitted') THEN 'pending'
   ELSE 'other'
 END
-```
+```text
 
 **Materialization**: View in `staging` schema
 
@@ -183,7 +183,7 @@ END
 coverage_pct = emails_scored * 100.0 / emails
 high_risk_pct = high_risk_count * 100.0 / emails
 critical_risk_pct = critical_risk_count * 100.0 / emails
-```
+```text
 
 **Optimization**:
 
@@ -198,7 +198,7 @@ SELECT d, emails, avg_risk, high_risk_pct, coverage_pct
 FROM applylens.marts.mrt_risk_daily
 WHERE d >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
 ORDER BY d DESC;
-```
+```text
 
 ---
 
@@ -217,7 +217,7 @@ ORDER BY d DESC;
 --   - check_timestamp
 --   - total_checked, total_mismatches
 --   - field-specific mismatch counts
-```
+```text
 
 **SLO Status Logic**:
 
@@ -228,7 +228,7 @@ CASE
   WHEN mismatch_ratio < 0.005 THEN 'warning'     -- <0.5%
   ELSE 'critical'                                 -- ≥0.5%
 END
-```
+```text
 
 **Integration Path**:
 
@@ -255,7 +255,7 @@ END
 --   - job_timestamp, duration_seconds
 --   - emails_processed, batch_size
 --   - status (success/failure)
-```
+```text
 
 **SLO Definition**: p95 duration < 300 seconds (5 minutes)
 
@@ -268,7 +268,7 @@ CASE
   WHEN p95_duration_seconds < 420 THEN 'warning'   -- <7 min
   ELSE 'critical'                                   -- ≥7 min
 END
-```
+```text
 
 **Integration Path**:
 
@@ -332,7 +332,7 @@ END
   "total_success": 150,
   "total_errors": 0
 }
-```
+```text
 
 ---
 
@@ -401,7 +401,7 @@ END
 curl -X PUT "http://localhost:9200/_index_template/analytics_applylens" \
   -H 'Content-Type: application/json' \
   -d @services/api/es/index-templates/analytics_applylens.json
-```
+```text
 
 ---
 
@@ -480,7 +480,7 @@ curl -X PUT "http://localhost:9200/_index_template/analytics_applylens" \
 curl -X POST "http://localhost:5601/api/saved_objects/_import" \
   -H "kbn-xsrf: true" \
   --form file=@services/api/dashboards/analytics-overview.ndjson
-```
+```text
 
 ---
 
@@ -517,7 +517,7 @@ SELECT COUNT(*) FROM postgres.emails vs applylens.public_emails
 
 -- Validate dbt aggregation accuracy
 SELECT raw vs mart counts with diff calculation
-```
+```text
 
 **Backfill Example**:
 
@@ -525,13 +525,13 @@ SELECT raw vs mart counts with diff calculation
 # Full historical refresh
 dbt run --full-refresh
 python analytics/export/export_to_es.py  # (after modifying date range)
-```
+```text
 
 ---
 
 ## Architecture Diagram
 
-```
+```text
 ┌─────────────┐
 │ PostgreSQL  │ emails, applications tables
 └──────┬──────┘
@@ -570,7 +570,7 @@ python analytics/export/export_to_es.py  # (after modifying date range)
 │   Kibana    │ Dashboards
 │             │ - 8 visualizations
 └─────────────┘ - Risk trends, SLO monitoring
-```
+```text
 
 **Data Flow Timing**:
 
@@ -620,7 +620,7 @@ SELECT
   COUNT(*)
 FROM applylens.public_applications
 '
-```
+```text
 
 **Expected Result**: Row counts match PostgreSQL source (±1% tolerance)
 
@@ -672,7 +672,7 @@ FROM applylens.marts.mrt_risk_daily
 ORDER BY d DESC
 LIMIT 7
 '
-```
+```text
 
 **Expected Result**:
 
@@ -722,7 +722,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_count?pretty"
 
 # 8. Sample documents
 curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&pretty"
-```
+```text
 
 **Expected Result**:
 
@@ -767,7 +767,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&pretty
 # 6. Verify SLO chart shows status
 # - Backfill P95 duration should show trend
 # - Color should be red (SLO threshold indicator)
-```
+```text
 
 **Expected Result**:
 
@@ -813,7 +813,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search" \
 
 # 7. Check Kibana dashboard for fresh data
 # Latest date should be yesterday (T-1)
-```
+```text
 
 **Expected Result**:
 
@@ -842,7 +842,7 @@ bq ls --project_id=your-project-id applylens | grep public_
 
 # Check row counts match PostgreSQL
 # (Compare SELECT COUNT(*) FROM emails in both databases)
-```
+```text
 
 **Status**: ✅ Configuration documented, ready for setup
 
@@ -872,7 +872,7 @@ LIMIT 5
 '
 
 # Expected: 5+ rows with yesterday's date in top row
-```
+```text
 
 **Status**: ✅ All 3 mart models created and tested
 
@@ -901,7 +901,7 @@ curl "http://localhost:9200/_cat/indices/analytics_applylens_*?v"
 curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&sort=d:desc"
 
 # Expected: Document with d = yesterday's date
-```
+```text
 
 **Status**: ✅ Workflow configured, export script tested
 
@@ -928,7 +928,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&sort=d
 # - Hover over data points (tooltip appears)
 # - Click "Refresh" button (data reloads)
 # - Change time range (charts update)
-```
+```text
 
 **Status**: ✅ Dashboard created with 8 visualizations including required time series
 
@@ -986,7 +986,7 @@ def export_to_bigquery(parity_results):
     errors = client.insert_rows_json(table_id, rows)
     if errors:
         logger.error(f"BigQuery insert failed: {errors}")
-```
+```text
 
 **Update mrt_parity_drift.sql**:
 
@@ -1001,7 +1001,7 @@ FROM applylens.parity_checks
 WHERE check_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
 GROUP BY 1
 ORDER BY 1 DESC
-```
+```text
 
 ---
 
@@ -1025,14 +1025,14 @@ backfill_duration = Histogram(
 def backfill_emails(batch_size):
     # ... existing logic
     pass
-```
+```text
 
 **Export metrics to BigQuery**:
 
 ```python
 # New script: analytics/export/export_prometheus_metrics.py
 # Query Prometheus API, parse histogram buckets, calculate percentiles, insert to BQ
-```
+```text
 
 **Implementation Option B - Direct Logging**:
 
@@ -1051,7 +1051,7 @@ def log_backfill_metrics(duration, emails_processed, status):
     }]
     
     client.insert_rows_json(table_id, rows)
-```
+```text
 
 **Update mrt_backfill_slo.sql**:
 
@@ -1069,7 +1069,7 @@ WHERE job_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
   AND status = 'success'
 GROUP BY 1
 ORDER BY 1 DESC
-```
+```text
 
 ---
 
@@ -1101,7 +1101,7 @@ actions:
   - type: slack
     channel: #ops-alerts
     message: "🚨 Backfill P95 duration exceeded 5 minutes"
-```
+```text
 
 ---
 
@@ -1138,7 +1138,7 @@ PUT _ilm/policy/analytics_30day_retention
 // Update index template to use ILM policy (already configured)
 // analytics_applylens.json has:
 // "settings": { "index.lifecycle.name": "analytics_30day_retention" }
-```
+```text
 
 ---
 
@@ -1351,7 +1351,7 @@ gh workflow run analytics-sync.yml
 # 8. View dashboard
 # http://localhost:5601/app/dashboards
 # Find: "ApplyLens Analytics Overview"
-```
+```text
 
 ---
 

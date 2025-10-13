@@ -25,13 +25,13 @@ All files in this directory (except `.example` files) are ignored by git.
 
 ### 2. File Structure
 
-```
+```text
 secrets/
 ├── .gitkeep
 ├── README.md           # This file
 ├── google.json.example # Template for Google OAuth credentials
 └── google.json         # YOUR ACTUAL CREDENTIALS (gitignored)
-```
+```text
 
 ## Security Notes
 

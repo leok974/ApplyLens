@@ -29,7 +29,7 @@ ID: 2, risk_score: 0.0, category: None, expires_at: None
 ID: 3, risk_score: 0.0, category: None, expires_at: None
 ID: 4, risk_score: 0.0, category: None, expires_at: None
 ID: 5, risk_score: 0.0, category: None, expires_at: None
-```
+```text
 
 ✅ All columns queryable via ORM  
 ✅ No runtime errors  
@@ -78,13 +78,13 @@ ID: 5, risk_score: 0.0, category: None, expires_at: None
 
 ```python
 require_min_migration("0009_add_emails_category", "emails.category column")
-```
+```text
 
 **After:**
 
 ```python
 require_min_migration("0012_add_emails_features_json", "email automation system fields")
-```
+```text
 
 **Benefit:** Jobs now verify the database has ALL email automation fields (category, risk_score, expires_at, profile_tags, features_json) before starting, preventing failures mid-execution.
 
@@ -105,7 +105,7 @@ Backfill (DRY RUN) completed.
 Scanned: 1 bills
 Updated: 0 bills
 Unchanged: 1 bills
-```
+```text
 
 ✅ Schema guard passes with current DB version  
 ✅ Script executes successfully  
@@ -127,7 +127,7 @@ from sqlalchemy import select
 
 stmt = select(Email.id, Email.risk_score, Email.category, Email.expires_at).limit(5)
 result = db.execute(stmt)
-```
+```text
 
 **Result:** ✅ Query executes without errors
 
@@ -152,7 +152,7 @@ result = db.execute(stmt)
 
 ```python
 require_min_migration("0012_add_emails_features_json", "email automation system fields")
-```
+```text
 
 **Purpose:** Ensure database has all automation fields before running backfill
 
@@ -163,7 +163,7 @@ require_min_migration("0012_add_emails_features_json", "email automation system 
 
 ```python
 require_min_migration('0012_add_emails_features_json', 'email automation system fields')
-```
+```text
 
 **Purpose:** Prevent CI jobs from running if database schema is outdated
 
@@ -214,14 +214,14 @@ require_min_migration('0012_add_emails_features_json', 'email automation system 
 
 **Error Message Example:**
 
-```
+```text
 ❌ Schema validation failed:
 Database schema is too old. Current: 0009, Required: 0012
 
 Please run migrations:
   cd services/api
   alembic upgrade head
-```
+```text
 
 ---
 
@@ -270,7 +270,7 @@ Please run migrations:
 
 **Commit 1: 9b9b7b5**
 
-```
+```text
 feat: Add email automation system columns (risk_score, expires_at, profile_tags, features_json)
 
 - Migration 0010: Add risk_score column with index, initialize to 0
@@ -281,11 +281,11 @@ feat: Add email automation system columns (risk_score, expires_at, profile_tags,
 - Comprehensive documentation in MIGRATION_EMAIL_AUTOMATION_COMPLETE.md
 
 Files: 4 changed, 600 insertions(+)
-```
+```text
 
 **Commit 2: ae2f4a5**
 
-```
+```text
 chore: Update schema guards to require migration 0012
 
 - Update backfill_bill_dates.py to require migration 0012 (email automation fields)
@@ -294,7 +294,7 @@ chore: Update schema guards to require migration 0012
 - Tested: schema guard passes with current DB at migration 0012
 
 Files: 2 changed, 2 insertions(+), 2 deletions(-)
-```
+```text
 
 **Total Changes:**
 
@@ -318,15 +318,15 @@ SELECT
     COUNT(profile_tags) as has_profile_tags,
     COUNT(features_json) as has_features_json
 FROM emails;
-```
+```text
 
 ### Expected Output (Current State)
 
-```
+```text
 total | has_risk_score | has_expires_at | has_category | has_profile_tags | has_features_json
 ------|----------------|----------------|--------------|------------------|------------------
 1850  | 1850           | 0              | ~900         | 0                | 0
-```
+```text
 
 ### CI Workflow Monitoring
 

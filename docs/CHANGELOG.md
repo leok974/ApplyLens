@@ -14,9 +14,7 @@ All notable changes to this project will be documented in this file.
   - `public/metrics.html` lightweight dashboard (no extra deps)
   - Nightly GitHub Action to auto-update `data/analytics/weights.json`
 
-
 ## Phase-1 Gap Closure Implementation
-
 
 # Phase-1 Gap Closure - Implementation Complete ✅
 
@@ -117,7 +115,7 @@ $ curl -X POST "http://localhost:8000/search/actions/archive" \
 - /actions/mark_safe ✅
 - /actions/mark_suspicious ✅
 - /actions/unsubscribe_dryrun ✅
-```
+```text
 
 ### Known Status
 
@@ -141,7 +139,7 @@ curl -X PUT "http://localhost:9200/_index_template/emails_v1" `
 
 # Verify
 curl "http://localhost:9200/_index_template/emails_v1?pretty"
-```
+```text
 
 ### 2. API Already Running
 
@@ -165,7 +163,7 @@ npm run dev
 # <Route path="/inbox-actions" element={<InboxWithActions />} />
 
 # Then navigate to: http://localhost:5173/inbox-actions
-```
+```text
 
 ### 4. Set Up Kibana Queries
 

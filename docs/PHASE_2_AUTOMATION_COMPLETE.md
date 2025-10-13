@@ -67,7 +67,7 @@
 
 ```bash
 make phase2-all
-```
+```text
 
 **Features:**
 
@@ -81,7 +81,7 @@ make phase2-all
 ```bash
 make export-weak EXPORT_DAYS=90
 make apply-labels API_BASE=https://api.example.com
-```
+```text
 
 ---
 
@@ -94,7 +94,7 @@ make apply-labels API_BASE=https://api.example.com
 ```bash
 npm install
 npm run phase2:all
-```
+```text
 
 **Features:**
 
@@ -112,7 +112,7 @@ npm run phase2:export
 
 # Unix/Linux/Mac
 ES_URL=http://localhost:9200 npm run phase2:export
-```
+```text
 
 ---
 
@@ -124,7 +124,7 @@ ES_URL=http://localhost:9200 npm run phase2:export
 
 ```powershell
 .\scripts\phase2-all.ps1
-```
+```text
 
 **Features:**
 
@@ -141,7 +141,7 @@ ES_URL=http://localhost:9200 npm run phase2:export
 
 ```powershell
 .\scripts\phase2-all.ps1 -Days 90 -Limit 50000 -ApiBase https://api.example.com
-```
+```text
 
 ---
 
@@ -165,7 +165,7 @@ ES_URL=http://localhost:9200 npm run phase2:export
 
 All three automation options run the same underlying workflow:
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │ Phase 1: Export Weak Labels                        │
 │                                                      │
@@ -217,7 +217,7 @@ All three automation options run the same underlying workflow:
 │        • Ready for profile analytics                │
 │        • UI filtering enabled                       │
 └─────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -237,11 +237,11 @@ All three automation options run the same underlying workflow:
     "other": 4877
   }
 }
-```
+```text
 
 ### Training Phase Output
 
-```
+```text
 ✅ Saved model to label_model.joblib
 
               precision    recall  f1-score   support
@@ -255,17 +255,17 @@ All three automation options run the same underlying workflow:
     accuracy                           0.89     12500
    macro avg       0.90      0.90      0.90     12500
 weighted avg       0.89      0.89      0.89     12500
-```
+```text
 
 ### Apply Phase Output
 
 ```json
 {"updated": 15234}
-```
+```text
 
 ### Verification (PowerShell Only)
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📈 Verification Results
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -286,7 +286,7 @@ Profile Summary:
       newsletter.example.com (421 emails)
 
 ✅ Phase 2 pipeline complete!
-```
+```text
 
 ---
 
@@ -298,14 +298,14 @@ Profile Summary:
 
 ```powershell
 .\scripts\phase2-all.ps1
-```
+```text
 
 **Mac/Linux:**
 
 ```bash
 npm install
 npm run phase2:all
-```
+```text
 
 ### CI/CD Integration
 
@@ -314,7 +314,7 @@ npm run phase2:all
 ```yaml
 - name: Run Phase-2 Pipeline
   run: make phase2-all
-```
+```text
 
 **GitLab CI:**
 
@@ -323,7 +323,7 @@ phase2:
   script:
     - npm install
     - npm run phase2:all
-```
+```text
 
 ### Development Iteration
 
@@ -338,7 +338,7 @@ npm run phase2:train
 
 # PowerShell (run full pipeline, it's quick)
 .\scripts\phase2-all.ps1
-```
+```text
 
 **Apply Labels Only:**
 
@@ -350,7 +350,7 @@ make apply-labels
 npm run phase2:apply
 
 # PowerShell (same as above)
-```
+```text
 
 ### Production Deployment
 
@@ -375,7 +375,7 @@ npm run phase2:all
   -ApiBase https://api.prod.applylens.app `
   -Days 90 `
   -Limit 100000
-```
+```text
 
 ---
 
@@ -494,11 +494,11 @@ git add scripts/phase2-all.ps1
 git add PHASE_2_AUTOMATION.md
 git add PHASE_2_QUICK_REF.md
 git add README.md
-```
+```text
 
 ### Suggested Commit Message
 
-```
+```text
 feat: add Phase-2 automation tools with multi-platform support
 
 Implements three automation options for Phase-2 email categorization
@@ -544,7 +544,7 @@ All three options run the same pipeline:
 Result: Users can run `make phase2-all` (Unix), `npm run phase2:all`
 (cross-platform), or `.\scripts\phase2-all.ps1` (Windows) to execute
 the complete Phase-2 categorization pipeline.
-```
+```text
 
 ---
 

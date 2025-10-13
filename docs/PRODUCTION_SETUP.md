@@ -28,25 +28,25 @@ ApplyLens is now fully configured with:
 
 ```powershell
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Format-List
-```
+```text
 
 **Manually trigger sync:**
 
 ```powershell
 Start-ScheduledTask -TaskName "ApplyLens-GmailSync"
-```
+```text
 
 **View task history:**
 
 ```powershell
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
-```
+```text
 
 **Remove task (if needed):**
 
 ```powershell
 Unregister-ScheduledTask -TaskName "ApplyLens-GmailSync" -Confirm:$false
-```
+```text
 
 ### Alternative: Manual Sync
 
@@ -58,7 +58,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
 
 # Full 60-day resync
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=60" -Method POST
-```
+```text
 
 ---
 
@@ -68,7 +68,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=60" -Method PO
 
 ```powershell
 curl http://localhost:8003/gmail/status
-```
+```text
 
 **Expected response:**
 
@@ -80,7 +80,7 @@ curl http://localhost:8003/gmail/status
   "has_refresh_token": true,
   "total": 1810
 }
-```
+```text
 
 ### Token Refresh Issues
 
@@ -135,7 +135,7 @@ If `connected: false` unexpectedly:
 
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:9200/_index_template/gmail_emails_tpl"
-```
+```text
 
 ### ILM Policy
 
@@ -153,7 +153,7 @@ Invoke-RestMethod -Uri "http://localhost:9200/_index_template/gmail_emails_tpl"
 
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:9200/_ilm/policy/gmail_emails_ilm"
-```
+```text
 
 **Adjust retention (example - 1 year):**
 
@@ -170,7 +170,7 @@ $ilmJson = @'
 }
 '@
 Invoke-RestMethod -Uri "http://localhost:9200/_ilm/policy/gmail_emails_ilm" -Method PUT -Body $ilmJson -ContentType "application/json"
-```
+```text
 
 ### Index Management
 
@@ -179,7 +179,7 @@ Invoke-RestMethod -Uri "http://localhost:9200/_ilm/policy/gmail_emails_ilm" -Met
 ```powershell
 curl http://localhost:9200/gmail_emails/_count
 curl http://localhost:9200/gmail_emails/_stats/store
-```
+```text
 
 **Delete and recreate index (if needed):**
 
@@ -192,7 +192,7 @@ curl -Method PUT http://localhost:9200/gmail_emails
 
 # Re-index from backfill
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=60" -Method POST
-```
+```text
 
 ---
 
@@ -209,7 +209,7 @@ curl http://localhost:9200/gmail_emails/_count
 
 # API count (authenticated user)
 curl http://localhost:8003/gmail/status
-```
+```text
 
 ### Application Counts
 
@@ -223,7 +223,7 @@ curl http://localhost:8003/applications | ConvertFrom-Json | Measure-Object | Se
 # By status
 curl "http://localhost:8003/applications?status=applied" | ConvertFrom-Json | Measure-Object | Select-Object Count
 curl "http://localhost:8003/applications?status=interview" | ConvertFrom-Json | Measure-Object | Select-Object Count
-```
+```text
 
 ### Database Backup
 
@@ -233,7 +233,7 @@ curl http://localhost:8003/applications | Out-File -FilePath "D:\ApplyLens\backu
 
 # PostgreSQL dump
 docker compose -f D:\ApplyLens\infra\docker-compose.yml exec db pg_dump -U postgres applylens > "D:\ApplyLens\backup-db-$(Get-Date -Format 'yyyy-MM-dd').sql"
-```
+```text
 
 ---
 
@@ -253,7 +253,7 @@ curl "http://localhost:8003/search?company=Google"
 # Filter by source (ATS)
 curl "http://localhost:8003/search?source=lever"
 curl "http://localhost:8003/search?source=greenhouse"
-```
+```text
 
 ### Application Queries
 
@@ -271,7 +271,7 @@ curl "http://localhost:8003/applications?company=Google"
 
 # Get specific application
 curl http://localhost:8003/applications/1
-```
+```text
 
 ---
 
@@ -324,13 +324,13 @@ curl http://localhost:8003/applications/1
 ```powershell
 cd D:\ApplyLens\infra
 docker compose up -d
-```
+```text
 
 ### Check Service Status
 
 ```powershell
 docker compose ps
-```
+```text
 
 ### View Logs
 
@@ -343,7 +343,7 @@ docker compose logs -f
 
 # Specific error logs
 docker compose logs api --tail=50 | Select-String -Pattern "error|exception|failed"
-```
+```text
 
 ### Restart Services
 
@@ -356,7 +356,7 @@ docker compose restart
 
 # Rebuild and restart (after code changes)
 docker compose up -d --build
-```
+```text
 
 ### Stop Services
 
@@ -366,7 +366,7 @@ docker compose down
 
 # Stop and remove volumes (WARNING: deletes data!)
 docker compose down -v
-```
+```text
 
 ---
 
@@ -402,19 +402,19 @@ docker compose down -v
 
 ```powershell
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
-```
+```text
 
 **View task history:**
 
 ```powershell
 Get-WinEvent -LogName "Microsoft-Windows-TaskScheduler/Operational" | Where-Object {$_.Message -like "*ApplyLens*"} | Select-Object -First 10
-```
+```text
 
 **Manually test:**
 
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
-```
+```text
 
 ### Elasticsearch Issues
 
@@ -427,7 +427,7 @@ curl http://localhost:9200/_cat/indices?v
 # Recreate index
 curl -Method PUT http://localhost:9200/gmail_emails
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=60" -Method POST
-```
+```text
 
 **Mapping conflicts:**
 
@@ -435,7 +435,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=60" -Method PO
 # Delete and recreate with template
 curl -Method DELETE http://localhost:9200/gmail_emails
 curl -Method PUT http://localhost:9200/gmail_emails
-```
+```text
 
 **Low disk space:**
 
@@ -445,7 +445,7 @@ curl http://localhost:9200/_cluster/health
 
 # Check disk usage
 curl http://localhost:9200/_cat/allocation?v
-```
+```text
 
 ### Database Connection Issues
 
@@ -453,19 +453,19 @@ curl http://localhost:9200/_cat/allocation?v
 
 ```powershell
 docker compose ps db
-```
+```text
 
 **Test connection:**
 
 ```powershell
 docker compose exec db psql -U postgres -d applylens -c "SELECT 1;"
-```
+```text
 
 **Check connection string:**
 
 ```powershell
 docker compose exec api bash -c 'echo $DATABASE_URL'
-```
+```text
 
 ---
 
@@ -619,7 +619,7 @@ docker compose exec db psql -U postgres -d applylens -c "SELECT count(*) FROM em
 
 # View API logs
 docker compose logs api --tail=100
-```
+```text
 
 ---
 

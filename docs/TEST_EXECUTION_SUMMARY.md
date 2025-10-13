@@ -31,7 +31,7 @@ All confidence estimation tests now pass with database connectivity:
 ```powershell
 $env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@localhost:5433/applylens"
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 ### Issues Resolved
 
@@ -85,14 +85,14 @@ pytest tests/test_confidence_learning.py -v
 
 All ApplyLens infrastructure services confirmed running:
 
-```
+```text
 NAMES                 STATUS             PORTS
 infra-api-1           Up 2 hours         0.0.0.0:8003->8003/tcp
 infra-db-1            Up 2 hours         0.0.0.0:5433->5432/tcp  ✅
 infra-es-1            Up 2 hours         0.0.0.0:9200->9200/tcp (healthy)
 infra-ollama-1        Up 2 hours         0.0.0.0:11434->11434/tcp
 infra-cloudflared-1   Up 2 hours
-```
+```text
 
 ### Database Verification
 
@@ -106,7 +106,7 @@ Result: 17 tables found including:
 - user_weights ✅ (used by confidence learning)
 - actions_audit
 - proposed_actions
-```
+```text
 
 ## Recommendations
 

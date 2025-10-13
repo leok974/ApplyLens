@@ -37,13 +37,13 @@ Implemented a comprehensive dark theme with soft surfaces and high legibility, m
 
 ```tsx
 style={{ border: '1px solid #ddd', borderRadius: 12, padding: 12 }}
-```
+```text
 
 **After:** Theme-aware classes
 
 ```tsx
 className="surface-card density-x density-y mb-3 transition-all hover:shadow-lg"
-```
+```text
 
 **Benefits:**
 
@@ -59,14 +59,14 @@ className="surface-card density-x density-y mb-3 transition-all hover:shadow-lg"
 ```tsx
 className="bg-gray-50 border-b"
 className="hover:bg-gray-50"
-```
+```text
 
 **After:** Theme-aware surfaces
 
 ```tsx
 className="bg-[color:hsl(var(--muted))]"
 className="hover:bg-[color:hsl(var(--muted))]/30"
-```
+```text
 
 **Benefits:**
 
@@ -86,7 +86,7 @@ app.include_router(emails.router, prefix="/api")
 app.include_router(search.router, prefix="/api")
 app.include_router(suggest.router, prefix="/api")
 app.include_router(applications.router, prefix="/api")
-```
+```text
 
 **Result:** Search endpoint now accessible at `/api/search/` matching frontend expectations
 
@@ -100,7 +100,7 @@ app.include_router(applications.router, prefix="/api")
 
 **Test Results:**
 
-```
+```text
 ✓ inbox.smoke.spec.ts - Card rendering (1.5s)
 ✓ details-panel.spec.ts - Resize & thread nav (3.8s)
 ✓ legibility.spec.ts - CSS vars & persistence (1.2s)
@@ -109,7 +109,7 @@ app.include_router(applications.router, prefix="/api")
 ✓ tracker.spec.ts - Application list & filters (1.7s)
 
 6 passed (4.7s) ✅
-```
+```text
 
 ## Visual Improvements
 
@@ -150,7 +150,7 @@ docker compose up -d --build web
 # Run E2E tests
 cd D:\ApplyLens
 pnpm test:e2e
-```
+```text
 
 ### Testing Dark Mode
 
@@ -173,7 +173,7 @@ All colors use HSL values for easier manipulation:
 ```css
 --card: 220 38% 10%;  /* Hue Saturation Lightness */
 background-color: hsl(var(--card));
-```
+```text
 
 This allows:
 

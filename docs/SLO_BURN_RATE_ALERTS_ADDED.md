@@ -34,7 +34,7 @@ These alerts detect when you're consuming your error budget too quickly, giving 
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[1h]))
  / sum(rate(applylens_http_requests_total[1h]))) / 0.001
-```
+```text
 
 **What It Means:**
 
@@ -69,7 +69,7 @@ These alerts detect when you're consuming your error budget too quickly, giving 
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[6h]))
  / sum(rate(applylens_http_requests_total[6h]))) / 0.001
-```
+```text
 
 **What It Means:**
 
@@ -108,7 +108,7 @@ Burn rate = **Current error rate ÷ Allowed error rate**
 
 **Why use both 1h and 6h windows?**
 
-```
+```text
 Fast Window (1h):
   ✅ Detects incidents quickly (within an hour)
   ❌ Sensitive to short spikes/noise
@@ -122,7 +122,7 @@ Slow Window (6h):
 Best Practice: Use BOTH
   → 1h catches sharp spikes (page immediately)
   → 6h confirms sustained issues (investigate)
-```
+```text
 
 ---
 
@@ -130,7 +130,7 @@ Best Practice: Use BOTH
 
 ### Calculation
 
-```
+```text
 Burn Rate = (Current Error Rate) / (Allowed Error Rate)
 
 For 99.9% SLO:
@@ -139,7 +139,7 @@ For 99.9% SLO:
 Example:
   If 5xx rate = 1.44% (0.0144)
   Burn Rate = 0.0144 / 0.001 = 14.4×
-```
+```text
 
 ### Threshold Selection
 
@@ -157,14 +157,14 @@ Example:
 
 ### Budget Depletion Time
 
-```
+```text
 Time to deplete = 30 days / burn_rate
 
 Examples:
   6× burn   → 30 / 6   = 5 days
   14.4× burn → 30 / 14.4 = 2.08 days
   100× burn  → 30 / 100  = 0.3 days = 7.2 hours
-```
+```text
 
 ---
 
@@ -177,7 +177,7 @@ Make sure your webhook listener is running to see notifications:
 ```powershell
 # Terminal 1: Start webhook listener
 python D:\ApplyLens\tools\grafana_webhook.py
-```
+```text
 
 ### Test 1: Trigger Fast Burn Rate Alert (1h)
 
@@ -202,7 +202,7 @@ Write-Host "`nWatch:" -ForegroundColor Cyan
 Write-Host "   • Dashboard: http://localhost:3000/d/applylens-overview" -ForegroundColor White
 Write-Host "   • Alerts: http://localhost:3000/alerting/list" -ForegroundColor White
 Write-Host "   • Webhook listener terminal for notifications`n" -ForegroundColor White
-```
+```text
 
 **Expected Behavior:**
 
@@ -220,7 +220,7 @@ Write-Host "⏳ Watch burn rate decay..." -ForegroundColor Cyan
 Write-Host "   • 1h panel drops gradually as 1h window ages out errors" -ForegroundColor Gray
 Write-Host "   • 6h panel drops slower (longer memory)" -ForegroundColor Gray
 Write-Host "   • Alerts resolve when burn rate drops below threshold`n" -ForegroundColor Gray
-```
+```text
 
 ### Test 3: Check Alert States
 
@@ -232,7 +232,7 @@ $rules | Where-Object { $_.title -like "*burn*" } | Select-Object title, uid, @{
 
 # Via Grafana UI
 start http://localhost:3000/alerting/list
-```
+```text
 
 ---
 
@@ -292,7 +292,7 @@ If you have low traffic, burn rate can be noisy. Consider:
 # Increase 'for' duration
 for: 10m  # Instead of 5m for fast alert
 for: 1h   # Instead of 30m for slow alert
-```
+```text
 
 ### Adjusting for Different SLO
 
@@ -303,7 +303,7 @@ for: 1h   # Instead of 30m for slow alert
 expr: |
   (sum(rate(applylens_http_requests_total{status=~"5.."}[1h]))
    / sum(rate(applylens_http_requests_total[1h]))) / 0.005
-```
+```text
 
 **For 99.95% SLO:**
 
@@ -312,7 +312,7 @@ expr: |
 expr: |
   (sum(rate(applylens_http_requests_total{status=~"5.."}[1h]))
    / sum(rate(applylens_http_requests_total[1h]))) / 0.0005
-```
+```text
 
 ### Adjusting Burn Rate Thresholds
 
@@ -366,7 +366,7 @@ Create a panel showing remaining error budget:
 ```promql
 # Error budget remaining (days)
 30 - (30 * (sum(increase(applylens_http_requests_total{status=~"5.."}[30d])) / sum(increase(applylens_http_requests_total[30d])) / 0.001))
-```
+```text
 
 ### 2. Add Latency-Based SLO
 
@@ -379,7 +379,7 @@ Track p99 latency SLO (e.g., 99% of requests < 500ms):
       sum(rate(applylens_http_request_duration_seconds_bucket[1h])) by (le)
     ) > 0.5
   for: 5m
-```
+```text
 
 ### 3. Create Runbook Links
 
@@ -390,7 +390,7 @@ annotations:
   summary: "SLO burn rate high (fast window)"
   description: "1h burn rate > 14.4×. See runbook."
   runbook_url: "https://wiki.example.com/runbooks/slo-burn-rate"
-```
+```text
 
 ### 4. Set Up On-Call Integration
 
@@ -405,7 +405,7 @@ Configure PagerDuty or similar for critical alerts:
       type: pagerduty
       settings:
         integrationKey: <your-key>
-```
+```text
 
 Then route critical severity to PagerDuty:
 
@@ -415,7 +415,7 @@ routes:
   - receiver: PagerDuty
     object_matchers:
       - [ "severity", "=", "critical" ]
-```
+```text
 
 ---
 

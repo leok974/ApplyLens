@@ -38,7 +38,7 @@ dependencies = [
   # ... existing deps ...
   "python-json-logger",  # For structured JSON logging
 ]
-```
+```text
 
 **Optional Tracing Group Added:**
 
@@ -51,7 +51,7 @@ tracing = [
   "opentelemetry-instrumentation-sqlalchemy>=0.41b0",
   "opentelemetry-instrumentation-requests>=0.41b0",
 ]
-```
+```text
 
 **Installation:**
 
@@ -67,7 +67,7 @@ pip install -e ".[test]"
 
 # All optional features
 pip install -e ".[test,tracing]"
-```
+```text
 
 ### 2. Enhanced Metrics (`app/metrics.py`)
 
@@ -79,7 +79,7 @@ backfill_duration_seconds = Histogram(
     "Duration of backfill jobs in seconds",
     buckets=[10, 30, 60, 120, 300, 600, 1800, 3600]  # 10s to 1h
 )
-```
+```text
 
 **Bucket Design:**
 
@@ -94,7 +94,7 @@ risk_batch_duration_seconds = Histogram(
     "Duration of risk scoring batches in seconds",
     buckets=[1, 5, 10, 30, 60, 120, 300]  # 1s to 5m
 )
-```
+```text
 
 **Bucket Design:**
 
@@ -108,7 +108,7 @@ risk_requests_total = Counter(
     "Total risk computation requests by outcome",
     ["outcome"]  # success, failure
 )
-```
+```text
 
 **Usage in Alert Rules:**
 
@@ -120,7 +120,7 @@ expr: histogram_quantile(0.95,
 
 # RiskJobFailures alert
 expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
-```
+```text
 
 ### 3. README Monitoring Section
 
@@ -154,7 +154,7 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 - RiskJobFailures - Risk computation failures (runbook)
 - ParityDriftTooHigh - DB↔ES drift > 0.5% (runbook)
 - BackfillDurationSLO - p95 > 5min (runbook)
-```
+```text
 
 ### 4. Deployment Checklist (`DEPLOYMENT.md`)
 
@@ -208,14 +208,14 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 cp infra/alerts/prometheus-rules.yml /path/to/prometheus/rules/
 curl -X POST http://localhost:9090/-/reload
 curl http://localhost:9090/api/v1/rules | jq
-```
+```text
 
 ### Step 7: Verify Health Endpoints
 
 ```bash
 curl http://localhost:8003/healthz
 curl http://localhost:8003/ready | jq .
-```
+```text
 
 ### Rollback Procedure
 
@@ -223,9 +223,9 @@ curl http://localhost:8003/ready | jq .
 git checkout <previous-commit>
 docker-compose up -d --build api
 curl http://localhost:8003/ready
-```
+```text
 
-```
+```text
 
 ---
 
@@ -283,7 +283,7 @@ pip install -e ".[tracing]"
 
 # Verify installation
 python -c "import opentelemetry; print('Tracing available')"
-```
+```text
 
 ### Use New Histogram Metrics
 
@@ -302,7 +302,7 @@ except Exception as e:
 finally:
     duration = time.time() - start
     backfill_duration_seconds.observe(duration)
-```
+```text
 
 ### Query Histogram Metrics
 
@@ -318,7 +318,7 @@ sum(rate(applylens_risk_batch_duration_seconds_sum[5m]))
 
 # Risk failure rate
 rate(applylens_risk_requests_total{outcome="failure"}[5m])
-```
+```text
 
 ### Follow Deployment Checklist
 
@@ -328,7 +328,7 @@ cat DEPLOYMENT.md
 
 # Or use as reference during deployment
 # Each step has commands ready to copy-paste
-```
+```text
 
 ---
 

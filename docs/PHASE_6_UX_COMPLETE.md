@@ -39,7 +39,7 @@ export type PolicyStat = {
 }
 
 export async function fetchPolicyStats(): Promise<PolicyStat[]>
-```
+```text
 
 **Visual Design**:
 
@@ -71,7 +71,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
   + (shouldExplain ? '&explain=1' : '')
   + (shouldRemember ? '&remember=1' : '')
   + (mode ? `&mode=${encodeURIComponent(mode)}` : '')
-```
+```text
 
 **Money Mode Extra**:
 When `mode='money'`, an export link appears:
@@ -82,7 +82,7 @@ When `mode='money'`, an export link appears:
     Export receipts (CSV)
   </a>
 )}
-```
+```text
 
 **Layout Changes**:
 
@@ -126,16 +126,16 @@ When `mode='money'`, an export link appears:
 
 ### New Files (4)
 
-```
+```text
 apps/web/src/lib/policiesClient.ts           (22 lines)
 apps/web/src/components/PolicyAccuracyPanel.tsx  (68 lines)
 apps/web/tests/policy-panel.spec.ts          (110 lines)
 apps/web/tests/chat-modes.spec.ts            (147 lines)
-```
+```text
 
 ### Modified Files (2)
 
-```
+```text
 apps/web/src/components/MailChat.tsx         (+51/-10 lines)
   - Added PolicyAccuracyPanel import
   - Added mode state
@@ -149,7 +149,7 @@ PHASE_6_PERSONALIZATION.md                   (+98/-2 lines)
   - Policy Accuracy Panel documentation
   - Assistant Mode Selector documentation
   - Test documentation
-```
+```text
 
 ## API Integration
 
@@ -167,21 +167,21 @@ PHASE_6_PERSONALIZATION.md                   (+98/-2 lines)
   rejected: number
   fired: number
 }[]
-```
+```text
 
 **GET /api/chat/stream?mode=<mode>**
 
-```
+```text
 ?mode=networking  → Boosts events/meetups
 ?mode=money       → Boosts receipts/payments
 (no mode)         → Neutral retrieval
-```
+```text
 
 **GET /api/money/receipts.csv**
 
-```
+```text
 Direct CSV download of all receipts
-```
+```text
 
 ## How to Use
 
@@ -202,7 +202,7 @@ function MyPage() {
     </div>
   )
 }
-```
+```text
 
 ### Mode Selector Already Integrated
 
@@ -214,13 +214,13 @@ The mode selector is built into MailChat. No additional work needed - just use t
 cd apps/web
 pnpm test policy-panel.spec.ts
 pnpm test chat-modes.spec.ts
-```
+```text
 
 ## Visual Design
 
 ### Policy Panel
 
-```
+```text
 ┌─────────────────────────────────┐
 │ Policy Accuracy (30d)  Refresh  │
 ├─────────────────────────────────┤
@@ -232,23 +232,23 @@ pnpm test chat-modes.spec.ts
 │ ██████████████████████░░░░░░░░  │
 │ fired 50 • approved 48 • rej 2  │
 └─────────────────────────────────┘
-```
+```text
 
 ### Mode Selector
 
-```
+```text
 ┌────────────────────────────────────────────┐
 │ mode [off ▼] [networking] [money]          │
 └────────────────────────────────────────────┘
-```
+```text
 
 When money mode:
 
-```
+```text
 ┌────────────────────────────────────────────┐
 │ mode [money ▼] [Export receipts (CSV)]     │
 └────────────────────────────────────────────┘
-```
+```text
 
 ## Testing Checklist
 
@@ -305,7 +305,7 @@ When money mode:
 ```bash
 cd apps/web
 pnpm build
-```
+```text
 
 ### 2. Verify API Endpoints
 
@@ -315,21 +315,21 @@ curl http://localhost:8003/api/policy/stats | jq .
 
 # Test chat with mode
 curl "http://localhost:8003/api/chat/stream?q=test&mode=money"
-```
+```text
 
 ### 3. Run Tests
 
 ```bash
 cd apps/web
 pnpm test
-```
+```text
 
 ### 4. Deploy
 
 ```bash
 # Deploy to production
 pnpm deploy
-```
+```text
 
 ## Success Metrics
 

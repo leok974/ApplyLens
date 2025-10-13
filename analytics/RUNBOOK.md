@@ -10,9 +10,9 @@
 
 This runbook provides operational procedures for the ApplyLens analytics pipeline:
 
-```
+```text
 PostgreSQL → Fivetran → BigQuery → dbt → Elasticsearch → Kibana
-```
+```text
 
 **Components**:
 
@@ -56,7 +56,7 @@ curl -s "http://localhost:9200/_cat/indices/analytics_applylens_*?v" | head -20
 curl -s "http://localhost:9200/analytics_applylens_risk_daily/_search" \
   -H 'Content-Type: application/json' \
   -d '{"size": 1, "sort": [{"d": "desc"}]}' | jq '.hits.hits[0]._source.d'
-```
+```text
 
 **Expected Results**:
 
@@ -96,7 +96,7 @@ dbt test --profiles-dir . --target dev
 # View compiled SQL
 dbt compile --profiles-dir . --select mrt_risk_daily
 cat target/compiled/applylens_analytics/models/marts/mrt_risk_daily.sql
-```
+```text
 
 ### Manually Export to Elasticsearch
 
@@ -117,7 +117,7 @@ python analytics/export/export_to_es.py
 
 # Check output (JSON format)
 # Look for: "total_success": <count>, "total_errors": 0
-```
+```text
 
 ### Trigger CI Workflow Manually
 
@@ -132,7 +132,7 @@ gh workflow run analytics-sync.yml
 # 2. Select "Analytics Sync" workflow
 # 3. Click "Run workflow" dropdown
 # 4. Click green "Run workflow" button
-```
+```text
 
 ### Query BigQuery Directly
 
@@ -161,7 +161,7 @@ WHERE d = CURRENT_DATE() - 1
 """
 df = client.query(query).to_dataframe()
 print(df)
-```
+```text
 
 ---
 
@@ -201,7 +201,7 @@ psql -h your-db-host -U fivetran_user -d applylens -c "SELECT COUNT(*) FROM emai
 
 # 4. Monitor sync progress
 # Wait 10-30 minutes for full table sync
-```
+```text
 
 ### dbt Run Failures
 
@@ -242,7 +242,7 @@ git add analytics/dbt/models/marts/mrt_risk_daily.sql
 git commit -m "fix: correct mrt_risk_daily aggregation logic"
 git push
 gh workflow run analytics-sync.yml
-```
+```text
 
 ### Export to Elasticsearch Failures
 
@@ -285,7 +285,7 @@ python analytics/export/export_to_es.py 2>&1 | tee export.log
 
 # 5. Check indexed documents
 curl "http://localhost:9200/analytics_applylens_risk_daily/_count?pretty"
-```
+```text
 
 ### Kibana Dashboard Shows No Data
 
@@ -330,7 +330,7 @@ curl "http://localhost:9200/analytics_applylens_risk_daily/_search?size=1&pretty
 
 # 6. Refresh dashboard and adjust time range
 # Top right: Click time picker → Select "Last 90 days"
-```
+```text
 
 ---
 
@@ -373,7 +373,7 @@ SELECT
   COUNT(*) as row_count,
   MAX(d) as latest_date
 FROM `applylens.marts.mrt_risk_daily`;
-```
+```text
 
 **Expected**: Row counts match between Postgres and BigQuery (±1% tolerance for sync lag)
 
@@ -406,7 +406,7 @@ SELECT
   ABS(raw.avg_risk - mart.avg_risk) as avg_diff
 FROM raw
 JOIN mart ON raw.d = mart.d;
-```
+```text
 
 **Expected**: Differences < 0.1% (rounding errors acceptable)
 
@@ -439,7 +439,7 @@ python analytics/export/export_to_es.py
 
 # 5. Verify data in Kibana
 # Dashboard should now show full historical range
-```
+```text
 
 ---
 
@@ -479,7 +479,7 @@ gcloud projects add-iam-policy-binding your-project-id \
 gcloud projects add-iam-policy-binding your-project-id \
   --member="serviceAccount:analytics@your-project.iam.gserviceaccount.com" \
   --role="roles/bigquery.jobUser"
-```
+```text
 
 ---
 

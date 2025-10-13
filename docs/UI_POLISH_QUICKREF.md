@@ -4,7 +4,7 @@
 
 ### Visual Hierarchy
 
-```
+```text
 ┌─────────────────────────────────────┐
 │ Search Results for "interview"      │
 ├─────────────────────────────────────┤
@@ -29,11 +29,11 @@
 │ │               [Rejection] ←── Gray, de-emphasized │
 │ └─────────────────────────────────┘ │
 └─────────────────────────────────────┘
-```
+```text
 
 ## 🔧 Recency Scale Selector (Settings)
 
-```
+```text
 ┌──────────────────────────────────────┐
 │ Settings                             │
 ├──────────────────────────────────────┤
@@ -52,18 +52,18 @@
 │ • Others:     1.0×                  │
 │ • Rejection:  0.5× (de-emphasized)  │
 └──────────────────────────────────────┘
-```
+```text
 
 ## 📊 Scoring Hint (Search Header)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────┐
 │ Results (42) for "interview google"                        │
 │ Scoring: offer^4 • interview^3 • rejection^0.5 •          │
 │          Recency: 7-day decay (gauss scale=7d, decay=0.5) •│
 │          Scale: 7d                                         │
 └────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## 🎨 Label Color Palette
 
@@ -92,7 +92,7 @@ Rejection (Gray - De-emphasized)
 │ ring-gray-300  │  Darker gray border
 │ opacity-80     │  Slightly faded
 └────────────────┘
-```
+```text
 
 ## 🔌 API Integration
 
@@ -100,7 +100,7 @@ Rejection (Gray - De-emphasized)
 
 ```http
 GET /api/search/?q=interview&size=20&scale=3d
-```
+```text
 
 ### Response Structure
 
@@ -117,7 +117,7 @@ GET /api/search/?q=interview&size=20&scale=3d
     }
   ]
 }
-```
+```text
 
 ## 🧪 Testing Checklist
 
@@ -165,7 +165,7 @@ import EmailLabels from '../components/EmailLabels'
 
 // Handles null/undefined
 <EmailLabels labels={email.labels || []} />
-```
+```text
 
 ### SearchResultsHeader Component
 
@@ -184,7 +184,7 @@ import SearchResultsHeader from '../components/SearchResultsHeader'
   query={searchQuery} 
   total={totalResults} 
 />
-```
+```text
 
 ### Search Preferences
 
@@ -196,7 +196,7 @@ const scale = getRecencyScale()  // "3d" | "7d" | "14d"
 
 // Set new scale
 setRecencyScale("3d")  // Saves to localStorage
-```
+```text
 
 ## 🚀 Deployment Notes
 
@@ -215,7 +215,7 @@ setRecencyScale("3d")  // Saves to localStorage
 
 // Hide labels if needed
 {showLabels && <EmailLabels labels={email.labels} />}
-```
+```text
 
 ### Rollback Plan
 

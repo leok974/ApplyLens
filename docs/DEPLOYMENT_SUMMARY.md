@@ -54,7 +54,7 @@ Successfully deployed the complete reply-metrics tracking system with UI filteri
 
 **Results:**
 
-```
+```text
 ✅ Backfill complete!
 
 Summary:
@@ -62,7 +62,7 @@ Summary:
   - 1625 threads analyzed
   - 1821 database records updated
   - 1821 Elasticsearch documents updated
-```
+```text
 
 ---
 
@@ -80,7 +80,7 @@ Summary:
 ```bash
 # Test replied=true filter
 python test_reply_filter.py
-```
+```text
 
 **Results:**
 
@@ -161,14 +161,14 @@ EOF
 
 # Run tests
 python test_reply_filter.py
-```
+```text
 
 **Expected Output:**
 
-```
+```text
 Replied emails: 2
 Not replied emails: 2
-```
+```text
 
 ### Frontend Tests (Manual)
 
@@ -215,15 +215,15 @@ Not replied emails: 2
 
 ### Filter Chips (Blue Theme)
 
-```
+```json
 [ All ] [ Replied ] [ Not replied ]
   ↑       ↑            ↑
  gray    selected     inactive
-```
+```text
 
 ### TTR Badges
 
-```
+```text
 Replied emails:
   [TTR 23m] ← < 1 hour (blue)
   [TTR 3h]  ← < 24 hours (blue)
@@ -231,7 +231,7 @@ Replied emails:
 
 Not replied emails:
   [No reply] ← gray badge
-```
+```text
 
 ---
 

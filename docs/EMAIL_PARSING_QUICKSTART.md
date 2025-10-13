@@ -28,7 +28,7 @@ console.log(application);
 //   thread_id: "abc123",
 //   ...
 // }
-```
+```text
 
 ### Advanced Usage (Override Extraction)
 
@@ -47,7 +47,7 @@ const response = await fetch('/api/applications/from-email', {
     body_text: email.body_preview
   })
 });
-```
+```text
 
 ---
 
@@ -77,7 +77,7 @@ async function handleCreateApplication() {
     navigate(`/tracker?selected=${app.id}`);
   }
 }
-```
+```text
 
 ### Example 2: Bulk Import from Gmail
 
@@ -103,7 +103,7 @@ async function bulkImportFromGmail(emails: Email[]) {
   console.log(`Created ${results.length} applications!`);
   return results;
 }
-```
+```text
 
 ### Example 3: Create from Email with Manual Override
 
@@ -150,7 +150,7 @@ function CreateApplicationDialog({ email }: { email: Email }) {
     </form>
   );
 }
-```
+```text
 
 ---
 
@@ -173,7 +173,7 @@ emails.forEach(async (email) => {
     // Company, role, and source automatically extracted!
   }
 });
-```
+```text
 
 ### Use Case 2: Smart Email Filter
 
@@ -201,7 +201,7 @@ async function createIfFromATS(email: Email) {
     console.log(`⚠️ Unknown source, manual review needed`);
   }
 }
-```
+```text
 
 ### Use Case 3: Confidence-Based UI
 
@@ -238,7 +238,7 @@ function ApplicationPreview({ extraction }: { extraction: ExtractionResult }) {
     </div>
   );
 }
-```
+```text
 
 ---
 
@@ -262,7 +262,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
 # company: "stripe"
 # role: "Backend Engineer"
 # source: "Email"
-```
+```text
 
 ### Test 2: ATS Detection
 
@@ -279,7 +279,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
 
 # Expected result:
 # source: "Lever"
-```
+```text
 
 ### Test 3: Database Email Lookup
 
@@ -293,7 +293,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 
 # Will extract from database email fields
-```
+```text
 
 ---
 
@@ -332,7 +332,7 @@ function CreateApplicationForm({ email }: { email: Email }) {
     </div>
   );
 }
-```
+```text
 
 ### 2. Batch Processing with Progress
 
@@ -365,7 +365,7 @@ function BatchImportDialog({ emails }: { emails: Email[] }) {
     </div>
   );
 }
-```
+```text
 
 ### 3. Smart Suggestions
 
@@ -386,7 +386,7 @@ function SmartSuggestion({ email }: { email: Email }) {
   
   return null;
 }
-```
+```text
 
 ---
 
@@ -405,7 +405,7 @@ const payload = {
   body_text: email.body_text,  // ← Include full body, not just preview
   company: extractedCompany     // ← Or provide manually
 };
-```
+```text
 
 ### Problem: Role extraction returns "(Unknown Role)"
 
@@ -417,7 +417,7 @@ if (!email.subject.includes('position') && !email.subject.includes('role')) {
   // Manually extract or ask user
   role = prompt('Enter job role:');
 }
-```
+```text
 
 ### Problem: Source detection always returns "Email"
 
@@ -431,7 +431,7 @@ const payload = {
   subject: email.subject,      // ← Must include subject
   body_text: email.body_text   // ← Must include body
 };
-```
+```text
 
 ---
 
@@ -470,6 +470,6 @@ await createApplicationFromEmail({
   subject: email.subject,
   body_text: email.body_text
 });
-```
+```text
 
 That's it! Company, role, and source will be automatically extracted. 🚀

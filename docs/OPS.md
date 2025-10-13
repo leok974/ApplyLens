@@ -40,7 +40,7 @@ pip install -e ".[test]"
 
 # Install tracing dependencies (optional)
 pip install -e ".[tracing]"
-```
+```text
 
 ---
 
@@ -60,7 +60,7 @@ alembic upgrade head
 # Verify migration 0012 or higher
 curl http://localhost:8003/ready | jq .migration
 # Expected: "0012_add_emails_features_json" or higher
-```
+```text
 
 ### Step 2: Load Prometheus Alert Rules
 
@@ -77,7 +77,7 @@ curl -X POST http://localhost:9090/-/reload
 
 # Verify alerts loaded
 curl http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[] | select(.name | startswith("API"))'
-```
+```text
 
 **Expected alerts:**
 
@@ -96,7 +96,7 @@ services:
       - UVICORN_LOG_CONFIG=/app/app/logging.yaml
     volumes:
       - ./services/api/app/logging.yaml:/app/app/logging.yaml:ro
-```
+```bash
 
 ```bash
 # Restart API to apply logging config
@@ -105,7 +105,7 @@ docker-compose restart api
 # Verify JSON logs
 docker-compose logs api --tail=10
 # Should show JSON formatted logs
-```
+```text
 
 ### Step 4: Import Grafana Dashboard
 
@@ -117,7 +117,7 @@ curl -X POST http://localhost:3000/api/dashboards/db \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $GRAFANA_API_KEY" \
   -d @services/api/dashboards/ops-overview.json
-```
+```text
 
 **Option B: Via UI**
 
@@ -142,7 +142,7 @@ curl -X POST http://localhost:3000/api/dashboards/db \
 # Click "New repository secret"
 # Name: APPLYLENS_BASE_URL
 # Secret: https://api.applylens.com
-```
+```text
 
 **Test the workflow:**
 
@@ -155,7 +155,7 @@ curl -X POST \
   -d '{"ref":"main"}'
 
 # Or use GitHub UI: Actions → Synthetic Probes → Run workflow
-```
+```text
 
 ### Step 6: Enable OpenTelemetry (Optional)
 
@@ -176,7 +176,7 @@ docker-compose restart api
 # Verify tracing in logs
 docker-compose logs api | grep "OpenTelemetry"
 # Expected: "✓ OpenTelemetry tracing initialized"
-```
+```text
 
 ### Step 7: Verify Health Endpoints
 
@@ -197,7 +197,7 @@ curl http://localhost:8003/ready | jq .
 #   "es": "ok",
 #   "migration": "0012_add_emails_features_json"
 # }
-```
+```text
 
 ### Step 8: Test Metrics Endpoint
 
@@ -213,7 +213,7 @@ curl -s http://localhost:8003/metrics | grep -E "(applylens_db_up|applylens_es_u
 # - applylens_es_up 1.0
 # - applylens_parity_checks_total
 # - applylens_parity_mismatch_ratio
-```
+```text
 
 ### Step 9: Run Initial Parity Check
 
@@ -233,7 +233,7 @@ cat parity.json | jq '.summary'
 
 # Expected on fresh deployment: 0 mismatches
 # If mismatches found, see runbooks/parity.md
-```
+```text
 
 ### Step 10: Test Alert Delivery (Optional)
 
@@ -246,7 +246,7 @@ curl http://localhost:8003/debug/500
 curl http://localhost:9090/api/v1/alerts | jq '.data.alerts[] | select(.labels.alertname == "APIHighErrorRateFast")'
 
 # If alert fires, verify notification delivery (Slack/email)
-```
+```text
 
 ---
 
@@ -374,7 +374,7 @@ curl http://localhost:8003/metrics | grep applylens_db_up
 
 # 7. Document rollback reason
 echo "Rollback due to: <reason>" >> ROLLBACK_LOG.md
-```
+```text
 
 ---
 
@@ -411,7 +411,7 @@ docker exec prometheus curl http://api:8003/metrics
 
 # Check firewall rules
 # Ensure port 8003 accessible from Prometheus container
-```
+```text
 
 ### Grafana Dashboard Shows "N/A"
 
@@ -426,7 +426,7 @@ curl -G http://localhost:9090/api/v1/query \
 
 # Verify metric exists
 curl -s http://localhost:8003/metrics | grep applylens_db_up
-```
+```text
 
 ### Synthetic Probes Failing
 
@@ -440,7 +440,7 @@ curl -v https://api.applylens.com/ready
 
 # Verify APPLYLENS_BASE_URL secret
 # Should match production URL exactly
-```
+```text
 
 ### Health Endpoint Returns 503
 
@@ -460,7 +460,7 @@ docker-compose restart elasticsearch
 cd services/api
 alembic current
 alembic upgrade head
-```
+```text
 
 ---
 
@@ -511,7 +511,7 @@ Document your deployment:
 
 - OpenTelemetry deferred to next release
 - All monitoring features operational
-```
+```text
 
 ---
 
@@ -611,20 +611,20 @@ This guide covers deploying the new security policy system, bulk actions, search
 ```bash
 # Apply migration 0015 to create security_policies table
 docker exec infra-api-1 alembic upgrade head
-```
+```text
 
 **Expected output:**
 
-```
+```text
 INFO  [alembic.runtime.migration] Running upgrade 0014_add_security_fields -> 0015_add_security_policies, add security policies table
-```
+```text
 
 ### Step 2: Rebuild API Container
 
 ```bash
 cd D:\ApplyLens\infra
 docker compose up -d --build api
-```
+```text
 
 **What this does:**
 
@@ -642,7 +642,7 @@ docker logs infra-api-1 --tail 50
 # Should see lines like:
 # INFO:     Application startup complete.
 # No errors about missing imports or routers
-```
+```text
 
 ## Testing
 
@@ -673,7 +673,7 @@ curl -X PUT http://localhost:8003/api/policy/security \
       "threshold": 5
     }
   }'
-```
+```text
 
 ### Test 2: Bulk Actions
 
@@ -705,7 +705,7 @@ curl -X POST http://localhost:8003/api/security/bulk/rescan \
 
 # Expected response:
 # {"updated": 2, "total": 2}
-```
+```text
 
 ### Test 3: Search Filters
 
@@ -721,7 +721,7 @@ curl "http://localhost:8003/api/search/?q=&risk_max=30"
 
 # Combine filters
 curl "http://localhost:8003/api/search/?q=invoice&risk_min=50&risk_max=90&quarantined=false"
-```
+```text
 
 ### Test 4: SSE Event Stream
 
@@ -735,7 +735,7 @@ curl -N http://localhost:8003/api/security/events
 
 # When high-risk emails are analyzed, you'll see:
 # data: {"type":"high_risk","email_id":"...","score":85,"quarantined":true,"ts":1234567890}
-```
+```text
 
 ### Test 5: Run Automated Tests
 
@@ -748,11 +748,11 @@ docker exec infra-api-1 python -m pytest tests/test_bulk_actions.py -v
 
 # Run all security tests
 docker exec infra-api-1 python -m pytest tests/ -k security -v
-```
+```text
 
 **Expected output:**
 
-```
+```text
 tests/test_policy_crud.py::test_get_policy_creates_defaults PASSED
 tests/test_policy_crud.py::test_put_policy_roundtrip PASSED
 tests/test_policy_crud.py::test_put_policy_partial_update PASSED
@@ -764,7 +764,7 @@ tests/test_bulk_actions.py::test_bulk_rescan PASSED
 ...
 
 ============ X passed in Y.YYs ============
-```
+```text
 
 ## Frontend Integration
 
@@ -775,7 +775,7 @@ import { SecuritySummaryCard } from "@/components/security/SecuritySummaryCard";
 
 // Add to your dashboard or homepage
 <SecuritySummaryCard />
-```
+```text
 
 ### Bulk Action Usage
 
@@ -791,7 +791,7 @@ try {
 } catch (error) {
   console.error("Bulk quarantine failed:", error);
 }
-```
+```text
 
 ### SSE Event Listener (Optional)
 
@@ -828,7 +828,7 @@ React.useEffect(() => {
   
   return unsubscribe;
 }, []);
-```
+```text
 
 ## Database Schema Changes
 
@@ -844,7 +844,7 @@ CREATE TABLE security_policies (
     auto_unsubscribe_threshold INTEGER NOT NULL DEFAULT 10,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
-```
+```text
 
 ## API Reference
 
@@ -865,7 +865,7 @@ Fetch security policy. Creates default policy if none exists.
     "threshold": 10
   }
 }
-```
+```text
 
 #### PUT /api/policy/security
 
@@ -882,7 +882,7 @@ Update security policy. Upserts (creates if missing).
     "threshold": 7
   }
 }
-```
+```text
 
 **Response:** Same format as GET
 
@@ -926,11 +926,11 @@ Enhanced with risk filtering.
 
 **Examples:**
 
-```
+```text
 /api/search/?q=invoice&risk_min=70
 /api/search/?quarantined=true
 /api/search/?risk_min=50&risk_max=80&quarantined=false
-```
+```text
 
 ### SSE Event Stream
 
@@ -940,9 +940,9 @@ Server-Sent Events stream for real-time notifications.
 
 **Event Format:**
 
-```
+```text
 data: {"type":"high_risk","email_id":"...","score":85,"quarantined":true,"ts":1234567890}
-```
+```text
 
 **Keepalive:** `: keepalive` every 15 seconds
 
@@ -956,17 +956,17 @@ data: {"type":"high_risk","email_id":"...","score":85,"quarantined":true,"ts":12
 
 ### Migration Fails
 
-```
+```text
 ERROR: relation "security_policies" already exists
-```
+```text
 
 **Solution:** Migration already applied. Skip this step.
 
 ### Import Errors
 
-```
+```text
 ModuleNotFoundError: No module named 'app.security.events'
-```
+```text
 
 **Solution:** Rebuild API container to pick up new files.
 
@@ -981,9 +981,9 @@ ModuleNotFoundError: No module named 'app.security.events'
 
 ### Test Failures
 
-```
+```text
 FAILED test_bulk_actions.py::test_bulk_rescan
-```
+```text
 
 **Solution:** Check that `Email` model has `raw_body` field for header extraction. Review security analyzer logs.
 
@@ -1007,7 +1007,7 @@ docker exec infra-api-1 alembic downgrade -1
 cd D:\ApplyLens\infra
 git checkout <previous-commit>
 docker compose up -d --build api
-```
+```text
 
 ## Support
 
@@ -1045,7 +1045,7 @@ Successfully deployed the robust due date extraction system for bill emails to t
 
 ```bash
 curl -X GET "http://localhost:9200/gmail_emails_v2/_mapping?pretty" | Select-String "dates|money_amounts"
-```
+```text
 
 ### 2. ✅ ES Ingest Pipeline Deployed
 
@@ -1069,7 +1069,7 @@ curl -X GET "http://localhost:9200/gmail_emails_v2/_mapping?pretty" | Select-Str
 
 ```bash
 curl -X GET "http://localhost:9200/_ingest/pipeline/emails_due_simple?pretty"
-```
+```text
 
 ### 3. ✅ Pipeline Tested and Verified
 
@@ -1081,7 +1081,7 @@ curl -X GET "http://localhost:9200/_ingest/pipeline/emails_due_simple?pretty"
   "body_text": "Payment due by 10/25/2025",
   "received_at": "2025-10-10T12:00:00Z"
 }
-```
+```text
 
 **Result:** ✅ Successfully extracted
 
@@ -1090,7 +1090,7 @@ curl -X GET "http://localhost:9200/_ingest/pipeline/emails_due_simple?pretty"
   "dates": ["2025-10-25T00:00:00Z"],
   "expires_at": "2025-10-25T00:00:00Z"
 }
-```
+```text
 
 ### 4. ⚠️ Kibana Dashboard - Manual Creation Required
 
@@ -1170,13 +1170,13 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_doc?pipeline=emails_due_sim
   "received_at": "2025-10-10T12:00:00Z",
   "category": "bills"
 }'
-```
+```text
 
 **2. Verify extraction:**
 
 ```bash
 curl -X GET "http://localhost:9200/gmail_emails_v2/_search?q=gmail_id:test_001&pretty"
-```
+```text
 
 Expected result:
 
@@ -1185,7 +1185,7 @@ Expected result:
   "dates": ["2025-11-15T00:00:00Z"],
   "expires_at": "2025-11-15T00:00:00Z"
 }
-```
+```text
 
 ### Querying Bills by Due Date
 
@@ -1204,7 +1204,7 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_search?pretty" \
   },
   "sort": [{"dates": "asc"}]
 }'
-```
+```text
 
 **Count bills due in next 7 days:**
 
@@ -1220,7 +1220,7 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_count?pretty" \
     }
   }
 }'
-```
+```text
 
 ## What Happens Next
 
@@ -1260,7 +1260,7 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_count?pretty" \
 
 ```bash
 curl -X GET "http://localhost:9200/_ingest/pipeline/emails_due_simple"
-```
+```text
 
 **Test pipeline with simulate API:**
 
@@ -1274,7 +1274,7 @@ curl -X POST "http://localhost:9200/_ingest/pipeline/emails_due_simple/_simulate
     }
   }]
 }'
-```
+```text
 
 ### Dates field empty?
 
@@ -1295,11 +1295,11 @@ curl -X POST "http://localhost:9200/_ingest/pipeline/emails_due_simple/_simulate
 
 ## Files Modified
 
-```
+```text
 ✅ Committed to more-features branch:
    M infra/es/pipelines/emails_due_simple.json (fixed Painless compatibility)
    M kibana/bills-due-next7d.ndjson (updated index name)
-```
+```text
 
 ## Next Steps
 

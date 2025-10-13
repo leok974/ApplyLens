@@ -15,7 +15,7 @@ npm install -D tailwindcss postcss autoprefixer
 npm install lucide-react class-variance-authority clsx tailwind-merge
 npm install @radix-ui/react-tabs @radix-ui/react-tooltip
 npm install @radix-ui/react-dropdown-menu @radix-ui/react-dialog
-```
+```text
 
 ### Configuration Files Created
 
@@ -98,7 +98,7 @@ npm install @radix-ui/react-dropdown-menu @radix-ui/react-dialog
 
 ## File Structure
 
-```
+```text
 apps/web/
 ├── src/
 │   ├── components/
@@ -123,7 +123,7 @@ apps/web/
 ├── postcss.config.js
 ├── tsconfig.json                  # Updated with @/ alias
 └── vite.config.ts                 # Updated with @/ alias
-```
+```text
 
 ## Configuration Changes
 
@@ -136,7 +136,7 @@ apps/web/
   "@/*": ["src/*"],
   "*": ["src/*"]
 }
-```
+```text
 
 ### Vite Path Alias
 
@@ -148,7 +148,7 @@ resolve: {
     '@': path.resolve(__dirname, './src'),
   },
 }
-```
+```text
 
 ### CSS Design Tokens
 
@@ -166,7 +166,7 @@ Or add a link to your Nav component:
 
 ```tsx
 <a href="/inbox-polished">Polished Inbox</a>
-```
+```text
 
 ## API Integration
 

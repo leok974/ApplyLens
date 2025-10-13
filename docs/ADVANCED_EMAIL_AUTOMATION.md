@@ -47,7 +47,7 @@ A flexible, JSON-based policy evaluation system that proposes actions based on e
     "rationale": "expired promotion"
   }
 }
-```
+```text
 
 **Usage**:
 
@@ -67,7 +67,7 @@ actions = apply_policies(email, policies, now_iso=now)
 
 for action in actions:
     print(f"{action.action} {action.email_id} - {action.rationale}")
-```
+```text
 
 ---
 
@@ -100,7 +100,7 @@ result = perform_unsubscribe(headers)
 #   "performed": "http",
 #   "status": 200
 # }
-```
+```text
 
 #### API Router (`app/routers/unsubscribe.py`)
 
@@ -118,7 +118,7 @@ curl -X POST http://localhost:8003/unsubscribe/preview \
       "List-Unsubscribe": "<https://example.com/unsub>"
     }
   }'
-```
+```text
 
 **POST /unsubscribe/execute**  
 Execute unsubscribe and log to audit trail.
@@ -132,7 +132,7 @@ curl -X POST http://localhost:8003/unsubscribe/execute \
       "List-Unsubscribe": "<https://example.com/unsub>"
     }
   }'
-```
+```text
 
 ---
 
@@ -159,7 +159,7 @@ expired = await find_expired_promos(days=7)
 
 # Find high-risk emails
 suspicious = await find_high_risk(limit=20, min_risk=80.0)
-```
+```text
 
 #### NL Agent Router (`app/routers/nl_agent.py`)
 
@@ -172,8 +172,10 @@ Simple rule-based natural language command parser.
 1. **Clean Promos**
 
    ```
+
    "clean my promos older than 7 days"
    "clean promos older than 14 days"
+
    ```
 
    → Generates archive actions for expired promotional emails
@@ -181,8 +183,10 @@ Simple rule-based natural language command parser.
 2. **Unsubscribe Stale**
 
    ```
+
    "unsubscribe from newsletters I haven't opened in 60 days"
    "unsubscribe from old stuff"
+
    ```
 
    → Generates unsubscribe actions for inactive senders
@@ -190,9 +194,11 @@ Simple rule-based natural language command parser.
 3. **Show Suspicious**
 
    ```
+
    "show me suspicious emails"
    "find phishing attempts"
    "show risky messages"
+
    ```
 
    → Returns list of high-risk emails
@@ -200,7 +206,9 @@ Simple rule-based natural language command parser.
 4. **Summarize Bills** (placeholder)
 
    ```
+
    "summarize bills due next week"
+
    ```
 
    → Coming soon!
@@ -211,7 +219,7 @@ Simple rule-based natural language command parser.
 curl -X POST http://localhost:8003/nl/run \
   -H "Content-Type: application/json" \
   -d '{"text": "clean my promos older than 7 days"}'
-```
+```text
 
 **Example Response**:
 
@@ -230,7 +238,7 @@ curl -X POST http://localhost:8003/nl/run \
   ],
   "count": 1
 }
-```
+```text
 
 ---
 
@@ -253,7 +261,7 @@ audit_action(
     rationale="List-Unsubscribe header",
     payload={"http": "https://example.com/unsub", "status": 200}
 )
-```
+```text
 
 **Inserts into `actions_audit` table**:
 
@@ -301,7 +309,7 @@ pytest tests/e2e/test_nl_unsubscribe.py -v
 
 # Run with coverage
 pytest tests/ --cov=app --cov-report=html
-```
+```text
 
 ---
 
@@ -339,7 +347,7 @@ try:
     app.include_router(nl_router)
 except ImportError:
     pass
-```
+```text
 
 ### API Endpoints Available
 
@@ -351,7 +359,7 @@ except ImportError:
 
 ```bash
 docker-compose restart api
-```
+```text
 
 ---
 
@@ -389,7 +397,7 @@ for email in emails:
     actions = apply_policies(email, [policy], now_iso=now)
     for action in actions:
         print(f"Propose: {action.action} {action.email_id}")
-```
+```text
 
 ### Example 2: Bulk Unsubscribe from Stale Senders
 
@@ -415,7 +423,7 @@ for email in candidates:
             rationale=f"No opens in 60+ days",
             payload=result
         )
-```
+```text
 
 ### Example 3: Natural Language Workflow
 
@@ -442,7 +450,7 @@ curl -X POST http://localhost:8003/mail/actions/execute \
       }
     ]
   }'
-```
+```text
 
 ---
 
@@ -456,7 +464,7 @@ The search helpers use Elasticsearch for efficient querying. Configure in `app/s
 ES_ENABLED: bool = True
 ES_URL: str = "http://es:9200"
 ELASTICSEARCH_INDEX: str = "gmail_emails"
-```
+```text
 
 If Elasticsearch is disabled, the search functions return stub data for development.
 
@@ -467,7 +475,7 @@ Configured in `app/logic/unsubscribe.py`:
 ```python
 UA = {"User-Agent": "AgenticMailbox/1.0 (+unsubscribe)"}
 TIMEOUT = 8  # HTTP request timeout (seconds)
-```
+```text
 
 ---
 
@@ -544,7 +552,7 @@ TIMEOUT = 8  # HTTP request timeout (seconds)
 
 ```bash
 pip install pytest pytest-asyncio httpx
-```
+```text
 
 ### Issue: Elasticsearch connection errors
 
@@ -552,13 +560,13 @@ pip install pytest pytest-asyncio httpx
 
 ```bash
 curl http://localhost:9200
-```
+```text
 
 Or disable ES in settings for development:
 
 ```python
 ES_ENABLED = False
-```
+```text
 
 ### Issue: Unsubscribe timeouts
 
@@ -566,7 +574,7 @@ ES_ENABLED = False
 
 ```python
 TIMEOUT = 15  # Increase to 15 seconds
-```
+```text
 
 ### Issue: Policy not matching
 
@@ -585,7 +593,7 @@ print(f"Clause result: {result}")
 # Test full condition
 result = _eval_cond(condition, email)
 print(f"Condition result: {result}")
-```
+```text
 
 ---
 

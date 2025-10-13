@@ -19,7 +19,7 @@ The buttons in `apps/web/src/components/AppHeader.tsx` were purely presentationa
 ```python
 @router.post("/backfill", response_model=BackfillResp)
 def backfill(request: Request, days: int = Query(60, ge=1, le=365), ...):
-```
+```text
 
 **Mounted at:** `/api` prefix in main.py → Full path: `POST /api/gmail/backfill` ✅
 
@@ -29,7 +29,7 @@ def backfill(request: Request, days: int = Query(60, ge=1, le=365), ...):
 curl -i "http://127.0.0.1:8003/api/gmail/backfill?days=7" -X POST
 # Result: HTTP/1.1 200 OK
 # Response: {"inserted":96,"days":7,"user_email":"leoklemet.pa@gmail.com"}
-```
+```text
 
 The API endpoint works perfectly! ✅
 
@@ -44,7 +44,7 @@ proxy: {
     changeOrigin: true,
   }
 }
-```
+```text
 
 Proxy configuration is correct for Docker environment ✅
 
@@ -55,7 +55,7 @@ Proxy configuration is correct for Docker environment ✅
 ```tsx
 <Button size="sm">Sync 7 days</Button>
 <Button size="sm">Sync 60 days</Button>
-```
+```text
 
 **Problem:** No `onClick` handlers, no state management, no API calls!
 
@@ -162,7 +162,7 @@ curl -i "http://127.0.0.1:8003/api/gmail/backfill?days=7" -X POST
 # Expected response:
 HTTP/1.1 200 OK
 {"inserted":96,"days":7,"user_email":"leoklemet.pa@gmail.com"}
-```
+```text
 
 ## Files Modified
 
@@ -188,7 +188,7 @@ docker compose up -d --build web
 
 # Check logs
 docker logs infra-web-1 --tail 20
-```
+```text
 
 **Result:** ✅ Container rebuilt successfully, Vite running without errors
 

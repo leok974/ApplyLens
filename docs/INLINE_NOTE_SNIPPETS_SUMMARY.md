@@ -55,7 +55,7 @@ Extended the InlineNote component with **snippet chips** for one-click insertion
   snippets={['Custom phrase 1', 'Custom phrase 2']}
   // ... other props
 />
-```
+```text
 
 ---
 
@@ -75,7 +75,7 @@ snippets?: string[] = [
   'Referred by X',
   'Declined offer',
 ]
-```
+```text
 
 **2. Added `insertSnippet()` Function:**
 
@@ -89,7 +89,7 @@ function insertSnippet(snippet: string) {
     taRef.current?.setSelectionRange(next.length, next.length)
   })
 }
-```
+```text
 
 **3. Added Snippet Chips Rendering:**
 
@@ -110,7 +110,7 @@ function insertSnippet(snippet: string) {
     ))}
   </div>
 ) : null}
-```
+```text
 
 ### Tracker Integration (`Tracker.tsx`)
 
@@ -126,7 +126,7 @@ import { NOTE_SNIPPETS } from '../config/tracker'
   snippets={NOTE_SNIPPETS}  // ← From config file
   onSave={async (next) => { /* ... */ }}
 />
-```
+```text
 
 **Configuration File (`config/tracker.ts`):**
 
@@ -144,14 +144,14 @@ export const NOTE_SNIPPETS: string[] = ENV_SNIPPETS
       'Referred by X',
       'Declined offer',
     ]
-```
+```text
 
 **Environment Variable Override:**
 
 ```bash
 # .env.local or .env.production
 VITE_TRACKER_SNIPPETS="Custom 1|Custom 2|Custom 3"
-```
+```text
 
 See `TRACKER_CONFIG_SYSTEM.md` for full configuration documentation.
 
@@ -181,7 +181,7 @@ See `TRACKER_CONFIG_SYSTEM.md` for full configuration documentation.
 ```bash
 cd apps/web
 npx playwright test tests/e2e/tracker-note-snippets.spec.ts
-```
+```text
 
 ---
 
@@ -260,7 +260,7 @@ Preserves existing content, creates chronological log, maintains readability.
 ```typescript
 `${testId}-chip-${s.replace(/\s+/g, '-').toLowerCase()}`
 // "Sent thank-you" → "note-303-chip-sent-thank-you"
-```
+```text
 
 Enables E2E tests to target specific chips reliably.
 
@@ -280,7 +280,7 @@ Enables E2E tests to target specific chips reliably.
     'Payment received',
   ]}
 />
-```
+```text
 
 ### Example 2: Per-Status Snippets
 
@@ -294,7 +294,7 @@ const snippetsByStatus = {
 <InlineNote
   snippets={snippetsByStatus[application.status]}
 />
-```
+```text
 
 ### Example 3: Disable Snippets
 
@@ -302,7 +302,7 @@ const snippetsByStatus = {
 <InlineNote
   snippets={[]}  // No chips rendered
 />
-```
+```text
 
 ---
 
@@ -320,7 +320,7 @@ const snippetsByStatus = {
 <button data-testid="note-303-chip-sent-thank-you">
   Sent thank-you
 </button>
-```
+```text
 
 Announces: "Button, Sent thank-you"
 

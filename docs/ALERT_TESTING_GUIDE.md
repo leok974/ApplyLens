@@ -10,15 +10,15 @@ Invoke-RestMethod http://localhost:9090/api/v1/targets `
 | % data | % activeTargets `
 | ? {$_.labels.job -eq "applylens-api"} `
 | Format-Table scrapeUrl, lastScrape, health, lastError
-```
+```text
 
 **Expected Output:**
 
-```
+```text
 scrapeUrl               lastScrape                    health lastError
 ---------               ----------                    ------ ---------
 http://api:8003/metrics 2025-10-09T14:10:46.753...    up
-```
+```text
 
 ### 2. Check Grafana Alert Rules
 
@@ -30,7 +30,7 @@ $cred = New-Object PSCredential("admin",(ConvertTo-SecureString "admin" -AsPlain
 Invoke-RestMethod -Uri http://localhost:3000/api/v1/provisioning/alert-rules -Credential $cred `
 | Select-Object title, folderUID, @{Name='Severity';Expression={$_.labels.severity}} `
 | Format-Table
-```
+```text
 
 ### 3. Check Alert Rule States
 
@@ -41,7 +41,7 @@ Invoke-RestMethod -Uri http://localhost:3000/api/prometheus/grafana/api/v1/rules
 | % data | % groups | % rules `
 | Select-Object name, state, @{Name='Health';Expression={$_.health}} `
 | Format-Table
-```
+```text
 
 ### 4. Force Prometheus Reload (No Restart)
 
@@ -49,7 +49,7 @@ Invoke-RestMethod -Uri http://localhost:3000/api/prometheus/grafana/api/v1/rules
 # Hot reload Prometheus configuration after editing alerts.yml
 Invoke-WebRequest -Method POST http://localhost:9090/-/reload
 Write-Host "✅ Prometheus configuration reloaded" -ForegroundColor Green
-```
+```text
 
 ### 5. Check Grafana Contact Points
 
@@ -59,7 +59,7 @@ $cred = New-Object PSCredential("admin",(ConvertTo-SecureString "admin" -AsPlain
 Invoke-RestMethod http://localhost:3000/api/v1/provisioning/contact-points -Credential $cred `
 | Select-Object name, type, uid `
 | Format-Table
-```
+```text
 
 ### 6. Check Notification Policies
 
@@ -68,7 +68,7 @@ Invoke-RestMethod http://localhost:3000/api/v1/provisioning/contact-points -Cred
 $cred = New-Object PSCredential("admin",(ConvertTo-SecureString "admin" -AsPlainText -Force))
 Invoke-RestMethod http://localhost:3000/api/v1/provisioning/policies -Credential $cred `
 | ConvertTo-Json -Depth 5
-```
+```text
 
 ---
 
@@ -94,7 +94,7 @@ start http://localhost:3000/alerting/list
 # Restart API
 docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
 Write-Host "✅ API restarted - alert should resolve" -ForegroundColor Green
-```
+```text
 
 **Expected:**
 
@@ -130,7 +130,7 @@ Write-Host "   http://localhost:9090/graph?g0.expr=rate(applylens_http_requests_
 # Optional: Keep generating errors to sustain high rate
 Write-Host "`n🔁 (Optional) Run this to sustain errors:" -ForegroundColor Yellow
 Write-Host '   1..300 | % { try { Invoke-WebRequest "http://localhost:8003/debug/500" -UseBasicParsing | Out-Null } catch {}; Start-Sleep -Milliseconds 500 }' -ForegroundColor Gray
-```
+```text
 
 #### Option B: Stop API While Sending Requests
 
@@ -158,7 +158,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
 # Clean up job
 Receive-Job $job | Out-Null
 Remove-Job $job
-```
+```text
 
 **Expected:**
 
@@ -202,7 +202,7 @@ Write-Host "`n📊 Backfill errors: $($errorMetric.data.result[0].value[1])" -Fo
 docker compose -f D:\ApplyLens\infra\docker-compose.yml start es
 Write-Host "`n✅ Elasticsearch restarted" -ForegroundColor Green
 Write-Host "⏳ Alert will fire after 10 minutes of sustained errors" -ForegroundColor Yellow
-```
+```text
 
 **Expected:**
 
@@ -219,11 +219,11 @@ Write-Host "⏳ Alert will fire after 10 minutes of sustained errors" -Foregroun
 ```powershell
 # Start the listener (keeps running)
 python D:\ApplyLens\tools\grafana_webhook.py
-```
+```text
 
 **Output:**
 
-```
+```text
 ======================================================================
 🎧 GRAFANA WEBHOOK LISTENER
 ======================================================================
@@ -236,7 +236,7 @@ Configured in Grafana contact point as:
 
 Press Ctrl+C to stop
 ======================================================================
-```
+```text
 
 ### Test the Webhook from Grafana
 
@@ -248,7 +248,7 @@ Press Ctrl+C to stop
 
 **Example Output:**
 
-```
+```text
 ======================================================================
 🚨 GRAFANA ALERT RECEIVED - 2025-10-09 14:30:15
 ======================================================================
@@ -269,7 +269,7 @@ Press Ctrl+C to stop
   "alerts": [...]
 }
 ======================================================================
-```
+```text
 
 ### Test with Real Alert
 
@@ -284,7 +284,7 @@ Start-Sleep -Seconds 70
 # Watch webhook listener terminal for notification
 # Then restart API
 docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
-```
+```text
 
 ---
 
@@ -302,7 +302,7 @@ sum by (status_code) (rate(applylens_http_requests_total[5m]))
 # Error rate percentage
 (sum(rate(applylens_http_requests_total{status=~"5.."}[5m]))
  / sum(rate(applylens_http_requests_total[5m]))) * 100
-```
+```text
 
 ### Backfill Metrics
 
@@ -315,7 +315,7 @@ increase(applylens_backfill_requests_total{result="error"}[10m])
 
 # Success rate
 rate(applylens_backfill_requests_total{result="success"}[5m])
-```
+```text
 
 ### System Health
 
@@ -328,7 +328,7 @@ applylens_es_up
 
 # Gmail connected users
 sum(applylens_gmail_connected)
-```
+```text
 
 ---
 
@@ -345,7 +345,7 @@ sum(applylens_gmail_connected)
     docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
     Start-Sleep -Seconds 45
 }
-```
+```text
 
 ### Generate Mixed Traffic
 
@@ -371,7 +371,7 @@ Wait-Job $job | Out-Null
 Receive-Job $job | Out-Null
 Remove-Job $job
 Write-Host "✅ Traffic generation complete" -ForegroundColor Green
-```
+```text
 
 ### Check Alert Evaluation Timing
 
@@ -382,7 +382,7 @@ Invoke-RestMethod -Uri http://localhost:3000/api/prometheus/grafana/api/v1/rules
 | % data | % groups | % rules `
 | Select-Object name, state, evaluationTime, lastEvaluation `
 | Format-Table
-```
+```text
 
 ---
 
@@ -399,7 +399,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$metric" `
 # Check alert rule expression
 Invoke-RestMethod "http://localhost:9090/api/v1/query?query=up{job=`"applylens-api`"}" `
 | % data | % result | % value
-```
+```text
 
 ### Webhook Not Receiving Notifications
 
@@ -419,7 +419,7 @@ Invoke-WebRequest -Method POST `
     -Uri "http://localhost:9000/webhook" `
     -ContentType "application/json" `
     -Body $payload
-```
+```text
 
 ### Check Grafana Alerting Logs
 
@@ -429,7 +429,7 @@ docker logs infra-grafana --tail 50 2>&1 | Select-String "alert|notif|eval"
 
 # Follow logs in real-time
 docker logs infra-grafana --follow 2>&1 | Select-String "alert|notif|eval"
-```
+```text
 
 ### Verify Contact Point Configuration
 
@@ -438,7 +438,7 @@ docker logs infra-grafana --follow 2>&1 | Select-String "alert|notif|eval"
 $cred = New-Object PSCredential("admin",(ConvertTo-SecureString "admin" -AsPlainText -Force))
 Invoke-RestMethod http://localhost:3000/api/v1/provisioning/contact-points -Credential $cred `
 | ConvertTo-Json -Depth 10
-```
+```text
 
 ---
 
@@ -452,15 +452,15 @@ Invoke-RestMethod http://localhost:3000/api/v1/provisioning/contact-points -Cred
 grafana:
   environment:
     - GF_SECURITY_ADMIN_PASSWORD=your-secure-password-here
-```
+```text
 
 **Option B: Via Grafana UI**
 
-```
+```text
 1. Login: http://localhost:3000 (admin/admin)
 2. Click profile → Change password
 3. Enter new password
-```
+```text
 
 ### 2. Restrict Metrics Endpoint
 
@@ -490,7 +490,7 @@ def verify_metrics_auth(credentials: HTTPBasicCredentials = Depends(security)):
 def metrics():
     """Expose Prometheus metrics (authenticated)"""
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-```
+```text
 
 Then update Prometheus config:
 
@@ -503,7 +503,7 @@ scrape_configs:
     basic_auth:
       username: prometheus
       password: your-secure-password
-```
+```text
 
 ### 3. Reduce Label Cardinality
 
@@ -517,7 +517,7 @@ GMAIL_CONNECTED.labels(user_email=user.email).set(1)
 import hashlib
 user_hash = hashlib.sha256(user.email.encode()).hexdigest()[:8]
 GMAIL_CONNECTED.labels(user_id=user_hash).set(1)
-```
+```text
 
 ### 4. Set Up HTTPS for Grafana
 
@@ -530,7 +530,7 @@ grafana:
     - GF_SERVER_CERT_KEY=/etc/grafana/ssl/key.pem
   volumes:
     - ./grafana/ssl:/etc/grafana/ssl:ro
-```
+```text
 
 ### 5. Configure Real Notification Channels
 

@@ -17,11 +17,11 @@ The Email Details Panel is a right-sliding overlay that displays full email cont
 
 ### Component Structure
 
-```
+```text
 EmailDetailsPanel (sliding panel)
   └── EmailList (passes onOpen)
        └── EmailRow (calls onOpen on click)
-```
+```text
 
 ### Data Flow
 
@@ -71,7 +71,7 @@ className={cn(
   "dark:bg-slate-950",
   open ? "translate-x-0" : "translate-x-full"
 )}
-```
+```text
 
 ### Key Features
 
@@ -84,9 +84,9 @@ className={cn(
 
 ### Header Layout
 
-```
+```json
 [Close Button] [Sender Email]               [Actions] [Explain Button]
-```
+```text
 
 - Close (X icon)
 - Sender email (truncated)
@@ -174,7 +174,7 @@ function InboxPage() {
     </>
   );
 }
-```
+```text
 
 ### API Integration
 
@@ -201,7 +201,7 @@ function InboxPage() {
   "thread_id": "thread_abc",
   "unsubscribe_url": null
 }
-```
+```text
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -234,7 +234,7 @@ function InboxPage() {
   onMarkSus?: () => void;     // Mark suspicious action
   onExplain?: () => void;     // Explain action
 }
-```
+```text
 
 ### EmailDetails Type
 
@@ -253,7 +253,7 @@ function InboxPage() {
   thread_id?: string;
   unsubscribe_url?: string | null;
 }
-```
+```text
 
 ## 🎨 Styling Customization
 
@@ -268,7 +268,7 @@ className="max-w-[600px]"
 
 // Wider: 900px
 className="max-w-[900px]"
-```
+```text
 
 ### Animation Speed
 
@@ -281,7 +281,7 @@ className="transition-transform duration-150"
 
 // Slower: 300ms
 className="transition-transform duration-300"
-```
+```text
 
 ### Body Typography
 
@@ -289,13 +289,13 @@ className="transition-transform duration-300"
 
 ```tsx
 className="prose prose-slate max-w-none dark:prose-invert prose-a:text-indigo-600"
-```
+```text
 
 **Plain Text:**
 
 ```tsx
 className="whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-sm"
-```
+```text
 
 ## 🔒 Security Considerations
 
@@ -314,7 +314,7 @@ import DOMPurify from 'dompurify';
     __html: DOMPurify.sanitize(email.body_html) 
   }}
 />
-```
+```text
 
 **Backend Sanitization** (preferred):
 
@@ -330,7 +330,7 @@ clean_html = bleach.clean(
     attributes=allowed_attrs,
     strip=True
 )
-```
+```text
 
 ### External Links
 
@@ -404,7 +404,7 @@ async function openDetails(id: string) {
   setDetail(details);
   setOpenPanel(true);
 }
-```
+```text
 
 ## 🚀 Future Enhancements
 

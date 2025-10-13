@@ -26,13 +26,13 @@
 "lever, lever.co, hire.lever.co"
 "workday, myworkdayjobs, wd1.myworkday, wd2.myworkday, wd3.myworkday, wd5.myworkday"
 "smartrecruiters, smartrecruiters.com, sr.job"
-```
+```text
 
 **Usage:**
 
 ```bash
 python -m services.api.scripts.es_reindex_with_ats
-```
+```text
 
 #### `services/api/scripts/__init__.py`
 
@@ -169,19 +169,19 @@ python -m services.api.scripts.es_reindex_with_ats
 
 ```bash
 python -m services.api.scripts.es_reindex_with_ats
-```
+```text
 
 **Output:**
 
-```
+```text
 Alias gmail_emails -> gmail_emails_v2 (from gmail_emails)
-```
+```text
 
 ### Step 2: Restart API
 
 ```bash
 docker compose restart api
-```
+```text
 
 ### Step 3: Test
 
@@ -194,7 +194,7 @@ curl -s "http://127.0.0.1:8001/search?q=lever" | jq '.hits[] | {sender, score}'
 
 # Run test
 pytest -q services/api/tests/test_search_scoring.py
-```
+```text
 
 ---
 
@@ -214,7 +214,7 @@ pytest -q services/api/tests/test_search_scoring.py
 
 ## Files Changed
 
-```
+```text
 services/api/scripts/
 ├── __init__.py                    ✨ NEW
 └── es_reindex_with_ats.py        ✨ NEW (115 lines)
@@ -228,13 +228,13 @@ services/api/tests/
 docs/
 ├── SMART_SEARCH.md               📝 EXISTING (reference)
 └── SMART_SEARCH_DEPLOY.md        ✨ NEW (deployment guide)
-```
+```text
 
 ---
 
 ## Commit Message
 
-```
+```text
 feat: Add smart search scoring with ATS synonyms and label boosts
 
 Add "demo-ready" Elasticsearch search improvements:
@@ -259,7 +259,7 @@ Usage:
   python -m services.api.scripts.es_reindex_with_ats
   docker compose restart api
   pytest -q services/api/tests/test_search_scoring.py
-```
+```text
 
 ---
 
@@ -270,7 +270,7 @@ Usage:
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_settings" | \
   jq '.*.settings.index.analysis.analyzer.ats_search_analyzer'
-```
+```text
 
 Expected: Should show custom analyzer with synonym filter
 
@@ -283,7 +283,7 @@ curl -X POST "http://localhost:9200/gmail_emails/_analyze" \
   "analyzer": "ats_search_analyzer",
   "text": "workday lever smartrecruiters"
 }'
-```
+```text
 
 Expected: Tokens should include all synonyms
 
@@ -292,7 +292,7 @@ Expected: Tokens should include all synonyms
 ```bash
 curl -w "\nTime: %{time_total}s\n" -s "http://127.0.0.1:8001/search?q=interview&size=20" | \
   jq '.total'
-```
+```text
 
 Expected: < 0.1s for typical queries
 
@@ -301,7 +301,7 @@ Expected: < 0.1s for typical queries
 ```bash
 curl -s "http://127.0.0.1:8001/search?q=application&size=10" | \
   jq '.hits[] | {subject, labels, score}' | head -30
-```
+```text
 
 Expected: Offers score highest, rejections score lowest
 
@@ -325,14 +325,14 @@ curl -X POST "http://localhost:9200/_aliases" -H 'Content-Type: application/json
     {"add": {"index": "gmail_emails_old", "alias": "gmail_emails"}}
   ]
 }'
-```
+```text
 
 ### Option 2: Revert Code Changes
 
 ```bash
 git revert HEAD
 docker compose restart api
-```
+```text
 
 ---
 

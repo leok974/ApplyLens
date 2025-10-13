@@ -71,7 +71,7 @@ Your ApplyLens job application tracker is now:
 idx_emails_received_at    -- 10-100x faster time queries
 idx_emails_company        -- Fast company filters
 idx_apps_status_company   -- Optimized tracker page
-```
+```text
 
 ### Results
 
@@ -102,7 +102,7 @@ idx_apps_status_company   -- Optimized tracker page
 ```powershell
 # One-command health check
 D:\ApplyLens\scripts\VerifySystem.ps1
-```
+```text
 
 **Checks performed:**
 
@@ -147,19 +147,19 @@ D:\ApplyLens\scripts\VerifySystem.ps1
 
 ```powershell
 start http://localhost:5175/tracker
-```
+```text
 
 **Browse Emails:**
 
 ```powershell
 start http://localhost:5175/inbox
-```
+```text
 
 **Check System Health:**
 
 ```powershell
 D:\ApplyLens\scripts\VerifySystem.ps1
-```
+```text
 
 ### Manual Operations
 
@@ -167,19 +167,19 @@ D:\ApplyLens\scripts\VerifySystem.ps1
 
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
-```
+```text
 
 **Check Gmail Connection:**
 
 ```powershell
 curl http://localhost:8003/gmail/status
-```
+```text
 
 **View Scheduled Task:**
 
 ```powershell
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
-```
+```text
 
 ---
 
@@ -309,21 +309,21 @@ Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
 
 ```powershell
 start http://localhost:8003/auth/google/login
-```
+```text
 
 **Services Not Running?**
 
 ```powershell
 cd D:\ApplyLens\infra
 docker compose up -d
-```
+```text
 
 **Search Not Working?**
 
 ```powershell
 curl http://localhost:9200/_cluster/health
 # If unhealthy, restart ES: docker compose restart es
-```
+```text
 
 **Scheduled Sync Failed?**
 
@@ -333,7 +333,7 @@ Get-Content D:\ApplyLens\scripts\backfill-errors.log -Tail 20
 
 # Manual retry
 D:\ApplyLens\scripts\BackfillCheck.ps1
-```
+```text
 
 ---
 
@@ -514,7 +514,7 @@ D:\ApplyLens\scripts\VerifySystem.ps1
 
 # Manual backfill
 D:\ApplyLens\scripts\BackfillCheck.ps1
-```
+```text
 
 ---
 

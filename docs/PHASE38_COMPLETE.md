@@ -32,7 +32,7 @@ Added a chip-style button that toggles the `hideExpired` state:
 >
   {hideExpired ? "Show expired" : "Hide expired"}
 </Button>
-```
+```text
 
 ### Features
 
@@ -48,7 +48,7 @@ Added a chip-style button that toggles the `hideExpired` state:
 # Click the "Show expired" chip
 # URL should update: ?hideExpired=0
 # Click again to hide: ?hideExpired removed from URL
-```
+```text
 
 ---
 
@@ -79,7 +79,7 @@ Added "Profile" to navigation menu:
     </NavigationMenuLink>
   </NavigationMenuItem>
 ))}
-```
+```text
 
 **B) Added Route**
 
@@ -91,7 +91,7 @@ Added route for Profile page:
 import { ProfileSummary } from './components/profile/ProfileSummary'
 
 <Route path="/profile" element={<ProfileSummary />} />
-```
+```text
 
 ### Testing
 
@@ -103,7 +103,7 @@ import { ProfileSummary } from './components/profile/ProfileSummary'
 #   - Top senders list
 #   - Interests/keywords
 #   - Response time metrics
-```
+```text
 
 ---
 
@@ -130,7 +130,7 @@ body = {
         }
     }
 }
-```
+```text
 
 **NEW: Added Convenience Fields**
 
@@ -141,7 +141,7 @@ class SearchHit(BaseModel):
     # ... existing fields ...
     subject_highlight: Optional[str] = None
     body_highlight: Optional[str] = None
-```
+```text
 
 Updated response mapping:
 
@@ -151,7 +151,7 @@ hits.append(SearchHit(
     subject_highlight=highlight.get("subject", [None])[0] if "subject" in highlight else None,
     body_highlight=" ... ".join(highlight.get("body_text", [])) if "body_text" in highlight else None,
 ))
-```
+```text
 
 **B) Frontend: Highlight Utility**
 
@@ -178,7 +178,7 @@ export function toMarkedHTML(s?: string) {
   
   return { __html: restored }
 }
-```
+```text
 
 **Security:**
 
@@ -197,7 +197,7 @@ Updated subject rendering:
   className="font-semibold leading-snug text-[color:hsl(var(--foreground))]"
   dangerouslySetInnerHTML={toMarkedHTML(h.subject_highlight ?? h.subject ?? '(no subject)')}
 />
-```
+```text
 
 Updated body snippet rendering:
 
@@ -208,7 +208,7 @@ Updated body snippet rendering:
     dangerouslySetInnerHTML={toMarkedHTML(h.body_highlight)}
   />
 )}
-```
+```text
 
 **D) API Type Definitions**
 
@@ -222,7 +222,7 @@ export type SearchHit = {
   subject_highlight?: string
   body_highlight?: string
 }
-```
+```text
 
 ---
 
@@ -234,7 +234,7 @@ export type SearchHit = {
 
 ```bash
 curl -s "http://localhost:8003/api/search/?q=application&size=2"
-```
+```text
 
 **Result:** ✅
 
@@ -249,7 +249,7 @@ curl -s "http://localhost:8003/api/search/?q=application&size=2"
     "subject_highlight": "You have successfully submitted your IBM job <mark>application</mark>..."
   }
 ]
-```
+```text
 
 ### Test 2: Body Highlighting
 
@@ -257,7 +257,7 @@ curl -s "http://localhost:8003/api/search/?q=application&size=2"
 
 ```bash
 curl -s "http://localhost:8003/api/search/?q=interview&size=2"
-```
+```text
 
 **Result:** ✅
 
@@ -266,7 +266,7 @@ curl -s "http://localhost:8003/api/search/?q=interview&size=2"
   "subject": "Thanks for applying to Safran Passenger Innovations",
   "body_highlight": "[\"Yes\"] Are you available to work 3 days/week <mark>onsite</mark> in our Brea, CA office?"
 }
-```
+```text
 
 ### Test 3: Category + Highlighting Combined
 
@@ -274,7 +274,7 @@ curl -s "http://localhost:8003/api/search/?q=interview&size=2"
 
 ```bash
 curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
-```
+```text
 
 **Result:** ✅ Returns promotions with highlighted search terms
 
@@ -291,7 +291,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
   <Label htmlFor="hide-expired">Hide expired</Label>
   <Switch id="hide-expired" checked={hideExpired} onCheckedChange={setHideExpired} />
 </div>
-```
+```text
 
 **After:**
 
@@ -308,7 +308,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
     {hideExpired ? "Show expired" : "Hide expired"}
   </Button>
 </div>
-```
+```text
 
 ### Navigation Menu
 
@@ -337,7 +337,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 <h3 className="font-semibold">
   {h.subject || '(no subject)'}
 </h3>
-```
+```text
 
 **After:**
 
@@ -346,7 +346,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
   className="font-semibold"
   dangerouslySetInnerHTML={toMarkedHTML(h.subject_highlight ?? h.subject)}
 />
-```
+```text
 
 Result: Search terms are **highlighted in yellow** with `<mark>` tags
 
@@ -366,7 +366,7 @@ Added to Search.tsx:
     font-weight: 500;
   }
 `}</style>
-```
+```text
 
 - Yellow background (#ffeb3b) for high visibility
 - Rounded corners (3px)
@@ -391,7 +391,7 @@ Added to Search.tsx:
         }
     }
 }
-```
+```text
 
 **Features:**
 

@@ -167,7 +167,7 @@ Successfully implemented a comprehensive ML-powered email categorization system 
 
 ```powershell
 .\test-ml-endpoints.ps1
-```
+```text
 
 **Results:**
 
@@ -180,7 +180,7 @@ Successfully implemented a comprehensive ML-powered email categorization system 
 
 ```powershell
 .\test-profile-endpoints.ps1
-```
+```text
 
 **Results:**
 
@@ -196,7 +196,7 @@ Successfully implemented a comprehensive ML-powered email categorization system 
 
 ### Weak-Label Learning Flow
 
-```
+```text
 Raw Emails
     ↓
 Rules Engine (High-precision patterns)
@@ -210,11 +210,11 @@ LogisticRegression Training
 Trained Model (label_v1.joblib)
     ↓
 New Email → ML Prediction + Rule Override → Final Category
-```
+```text
 
 ### Profile Analytics Flow
 
-```
+```text
 User Emails (90-day window)
     ↓
 Aggregate Sender Stats (volume, categories)
@@ -226,7 +226,7 @@ Extract Interest Keywords (capitalized phrases, hashtags)
 Store in Profile Tables
     ↓
 API Endpoints (summary, senders, categories, interests)
-```
+```text
 
 ---
 
@@ -243,7 +243,7 @@ API Endpoints (summary, senders, categories, interests)
 
 ## File Structure
 
-```
+```text
 services/api/
 ├── alembic/versions/
 │   └── 0013_phase2_ml_profile.py     ← Migration
@@ -264,7 +264,7 @@ services/api/
 tests/
 ├── test-ml-endpoints.ps1              ← ML testing script
 └── test-profile-endpoints.ps1         ← Profile testing script
-```
+```text
 
 ---
 
@@ -299,20 +299,20 @@ tests/
 
 ```bash
 docker exec infra-api-1 python -m app.ml.train_label_model
-```
+```text
 
 ### Run Migration
 
 ```bash
 docker exec infra-api-1 alembic upgrade head
-```
+```text
 
 ### Rebuild API
 
 ```bash
 cd D:\ApplyLens\infra
 docker compose up -d --build api
-```
+```text
 
 ### Test Endpoints
 
@@ -320,7 +320,7 @@ docker compose up -d --build api
 cd D:\ApplyLens
 .\test-ml-endpoints.ps1
 .\test-profile-endpoints.ps1
-```
+```text
 
 ---
 

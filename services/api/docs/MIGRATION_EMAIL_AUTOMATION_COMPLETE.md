@@ -52,7 +52,7 @@ Created three sequential migrations to add all missing columns:
 ALTER TABLE emails ADD COLUMN risk_score DOUBLE PRECISION;
 CREATE INDEX ix_emails_risk_score ON emails (risk_score);
 UPDATE emails SET risk_score = 0 WHERE risk_score IS NULL;
-```
+```text
 
 ### Migration 0011: Add expires_at and profile_tags Columns
 
@@ -78,7 +78,7 @@ ALTER TABLE emails ADD COLUMN profile_tags TEXT[];
 CREATE INDEX ix_emails_expires_at ON emails (expires_at);
 COMMENT ON COLUMN emails.expires_at IS 'When email content expires (e.g., bill due date, promo end date, event date)';
 COMMENT ON COLUMN emails.profile_tags IS 'User-specific tags for email personalization and organization';
-```
+```text
 
 ### Migration 0012: Add features_json Column
 
@@ -96,7 +96,7 @@ COMMENT ON COLUMN emails.profile_tags IS 'User-specific tags for email personali
 ```sql
 ALTER TABLE emails ADD COLUMN features_json JSONB;
 COMMENT ON COLUMN emails.features_json IS 'Extracted features for ML/classification (JSONB for efficient queries)';
-```
+```text
 
 ---
 
@@ -107,11 +107,11 @@ COMMENT ON COLUMN emails.features_json IS 'Extracted features for ML/classificat
 ```bash
 $ docker-compose exec api alembic current
 0012_add_emails_features_json (head)
-```
+```text
 
 **Migration Chain:**
 
-```
+```text
 0001_init
   → 0002_oauth_gmail
     → 0003_applications
@@ -123,7 +123,7 @@ $ docker-compose exec api alembic current
                 → 0010_add_emails_risk_score
                   → 0011_add_emails_expires_profile
                     → 0012_add_emails_features_json (head)
-```
+```text
 
 **Note:** Migration 0007 was never created (gap in sequence from 0006 → 0008)
 
@@ -136,7 +136,7 @@ SELECT column_name, data_type
 FROM information_schema.columns 
 WHERE table_name='emails' 
   AND column_name IN ('category', 'risk_score', 'expires_at', 'profile_tags', 'features_json');
-```
+```text
 
 **Result:**
 | column_name   | data_type                |
@@ -154,7 +154,7 @@ SELECT indexname
 FROM pg_indexes 
 WHERE tablename='emails' 
   AND (indexname LIKE '%category%' OR indexname LIKE '%risk%' OR indexname LIKE '%expires%');
-```
+```text
 
 **Result:**
 | indexname            |
@@ -178,17 +178,17 @@ print(f"risk_score: {email.risk_score}")
 print(f"expires_at: {email.expires_at}")
 print(f"category: {email.category}")
 print(f"features_json: {email.features_json}")
-```
+```text
 
 **Result:**
 
-```
+```text
 Email ID: 1
 risk_score: 0.0
 expires_at: None
 category: None
 features_json: None
-```
+```text
 
 ✅ All columns can be queried without errors.
 
@@ -209,14 +209,14 @@ features_json: None
 ```bash
 $ curl http://localhost:8003/healthz
 "ok"
-```
+```text
 
 **Endpoint Test:**
 The `/mail/suggest-actions` endpoint (which queries `risk_score`) should now work without errors. Previously would fail with:
 
-```
+```text
 psycopg2.errors.UndefinedColumn: column "risk_score" does not exist
-```
+```text
 
 ---
 
@@ -229,7 +229,7 @@ psycopg2.errors.UndefinedColumn: column "risk_score" does not exist
 ```python
 sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) 
 column emails.risk_score does not exist
-```
+```text
 
 **Affected Components:**
 
@@ -317,7 +317,7 @@ risk_score = calculate_risk_score(email_dict)
 email = session.query(Email).filter_by(id=email_id).first()
 email.risk_score = risk_score
 session.commit()
-```
+```text
 
 ### 2. Querying High-Risk Emails
 
@@ -327,7 +327,7 @@ high_risk_emails = session.query(Email)\
     .filter(Email.risk_score >= 80)\
     .order_by(Email.risk_score.desc())\
     .all()
-```
+```text
 
 ### 3. Tracking Bill Due Dates
 
@@ -344,7 +344,7 @@ upcoming_bills = session.query(Email)\
     .filter(Email.category == 'bills')\
     .filter(Email.expires_at <= datetime.now(timezone.utc) + timedelta(days=7))\
     .all()
-```
+```text
 
 ### 4. Storing ML Features
 
@@ -367,7 +367,7 @@ promotional_with_unsubscribe = session.query(Email)\
     .filter(Email.features_json['has_unsubscribe'].astext.cast(Boolean) == True)\
     .filter(Email.category == 'promotions')\
     .all()
-```
+```text
 
 ---
 
@@ -389,7 +389,7 @@ from app.utils.schema_guard import require_min_migration
 
 # At start of script
 require_min_migration("0012_add_emails_features_json", "email automation system fields")
-```
+```text
 
 **Candidates for Schema Guards:**
 
@@ -420,7 +420,7 @@ for email in session.query(Email).filter(Email.risk_score == 0):
     email_dict = email_to_dict(email)
     email.risk_score = calculate_risk_score(email_dict)
     session.commit()
-```
+```text
 
 ### 2. Bill Date Backfill
 

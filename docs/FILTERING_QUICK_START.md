@@ -6,7 +6,7 @@ Interactive label and date filtering added to search interface.
 
 ## Visual Layout
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Search Box                                          [Search] │
 └─────────────────────────────────────────────────────────────┘
@@ -21,7 +21,7 @@ Interactive label and date filtering added to search interface.
 
 Results (showing X emails matching "query")
 ...
-```
+```text
 
 ## Label Chips
 
@@ -51,9 +51,9 @@ Results (showing X emails matching "query")
 
 ### Visual Elements
 
-```
+```text
 From: [date picker input]  To: [date picker input]  Clear dates
-```
+```text
 
 ### Interaction
 
@@ -151,9 +151,9 @@ The recency scale setting (3d/7d/14d) from Settings page:
 
 ### Request Format
 
-```
+```text
 GET /api/search?q=interview&labels=offer&labels=interview&date_from=2025-10-01&date_to=2025-10-31&scale=7d
-```
+```text
 
 ### Parameters
 

@@ -18,7 +18,7 @@ curl http://localhost:8003/automation/health | jq .
 
 # Check metrics
 curl -s http://localhost:8003/metrics | grep applylens_risk
-```
+```text
 
 ### 2. Review Recent Failures
 
@@ -28,7 +28,7 @@ docker-compose logs api | grep -i "risk" | grep -i "error" | tail -n 50
 
 # Check for specific error patterns
 docker-compose logs api | grep "analyze_risk\|compute_risk_score" | tail -n 100
-```
+```text
 
 ---
 
@@ -55,7 +55,7 @@ docker-compose exec db psql -U postgres -d applylens -c "
   SELECT column_name, data_type 
   FROM information_schema.columns 
   WHERE table_name = 'emails' AND column_name IN ('risk_score', 'expires_at', 'category');"
-```
+```text
 
 ### 2. Elasticsearch Sync Issues
 
@@ -76,7 +76,7 @@ python scripts/analyze_risk.py --backfill --batch-size 50
 
 # Verify parity
 python scripts/check_parity.py --fields risk_score --sample 100
-```
+```text
 
 ### 3. Dry Run Test (Safe)
 
@@ -94,7 +94,7 @@ python scripts/analyze_risk.py --batch-size 10
 
 # Check output
 # Should show: "DRY RUN: would update X emails"
-```
+```text
 
 ### 4. Timeout/Performance Issues
 
@@ -118,7 +118,7 @@ docker-compose exec db psql -U postgres -c "
 
 # Optimize with smaller scope
 python scripts/analyze_risk.py --batch-size 10 --max-batches 5
-```
+```text
 
 ### 5. Configuration Issues
 
@@ -146,7 +146,7 @@ total = WEIGHT_DOMAIN + WEIGHT_KEYWORDS + WEIGHT_CONFIDENCE
 print(f'Weight sum: {total}')
 assert abs(total - 1.0) < 0.001, 'Weights must sum to 1.0'
 "
-```
+```text
 
 ---
 
@@ -166,7 +166,7 @@ python scripts/analyze_risk.py --backfill --batch-size 50
 
 # Check results
 curl http://localhost:8003/automation/health | jq .coverage_percentage
-```
+```text
 
 ---
 
@@ -189,7 +189,7 @@ curl -s http://localhost:8003/metrics | grep applylens_risk_requests_total
 # 4. Verify parity
 cd D:\ApplyLens\services\api
 python scripts/check_parity.py --fields risk_score --sample 100
-```
+```text
 
 ---
 
@@ -212,7 +212,7 @@ sum(rate(applylens_risk_batch_duration_seconds_sum[5m]))
 histogram_quantile(0.95, 
   sum(rate(applylens_risk_batch_duration_seconds_bucket[15m])) by (le)
 )
-```
+```text
 
 ### Database Queries
 
@@ -239,7 +239,7 @@ FROM emails
 WHERE risk_score IS NULL
 ORDER BY created_at DESC
 LIMIT 10;
-```
+```text
 
 ---
 

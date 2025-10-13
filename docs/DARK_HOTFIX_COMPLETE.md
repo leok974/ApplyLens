@@ -30,7 +30,7 @@ Implemented a comprehensive dark theme "hotfix" stylesheet that uses `!important
 --text: #e7ebf3;        /* Primary text */
 --subtext: #adb7c5;     /* Muted text */
 --focus: #7aa2ff;       /* Focus ring */
-```
+```text
 
 **Overrides:**
 
@@ -57,7 +57,7 @@ Implemented a comprehensive dark theme "hotfix" stylesheet that uses `!important
 import './index.css'            // Base Tailwind + theme
 import '@/styles/theme.css'     // Legacy theme variables
 import '@/styles/dark-hotfix.css' // NEW: Dark overrides
-```
+```text
 
 This ensures the hotfix has the highest specificity.
 
@@ -85,7 +85,7 @@ The app uses Tailwind CSS v4 with the new `@theme` syntax instead of traditional
 
 ### E2E Tests
 
-```
+```text
 ✓ inbox.smoke.spec.ts - Card rendering (4.5s)
 ✓ legibility.spec.ts - CSS vars & persistence (1.3s)
 ✓ details-panel.spec.ts - Resize & thread nav (6.5s)
@@ -94,7 +94,7 @@ The app uses Tailwind CSS v4 with the new `@theme` syntax instead of traditional
 ✓ tracker.spec.ts - Application list & filters (1.7s)
 
 6 passed (7.4s) ✅
-```
+```text
 
 All tests passing with forced dark mode!
 
@@ -159,7 +159,7 @@ Add alternative color schemes:
 ```css
 :root[data-theme="blue"] { --card-bg: #1a2332; }
 :root[data-theme="purple"] { --card-bg: #1f1a2e; }
-```
+```text
 
 ### 3. Color Picker
 
@@ -179,7 +179,7 @@ const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 const savedTheme = localStorage.getItem('theme')
 const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark)
 document.documentElement.classList.toggle('dark', isDark)
-```
+```text
 
 ## Technical Notes
 
@@ -193,7 +193,7 @@ html.dark .bg-white { ... !important }
 
 /* Beats Tailwind's single class */
 .bg-white { background-color: white; }
-```
+```text
 
 ### Performance
 
@@ -216,7 +216,7 @@ html.dark .bg-white { ... !important }
 ```bash
 cd D:\ApplyLens\infra
 docker compose up -d --build web
-```
+```text
 
 ### Production
 
@@ -229,7 +229,7 @@ If needed, comment out these lines in `main.tsx`:
 ```tsx
 // import '@/styles/dark-hotfix.css'
 // document.documentElement.classList.add('dark')
-```
+```text
 
 ## Commit Information
 

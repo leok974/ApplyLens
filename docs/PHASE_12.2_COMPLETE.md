@@ -42,7 +42,7 @@ test = [
   "freezegun>=1.2",
   "requests>=2.31",
 ]
-```
+```text
 
 ### 2. Unit Tests (305 lines, 50+ tests)
 
@@ -68,7 +68,7 @@ test_multiple_suspicious_keywords()    # 40 points for 2+ keywords
 test_zero_confidence()                 # 20 points for 0.0 confidence
 test_maximum_risk_email()              # 100 points total
 test_weights_sum_to_one()              # Validates normalization
-```
+```text
 
 ### 3. API Contract Tests (450 lines, 40+ tests)
 
@@ -115,7 +115,7 @@ python scripts/check_parity.py \
   --output parity.json \
   --csv parity.csv \
   --allow 5
-```
+```text
 
 **Report Example:**
 
@@ -132,7 +132,7 @@ python scripts/check_parity.py \
     }
   }
 }
-```
+```text
 
 ### 5. Parity Integration Tests (200 lines, 15+ tests)
 
@@ -197,7 +197,7 @@ applylens_parity_checks_total            # Counter
 applylens_parity_mismatches_total        # Counter
 applylens_parity_mismatch_ratio          # Gauge (0.0-1.0)
 applylens_parity_last_check_timestamp    # Gauge (Unix time)
-```
+```text
 
 **Alerting Example:**
 
@@ -205,7 +205,7 @@ applylens_parity_last_check_timestamp    # Gauge (Unix time)
 # Alert if mismatch ratio > 0.5% for 10 minutes
 rate(applylens_parity_mismatches_total[5m]) / 
 rate(applylens_parity_checks_total[5m]) > 0.005
-```
+```text
 
 ---
 
@@ -259,7 +259,7 @@ pytest -m api -v
 
 # Run all tests
 pytest -v
-```
+```text
 
 ### Manual Parity Check
 
@@ -271,7 +271,7 @@ docker-compose exec api python scripts/check_parity.py `
   --fields risk_score,expires_at,category `
   --sample 1000 `
   --output /tmp/parity.json
-```
+```text
 
 **Bash:**
 
@@ -281,7 +281,7 @@ docker-compose exec api python scripts/check_parity.py \
   --fields risk_score,expires_at,category \
   --sample 1000 \
   --output /tmp/parity.json
-```
+```text
 
 ### Investigating Mismatches
 
@@ -358,7 +358,7 @@ docker-compose exec api python scripts/check_parity.py \
 
 ### Created (7 files)
 
-```
+```bash
 .github/workflows/automation-tests.yml               (450 lines)
 services/api/pytest.ini                              (27 lines)
 services/api/tests/unit/test_risk_scoring.py         (305 lines)
@@ -366,14 +366,14 @@ services/api/tests/api/test_automation_endpoints.py  (450 lines)
 services/api/tests/integration/test_parity_job.py    (200 lines)
 services/api/scripts/check_parity.py                 (440 lines)
 services/api/docs/PHASE_12.2_PLAN.md                 (500+ lines)
-```
+```text
 
 ### Modified (2 files)
 
-```
+```text
 services/api/pyproject.toml                          (+9 lines)
 services/api/app/metrics.py                          (+21 lines)
-```
+```text
 
 **Total:** 9 files changed, 2,578 insertions(+)
 

@@ -23,22 +23,22 @@
 
 ### Filter by Reply Status
 
-```
+```text
 1. Search for emails (e.g., "interview")
 2. Click filter chip:
    - "All" → Show everything
    - "Replied" → Show only replied emails
    - "Not replied" → Show only emails you haven't replied to
-```
+```text
 
 ### Read TTR Badges
 
-```
+```text
 TTR 15m  = Replied in 15 minutes
 TTR 3h   = Replied in 3 hours
 TTR 2d   = Replied in 2 days
 No reply = Haven't replied yet
-```
+```text
 
 ---
 
@@ -55,7 +55,7 @@ GET /search?q=offer&replied=false
 
 # Get all (default)
 GET /search?q=application
-```
+```text
 
 ### Response Fields (NEW)
 
@@ -68,7 +68,7 @@ GET /search?q=application
     "time_to_response_hours": 2.5
   }]
 }
-```
+```text
 
 ### Component Usage
 
@@ -79,7 +79,7 @@ import { RepliedFilterChips } from '@/components/RepliedFilterChips'
   value={replied} 
   onChange={setReplied} 
 />
-```
+```text
 
 ---
 
@@ -87,30 +87,30 @@ import { RepliedFilterChips } from '@/components/RepliedFilterChips'
 
 ### Find Emails Needing Replies
 
-```
+```text
 1. Click "Not replied" filter
 2. (Optional) Add date range: Last 7 days
 3. (Optional) Add label: "Interview" or "Offer"
 → Shows emails requiring follow-up
-```
+```text
 
 ### Review Response Times
 
-```
+```text
 1. Click "Replied" filter
 2. Look at TTR badges on each result
 3. Identify patterns (fast/slow responses)
 → Understand your response habits
-```
+```text
 
 ### Urgent Unreplied Offers
 
-```
+```text
 1. Click label: "Offer"
 2. Click "Not replied"
 3. Set date: Last 3 days
 → Time-sensitive offers needing attention
-```
+```text
 
 ---
 
@@ -123,7 +123,7 @@ import { RepliedFilterChips } from '@/components/RepliedFilterChips'
 curl "http://localhost:8003/search?q=test&replied=true" | jq '.hits[0] | {replied, time_to_response_hours}'
 
 # UI: Toggle filter chips and verify list updates
-```
+```text
 
 ---
 

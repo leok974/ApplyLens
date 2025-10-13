@@ -41,7 +41,7 @@
 
 **All 8 checks passed! ✅**
 
-```
+```text
 ✓ Health: OK | Readiness: DB=up, ES=up
 ✓ Connected as leoklemet.pa@gmail.com | Emails: 1810
 ✓ Emails in database: 1835
@@ -50,7 +50,7 @@
 ✓ Search working | 'Interview' results: 10
 ✓ Task: Ready | Next run in ~30 minutes
 ✓ Custom indexes found: 4
-```
+```text
 
 ---
 
@@ -69,7 +69,7 @@ curl -Method POST http://localhost:8003/gmail/backfill?days=2
 # Input validation
 curl -Method POST "http://localhost:8003/gmail/backfill?days=9999"
 # → HTTP 422 (exceeds max 365)
-```
+```text
 
 ### Health Checks
 
@@ -81,7 +81,7 @@ curl http://localhost:8003/healthz
 # Readiness (verifies DB + ES)
 curl http://localhost:8003/readiness
 # → {"ok": true, "db": "up", "es": "up"}
-```
+```text
 
 ### Automated Monitoring
 
@@ -93,7 +93,7 @@ Get-ScheduledTask -TaskName "ApplyLens-GmailSync"
 
 # View error log
 Get-Content D:\ApplyLens\scripts\backfill-errors.log
-```
+```text
 
 ### System Verification
 
@@ -101,7 +101,7 @@ Get-Content D:\ApplyLens\scripts\backfill-errors.log
 # One-command health check
 D:\ApplyLens\scripts\VerifySystem.ps1
 # Checks: API, DB, ES, Gmail, Search, Task, Indexes
-```
+```text
 
 ---
 
@@ -145,7 +145,7 @@ D:\ApplyLens\scripts\VerifySystem.ps1
 ```powershell
 # Run full verification
 D:\ApplyLens\scripts\VerifySystem.ps1
-```
+```text
 
 ### Health Checks
 
@@ -155,14 +155,14 @@ curl http://localhost:8003/healthz
 
 # Detailed readiness
 curl http://localhost:8003/readiness
-```
+```text
 
 ### Manual Backfill
 
 ```powershell
 # Respects 60s rate limit
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
-```
+```text
 
 ### Monitor Scheduled Task
 
@@ -175,7 +175,7 @@ Get-ScheduledTaskInfo -TaskName "ApplyLens-GmailSync"
 
 # Manually trigger
 Start-ScheduledTask -TaskName "ApplyLens-GmailSync"
-```
+```text
 
 ---
 
@@ -267,7 +267,7 @@ Run this now to confirm everything is working:
 
 ```powershell
 D:\ApplyLens\scripts\VerifySystem.ps1
-```
+```text
 
 Expected: **All 8 checks should pass ✅**
 

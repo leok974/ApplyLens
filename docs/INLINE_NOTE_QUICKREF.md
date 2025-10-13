@@ -24,7 +24,7 @@ import InlineNote from '../components/InlineNote'
     await refetch()
   }}
 />
-```
+```text
 
 ## User Workflow
 
@@ -64,7 +64,7 @@ interface InlineNoteProps {
   testId?: string                         // E2E test ID prefix
   snippets?: string[]                     // Custom snippet chips (optional)
 }
-```
+```text
 
 ## Testing
 
@@ -77,7 +77,7 @@ interface InlineNoteProps {
 cd apps/web
 npx playwright test tests/e2e/tracker-notes.spec.ts
 npx playwright test tests/e2e/tracker-note-snippets.spec.ts
-```
+```text
 
 **Coverage:**
 

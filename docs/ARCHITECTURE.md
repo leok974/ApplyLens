@@ -6,7 +6,7 @@ This document describes the high-level architecture of ApplyLens, including syst
 
 ApplyLens is a full-stack web application for intelligent job application email management, built with a microservices-inspired architecture using Docker containers.
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                          Client Browser                          │
 │                    (React + Vite @ :5175)                       │
@@ -47,7 +47,7 @@ ApplyLens is a full-stack web application for intelligent job application email 
   │  Gmail API   │
   │   (OAuth)    │
   └──────────────┘
-```
+```text
 
 ## Core Components
 
@@ -77,7 +77,7 @@ ApplyLens is a full-stack web application for intelligent job application email 
 
 **Key Modules:**
 
-```
+```text
 app/
 ├── main.py                 # FastAPI application entry point
 ├── settings.py             # Configuration management
@@ -98,7 +98,7 @@ app/
     ├── export_weak_labels.py  # Weak supervision
     ├── train_ml.py            # Model training
     └── label_model.joblib     # Trained model
-```
+```text
 
 **API Endpoints:**
 
@@ -163,7 +163,7 @@ user_weights (
   weight FLOAT,  -- positive = safe, negative = risky
   updated_at TIMESTAMP
 )
-```
+```text
 
 **Migrations:** Managed by Alembic (`services/api/alembic/`)
 
@@ -189,7 +189,7 @@ user_weights (
     }
   }
 }
-```
+```text
 
 **Use Cases:**
 
@@ -202,7 +202,7 @@ user_weights (
 
 ### Email Sync Flow
 
-```
+```text
 1. User clicks "Sync" → POST /emails/sync
 2. Backend fetches messages via Gmail API
 3. For each message:
@@ -213,21 +213,21 @@ user_weights (
    e. Save to PostgreSQL
    f. Index in Elasticsearch
 4. Return sync summary to frontend
-```
+```text
 
 ### Search Flow
 
-```
+```text
 1. User enters search query → GET /emails?q=...&category=...
 2. Backend builds Elasticsearch query
 3. ES returns matching document IDs + facets
 4. Backend fetches full records from PostgreSQL
 5. Return enriched results to frontend
-```
+```text
 
 ### Risk Scoring Flow
 
-```
+```text
 1. New email arrives
 2. Extract features:
    - sender_domain
@@ -239,11 +239,11 @@ user_weights (
    risk_score = Σ (feature_weight × feature_presence)
 5. Normalize to 0-100 range
 6. If risk_score > threshold → quarantine
-```
+```text
 
 ### Policy Execution Flow
 
-```
+```text
 1. Email saved to database
 2. Fetch all enabled policies for user
 3. For each policy:
@@ -251,13 +251,13 @@ user_weights (
    b. If match → apply action (label, quarantine, archive)
 4. Update email record
 5. Sync changes to Elasticsearch
-```
+```text
 
 ## Security & Authentication
 
 ### Gmail OAuth 2.0
 
-```
+```text
 1. User clicks "Connect Gmail"
 2. Redirect to Google OAuth consent screen
 3. User grants permissions (read Gmail, send on behalf)
@@ -265,7 +265,7 @@ user_weights (
 5. Backend exchanges code for access + refresh tokens
 6. Store encrypted tokens in database
 7. Use refresh token to maintain access
-```
+```text
 
 ### API Security
 
@@ -284,7 +284,7 @@ user_weights (
 email_sync_duration = Histogram("email_sync_duration_seconds")
 risk_score_distribution = Histogram("risk_score", buckets=[0, 20, 40, 60, 80, 100])
 api_request_duration = Histogram("http_request_duration_seconds")
-```
+```text
 
 ### Grafana Dashboards
 

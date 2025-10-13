@@ -9,7 +9,7 @@ Playwright is already installed. If you need to reinstall:
 ```bash
 pnpm add -D @playwright/test
 pnpm exec playwright install --with-deps
-```
+```text
 
 ## 🧪 Running Tests
 
@@ -24,11 +24,11 @@ pnpm test:e2e:ui
 
 # Update snapshots
 pnpm test:e2e:update
-```
+```text
 
 ## 📁 Test Structure
 
-```
+```text
 tests/e2e/
 ├── _fixtures.ts              # API mocking utilities (search, applications, inbox, emails, threads)
 ├── _consoleGuard.ts          # Console error/warning guard (fails tests on unexpected console errors)
@@ -38,7 +38,7 @@ tests/e2e/
 ├── details-panel.spec.ts     # Email details panel
 ├── search.spec.ts            # Search page with BM25 results
 └── tracker.spec.ts           # Applications tracker page
-```
+```text
 
 ## 🎯 Test Coverage
 
@@ -97,7 +97,7 @@ test.beforeEach(async ({ page }) => {
   guardConsole(page);
   await stubApi(page);
 });
-```
+```text
 
 ## 🔧 Configuration
 
@@ -123,7 +123,7 @@ After running tests:
 
 ```bash
 pnpm exec playwright show-report
-```
+```text
 
 This opens an HTML report with:
 
@@ -142,7 +142,7 @@ pnpm exec playwright test --debug
 
 # Or use UI mode (recommended)
 pnpm test:e2e:ui
-```
+```text
 
 ## 📝 Writing New Tests
 
@@ -165,7 +165,7 @@ test("My new feature works", async ({ page }) => {
   await page.goto("/inbox-polished-demo");
   await expect(page.locator(".my-element")).toBeVisible();
 });
-```
+```text
 
 ## 🚀 CI Integration
 
@@ -180,7 +180,7 @@ Add to your CI pipeline:
 ```yaml
 - name: Run e2e tests
   run: pnpm test:e2e
-```
+```text
 
 ## 📚 Resources
 

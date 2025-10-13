@@ -4,7 +4,7 @@
 
 ## Breakpoint Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    Viewport Width                            │
 └─────────────────────────────────────────────────────────────┘
@@ -18,13 +18,13 @@
                                       │
                                   DESKTOP_BP
                                    (1024px)
-```
+```text
 
 ## Layout at Different Sizes
 
 ### Small Mobile (<768px)
 
-```
+```text
 ╔════════════════════════════════╗
 ║  📱 Mobile Phone               ║
 ║  Viewport: 375px - 767px       ║
@@ -62,11 +62,11 @@ When email clicked:
 ║  ╚══════════════════════════╝ ║
 ║   (Covers entire screen)       ║
 ╚════════════════════════════════╝
-```
+```text
 
 ### Tablet Portrait (768px - 1023px)
 
-```
+```text
 ╔═══════════════════════════════════════╗
 ║  📱 Tablet Portrait                   ║
 ║  Viewport: 768px - 1023px             ║
@@ -88,11 +88,11 @@ Panel Mode: Overlay (forced)
 Toggle: Visible but disabled
 Variant: Secondary (dimmed)
 Tooltip: "Available on larger screens"
-```
+```text
 
 ### Desktop (≥1024px) - Overlay Mode
 
-```
+```text
 ╔═══════════════════════════════════════════════════════════════════╗
 ║  💻 Desktop - OVERLAY MODE                                         ║
 ║  Viewport: ≥1024px                                                 ║
@@ -115,11 +115,11 @@ Panel Mode: Overlay
 Toggle: Enabled, "Split Panel" label
 Variant: Outline (normal)
 Panel: Hidden until email clicked
-```
+```text
 
 ### Desktop (≥1024px) - Split Mode
 
-```
+```text
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║  💻 Desktop - SPLIT MODE                                                       ║
 ║  Viewport: ≥1024px                                                             ║
@@ -144,36 +144,36 @@ Toggle: Enabled, "Overlay Panel" label
 Variant: Outline (normal)
 Panel: Always visible, docked to right
 Close Button: Hidden on desktop
-```
+```text
 
 ## Toggle Button States
 
 ### Desktop - Enabled
 
-```
+```text
 ┌──────────────────────────┐
 │ ⚏  Split Panel          │  ← Normal outline style
 └──────────────────────────┘
    Clickable, pointer cursor
    Shows label of TARGET mode
-```
+```text
 
 ### Mobile - Disabled
 
-```
+```text
 ┌──────────────────────────┐
 │ ⚏  Split Panel          │  ← Dimmed secondary style
 └──────────────────────────┘
    Not clickable, not-allowed cursor
    Tooltip: "Available on larger screens"
    Hidden on screens < md (768px)
-```
+```text
 
 ## Responsive Transitions
 
 ### Scenario 1: Desktop → Mobile (Window Shrink)
 
-```
+```text
 BEFORE (Desktop, ≥1024px, Split Mode):
 ┌───────────────────────────────────────────┐
 │  List          │  Panel (docked)          │
@@ -199,11 +199,11 @@ Changes:
 - Panel closes (or becomes overlay if was open)
 - Toggle button becomes disabled + dimmed
 - Saved preference: PRESERVED in localStorage
-```
+```text
 
 ### Scenario 2: Mobile → Desktop (Window Expand)
 
-```
+```text
 BEFORE (Mobile, <1024px):
 ┌───────────────────────────────────────────┐
 │  List (full width)                        │
@@ -231,11 +231,11 @@ Changes:
 - Panel auto-opens (useEffect triggers)
 - Toggle button becomes enabled
 - Reads saved preference from localStorage
-```
+```text
 
 ### Scenario 3: Tablet Rotation
 
-```
+```text
 PORTRAIT (<1024px):
 ┌─────────────────────┐
 │                     │
@@ -259,11 +259,11 @@ LANDSCAPE (≥1024px):
 └────────────────────────────────────┘
          Split mode (if saved)
          [Overlay Panel] enabled
-```
+```text
 
 ## State Flow Diagram
 
-```
+```text
                     ┌──────────────┐
                     │  Page Load   │
                     └──────┬───────┘
@@ -304,7 +304,7 @@ LANDSCAPE (≥1024px):
 Toggle Button States:
 Desktop: Enabled, outline variant
 Mobile:  Disabled, secondary variant (dimmed)
-```
+```text
 
 ## Media Query Behavior
 
@@ -321,7 +321,7 @@ const mq = window.matchMedia("(min-width: 1024px)");
 // Does NOT fire for:
 1024px → 1280px  ❌ (still desktop)
 800px → 600px    ❌ (still mobile)
-```
+```text
 
 ### Resize Event (Fallback)
 
@@ -333,13 +333,13 @@ window.addEventListener("resize", () => {
 // Fires on EVERY resize
 // Less efficient but works in older browsers
 // Both listeners active for maximum compatibility
-```
+```text
 
 ## User Preference Persistence
 
 ### localStorage Structure
 
-```
+```text
 Key: "inbox:panelMode"
 Values: "overlay" | "split"
 
@@ -350,11 +350,11 @@ Example states:
 │ "inbox:panelMode": "split"               │
 │ "inbox:detailsPanelWidth": "720"         │
 └──────────────────────────────────────────┘
-```
+```text
 
 ### How Preference is Applied
 
-```
+```text
 1. Page Load
    ↓
 2. Read localStorage → panelMode = "split"
@@ -364,11 +364,11 @@ Example states:
 4. Calculate effectiveMode = isDesktop ? "split" : "overlay"
    ↓
 5. Render split layout
-```
+```text
 
 ### Mobile Override
 
-```
+```text
 1. Page Load
    ↓
 2. Read localStorage → panelMode = "split"
@@ -380,7 +380,7 @@ Example states:
                               effectiveMode = "overlay"
    ↓
 5. Render overlay layout (preference ignored!)
-```
+```text
 
 ## Quick Reference Table
 

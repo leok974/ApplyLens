@@ -84,11 +84,11 @@ Successfully applied the applications tracker patch to the ApplyLens monorepo. T
 
 ### Status Workflow
 
-```
+```text
 applied → hr_screen → interview → offer ✅
    ↓         ↓           ↓
 on_hold   ghosted    rejected ❌
-```
+```text
 
 ### Status Meanings
 
@@ -148,14 +148,16 @@ $threadBody = @{
 
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" -Method POST `
     -ContentType "application/json" -Body $threadBody
-```
+```text
 
 ### Frontend Testing
 
 1. **Visit Tracker Page:**
 
    ```
-   http://localhost:5175/tracker
+
+   <http://localhost:5175/tracker>
+
    ```
 
 2. **Test Features:**
@@ -189,7 +191,7 @@ The migration automatically runs when the API container starts. All existing app
 docker compose -f infra/docker-compose.yml exec api alembic current
 
 # Should show: 0003_applications (head)
-```
+```text
 
 ---
 
@@ -255,44 +257,54 @@ docker compose -f infra/docker-compose.yml exec api alembic current
 1. **Add Metrics Dashboard**
 
    ```
-   - Applications per status (pie chart)
-   - Response rate by source
-   - Average time in each stage
-   - Success rate by company
+
+- Applications per status (pie chart)
+- Response rate by source
+- Average time in each stage
+- Success rate by company
+
    ```
 
 2. **Add Bulk Actions**
 
    ```
-   - Bulk status updates
-   - Bulk delete
-   - Export to CSV
-   - Import from CSV
+
+- Bulk status updates
+- Bulk delete
+- Export to CSV
+- Import from CSV
+
    ```
 
 3. **Add Reminders**
 
    ```
-   - Follow-up reminders
-   - Interview preparation alerts
-   - Offer deadline tracking
+
+- Follow-up reminders
+- Interview preparation alerts
+- Offer deadline tracking
+
    ```
 
 4. **Add Timeline View**
 
    ```
-   - Visual timeline of application journey
-   - Status change history
-   - Activity log
+
+- Visual timeline of application journey
+- Status change history
+- Activity log
+
    ```
 
 5. **Add Analytics**
 
    ```
-   - Response time analysis
-   - Source effectiveness
-   - Conversion funnel
-   - Interview-to-offer ratio
+
+- Response time analysis
+- Source effectiveness
+- Conversion funnel
+- Interview-to-offer ratio
+
    ```
 
 ---
@@ -307,7 +319,7 @@ docker compose -f infra/docker-compose.yml exec api alembic current
 
 ```powershell
 docker compose -f infra/docker-compose.yml exec db psql -U ledger -d ledgerdb -c "SELECT COUNT(*) FROM applications;"
-```
+```text
 
 ### Status Dropdown Shows Old Values
 
@@ -323,7 +335,7 @@ docker compose -f infra/docker-compose.yml exec db psql -U ledger -d ledgerdb -c
 
 ```powershell
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
-```
+```text
 
 ### Search Not Working
 
@@ -334,7 +346,7 @@ docker compose -f infra/docker-compose.yml exec api alembic upgrade head
 ```powershell
 # Should return results for "google", "Google", "GOOGLE"
 Invoke-RestMethod -Uri "http://localhost:8003/applications/?q=google"
-```
+```text
 
 ---
 
@@ -364,7 +376,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/?q=google"
   "notes": "string (optional)",
   "thread_id": "string (optional)"
 }
-```
+```text
 
 **Response:** Created application object
 
@@ -385,7 +397,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/applications/?q=google"
   "role": "string (optional)",
   "snippet": "string (optional)"
 }
-```
+```text
 
 **Response:** Created application object with `source: "email"`
 

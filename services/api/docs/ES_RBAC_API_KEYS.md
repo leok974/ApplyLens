@@ -38,7 +38,7 @@ curl -s -u elastic:$ELASTIC_PASSWORD \
     }
   }
 }' | jq .
-```
+```text
 
 ## Response Format
 
@@ -49,7 +49,7 @@ curl -s -u elastic:$ELASTIC_PASSWORD \
   "api_key": "ui2lp2axTNmsyakw9tvNnw",
   "encoded": "VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrdzl0dk5udw=="
 }
-```
+```text
 
 ## Configure Application
 
@@ -58,7 +58,7 @@ curl -s -u elastic:$ELASTIC_PASSWORD \
 ```bash
 # Set environment variable
 export ES_API_KEY="VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrdzl0dk5udw=="
-```
+```text
 
 In your application settings:
 
@@ -75,13 +75,13 @@ def es_client():
         )
     else:
         return Elasticsearch(ES_URL)
-```
+```text
 
 ### Option 2: Using ID:Key Format
 
 ```bash
 export ES_API_KEY="VuaCfGcBCdbkQm-e5aOx:ui2lp2axTNmsyakw9tvNnw"
-```
+```text
 
 ## Verify API Key
 
@@ -98,7 +98,7 @@ curl -H "Authorization: ApiKey VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrd
   -d '{"test": "write access"}'
 
 # Should succeed (write access works)
-```
+```text
 
 ## Privilege Breakdown
 
@@ -142,14 +142,14 @@ curl -u elastic:$ELASTIC_PASSWORD \
   -d '{
   "ids": ["VuaCfGcBCdbkQm-e5aOx"]
 }'
-```
+```text
 
 ## List Active API Keys
 
 ```bash
 curl -u elastic:$ELASTIC_PASSWORD \
   "$ES_URL/_security/api_key?owner=true" | jq .
-```
+```text
 
 ## Docker Compose Integration
 
@@ -160,13 +160,13 @@ services:
     environment:
       - ES_URL=http://es:9200
       - ES_API_KEY=${ES_API_KEY}
-```
+```text
 
 Create `.env` file:
 
 ```bash
 ES_API_KEY=VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrdzl0dk5udw==
-```
+```text
 
 ## Security Best Practices
 

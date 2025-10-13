@@ -43,9 +43,9 @@ ApplyLens now supports Gmail OAuth authentication and automated email backfill w
 
 In the Google Cloud Console, add the following redirect URI to your OAuth client:
 
-```
+```text
 http://localhost:8003/auth/google/callback
-```
+```text
 
 *Note: Adjust the port if you changed API_PORT in .env*
 
@@ -62,7 +62,7 @@ OAUTH_REDIRECT_URI=http://localhost:8003/auth/google/callback
 
 # Elasticsearch index name for Gmail emails
 ELASTICSEARCH_INDEX=gmail_emails
-```
+```text
 
 **Important:** Change `OAUTH_STATE_SECRET` to a random string (32+ characters) for production use.
 
@@ -70,7 +70,7 @@ ELASTICSEARCH_INDEX=gmail_emails
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d
-```
+```text
 
 The API container will automatically:
 
@@ -84,13 +84,13 @@ Check API health:
 
 ```bash
 curl http://localhost:8003/healthz
-```
+```text
 
 View API documentation:
 
 ```bash
 open http://localhost:8003/docs
-```
+```text
 
 ## Usage
 
@@ -100,9 +100,9 @@ open http://localhost:8003/docs
 
 Visit in your browser:
 
-```
+```text
 http://localhost:8003/auth/google/login
-```
+```text
 
 This will redirect you to Google's consent screen.
 
@@ -116,9 +116,9 @@ This will redirect you to Google's consent screen.
 
 After authentication, you'll be redirected to:
 
-```
+```text
 http://localhost:5175/inbox?connected=google
-```
+```text
 
 The OAuth token is now stored in the database.
 
@@ -128,7 +128,7 @@ The OAuth token is now stored in the database.
 
 ```bash
 curl -X POST "http://localhost:8003/gmail/backfill?days=60&user_email=your.email@gmail.com"
-```
+```text
 
 Response:
 
@@ -138,7 +138,7 @@ Response:
   "days": 60,
   "user_email": "your.email@gmail.com"
 }
-```
+```text
 
 #### Custom Time Range
 
@@ -146,13 +146,13 @@ Backfill last 30 days:
 
 ```bash
 curl -X POST "http://localhost:8003/gmail/backfill?days=30&user_email=your.email@gmail.com"
-```
+```text
 
 Backfill up to 1 year:
 
 ```bash
 curl -X POST "http://localhost:8003/gmail/backfill?days=365&user_email=your.email@gmail.com"
-```
+```text
 
 ### Search Gmail Messages
 
@@ -160,7 +160,7 @@ curl -X POST "http://localhost:8003/gmail/backfill?days=365&user_email=your.emai
 
 ```bash
 curl "http://localhost:8003/search?q=Interview"
-```
+```text
 
 #### Label-Based Queries
 
@@ -168,19 +168,19 @@ Search for interviews:
 
 ```bash
 curl "http://localhost:8003/search?q=interview"
-```
+```text
 
 Search for offers:
 
 ```bash
 curl "http://localhost:8003/search?q=offer"
-```
+```text
 
 Search for application receipts:
 
 ```bash
 curl "http://localhost:8003/search?q=application+received"
-```
+```text
 
 ## Heuristic Labels
 
@@ -216,7 +216,7 @@ CREATE TABLE oauth_tokens (
 
 CREATE INDEX ix_oauth_tokens_provider ON oauth_tokens(provider);
 CREATE INDEX ix_oauth_tokens_user_email ON oauth_tokens(user_email);
-```
+```text
 
 ### Email Table (Gmail Fields)
 
@@ -245,7 +245,7 @@ Key mappings:
   "subject_suggest": {"type": "completion"},
   "received_at": {"type": "date"}
 }
-```
+```text
 
 ## API Endpoints
 
@@ -274,17 +274,17 @@ Key mappings:
 
 ```bash
 docker compose -f infra/docker-compose.yml exec api pytest tests/test_labeler.py -v
-```
+```text
 
 Expected output:
 
-```
+```text
 test_labeler.py::test_interview_detection PASSED
 test_labeler.py::test_offer_detection PASSED
 test_labeler.py::test_rejection_detection PASSED
 test_labeler.py::test_application_receipt_detection PASSED
 test_labeler.py::test_newsletter_detection PASSED
-```
+```text
 
 ### Manual Testing
 
@@ -332,7 +332,7 @@ OAUTH_REDIRECT_URI=https://yourdomain.com/auth/google/callback
 
 # Strong random secret (generate with: openssl rand -base64 32)
 OAUTH_STATE_SECRET=$(openssl rand -base64 32)
-```
+```text
 
 ## Troubleshooting
 
@@ -343,15 +343,15 @@ Rebuild API container:
 ```bash
 docker compose -f infra/docker-compose.yml build --no-cache api
 docker compose -f infra/docker-compose.yml up -d api
-```
+```text
 
 ### "redirect_uri_mismatch" Error
 
 Ensure redirect URI in Google Console matches exactly:
 
-```
+```text
 http://localhost:8003/auth/google/callback
-```
+```text
 
 ### "Invalid state" Error
 
@@ -364,7 +364,7 @@ Tokens are automatically refreshed. If issues persist:
 ```sql
 -- Clear tokens from database
 DELETE FROM oauth_tokens WHERE provider = 'google';
-```
+```text
 
 Then re-authenticate via `/auth/google/login`.
 
@@ -375,13 +375,13 @@ Recreate index:
 ```bash
 # Set ES_RECREATE_ON_START=true in .env
 docker compose -f infra/docker-compose.yml restart api
-```
+```text
 
 ## Development
 
 ### File Structure
 
-```
+```text
 services/api/app/
 ├── auth_google.py        # OAuth flow handlers
 ├── gmail_service.py      # Gmail API integration
@@ -398,7 +398,7 @@ infra/
 │   ├── README.md         # Setup instructions
 │   └── google.json       # OAuth credentials (gitignored)
 └── docker-compose.yml    # Updated with secrets mount
-```
+```text
 
 ### Adding New Label Heuristics
 
@@ -418,7 +418,7 @@ def derive_labels(sender: str, subject: str, body: str) -> List[str]:
     
     # ... existing patterns
     return list(set(labels))
-```
+```text
 
 ## Next Steps
 

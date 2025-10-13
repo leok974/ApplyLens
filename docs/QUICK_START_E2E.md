@@ -16,7 +16,7 @@
 ```bash
 cd d:\ApplyLens\apps\web
 pnpm test:e2e:ui
-```
+```text
 
 **What you'll see:**
 
@@ -32,18 +32,18 @@ pnpm test:e2e:ui
 ```bash
 cd d:\ApplyLens\apps\web
 pnpm test:e2e
-```
+```text
 
 **Output:**
 
-```
+```text
 ✓ [chromium] › pipeline.spec.ts:5:3 › runs Gmail→Label→Profile with toasts (25s)
 ✓ [chromium] › search.spec.ts:50:3 › category buttons mutate URL (1s)
 ✓ [chromium] › highlight.spec.ts:7:3 › subject/snippet render <mark> (500ms)
 ✓ [chromium] › profile.spec.ts:8:3 › profile page shows summary (2s)
 
 4 passed (28s)
-```
+```text
 
 ---
 
@@ -52,7 +52,7 @@ pnpm test:e2e
 ```bash
 cd d:\ApplyLens\apps\web
 pnpm test:e2e:headed
-```
+```text
 
 **What you'll see:**
 
@@ -126,25 +126,25 @@ pnpm test:e2e:headed
 
 ### All Tests Passing ✅
 
-```
+```text
 ✓ pipeline.spec.ts (2 tests, 30s)
 ✓ search.spec.ts (4 tests, 5s)
 ✓ highlight.spec.ts (4 tests, 3s)
 ✓ profile.spec.ts (4 tests, 10s)
 
 14 tests passed in 48s
-```
+```text
 
 ### Some Tests Skipped (API Down) ⏭️
 
-```
+```text
 ✓ search.spec.ts (4 tests, 5s)
 ✓ highlight.spec.ts (4 tests, 3s)
 ✓ profile.spec.ts (4 tests, 10s)
 ⊘ pipeline.spec.ts (2 tests skipped - API not reachable)
 
 12 tests passed, 2 skipped in 18s
-```
+```text
 
 ---
 
@@ -163,7 +163,7 @@ cd d:\ApplyLens\infra
 docker compose up -d web
 
 # Wait 10 seconds, then retry tests
-```
+```text
 
 ---
 
@@ -185,7 +185,7 @@ docker compose up -d api
 curl http://localhost:8003/docs
 
 # Retry tests
-```
+```text
 
 ---
 
@@ -210,7 +210,7 @@ Start-Sleep -Seconds 10
 # Retry tests
 cd d:\ApplyLens\apps\web
 pnpm test:e2e
-```
+```text
 
 ---
 
@@ -224,7 +224,7 @@ pnpm test:e2e
 cd d:\ApplyLens\apps\web
 pnpm add -D @playwright/test
 pnpm exec playwright install --with-deps
-```
+```text
 
 ---
 
@@ -234,7 +234,7 @@ After tests run, view HTML report:
 
 ```bash
 pnpm test:e2e:report
-```
+```text
 
 **Opens browser with:**
 
@@ -256,7 +256,7 @@ pnpm exec playwright test tests/search.spec.ts -g "category buttons"
 
 # Debug mode (interactive)
 PWDEBUG=1 pnpm exec playwright test tests/search.spec.ts
-```
+```text
 
 ---
 
@@ -267,7 +267,7 @@ PWDEBUG=1 pnpm exec playwright test tests/search.spec.ts
 ```bash
 cd d:\ApplyLens\apps\web
 pnpm test:e2e:ui
-```
+```text
 
 ### 2. Watch Tests Execute
 
@@ -305,7 +305,7 @@ PWDEBUG=1 pnpm test:e2e
 
 # View report
 pnpm test:e2e:report
-```
+```text
 
 ---
 

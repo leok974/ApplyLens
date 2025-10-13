@@ -9,7 +9,7 @@
 ```powershell
 cd D:\ApplyLens\infra
 .\setup-cloudflare-tunnel.ps1
-```
+```text
 
 **Linux/Mac:**
 
@@ -17,7 +17,7 @@ cd D:\ApplyLens\infra
 cd /path/to/ApplyLens/infra
 chmod +x setup-cloudflare-tunnel.sh
 ./setup-cloudflare-tunnel.sh
-```
+```text
 
 The script will:
 
@@ -52,7 +52,7 @@ cp ~/.cloudflared/<UUID>.json cloudflared/<UUID>.json
 # 6. Create DNS routes (replace yourdomain.com)
 cloudflared tunnel route dns applylens yourdomain.com
 cloudflared tunnel route dns applylens www.yourdomain.com
-```
+```text
 
 ## Daily Usage
 
@@ -61,31 +61,31 @@ cloudflared tunnel route dns applylens www.yourdomain.com
 ```bash
 cd infra
 docker compose up -d
-```
+```text
 
 ### Start Just the Tunnel
 
 ```bash
 docker compose up -d cloudflared
-```
+```text
 
 ### Check Tunnel Status
 
 ```bash
 docker compose logs -f cloudflared
-```
+```text
 
 ### Stop Tunnel
 
 ```bash
 docker compose stop cloudflared
-```
+```text
 
 ### Restart Tunnel
 
 ```bash
 docker compose restart cloudflared
-```
+```text
 
 ## Verification
 
@@ -94,7 +94,7 @@ docker compose restart cloudflared
 ```bash
 # Should show "Connection registered" messages
 docker compose logs cloudflared | grep -i "connection"
-```
+```text
 
 ### Test Your Endpoints
 
@@ -103,7 +103,7 @@ docker compose logs cloudflared | grep -i "connection"
 curl https://yourdomain.com/health
 curl https://www.yourdomain.com/health
 curl https://kibana.yourdomain.com
-```
+```text
 
 ### View Tunnel in Cloudflare Dashboard
 
@@ -125,7 +125,7 @@ ls -la cloudflared/
 
 # Check docker logs
 docker compose logs cloudflared
-```
+```text
 
 ### 502 Bad Gateway
 
@@ -137,7 +137,7 @@ docker compose ps api
 docker compose logs api
 
 # Verify service names in config.yml match docker-compose.yml
-```
+```text
 
 ### DNS Not Resolving
 
@@ -146,18 +146,18 @@ docker compose logs api
 cloudflared tunnel route dns list
 
 # Should show your domain → applylens tunnel
-```
+```text
 
 ### Re-authenticate
 
 ```bash
 # If authentication expired
 cloudflared tunnel login
-```
+```text
 
 ## Configuration Files
 
-```
+```text
 infra/
 ├── cloudflared/
 │   ├── config.yml           # Tunnel configuration
@@ -166,7 +166,7 @@ infra/
 │   └── .gitkeep             # Setup instructions
 ├── docker-compose.yml       # Includes cloudflared service
 └── setup-cloudflare-tunnel.* # Automated setup scripts
-```
+```text
 
 ## Common Commands
 
@@ -180,9 +180,9 @@ infra/
 
 ## Architecture
 
-```
+```text
 Internet → Cloudflare Edge → Encrypted Tunnel → cloudflared container → api:8003
-```
+```text
 
 **Benefits:**
 

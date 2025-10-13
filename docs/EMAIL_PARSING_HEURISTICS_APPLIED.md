@@ -58,7 +58,7 @@ extract_company("recruiting@anthropic.com", "position at Anthropic", "")
 
 extract_company("OpenAI Recruiting <jobs@example.com>", "", "")
 # Returns: "OpenAI Recruiting"
-```
+```text
 
 ### Role Extraction
 
@@ -80,7 +80,7 @@ extract_role("", "Position: Senior AI Safety Researcher at Anthropic")
 
 extract_role("Your application for ML Engineer", "")
 # Returns: "ML Engineer"
-```
+```text
 
 ### Source Detection
 
@@ -106,7 +106,7 @@ extract_source({}, "", "Application via Greenhouse", "")
 
 extract_source({}, "recruiting@company.com", "", "")
 # Returns: "Email"
-```
+```text
 
 ---
 
@@ -124,7 +124,7 @@ POST /applications/from-email
   "role": "ML Engineer",      // Required
   "snippet": "..."
 }
-```
+```text
 
 **After (with auto-extraction):**
 
@@ -138,7 +138,7 @@ POST /applications/from-email
   "snippet": "..."
   // company and role extracted automatically!
 }
-```
+```text
 
 **New Request Parameters:**
 
@@ -175,15 +175,15 @@ POST /applications/from-email
     "subject": "Your Application for Research Engineer role at OpenAI",
     "body_text": "Thank you for applying..."
 }
-```
+```text
 
 **Output:**
 
-```
+```text
 ✅ company: "Careers"
 ✅ role: "Research Engineer"
 ✅ source: "Email"
-```
+```text
 
 ### Test 2: Anthropic Email
 
@@ -196,15 +196,15 @@ POST /applications/from-email
     "subject": "Position: Senior AI Safety Researcher at Anthropic",
     "body_text": "We received your application..."
 }
-```
+```text
 
 **Output:**
 
-```
+```text
 ✅ company: "Anthropic"
 ✅ role: "Senior AI Safety Researcher at Anthropic"
 ✅ source: "Email"
-```
+```text
 
 ### Test 3: Lever ATS Detection
 
@@ -217,15 +217,15 @@ POST /applications/from-email
     "subject": "Application for Software Engineer - via Lever",
     "body_text": "Your application via Lever has been received..."
 }
-```
+```text
 
 **Output:**
 
-```
+```text
 ✅ company: "lever"
 ✅ role: "Software Engineer"
 ✅ source: "Lever"  ← Detected correctly!
-```
+```text
 
 ---
 
@@ -276,7 +276,7 @@ createFromEmail({
   role: extractedRole,         // Complex extraction logic
   snippet: email.snippet
 })
-```
+```text
 
 **After:**
 
@@ -290,7 +290,7 @@ createFromEmail({
   snippet: email.snippet
   // company and role auto-filled by backend!
 })
-```
+```text
 
 ---
 
@@ -388,7 +388,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Expected: company = "stripe" or "Stripe"
-```
+```text
 
 ### Test Role Extraction
 
@@ -403,7 +403,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Expected: role = "Senior Backend Engineer"
-```
+```text
 
 ### Test Source Detection
 
@@ -419,7 +419,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Expected: source = "Greenhouse"
-```
+```text
 
 ### Test with Database Email
 
@@ -432,7 +432,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Will extract from database email fields
-```
+```text
 
 ---
 
@@ -452,7 +452,7 @@ Add more sophisticated patterns:
 - "We're looking for a {Role}"
 - "This is regarding the {Role} position"
 - "Your {Role} application"
-```
+```text
 
 ### 2. Add Confidence Scores
 
@@ -465,7 +465,7 @@ def extract_company_with_confidence(sender, body, subject):
         "company": company,
         "source_confidence": confidence  # 0.0 to 1.0
     }
-```
+```text
 
 ### 3. Machine Learning Enhancement
 
@@ -476,7 +476,7 @@ Train a model on historical emails:
 - Input: email content
 - Output: company, role, source
 - Training: Learn from user corrections
-```
+```text
 
 ### 4. Add ATS-Specific Parsers
 
@@ -491,7 +491,7 @@ def parse_lever_email(email):
 def parse_greenhouse_email(email):
     # Greenhouse-specific parsing logic
     pass
-```
+```text
 
 ### 5. Frontend Auto-Complete
 
@@ -504,7 +504,7 @@ Add UI hints based on extraction:
   placeholder="Company (auto-detected)"
   onChange={...}
 />
-```
+```text
 
 ---
 

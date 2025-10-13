@@ -67,7 +67,7 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 
 **Test Results:**
 
-```
+```text
 ✅ Extracted company from sender: Careers
 ✅ Extracted company from body: Anthropic
 ✅ Extracted role from subject: Research Engineer
@@ -77,7 +77,7 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 ✅ Detected LinkedIn source: LinkedIn
 ✅ Defaulted to Email source: Email
 ✅ Full pipeline extraction: Stripe Careers, Backend Engineer, Email
-```
+```text
 
 #### 6. ✅ Integration Tests
 
@@ -88,12 +88,12 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 
 **Test Results:**
 
-```
+```text
 ✅ Test passed: Application 1 created and linked to email
 ✅ Test passed: Both emails linked to same application
 ✅ Test passed: No application created for newsletter email
 ✅ Test passed: /from-email endpoint auto-extracted: company=Careers Team, role=Research Engineer, source=Email
-```
+```text
 
 ### Documentation
 
@@ -195,7 +195,7 @@ docker compose exec api sh -c 'PYTHONPATH=/app python tests/test_email_parse.py'
 
 docker compose exec api sh -c 'PYTHONPATH=/app python tests/test_applications.py'
 # Result: ✅ All 4 tests passed
-```
+```text
 
 ### Frontend
 
@@ -222,7 +222,7 @@ function EmailView({ email }) {
     />
   )
 }
-```
+```text
 
 **Result:** When clicked, creates application with auto-extracted company, role, and source, then navigates to tracker with success toast.
 
@@ -241,7 +241,7 @@ server: {
     }
   }
 }
-```
+```text
 
 This means:
 

@@ -19,7 +19,7 @@ curl -s http://localhost:8003/metrics | grep applylens_backfill_duration
 # Check p95 from Grafana
 # Navigate to: http://localhost:3000/d/applylens-ops-overview
 # Panel: "Backfill p95 Duration"
-```
+```text
 
 ### 2. Review Recent Backfill Jobs
 
@@ -29,7 +29,7 @@ docker-compose logs api | grep -i "backfill\|analyze_risk" | tail -n 100
 
 # Look for timing information
 docker-compose logs api | grep "Processed.*batch.*in.*seconds"
-```
+```text
 
 ---
 
@@ -69,7 +69,7 @@ python scripts/analyze_risk.py --batch-size 50
 
 # Or even smaller for testing
 python scripts/analyze_risk.py --batch-size 25 --max-batches 2
-```
+```text
 
 ### 2. Database Lock Contention
 
@@ -92,7 +92,7 @@ SELECT pid, now() - query_start AS duration, query
 FROM pg_stat_activity
 WHERE state = 'active' AND query NOT LIKE '%pg_stat_activity%'
 ORDER BY duration DESC;
-```
+```text
 
 **Fix:**
 
@@ -103,7 +103,7 @@ ORDER BY duration DESC;
 
 # Or use smaller transactions
 python scripts/analyze_risk.py --batch-size 25
-```
+```text
 
 ### 3. Elasticsearch Slow Indexing
 
@@ -123,7 +123,7 @@ curl http://localhost:9200/_stats/indexing?pretty
 
 # Check disk space
 curl http://localhost:9200/_cat/allocation?v
-```
+```text
 
 **Fix:**
 
@@ -137,7 +137,7 @@ docker-compose restart elasticsearch
 
 # Clear old indices if disk full
 curl -X DELETE http://localhost:9200/.old_index_*
-```
+```text
 
 ### 4. Too Many Emails to Process
 
@@ -158,7 +158,7 @@ python scripts/analyze_risk.py --batch-size 50 --max-batches 10
 # Schedule incremental updates instead of full backfills
 # Update only emails from last 7 days
 # TODO: Add --since flag to analyze_risk.py
-```
+```text
 
 ### 5. CPU/Memory Bottleneck
 
@@ -175,7 +175,7 @@ docker stats --no-stream
 
 # Check API container specifically
 docker stats api --no-stream
-```
+```text
 
 **Fix:**
 
@@ -189,7 +189,7 @@ services:
         limits:
           cpus: '2.0'
           memory: 2G
-```
+```text
 
 ---
 
@@ -227,7 +227,7 @@ Measure-Command { python scripts/analyze_risk.py --batch-size 50 --max-batches 1
 
 # Compare durations
 # Target: < 30 seconds per batch for p95 < 5 min overall
-```
+```text
 
 ---
 
@@ -252,7 +252,7 @@ sum(rate(applylens_backfill_duration_seconds_sum[5m]))
 
 # Backfill rate (jobs per minute)
 rate(applylens_backfill_duration_seconds_count[5m]) * 60
-```
+```text
 
 ### Database Queries
 
@@ -280,7 +280,7 @@ SELECT
 FROM pg_stat_statements
 WHERE query LIKE '%UPDATE emails SET risk_score%'
 ORDER BY mean_time DESC;
-```
+```text
 
 ---
 

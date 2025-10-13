@@ -14,11 +14,11 @@ Phase-2 provides three automation options for running the complete email categor
 
 All three options run the same underlying workflow:
 
-```
+```text
 ES → export_weak_labels.py → weak_labels.jsonl
   → train_ml.py → label_model.joblib
   → POST /labels/apply → ES (with categories)
-```
+```text
 
 ---
 
@@ -43,7 +43,7 @@ make apply-labels
 
 # Show all available targets
 make help
-```
+```text
 
 ### Configuration (Override Defaults)
 
@@ -57,7 +57,7 @@ make apply-labels API_BASE=https://api.applylens.app
 # Custom output paths
 make export-weak WEAK_JSONL=/data/my_labels.jsonl
 make train-labels MODEL_OUT=/models/my_model.joblib
-```
+```text
 
 ### Available Targets
 
@@ -79,7 +79,7 @@ EXPORT_LPC    = 8000
 WEAK_JSONL    = /tmp/weak_labels.jsonl
 MODEL_OUT     = services/api/app/labeling/label_model.joblib
 API_BASE      = http://localhost:8003
-```
+```text
 
 ---
 
@@ -107,7 +107,7 @@ npm run phase2:apply
 
 # Show help
 npm run phase2:help
-```
+```text
 
 ### Available Scripts
 
@@ -130,7 +130,7 @@ npm run phase2:export
 
 # Unix/Linux/Mac
 ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:export
-```
+```text
 
 ### Default Configuration
 
@@ -167,7 +167,7 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 
 # Custom paths
 .\scripts\phase2-all.ps1 -Weak "D:\data\weak_labels.jsonl" -Model "D:\models\label_model.joblib"
-```
+```text
 
 ### Available Parameters
 
@@ -180,7 +180,7 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 -Weak       # Output JSONL path (default: C:\Windows\Temp\weak_labels.jsonl)
 -Model      # Model output path (default: services/api/app/labeling/label_model.joblib)
 -ApiBase    # API base URL (default: http://localhost:8003)
-```
+```text
 
 ### Examples
 
@@ -196,7 +196,7 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 
 # Production environment
 .\scripts\phase2-all.ps1 -EsUrl https://es.applylens.app -ApiBase https://api.applylens.app
-```
+```text
 
 ### Output Features
 
@@ -236,7 +236,7 @@ Use **PowerShell** (Windows) or **npm** (Mac/Linux) for rich output and verifica
 
 # Mac/Linux
 npm run phase2:all
-```
+```text
 
 ### Automated CI/CD Pipelines
 
@@ -248,7 +248,7 @@ make phase2-all
 
 # CI/CD with npm
 npm run phase2:all
-```
+```text
 
 ### Development Iteration
 
@@ -260,7 +260,7 @@ make train-labels
 
 # Just apply labels
 make apply-labels
-```
+```text
 
 ### Production Deployment
 
@@ -272,7 +272,7 @@ Use **PowerShell** with custom parameters:
   -ApiBase https://api.prod.applylens.app `
   -Days 90 `
   -Limit 100000
-```
+```text
 
 ---
 
@@ -280,7 +280,7 @@ Use **PowerShell** with custom parameters:
 
 ### Makefile
 
-```
+```bash
 >> Exporting weak labels to /tmp/weak_labels.jsonl
 {"seen":15234,"written":12500,"by_category":{"promo":3201,"newsletter":4892,...}}
 
@@ -296,11 +296,11 @@ Use **PowerShell** with custom parameters:
 {"updated":15234}
 
 ✅ Phase-2 pipeline finished
-```
+```bash
 
 ### npm Scripts
 
-```
+```bash
 > npm run phase2:all
 
 > phase2:all
@@ -324,11 +324,11 @@ Use **PowerShell** with custom parameters:
     {"key": "bill", "count": 1543}
   ]
 }
-```
+```text
 
 ### PowerShell
 
-```
+```text
 🎯 Phase 2 - Email Categorization Pipeline
 ==========================================
 
@@ -370,7 +370,7 @@ Profile Summary:
       newsletter.example.com (421 emails)
 
 ✅ Phase 2 pipeline complete!
-```
+```text
 
 ---
 
@@ -382,7 +382,7 @@ Profile Summary:
 
 ```bash
 npm run phase2:all
-```
+```bash
 
 ### Issue: `curl: command not found`
 
@@ -406,7 +406,7 @@ npm run phase2:all
 
 ```bash
 npm install
-```
+```text
 
 ### Issue: PowerShell execution policy error
 
@@ -414,7 +414,7 @@ npm install
 
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+```text
 
 ### Issue: Python module not found
 
@@ -425,7 +425,7 @@ cd services/api
 pip install -e .
 # or
 poetry install
-```
+```text
 
 ### Issue: ES connection refused
 
@@ -433,7 +433,7 @@ poetry install
 
 ```bash
 docker-compose up -d elasticsearch
-```
+```text
 
 ### Issue: API returns 404
 
@@ -445,7 +445,7 @@ curl http://localhost:8003/health
 
 # Update ApiBase parameter
 .\scripts\phase2-all.ps1 -ApiBase http://localhost:8003
-```
+```text
 
 ---
 
@@ -470,7 +470,7 @@ make -v                # Check GNU Make version
 python --version       # Check Python version
 curl --version         # Check curl
 jq --version          # Check jq
-```
+```bash
 
 **npm:**
 
@@ -478,7 +478,7 @@ jq --version          # Check jq
 node --version         # Check Node.js version
 npm --version          # Check npm version
 python --version       # Check Python version
-```
+```text
 
 **PowerShell:**
 
@@ -487,7 +487,7 @@ $PSVersionTable        # Check PowerShell version
 python --version       # Check Python version
 Test-NetConnection -ComputerName localhost -Port 9200  # Check ES
 Test-NetConnection -ComputerName localhost -Port 8003  # Check API
-```
+```text
 
 ---
 

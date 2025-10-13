@@ -26,7 +26,7 @@
  flags               | jsonb                    |           | not null | '[]'::jsonb
     "ix_emails_quarantined" btree (quarantined)
     "ix_emails_risk_score" btree (risk_score)
-```
+```text
 
 ### 2. Elasticsearch Template Installed ✅
 
@@ -37,13 +37,13 @@
 
 **Installation Output:**
 
-```
+```text
 ✅ Successfully installed template 'emails-template'
 📋 Template Details:
    Index Patterns: gmail_emails*, emails-*
    Priority: 200
    Mappings: 28 properties
-```
+```text
 
 ### 3. Existing Index Updated ✅
 
@@ -91,7 +91,7 @@ risk_result = analyzer.analyze(...)
 existing.risk_score = float(risk_result.risk_score)
 existing.flags = [f.dict() for f in risk_result.flags]
 existing.quarantined = risk_result.quarantined
-```
+```text
 
 ### 5. API Container Rebuilt and Restarted ✅
 
@@ -112,7 +112,7 @@ existing.quarantined = risk_result.quarantined
   "average_risk_score": 58.75,
   "high_risk_count": 1528
 }
-```
+```text
 
 **Interpretation:**
 
@@ -128,7 +128,7 @@ existing.quarantined = risk_result.quarantined
 
 ```bash
 docker exec infra-db-1 psql -U postgres -d applylens -c "\d emails" | grep -E "(risk_score|quarantined|flags)"
-```
+```text
 
 **Result:** All 3 fields present with correct types
 
@@ -136,7 +136,7 @@ docker exec infra-db-1 psql -U postgres -d applylens -c "\d emails" | grep -E "(
 
 ```bash
 curl http://localhost:9200/_index_template/emails-template
-```
+```text
 
 **Result:** Template active with all security field mappings
 
@@ -144,7 +144,7 @@ curl http://localhost:9200/_index_template/emails-template
 
 ```bash
 curl -X POST "http://localhost:8003/api/gmail/backfill?days=1"
-```
+```text
 
 **Result:** 9 emails processed with risk scores assigned
 
@@ -152,7 +152,7 @@ curl -X POST "http://localhost:8003/api/gmail/backfill?days=1"
 
 ```bash
 curl "http://localhost:9200/gmail_emails/_search?size=1&sort=risk_score:desc"
-```
+```text
 
 **Result:** Documents contain `risk_score`, `quarantined`, and `flags` fields
 
@@ -164,7 +164,7 @@ curl http://localhost:8003/api/security/stats
 
 # Rescan endpoint
 curl -X POST http://localhost:8003/api/security/rescan/<email_id>
-```
+```text
 
 **Result:** Both endpoints operational
 
@@ -174,7 +174,7 @@ curl -X POST http://localhost:8003/api/security/rescan/<email_id>
 
 ### Security Analysis Flow
 
-```
+```text
 Email Ingestion (gmail_backfill)
     ↓
 Parse Email Headers & Body
@@ -206,7 +206,7 @@ Index in Elasticsearch
 Expose via API
     ├── GET /api/security/stats
     └── POST /api/security/rescan/{id}
-```
+```text
 
 ### Error Handling
 
@@ -235,7 +235,7 @@ Expose via API
   "quarantined": false,
   "flags": []
 }
-```
+```text
 
 **Analysis:** Legitimate application acknowledgment, minimal risk
 
@@ -249,7 +249,7 @@ Expose via API
   "quarantined": false,
   "flags": []
 }
-```
+```text
 
 **Analysis:** GitHub notification, elevated score but no specific threats detected
 
@@ -262,7 +262,7 @@ Expose via API
 ```bash
 # Analyze all existing emails (may take time with 1,869 emails)
 curl -X POST "http://localhost:8003/api/gmail/backfill?days=365"
-```
+```text
 
 ### 2. Install Kibana Dashboard
 
@@ -270,7 +270,7 @@ curl -X POST "http://localhost:8003/api/gmail/backfill?days=365"
 # Import security dashboard visualization
 # File: services/api/es/kibana-security-dashboard-extra.ndjson
 # Navigate to Kibana → Stack Management → Saved Objects → Import
-```
+```text
 
 ### 3. Configure Blocklists
 
@@ -291,7 +291,7 @@ class RiskWeights:
     SPF_FAIL: int = 15
     ...
     QUARANTINE_THRESHOLD: int = 70  # ← Adjust threshold
-```
+```text
 
 ### 5. Add UI Integration
 

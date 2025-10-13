@@ -76,7 +76,7 @@ $rules = Invoke-RestMethod -Uri "http://localhost:3000/api/v1/provisioning/alert
 
 # Display rules
 $rules | Select-Object title, @{Name='Severity';Expression={$_.labels.severity}}, folderUID | Format-Table
-```
+```text
 
 ---
 
@@ -96,7 +96,7 @@ start http://localhost:3000/alerting/list
 
 # Restart API
 docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
-```
+```text
 
 **Expected:** "ApplyLens API Down" alert fires after 1 minute, notification sent to webhook
 
@@ -114,7 +114,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml stop elasticsearch
 # Make requests that need ES
 1..20 | % { curl http://localhost:8003/some-endpoint-that-uses-es }
 # Wait 5 minutes for alert to fire
-```
+```text
 
 ### Test 3: Backfill Errors
 
@@ -124,7 +124,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml stop elasticsearch
 # - Pointing backfill to invalid data
 # - Stopping ES during backfill
 # - Using invalid OAuth tokens
-```
+```text
 
 ---
 
@@ -143,7 +143,7 @@ grafana:
     - GF_SMTP_PASSWORD=your-app-password
     - GF_SMTP_FROM_ADDRESS=your-email@gmail.com
     - GF_SMTP_FROM_NAME=ApplyLens Alerts
-```
+```text
 
 2. **Update contact-points.yaml**:
 
@@ -156,13 +156,13 @@ contactPoints:
         type: email
         settings:
           addresses: ops-team@example.com
-```
+```text
 
 3. **Restart Grafana:**
 
 ```powershell
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
-```
+```text
 
 ### Option B: Slack
 
@@ -184,7 +184,7 @@ contactPoints:
           url: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
           username: ApplyLens Alerts
           icon_emoji: ":rotating_light:"
-```
+```text
 
 3. **Update notification-policies.yaml** to route to Slack:
 
@@ -194,13 +194,13 @@ policies:
     receiver: Slack
     group_by:
       - alertname
-```
+```text
 
 4. **Restart Grafana:**
 
 ```powershell
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
-```
+```text
 
 ### Option C: Microsoft Teams
 
@@ -219,7 +219,7 @@ contactPoints:
         type: teams
         settings:
           url: https://outlook.office.com/webhook/YOUR-WEBHOOK-URL
-```
+```text
 
 ---
 
@@ -248,7 +248,7 @@ Create additional rules in `rules-applylens.yaml`:
   labels:
     severity: warning
     alertname: HighCPU
-```
+```text
 
 ### Route Different Severities to Different Channels
 
@@ -277,7 +277,7 @@ policies:
       - receiver: Email
         object_matchers:
           - [ "severity", "=", "info" ]
-```
+```text
 
 ---
 
@@ -305,7 +305,7 @@ Get-ChildItem D:\ApplyLens\infra\grafana\provisioning\alerting\*.yaml
 
 # Check file syntax
 Get-Content D:\ApplyLens\infra\grafana\provisioning\alerting\rules-applylens.yaml
-```
+```text
 
 ### Notifications Not Sending
 
@@ -317,7 +317,7 @@ docker logs infra-grafana --tail 100 | Select-String "contact"
 Invoke-WebRequest -Method POST -Uri "http://localhost:9000/webhook" `
   -ContentType "application/json" `
   -Body '{"status":"firing","alerts":[{"labels":{"alertname":"test"}}]}'
-```
+```text
 
 ### Datasource Not Found Error
 
@@ -329,13 +329,13 @@ Get-Content D:\ApplyLens\infra\grafana\provisioning\datasources\prom.yml
 # datasources:
 #   - name: Prometheus
 #     uid: prom    # <-- Must be present
-```
+```text
 
 ---
 
 ## 📁 File Structure
 
-```
+```text
 infra/grafana/provisioning/
 ├── datasources/
 │   └── prom.yml                          # Prometheus datasource with uid: prom
@@ -347,7 +347,7 @@ infra/grafana/provisioning/
     ├── contact-points.yaml               # Notification destinations
     ├── notification-policies.yaml        # Routing rules
     └── rules-applylens.yaml              # Alert rule definitions
-```
+```text
 
 ---
 

@@ -13,7 +13,7 @@
 ```sql
 SELECT column_name FROM information_schema.columns
 WHERE table_name='emails' AND column_name='category';
-```
+```text
 
 **Result:** ✅ `category` column found
 
@@ -22,7 +22,7 @@ WHERE table_name='emails' AND column_name='category';
 ```sql
 SELECT indexname FROM pg_indexes 
 WHERE tablename='emails' AND indexname='ix_emails_category';
-```
+```text
 
 **Result:** ✅ `ix_emails_category` index found
 
@@ -42,7 +42,7 @@ Rev: 0008_approvals_proposed
 Parent: 0006_reply_metrics
 
 Rev: 0006_reply_metrics
-```
+```text
 
 **Result:** ✅ Chain is correct: 0006 → 0008 → 0009
 
@@ -52,7 +52,7 @@ Rev: 0006_reply_metrics
 $ docker-compose exec api alembic current
 
 0009_add_emails_category (head)
-```
+```text
 
 **Result:** ✅ Database at latest version
 
@@ -72,7 +72,7 @@ class Email(Base):
     expires_at = Column(DateTime(timezone=True), nullable=True, index=True)
     profile_tags = Column(ARRAY(Text), nullable=True)
     features_json = Column(JSONB, nullable=True)
-```
+```text
 
 **Result:** ✅ Category column defined in ORM model
 
@@ -103,7 +103,7 @@ Category breakdown:
   - personal: 41 documents
   - bills: 1 documents
   - social: 1 documents
-```
+```text
 
 **Result:** ✅ 1821 documents backfilled from Gmail CATEGORY_* labels
 
@@ -125,7 +125,7 @@ Category breakdown:
     require_min_migration('0009_add_emails_category', 'emails.category column')
     print('✓ Schema version check passed')
     "
-```
+```text
 
 **Behavior:**
 
@@ -157,7 +157,7 @@ Backfill (DRY RUN) completed.
 Scanned: 1 bills
 Updated: 0 bills
 Unchanged: 1 bills
-```
+```text
 
 **Result:** ✅ Schema guard works, backfill runs successfully
 
@@ -175,7 +175,7 @@ Missing dates[] (bills): 0
 Bills with dates[]:      1
 Bills with expires_at:   1
 Verdict: OK  @ 2025-10-10T15:52:55.225784Z
-```
+```text
 
 **Result:** ✅ All bills have dates, no missing data
 
@@ -220,7 +220,7 @@ Verdict: OK  @ 2025-10-10T15:52:55.225784Z
 
 ### Before (❌ Bad)
 
-```
+```text
 GitHub Actions workflow starts...
 ├─ Install dependencies (3 minutes)
 ├─ Connect to ES (10 seconds)
@@ -231,18 +231,18 @@ GitHub Actions workflow starts...
 │  └─ Process 400 bills... ❌
 │     └─ Error: column "category" does not exist
 └─ Job failed after 2 hours ❌
-```
+```text
 
 ### After (✅ Good)
 
-```
+```text
 GitHub Actions workflow starts...
 ├─ Install dependencies (3 minutes)
 ├─ Check schema version (5 seconds)
 │  └─ ❌ Error: Schema too old (0008 < 0009)
 │     └─ Run: alembic upgrade head
 └─ Job failed after 3 minutes ✅ (Fast fail!)
-```
+```text
 
 ---
 
@@ -322,7 +322,7 @@ $ docker-compose exec api python scripts/verify_schema_guard.py
 ✓ PASS: Get Migration Info
 
 ✓ ALL TESTS PASSED
-```
+```text
 
 ### Unit Tests (Planned)
 
@@ -330,7 +330,7 @@ $ docker-compose exec api python scripts/verify_schema_guard.py
 $ pytest tests/unit/test_schema_guard.py -v
 
 # 8 tests defined (will pass when pytest is installed)
-```
+```text
 
 ---
 

@@ -10,14 +10,14 @@ These are the exact queries you provided. Copy and paste into Prometheus (<http:
 
 ```promql
 sum by (method,status) (rate(applylens_http_requests_total[5m]))
-```
+```text
 
 ### Error Rate (5m)
 
 ```promql
 sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))
-```
+```text
 
 ### Latency Percentiles
 
@@ -25,19 +25,19 @@ sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m]))
 
 ```promql
 histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 **p90:**
 
 ```promql
 histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 **p99:**
 
 ```promql
 histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 ---
 
@@ -47,19 +47,19 @@ histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_secon
 
 ```promql
 increase(applylens_backfill_requests_total{result="rate_limited"}[15m])
-```
+```text
 
 ### Emails Inserted Per Minute
 
 ```promql
 rate(applylens_backfill_inserted_total[1m]) * 60
-```
+```text
 
 ### Backfill Outcomes
 
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
-```
+```text
 
 ---
 
@@ -69,19 +69,19 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 
 ```promql
 applylens_gmail_connected
-```
+```text
 
 ### Count of Connected Users
 
 ```promql
 sum(max_over_time(applylens_gmail_connected[10m]))
-```
+```text
 
 ### Readiness - All Green
 
 ```promql
 min(applylens_db_up) and min(applylens_es_up)
-```
+```text
 
 ---
 
@@ -93,7 +93,7 @@ The dashboard JSON includes these exact panel configurations:
 
 ```promql
 sum by (method,status_code) (rate(applylens_http_requests_total[5m]))
-```
+```text
 
 ### Panel 2: HTTP Latency
 
@@ -106,13 +106,13 @@ histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_second
 
 # p99
 histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
-```
+```text
 
 ### Panel 3: Backfill Outcomes
 
 ```promql
 sum by (result) (increase(applylens_backfill_requests_total[1h]))
-```
+```text
 
 **Display:** Bar gauge (horizontal)
 
@@ -120,7 +120,7 @@ sum by (result) (increase(applylens_backfill_requests_total[1h]))
 
 ```promql
 rate(applylens_backfill_inserted_total[5m]) * 60
-```
+```text
 
 **Unit:** emails/min
 
@@ -129,7 +129,7 @@ rate(applylens_backfill_inserted_total[5m]) * 60
 ```promql
 max(applylens_db_up)    # Database
 max(applylens_es_up)    # Elasticsearch
-```
+```text
 
 **Display:** Stat panel with thresholds (0=red, 1=green)
 
@@ -137,7 +137,7 @@ max(applylens_es_up)    # Elasticsearch
 
 ```promql
 applylens_gmail_connected
-```
+```text
 
 **Display:** Table showing user_email and connection status
 
@@ -151,7 +151,7 @@ These are active in `infra/prometheus/alerts.yml`:
 
 ```promql
 (1 - (up{job="applylens-api"})) == 1
-```
+```text
 
 **Duration:** 1 minute  
 **Severity:** Critical
@@ -161,7 +161,7 @@ These are active in `infra/prometheus/alerts.yml`:
 ```promql
 (sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m]))
  / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))) > 0.05
-```
+```text
 
 **Duration:** 5 minutes  
 **Severity:** Warning
@@ -170,7 +170,7 @@ These are active in `infra/prometheus/alerts.yml`:
 
 ```promql
 increase(applylens_backfill_requests_total{result="error"}[10m]) > 0
-```
+```text
 
 **Duration:** 10 minutes  
 **Severity:** Warning
@@ -179,7 +179,7 @@ increase(applylens_backfill_requests_total{result="error"}[10m]) > 0
 
 ```promql
 max_over_time(applylens_gmail_connected[15m]) < 1
-```
+```text
 
 **Duration:** 15 minutes  
 **Severity:** Warning
@@ -188,7 +188,7 @@ max_over_time(applylens_gmail_connected[15m]) < 1
 
 ```promql
 (min(applylens_db_up) == 0) or (min(applylens_es_up) == 0)
-```
+```text
 
 **Duration:** 2 minutes  
 **Severity:** Critical
@@ -226,7 +226,7 @@ start http://localhost:3000
 
 # API Metrics (raw Prometheus format)
 start http://localhost:8003/metrics
-```
+```text
 
 ### Quick PowerShell Tests
 
@@ -251,7 +251,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query"
 # Backfill outcomes
 $query = "sum by (result)(increase(applylens_backfill_requests_total[1h]))"
 Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query"
-```
+```text
 
 ---
 
@@ -282,7 +282,7 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus
 # Verify config is valid first
 docker exec infra-prometheus promtool check config /etc/prometheus/prometheus.yml
 docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
-```
+```text
 
 ---
 

@@ -72,7 +72,7 @@ POST /gmail/backfill           # Sync emails from Gmail
 # Search with label filters
 GET  /search?q=interview&label_filter=interview
 GET  /suggest?q=interv         # Autocomplete suggestions
-```
+```text
 
 For complete documentation, see [`GMAIL_SETUP.md`](./GMAIL_SETUP.md).
 
@@ -99,7 +99,7 @@ npm install && npm run phase2:all
 
 # Windows → PowerShell
 .\scripts\phase2-all.ps1
-```
+```text
 
 ### What It Does
 
@@ -120,7 +120,7 @@ GET  /profile/summary           # Category distribution + top senders
 GET  /profile/senders           # Sender list (filterable by category)
 GET  /profile/categories/{cat}  # Category details
 GET  /profile/time-series       # Email volume trends
-```
+```text
 
 ### Documentation
 
@@ -141,7 +141,7 @@ docker compose -f infra/docker-compose.minimal.yml up -d
 docker compose -f infra/docker-compose.minimal.yml exec api python -m app.seeds.seed_emails
 
 # Check the ports in infra/.env (defaults: API=8002, Web=5174)
-```
+```text
 
 **Access:**
 
@@ -163,7 +163,7 @@ docker compose -f infra/docker-compose.yml up --build
 
 # In another terminal, seed mock emails and index into Elasticsearch:
 docker compose -f infra/docker-compose.yml exec api python -m app.seeds.seed_emails
-```
+```text
 
 **Access:**
 
@@ -180,7 +180,7 @@ Once Kibana is running:
 curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" \
   -H "kbn-xsrf: true" \
   -F file=@infra/kibana/applylens_dashboard.ndjson
-```
+```text
 
 Or manually: **Kibana → Stack Management → Saved Objects → Import** and select `infra/kibana/applylens_dashboard.ndjson`
 
@@ -195,7 +195,7 @@ Synonym examples that should match due to the analyzer:
 ```bash
 curl "http://localhost:8000/search/?q=Interview"
 curl "http://localhost:8000/search/?q=talent%20partner"
-```
+```text
 
 Then visit **<http://localhost:5173/search>** and try queries like `Interview`, `talent partner`, or `Greenhouse`.
 
@@ -209,7 +209,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -U pip && pip install .
 export ES_ENABLED=false  # disable ES when not running locally
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 Frontend:
 
@@ -217,7 +217,7 @@ Frontend:
 cd apps/web
 npm install
 npm run dev
-```
+```text
 
 ## Architecture
 
@@ -278,7 +278,7 @@ Import the operational dashboard for real-time monitoring:
 # Import ops-overview.json into Grafana
 # Location: services/api/dashboards/ops-overview.json
 # Panels: Error rates, latency, parity, performance
-```
+```text
 
 ### Alerts & Runbooks
 
@@ -300,7 +300,7 @@ Enable JSON logging for production:
 UVICORN_LOG_CONFIG=services/api/app/logging.yaml
 
 # Logs include: timestamp, level, logger, message
-```
+```text
 
 ### Optional Tracing
 
@@ -315,7 +315,7 @@ OTEL_ENABLED=1
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 
 # Instruments: FastAPI, SQLAlchemy, HTTP clients
-```
+```text
 
 **Documentation:**
 

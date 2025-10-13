@@ -4,7 +4,7 @@ This directory contains the Analytics Phase 51 upgrade (51.1 → 51.3) for Apply
 
 ## Structure
 
-```
+```text
 analytics/
 ├── README.md                          # This file
 ├── .gitignore                         # Ignore data/outputs
@@ -23,7 +23,7 @@ analytics/
 │   └── report_builder.py             # Markdown report generator
 └── config/
     └── test_page_map.json.example    # Optional test mapping
-```
+```text
 
 ## Quick Start
 
@@ -31,7 +31,7 @@ analytics/
 
 ```bash
 python -m analytics.pipeline --window-days 7
-```
+```text
 
 ### 2. View Outputs
 
@@ -41,7 +41,7 @@ cat analytics/outputs/dashboards/kpis.csv
 
 # Markdown report with recommendations
 cat analytics/outputs/insight-summary.md
-```
+```text
 
 ### 3. Test API
 
@@ -49,7 +49,7 @@ cat analytics/outputs/insight-summary.md
 curl http://localhost:8003/analytics/latest
 curl "http://localhost:8003/analytics/search?q=seo&k=5"
 curl http://localhost:8003/analytics/dashboards/kpis.csv
-```
+```text
 
 ## Data Format
 
@@ -77,7 +77,7 @@ Place daily metrics in `analytics/data/` as JSON files:
     "delta_count": 12
   }
 }
-```
+```text
 
 ## Components
 
@@ -111,7 +111,7 @@ Create `analytics/config/test_page_map.json`:
   "checkout test": "/checkout",
   "homepage performance": "/"
 }
-```
+```text
 
 This helps extract page paths from test names.
 
@@ -151,7 +151,7 @@ try:
     app.include_router(analytics_router)
 except ImportError:
     pass  # Analytics module not available
-```
+```text
 
 This ensures the API doesn't break if analytics modules are missing.
 
@@ -167,7 +167,7 @@ from sentence_transformers import SentenceTransformer
 
 def ensure_embedder():
     return SentenceTransformer('all-MiniLM-L6-v2')
-```
+```text
 
 ### Improve Vector Search
 
@@ -178,7 +178,7 @@ import numpy as np
 
 def cosine_similarity(vec1, vec2):
     return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
-```
+```text
 
 ## Testing
 
@@ -199,7 +199,7 @@ anomalies = [{'field': 'seo_coverage_pct', 'z': -2.5}]
 rec = recommend_weight_diffs(merged, anomalies)
 print(rec)
 "
-```
+```text
 
 ## License
 

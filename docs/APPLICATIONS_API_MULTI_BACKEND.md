@@ -22,7 +22,7 @@ The endpoint auto-detects which source is available based on environment variabl
 
 ### Data Source Priority
 
-```
+```text
 Request → /api/applications
     ↓
 1. Check BigQuery?
@@ -34,7 +34,7 @@ Request → /api/applications
    └─ NO  → Continue
     ↓
 3. Return demo data (always available)
-```
+```text
 
 ### Detection Logic
 
@@ -46,7 +46,7 @@ def _has_bigquery() -> bool:
 
 def _has_es() -> bool:
     return bool(os.getenv("ELASTICSEARCH_URL") or os.getenv("ES_HOST"))
-```
+```text
 
 ---
 
@@ -69,7 +69,7 @@ class Application(BaseModel):
     applied_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     source: Optional[str] = None
-```
+```text
 
 **Field descriptions**:
 
@@ -119,7 +119,7 @@ services:
 secrets:
   bq_sa:
     file: ./analytics/dbt/applylens-ci.json
-```
+```text
 
 **Option B: Inline credentials**
 
@@ -131,7 +131,7 @@ services:
       - BQ_DATASET=applylens
       - BQ_TABLE=public_applications
       - BQ_SA_JSON=${BQ_SA_JSON}  # From .env file
-```
+```text
 
 ### SQL Query
 
@@ -149,7 +149,7 @@ WHERE TRUE
   AND status = @status  -- if status filter provided
 ORDER BY updated_at DESC NULLS LAST, applied_at DESC NULLS LAST
 LIMIT @limit
-```
+```text
 
 **Query features**:
 
@@ -166,7 +166,7 @@ try:
     return results
 except Exception as e:
     raise HTTPException(status_code=503, detail=f"BigQuery error: {e}")
-```
+```text
 
 **Status code**: 503 Service Unavailable  
 **Response format**: `{"detail": "BigQuery error: <message>"}`
@@ -202,7 +202,7 @@ services:
       # Optional authentication
       - ES_USER=elastic
       - ES_PASS=changeme
-```
+```text
 
 ### ES Query
 
@@ -222,7 +222,7 @@ services:
     "size": 100,
     "_source": ["id", "company", "role", "status", "applied_at", "updated_at", "source"]
 }
-```
+```text
 
 **Features**:
 
@@ -251,7 +251,7 @@ services:
     }
   }
 }
-```
+```text
 
 ### Error Handling
 
@@ -261,7 +261,7 @@ try:
     return results
 except Exception as e:
     raise HTTPException(status_code=503, detail=f"Elasticsearch error: {e}")
-```
+```text
 
 ---
 
@@ -311,7 +311,7 @@ except Exception as e:
         "source": "Indeed"
     }
 ]
-```
+```text
 
 ### Filtering
 
@@ -320,7 +320,7 @@ rows = demo[:limit]
 if status:
     rows = [r for r in rows if r.status == status]
 return rows
-```
+```text
 
 ---
 
@@ -334,7 +334,7 @@ def list_applications(
     limit: int = Query(100, ge=1, le=1000),
     status: Optional[str] = None,
 ):
-```
+```text
 
 **Full path**: `/api/applications` (with prefix from `main.py`)
 
@@ -351,19 +351,19 @@ def list_applications(
 
 ```bash
 GET /api/applications?limit=5
-```
+```text
 
 **Filter by status**:
 
 ```bash
 GET /api/applications?status=interview&limit=10
-```
+```text
 
 **Default (100 results)**:
 
 ```bash
 GET /api/applications
-```
+```text
 
 ### Response Format
 
@@ -381,7 +381,7 @@ GET /api/applications
     "source": "Greenhouse"
   }
 ]
-```
+```text
 
 **Error (503 Service Unavailable)**:
 
@@ -389,7 +389,7 @@ GET /api/applications
 {
   "detail": "BigQuery error: Table not found"
 }
-```
+```text
 
 ---
 
@@ -404,7 +404,7 @@ dependencies = [
   "google-cloud-bigquery>=3.25.0",
   # ...
 ]
-```
+```text
 
 **Package versions**:
 
@@ -415,7 +415,7 @@ dependencies = [
 
 ```bash
 pip install google-cloud-bigquery>=3.25.0 google-auth>=2.30.0
-```
+```text
 
 ---
 
@@ -425,13 +425,13 @@ pip install google-cloud-bigquery>=3.25.0 google-auth>=2.30.0
 
 ```python
 from .routers import emails, search, suggest, applications
-```
+```text
 
 ### Router Registration
 
 ```python
 app.include_router(applications.router, prefix="/api")
-```
+```text
 
 **Full route**: `/api` + `/applications` = `/api/applications`
 
@@ -451,7 +451,7 @@ proxy: {
     rewrite: (path) => path.replace(/^\/api/, '')  // ❌ Strips /api
   }
 }
-```
+```text
 
 **Problem**: Frontend calls `/api/applications`, proxy rewrites to `/applications`, backend expects `/api/applications`
 
@@ -465,7 +465,7 @@ proxy: {
     // No rewrite - keep /api prefix for the backend
   }
 }
-```
+```text
 
 **Result**: Frontend calls `/api/applications`, proxy forwards `/api/applications` to backend ✅
 
@@ -484,7 +484,7 @@ curl "http://localhost:8003/api/applications?status=interview&limit=10"
 
 # JSON formatting
 curl "http://localhost:8003/api/applications?limit=3" | python -m json.tool
-```
+```text
 
 **Expected response**:
 
@@ -500,13 +500,13 @@ curl "http://localhost:8003/api/applications?limit=3" | python -m json.tool
     "source": "Greenhouse"
   }
 ]
-```
+```text
 
 ### 2. Through Vite Proxy (Port 5175)
 
 ```bash
 curl "http://localhost:5175/api/applications?limit=2"
-```
+```text
 
 **Expected**: Same format, proxied to API
 
@@ -528,7 +528,7 @@ export async function listApplications(params?: {
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
-```
+```text
 
 **Usage**:
 
@@ -536,7 +536,7 @@ export async function listApplications(params?: {
 // Tracker.tsx
 const data = await listApplications({ limit: 50, status: 'interview' });
 setApplications(Array.isArray(data) ? data : []);
-```
+```text
 
 ---
 
@@ -549,7 +549,7 @@ setApplications(Array.isArray(data) ? data : []);
 ```bash
 cd D:\ApplyLens\infra
 docker compose build api
-```
+```text
 
 **Changes**:
 
@@ -561,27 +561,27 @@ docker compose build api
 
 ```bash
 docker compose up -d api
-```
+```text
 
 **3. Restart Web** (to apply Vite config):
 
 ```bash
 docker compose restart web
-```
+```text
 
 ### Verification
 
 ```bash
 docker ps --filter "name=infra-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-```
+```text
 
 **Expected**:
 
-```
+```text
 NAMES                 STATUS                    PORTS
 infra-web-1           Up X seconds              0.0.0.0:5175->5175/tcp
 infra-api-1           Up X seconds              0.0.0.0:8003->8003/tcp
-```
+```text
 
 ---
 
@@ -594,7 +594,7 @@ infra-api-1           Up X seconds              0.0.0.0:8003->8003/tcp
 ```bash
 gcloud iam service-accounts create applylens-api \
   --display-name="ApplyLens API Service Account"
-```
+```text
 
 **2. Grant permissions**:
 
@@ -602,14 +602,14 @@ gcloud iam service-accounts create applylens-api \
 gcloud projects add-iam-policy-binding applylens-gmail-1759983601 \
   --member="serviceAccount:applylens-api@applylens-gmail-1759983601.iam.gserviceaccount.com" \
   --role="roles/bigquery.dataViewer"
-```
+```text
 
 **3. Generate key**:
 
 ```bash
 gcloud iam service-accounts keys create applylens-ci.json \
   --iam-account=applylens-api@applylens-gmail-1759983601.iam.gserviceaccount.com
-```
+```bash
 
 **4. Add to docker-compose.yml**:
 
@@ -617,7 +617,7 @@ gcloud iam service-accounts keys create applylens-ci.json \
 secrets:
   bq_sa:
     file: ./analytics/dbt/applylens-ci.json
-```
+```text
 
 ### Elasticsearch Configuration
 
@@ -639,7 +639,7 @@ curl -X PUT "http://localhost:9200/applications_v1" -H 'Content-Type: applicatio
   }
 }
 '
-```
+```text
 
 **2. Index sample document**:
 
@@ -654,7 +654,7 @@ curl -X POST "http://localhost:9200/applications_v1/_doc" -H 'Content-Type: appl
   "source": "LinkedIn"
 }
 '
-```
+```text
 
 ---
 
@@ -675,7 +675,7 @@ docker compose exec api ls -la /run/secrets/
 
 # Test credentials
 docker compose exec api python -c "from google.cloud import bigquery; print(bigquery.Client())"
-```
+```text
 
 ### Issue 2: "Elasticsearch error: Connection refused"
 
@@ -692,7 +692,7 @@ curl http://localhost:9200
 
 # Check environment
 docker compose exec api env | grep ES
-```
+```text
 
 ### Issue 3: "404 Not Found" on `/api/applications`
 
@@ -709,7 +709,7 @@ curl http://localhost:8003/api/applications
 
 # Check Vite proxy config
 grep -A 5 "proxy" apps/web/vite.config.ts
-```
+```text
 
 ### Issue 4: Empty array `[]` returned
 
@@ -726,7 +726,7 @@ curl "http://localhost:9200/applications_v1/_count"
 
 # Test without filters
 curl "http://localhost:8003/api/applications?limit=100"
-```
+```text
 
 ---
 
@@ -785,7 +785,7 @@ def _cached_applications(status: Optional[str], timestamp: int):
 def list_applications(status: Optional[str] = None):
     cache_key = int(datetime.now().timestamp() // 300)  # 5-min buckets
     return _cached_applications(status, cache_key)
-```
+```text
 
 ### 2. Pagination
 
@@ -798,7 +798,7 @@ def list_applications(
 ):
     # Add OFFSET to SQL/ES queries
     # Return total count in response
-```
+```text
 
 ### 3. Search Query
 
@@ -809,7 +809,7 @@ def list_applications(
     status: Optional[str] = None,
 ):
     # Add WHERE company LIKE %q% OR role LIKE %q%
-```
+```text
 
 ### 4. Aggregations
 
@@ -825,7 +825,7 @@ def application_stats():
             "rejected": 384
         }
     }
-```
+```text
 
 ---
 

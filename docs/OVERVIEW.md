@@ -44,7 +44,7 @@ ApplyLens automatically:
 
 ## Architecture at a Glance
 
-```
+```text
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
 │   Frontend  │────▶│   FastAPI    │────▶│ PostgreSQL  │
 │  (React +   │     │   Backend    │     │  Database   │
@@ -61,7 +61,7 @@ ApplyLens automatically:
                     │  Gmail API   │
                     │   (OAuth)    │
                     └──────────────┘
-```
+```text
 
 ## Technology Stack
 

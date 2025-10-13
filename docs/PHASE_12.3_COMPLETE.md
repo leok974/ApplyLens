@@ -76,7 +76,7 @@
   "es": "ok",
   "migration": "0012_add_emails_features_json"
 }
-```
+```text
 
 **Integration:**
 
@@ -113,7 +113,7 @@
 ```bash
 # Requires GitHub secret: APPLYLENS_BASE_URL
 # Example: https://api.applylens.com
-```
+```text
 
 ### 4. Structured Logging
 
@@ -139,7 +139,7 @@ UVICORN_LOG_CONFIG=services/api/app/logging.yaml
 # Or in docker-compose.yml
 environment:
   - UVICORN_LOG_CONFIG=/app/app/logging.yaml
-```
+```text
 
 **Log Format Example:**
 
@@ -150,7 +150,7 @@ environment:
   "logger": "app.routers.automation",
   "message": "Risk score computed for email abc123: 42.5"
 }
-```
+```text
 
 ### 5. OpenTelemetry Tracing
 
@@ -174,7 +174,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 OTEL_SERVICE_NAME=applylens-api
 APP_VERSION=1.0.0
 ENV=production
-```
+```text
 
 **Resource Attributes:**
 
@@ -230,7 +230,7 @@ ENV=production
 # 2. Upload ops-overview.json
 # 3. Select Prometheus data source
 # 4. Import
-```
+```text
 
 ### 7. Operational Runbooks
 
@@ -349,7 +349,7 @@ curl -X POST http://localhost:9090/-/reload
 
 # Verify alerts loaded
 curl http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[].name'
-```
+```text
 
 ### 2. Enable Structured Logging
 
@@ -361,7 +361,7 @@ services:
       - UVICORN_LOG_CONFIG=/app/app/logging.yaml
     volumes:
       - ./services/api/app/logging.yaml:/app/app/logging.yaml:ro
-```
+```bash
 
 ```bash
 # Restart API
@@ -369,7 +369,7 @@ docker-compose restart api
 
 # View JSON logs
 docker-compose logs api | tail -n 20
-```
+```text
 
 ### 3. Configure Synthetic Probes
 
@@ -386,7 +386,7 @@ curl -X POST \
 
 # View results
 # Navigate to: https://github.com/leok974/ApplyLens/actions/workflows/synthetic-probes.yml
-```
+```text
 
 ### 4. Import Grafana Dashboard
 
@@ -413,7 +413,7 @@ docker-compose restart api
 
 # View traces in Jaeger
 # Navigate to: http://localhost:16686
-```
+```text
 
 ### 6. Test Health Endpoints
 
@@ -428,7 +428,7 @@ curl http://localhost:8003/live
 # Readiness
 curl http://localhost:8003/ready | jq .
 # Expected: {"status":"ready","db":"ok","es":"ok","migration":"0012_add_emails_features_json"}
-```
+```text
 
 ---
 

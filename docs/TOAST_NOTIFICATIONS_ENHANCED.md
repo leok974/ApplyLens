@@ -30,7 +30,7 @@ const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant> = {
   on_hold: 'warning',    // ⚠️
   ghosted: 'warning',    // ⚠️
 }
-```
+```text
 
 ### 3. Enhanced User Feedback
 
@@ -84,20 +84,20 @@ const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant> = {
 
 ```typescript
 type ToastVariant = 'default' | 'success' | 'warning' | 'error' | 'info'
-```
+```text
 
 **Added Constants:**
 
 ```typescript
 const STATUS_TO_TOAST_VARIANT: Record<AppStatus, ToastVariant>
 const STATUS_LABELS: Record<AppStatus, string>
-```
+```text
 
 **Enhanced State:**
 
 ```typescript
 const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null)
-```
+```text
 
 **Added Helper:**
 
@@ -106,7 +106,7 @@ const showToast = (message: string, variant: ToastVariant = 'default') => {
   setToast({ message, variant })
   setTimeout(() => setToast(null), 3000)
 }
-```
+```text
 
 **Updated Functions:**
 

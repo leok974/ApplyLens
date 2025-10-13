@@ -19,7 +19,7 @@ export type SearchParams = {
   risk_max?: number     // 0–100
   quarantined?: boolean // true / false
 }
-```
+```text
 
 **Enhanced Functions:**
 
@@ -60,7 +60,7 @@ type Props = {
   quarantinedOnly: boolean
   onQuarantinedOnlyChange: (v: boolean) => void
 }
-```
+```text
 
 ### 3. Search Page Integration (`apps/web/src/pages/Search.tsx`)
 
@@ -76,7 +76,7 @@ const [highRisk, setHighRisk] = useState(() => {
 const [quarantinedOnly, setQuarantinedOnly] = useState(() => {
   return searchParams.get("quarantined") === "true"
 })
-```
+```text
 
 **URL Synchronization:**
 
@@ -93,7 +93,7 @@ const [quarantinedOnly, setQuarantinedOnly] = useState(() => {
 
 **Component Hierarchy:**
 
-```
+```text
 Search Page
 ├── Search Input & Button
 ├── SearchControls (ML categories, hide expired)
@@ -101,7 +101,7 @@ Search Page
 ├── SearchFilters (labels, dates, replied, sort)
 └── Results
     └── Individual email cards
-```
+```text
 
 ### 4. Playwright E2E Tests (`apps/web/tests/security-search-filters.spec.ts`)
 
@@ -198,7 +198,7 @@ Search Page
 
 ### State Synchronization Flow
 
-```
+```text
 User clicks chip
   ↓
 setHighRisk(true) / setQuarantinedOnly(true)
@@ -212,7 +212,7 @@ onSearch() called with new filter values
 API request with risk_min=80 or quarantined=true
   ↓
 Results updated
-```
+```text
 
 ### Backward Compatibility
 
@@ -237,7 +237,7 @@ npm run test:e2e -- security-search-filters.spec.ts --headed
 
 # Run in debug mode
 npm run test:e2e -- security-search-filters.spec.ts --debug
-```
+```text
 
 ### Manual Testing Checklist
 
@@ -278,7 +278,7 @@ GET /api/search/?q=security&risk_min=80&quarantined=true
 
 # Risk score range
 GET /api/search/?q=payment&risk_min=50&risk_max=90
-```
+```text
 
 **Expected Response:**
 
@@ -297,7 +297,7 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
   ],
   "total": 1
 }
-```
+```text
 
 ## Future Enhancements
 

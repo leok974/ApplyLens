@@ -14,7 +14,7 @@
 # On Windows (download from Cloudflare)
 # Or pull the Docker image
 docker pull cloudflare/cloudflared:latest
-```
+```text
 
 ### 2. Authenticate to Cloudflare
 
@@ -22,7 +22,7 @@ docker pull cloudflare/cloudflared:latest
 # Run this locally or on your Docker host
 # This opens a browser to authenticate
 cloudflared tunnel login
-```
+```text
 
 This creates a certificate file at:
 
@@ -37,7 +37,7 @@ cloudflared tunnel create applylens
 
 # This creates a credentials file with UUID
 # Example: ~/.cloudflared/12345678-1234-1234-1234-123456789abc.json
-```
+```text
 
 ### 4. Get Your Tunnel UUID
 
@@ -48,7 +48,7 @@ cloudflared tunnel list
 # Example output:
 # ID                                   NAME        CREATED
 # 12345678-1234-1234-1234-123456789abc applylens   2025-10-11T10:30:00Z
-```
+```text
 
 ### 5. Update Configuration
 
@@ -84,7 +84,7 @@ cloudflared tunnel route dns applylens kibana.applylens.app
 
 # Optional: Grafana monitoring
 cloudflared tunnel route dns applylens grafana.applylens.app
-```
+```text
 
 ### 7. Update Docker Compose
 
@@ -98,14 +98,14 @@ cloudflared:
     - ./cloudflared:/etc/cloudflared
   depends_on: [api]
   restart: unless-stopped
-```
+```text
 
 ### 8. Start the Services
 
 ```bash
 cd infra
 docker compose up -d
-```
+```text
 
 ### 9. Verify the Tunnel
 
@@ -120,7 +120,7 @@ docker compose logs -f cloudflared
 # Test the endpoints
 curl https://applylens.app/health
 curl https://www.applylens.app/health
-```
+```text
 
 ## Configuration Details
 
@@ -138,7 +138,7 @@ The tunnel routes traffic based on hostname:
 
 ### Network Architecture
 
-```
+```text
 Internet
     ↓
 Cloudflare Edge
@@ -148,7 +148,7 @@ Cloudflare Tunnel (encrypted)
 cloudflared container
     ↓
 api:8003 (internal network)
-```
+```text
 
 **Key Benefits**:
 
@@ -171,7 +171,7 @@ docker compose logs cloudflared
 # 1. Invalid tunnel UUID in config.yml
 # 2. Credentials file not found
 # 3. Wrong credentials file path
-```
+```text
 
 ### DNS Not Resolving
 
@@ -181,7 +181,7 @@ cloudflared tunnel route dns list
 
 # Should show:
 # applylens.app -> applylens (your-tunnel-uuid)
-```
+```text
 
 ### 502 Bad Gateway
 
@@ -194,7 +194,7 @@ docker compose logs api
 
 # Verify service name in config.yml matches docker-compose.yml
 # Service name: "api" (not "applylens-api")
-```
+```text
 
 ### Credentials File Issues
 
@@ -216,7 +216,7 @@ echo "infra/cloudflared/cert.pem" >> .gitignore
 
 # Restrict file permissions (Linux)
 chmod 600 infra/cloudflared/*.json
-```
+```text
 
 ### Cloudflare Access (Optional)
 
@@ -250,7 +250,7 @@ ingress:
   
   - hostname: static.applylens.app
     service: http://nginx:80
-```
+```text
 
 ### Load Balancing
 
@@ -273,7 +273,7 @@ cloudflared-2:
     - ./cloudflared:/etc/cloudflared
   depends_on: [api]
   restart: unless-stopped
-```
+```text
 
 Both replicas will connect to the same tunnel automatically.
 
@@ -297,7 +297,7 @@ docker pull cloudflare/cloudflared:latest
 
 # Restart tunnel
 docker compose up -d cloudflared
-```
+```text
 
 ### Rotate Credentials
 
@@ -311,7 +311,7 @@ cloudflared tunnel create applylens
 # Update config.yml and credentials file
 # Restart container
 docker compose restart cloudflared
-```
+```text
 
 ### Delete Tunnel
 
@@ -324,7 +324,7 @@ cloudflared tunnel route dns delete applylens applylens.app
 
 # Delete tunnel
 cloudflared tunnel delete applylens
-```
+```text
 
 ## Production Checklist
 

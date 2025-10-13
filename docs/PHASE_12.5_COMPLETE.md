@@ -18,7 +18,7 @@ Transformed ApplyLens from **reactive monitoring** to **proactive prediction**, 
 
 ## Architecture
 
-```
+```text
 Historical Data (marts from Phase 12.4)
     ↓
 BigQuery ML ARIMA Training (weekly, Sundays 4 AM)
@@ -30,7 +30,7 @@ Anomaly Detection (compare actual vs predicted)
 Export to Elasticsearch (analytics_applylens_anomalies index)
     ↓
 Kibana Visualization + Prometheus Alerting
-```
+```text
 
 ---
 
@@ -98,7 +98,7 @@ CREATE TABLE ml.anomaly_detection (
   severity STRING,
   residual FLOAT64
 )
-```
+```text
 
 #### 4. Export Script
 
@@ -120,7 +120,7 @@ CREATE TABLE ml.anomaly_detection (
   "indexed": 15,
   "failed": 0
 }
-```
+```text
 
 #### 5. CI/CD Workflow
 
@@ -169,7 +169,7 @@ CREATE TABLE ml.anomaly_detection (
 curl -X POST "http://localhost:5601/api/saved_objects/_import" \
   -H "kbn-xsrf: true" \
   --form file=@monitoring/kibana/anomalies.ndjson
-```
+```text
 
 #### 7. Prometheus Alerts
 
@@ -187,9 +187,9 @@ curl -X POST "http://localhost:5601/api/saved_objects/_import" \
 **Integration**:
 Alerts require Prometheus metrics exporter for Elasticsearch:
 
-```
+```text
 applylens_ml_anomalies_total{metric, severity}
-```
+```text
 
 #### 8. Documentation
 
@@ -222,7 +222,7 @@ ml:
   +schema: ml
   +materialized: table
   +tags: ['ml', 'bigquery_ml']
-```
+```text
 
 ---
 
@@ -230,7 +230,7 @@ ml:
 
 ### End-to-End Pipeline
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ Phase 12.4 Marts (Historical Data)                              │
 │ - mrt_risk_daily (risk scores, email counts)                    │
@@ -282,7 +282,7 @@ ml:
 │ - Prometheus: applylens.ml_anomalies alert group                │
 │ - Teams get notified of high/low severity anomalies             │
 └─────────────────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -310,7 +310,7 @@ ml:
 export BQ_PROJECT="applylens-dev"
 export GOOGLE_APPLICATION_CREDENTIALS="path/to/sa.json"
 export ES_URL="http://localhost:9200"
-```
+```text
 
 #### Test Sequence
 
@@ -436,7 +436,7 @@ Configure in repository settings:
 BQ_PROJECT=applylens-prod
 BQ_SA_JSON={"type":"service_account",...}
 ES_URL=https://es.applylens.example.com:9200
-```
+```text
 
 ### Deployment Steps
 
@@ -575,7 +575,7 @@ ES_URL=https://es.applylens.example.com:9200
 - Check analytics-ml.yml workflow runs
 - Target: >95% success rate for training jobs
 - Alert: 2 consecutive training failures
-```
+```text
 
 #### Forecasting Success Rate
 
@@ -584,7 +584,7 @@ ES_URL=https://es.applylens.example.com:9200
 - Check analytics-ml.yml workflow runs
 - Target: >99% success rate for forecasting jobs
 - Alert: 3 consecutive forecast failures
-```
+```text
 
 #### Model Drift Detection
 
@@ -606,7 +606,7 @@ SELECT
 FROM recent_forecasts;
 
 -- Alert if MAE increases significantly (>50% from baseline)
-```
+```text
 
 #### Anomaly Detection Rate
 
@@ -624,7 +624,7 @@ GROUP BY week, metric
 ORDER BY week DESC, metric;
 
 -- Alert if anomaly rate suddenly spikes (possible model issue)
-```
+```text
 
 ---
 
@@ -643,7 +643,7 @@ ORDER BY week DESC, metric;
 
 ```bash
 gcloud services enable bigquerystorage.googleapis.com --project=applylens-prod
-```
+```text
 
 #### Issue 2: Insufficient Historical Data
 

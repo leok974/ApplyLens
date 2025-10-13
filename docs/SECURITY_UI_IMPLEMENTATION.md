@@ -54,7 +54,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 
 ```typescript
 { score: number; quarantined?: boolean }
-```
+```text
 
 #### `apps/web/src/components/security/EvidenceModal.tsx`
 
@@ -73,7 +73,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 
 ```typescript
 { flags: RiskFlag[] }
-```
+```text
 
 #### `apps/web/src/components/security/SecurityPanel.tsx`
 
@@ -100,7 +100,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
   flags?: RiskFlag[];
   onRefresh?: () => void;
 }
-```
+```text
 
 #### `apps/web/src/components/security/PolicyPanel.tsx`
 
@@ -256,7 +256,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 
 ### Email List → Email Details
 
-```
+```text
 1. Email fetched from API with risk_score, quarantined, flags
 2. EmailList passes security props to EmailRow
 3. EmailRow displays RiskBadge if risk_score exists
@@ -264,18 +264,18 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
 5. SecurityPanel renders with security data
 6. User can click "Why flagged?" → EvidenceModal shows details
 7. User can click "Rescan" → API call → Toast notification → onRefresh callback
-```
+```text
 
 ### Security Settings
 
-```
+```text
 1. User navigates to /settings/security
 2. SettingsSecurity page renders
 3. PolicyPanel fetches policies on mount
 4. User toggles switches → local state updates
 5. User clicks Save → API call → Toast notification
 6. On error, falls back to safe defaults
-```
+```text
 
 ---
 
@@ -340,7 +340,7 @@ Implemented a complete, production-ready security UI layer for ApplyLens that pr
   autoArchiveExpiredPromos: true,
   autoUnsubscribeInactive: { enabled: false, threshold: 10 }
 }
-```
+```text
 
 ### Email API Data Format
 
@@ -360,7 +360,7 @@ Emails returned from `/api/search/` or `/api/emails/` should include:
     weight: number          // e.g., 25
   }>
 }
-```
+```text
 
 ---
 
@@ -432,7 +432,7 @@ def save_security_policies(policies: SecurityPolicies, db: Session = Depends(get
     # Store in DB
     # Trigger background jobs if needed
     return {"status": "ok"}
-```
+```text
 
 ### 8. **Animated Risk Transitions**
 
@@ -463,7 +463,7 @@ Add smooth animations:
 ```bash
 cd apps/web
 pnpm exec playwright test tests/security-ui.spec.ts
-```
+```text
 
 Expected results:
 
@@ -596,7 +596,7 @@ Expected results:
 cd apps/web
 pnpm install  # No new dependencies needed
 pnpm build    # TypeScript compilation
-```
+```text
 
 ### Environment Variables
 

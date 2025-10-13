@@ -62,19 +62,19 @@
 ```powershell
 start http://localhost:5175/inbox    # Browse emails
 start http://localhost:5175/tracker  # Manage applications
-```
+```text
 
 ### Manual Sync (if needed)
 
 ```powershell
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
-```
+```text
 
 ### Check Status
 
 ```powershell
 curl http://localhost:8003/gmail/status
-```
+```text
 
 ---
 
@@ -122,7 +122,7 @@ docker compose down
 
 # View logs
 docker compose logs -f api
-```
+```text
 
 ### Sync & Status
 
@@ -135,7 +135,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POS
 
 # View applications
 curl http://localhost:8003/applications
-```
+```text
 
 ### Scheduled Task
 
@@ -148,7 +148,7 @@ Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
 
 # Manually trigger
 Start-ScheduledTask -TaskName "ApplyLens-GmailSync"
-```
+```text
 
 ---
 
@@ -158,14 +158,14 @@ Start-ScheduledTask -TaskName "ApplyLens-GmailSync"
 
 ```powershell
 start http://localhost:8003/auth/google/login
-```
+```text
 
 ### Services Not Running?
 
 ```powershell
 cd D:\ApplyLens\infra
 docker compose up -d
-```
+```text
 
 ### Scheduled Sync Not Working?
 
@@ -175,7 +175,7 @@ Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
 
 # Manually test
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
-```
+```text
 
 ---
 
@@ -198,7 +198,7 @@ To change:
 ```powershell
 Unregister-ScheduledTask -TaskName "ApplyLens-GmailSync" -Confirm:$false
 # Then re-register with different interval (e.g., -Minutes 15 or -Minutes 60)
-```
+```text
 
 ### 2. Adjust Retention
 

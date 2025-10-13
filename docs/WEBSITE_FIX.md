@@ -20,7 +20,7 @@ server: {
     }
   }
 }
-```
+```text
 
 ## Solution
 
@@ -38,7 +38,7 @@ server: {
     }
   }
 }
-```
+```text
 
 ## Additional Issues Resolved
 
@@ -56,7 +56,7 @@ Invoke-WebRequest -Uri http://localhost:5175 -UseBasicParsing
 
 StatusCode: 200 ✅
 Content Length: 641 bytes ✅
-```
+```text
 
 ## Current Status
 
@@ -82,7 +82,7 @@ Content Length: 641 bytes ✅
 ```powershell
 cd d:/ApplyLens/apps/web
 Start-Process pwsh -ArgumentList "-NoExit", "-Command", "npm run dev"
-```
+```text
 
 This opens a new PowerShell window dedicated to running the frontend, preventing interference.
 
@@ -92,14 +92,14 @@ This opens a new PowerShell window dedicated to running the frontend, preventing
 cd d:/ApplyLens/apps/web
 npm run dev
 # Keep this terminal open, use another terminal for other commands
-```
+```text
 
 ### Method 3: Background Process
 
 ```powershell
 cd d:/ApplyLens/apps/web
 Start-Job -ScriptBlock { Set-Location d:/ApplyLens/apps/web; npm run dev }
-```
+```text
 
 ## Configuration Notes
 
@@ -129,7 +129,7 @@ server: {
     }
   }
 }
-```
+```text
 
 Then set `VITE_API_URL=http://api:8003` when running in Docker.
 
@@ -185,14 +185,14 @@ Check that backend is running:
 
 ```powershell
 curl http://localhost:8003/docs
-```
+```text
 
 If backend is down:
 
 ```powershell
 cd d:/ApplyLens/infra
 docker compose up -d api
-```
+```text
 
 ### Port 5175 already in use?
 
@@ -203,14 +203,14 @@ server: {
   port: 5176,  // Use different port
   // ...
 }
-```
+```text
 
 Or kill the process using port 5175:
 
 ```powershell
 $port = Get-NetTCPConnection -LocalPort 5175 | Select-Object -ExpandProperty OwningProcess
 Stop-Process -Id $port -Force
-```
+```text
 
 ## Summary
 

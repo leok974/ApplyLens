@@ -30,7 +30,7 @@ import { RiskBadge } from "@/components/security/RiskBadge";
     <RiskBadge score={email.risk_score} quarantined={email.quarantined} />
   )}
 </div>
-```
+```text
 
 #### 2. Add Security Panel to Email Details
 
@@ -55,7 +55,7 @@ import { SecurityPanel } from "@/components/security/SecurityPanel";
     />
   )}
 </div>
-```
+```text
 
 #### 3. Add Security Settings Page
 
@@ -64,7 +64,7 @@ Already implemented at `/settings/security` route!
 ```typescript
 // Just navigate users to:
 <Link to="/settings/security">Security Settings</Link>
-```
+```text
 
 ---
 
@@ -96,7 +96,7 @@ Your email API responses should include:
     }
   ]
 }
-```
+```text
 
 **Endpoints that should return this:**
 
@@ -131,7 +131,7 @@ def rescan_email(email_id: str, db: Session = Depends(get_db)):
         "quarantined": result.quarantined,
         "flags": result.flags
     }
-```
+```text
 
 #### 3. Security Stats Endpoint (ALREADY IMPLEMENTED ✅)
 
@@ -149,7 +149,7 @@ def get_security_stats(db: Session = Depends(get_db)):
         "average_risk_score": average_risk,
         "high_risk_count": high_risk
     }
-```
+```text
 
 #### 4. Policy Endpoints (TODO - NEEDS IMPLEMENTATION ⚠️)
 
@@ -180,7 +180,7 @@ def get_security_policies(db: Session = Depends(get_db)):
             "threshold": policy.auto_unsubscribe_threshold
         }
     }
-```
+```text
 
 **PUT /api/policy/security**
 
@@ -207,7 +207,7 @@ def save_security_policies(
     # apply_policies_to_existing_emails.delay()
     
     return {"status": "ok"}
-```
+```text
 
 **Create the Pydantic models:**
 
@@ -222,7 +222,7 @@ class SecurityPoliciesInput(BaseModel):
     autoQuarantineHighRisk: bool
     autoArchiveExpiredPromos: bool
     autoUnsubscribeInactive: AutoUnsubscribeConfig
-```
+```text
 
 **Create the database model:**
 
@@ -237,7 +237,7 @@ class SecurityPolicy(Base):
     auto_unsubscribe_enabled = Column(Boolean, default=False)
     auto_unsubscribe_threshold = Column(Integer, default=10)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-```
+```text
 
 ---
 
@@ -248,7 +248,7 @@ class SecurityPolicy(Base):
 ```bash
 cd apps/web
 pnpm exec playwright test tests/security-ui.spec.ts
-```
+```text
 
 ### Manual Testing Checklist
 
@@ -286,7 +286,7 @@ pnpm exec playwright test tests/security-ui.spec.ts
 ```typescript
 // Check in browser console:
 console.log(email.risk_score); // Should be a number
-```
+```text
 
 ### Issue: SecurityPanel not appearing
 
@@ -307,7 +307,7 @@ console.log(email.risk_score); // Should be a number
 ```typescript
 // Check network tab in browser DevTools
 // POST /api/security/rescan/{id} should return 200
-```
+```text
 
 ### Issue: Policy save fails with 404
 
@@ -319,7 +319,7 @@ console.log(email.risk_score); // Should be a number
 
 ## Architecture Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                      Frontend (React)                    │
 ├─────────────────────────────────────────────────────────┤
@@ -373,7 +373,7 @@ console.log(email.risk_score); // Should be a number
          │    * quarantined  │
          │    * flags (JSONB)│
          └───────────────────┘
-```
+```text
 
 ---
 
@@ -390,7 +390,7 @@ import { memo } from 'react';
 export const EmailRow = memo(function EmailRow(props) {
   // ... component code
 });
-```
+```text
 
 ### 2. Lazy Load Evidence Modal
 
@@ -410,7 +410,7 @@ React.useEffect(() => {
     localStorage.setItem('security-policies', JSON.stringify(p));
   });
 }, []);
-```
+```text
 
 ### 4. Debounce Policy Input
 
@@ -421,7 +421,7 @@ const debouncedSave = useDebouncedCallback(
   () => savePolicies(pol),
   1000
 );
-```
+```text
 
 ---
 
@@ -434,7 +434,7 @@ Edit `RiskBadge.tsx`:
 ```typescript
 // Change from 80/40 to 70/30:
 const level = score >= 70 ? "high" : score >= 30 ? "med" : "low";
-```
+```text
 
 ### Add More Policy Options
 
@@ -447,7 +447,7 @@ Edit `PolicyPanel.tsx`:
   <Switch id="autoBlockSuspicious" checked={pol.autoBlockSuspicious}
           onCheckedChange={(v)=>update("autoBlockSuspicious", v)} />
 </div>
-```
+```text
 
 Update types in `security.ts`:
 
@@ -458,7 +458,7 @@ export type SecurityPolicies = {
   autoUnsubscribeInactive: { enabled: boolean; threshold: number };
   autoBlockSuspicious: boolean; // New!
 };
-```
+```text
 
 ### Change Badge Colors
 
@@ -470,7 +470,7 @@ const color =
   level === "high" ? "bg-purple-500/20 text-purple-300 border-purple-600/40" :
   level === "med"  ? "bg-blue-500/20 text-blue-300 border-blue-600/40" :
                      "bg-green-500/20 text-green-300 border-green-600/40";
-```
+```text
 
 ---
 
@@ -546,7 +546,7 @@ The ApplyLens security analyzer provides comprehensive email threat detection wi
 ```bash
 cd services/api
 alembic upgrade head
-```
+```text
 
 This creates:
 
@@ -556,15 +556,15 @@ This creates:
 
 ```bash
 psql $DATABASE_URL -c "\d emails" | grep -E "(risk_score|quarantined|flags)"
-```
+```text
 
 Expected output:
 
-```
+```text
  risk_score       | double precision     |           |          | 
  flags            | jsonb                |           | not null | '[]'::jsonb
  quarantined      | boolean              |           | not null | false
-```
+```text
 
 ### 2. Install Elasticsearch Template
 
@@ -573,7 +573,7 @@ Expected output:
 ```bash
 cd services/api
 python scripts/install_es_template.py
-```
+```bash
 
 **Option B: Using curl**
 
@@ -581,13 +581,13 @@ python scripts/install_es_template.py
 curl -X PUT "http://localhost:9200/_index_template/emails-template" \
   -H 'Content-Type: application/json' \
   --data-binary @services/api/es/templates/emails-template.json
-```
+```text
 
 **Verify template:**
 
 ```bash
 curl http://localhost:9200/_index_template/emails-template | jq '.index_templates[0].index_template.index_patterns'
-```
+```text
 
 Expected output: `["gmail_emails*", "emails-*"]`
 
@@ -598,7 +598,7 @@ If you have an existing `gmail_emails` index:
 ```bash
 cd services/api
 python scripts/update_existing_index_mapping.py
-```
+```text
 
 This adds security fields to the existing index without requiring reindexing.
 
@@ -613,14 +613,14 @@ from app.models import Email
 email = Email()
 print(hasattr(email, 'flags'))  # Should be True
 print(hasattr(email, 'quarantined'))  # Should be True
-```
+```text
 
 **Run unit tests:**
 
 ```bash
 cd services/api
 pytest tests/test_security_analyzer.py -v
-```
+```text
 
 Expected: **12/12 tests passing** with 95% code coverage
 
@@ -628,7 +628,7 @@ Expected: **12/12 tests passing** with 95% code coverage
 
 ```bash
 curl http://localhost:8003/docs | grep security
-```
+```text
 
 Should show `/api/security/rescan/{email_id}` and `/api/security/stats` endpoints.
 
@@ -663,14 +663,14 @@ email.risk_score = float(result.risk_score)
 email.flags = [f.dict() for f in result.flags]  # JSONB accepts list
 email.quarantined = result.quarantined
 db.commit()
-```
+```text
 
 ### Rescan Existing Email
 
 ```bash
 # Rescan email ID 123
 curl -X POST http://localhost:8003/api/security/rescan/123
-```
+```text
 
 Response:
 
@@ -686,13 +686,13 @@ Response:
     {"signal": "URL_HOST_MISMATCH", "evidence": "visible=\"PayPal\" href=\"http://phishing.ru\"", "weight": 10}
   ]
 }
-```
+```text
 
 ### Get Security Statistics
 
 ```bash
 curl http://localhost:8003/api/security/stats
-```
+```text
 
 Response:
 
@@ -702,7 +702,7 @@ Response:
   "average_risk_score": 12.5,
   "high_risk_count": 18
 }
-```
+```text
 
 ### Query Quarantined Emails (Elasticsearch)
 
@@ -740,7 +740,7 @@ curl -X GET "http://localhost:9200/gmail_emails/_search" -H 'Content-Type: appli
     }
   }
 }'
-```
+```text
 
 ## Configuration
 
@@ -759,7 +759,7 @@ class RiskWeights:
     BLOCKLISTED_HASH_OR_HOST: int = 30
     TRUSTED_DOMAIN: int = -15
     QUARANTINE_THRESHOLD: int = 70  # ← Change threshold here
-```
+```text
 
 ### Update Blocklists
 
@@ -781,7 +781,7 @@ Edit `app/security/blocklists.json`:
     "your-trusted-partner.com"
   ]
 }
-```
+```text
 
 **Pro Tip:** For production, consider moving blocklists to Redis/Elasticsearch for dynamic updates without code deployment.
 
@@ -800,7 +800,7 @@ RISK_SCORE_HISTOGRAM = Histogram('email_risk_score', 'Email risk score distribut
 if result.quarantined:
     EMAILS_QUARANTINED.inc()
 RISK_SCORE_HISTOGRAM.observe(result.risk_score)
-```
+```text
 
 ### Alerting
 
@@ -808,7 +808,7 @@ RISK_SCORE_HISTOGRAM.observe(result.risk_score)
 
 ```promql
 rate(emails_quarantined_total[5m]) > 0.5
-```
+```text
 
 **Critical Risk Detection:**
 
@@ -817,7 +817,7 @@ rate(emails_quarantined_total[5m]) > 0.5
 curl -X POST http://slack-webhook-url -d '{
   "text": "🚨 Critical threat detected: email_id=123, risk_score=95"
 }'
-```
+```text
 
 ## Troubleshooting
 
@@ -830,7 +830,7 @@ curl -X POST http://slack-webhook-url -d '{
 ```bash
 alembic current
 alembic history
-```
+```text
 
 ### Analyzer Tests Fail
 
@@ -841,7 +841,7 @@ alembic history
 ```bash
 cd services/api
 pip install idna>=3.4
-```
+```text
 
 ### ES Template Not Applied
 
@@ -851,7 +851,7 @@ pip install idna>=3.4
 
 ```bash
 curl http://localhost:9200/_index_template/emails-template | jq '.index_templates[0].index_template.priority'
-```
+```text
 
 Template priority should be >= 200. If lower, increase in template JSON.
 
@@ -868,7 +868,7 @@ from celery import shared_task
 def analyze_email_async(email_id: int):
     # Analyze in background worker
     pass
-```
+```text
 
 **Solution 2:** Batch analysis
 
@@ -878,7 +878,7 @@ for batch in chunk(emails, 100):
     results = [ANALYZER.analyze(...) for email in batch]
     db.bulk_update_mappings(Email, results)
     db.commit()
-```
+```text
 
 ## API Reference
 
@@ -903,7 +903,7 @@ class RiskAnalysis(BaseModel):
     risk_score: int          # 0-100
     flags: List[RiskFlag]    # List of detected signals
     quarantined: bool        # True if score >= threshold
-```
+```text
 
 **Example:**
 
@@ -921,7 +921,7 @@ print(f"Risk: {result.risk_score}/100")
 print(f"Quarantined: {result.quarantined}")
 for flag in result.flags:
     print(f"  - {flag.signal}: {flag.evidence} (+{flag.weight})")
-```
+```text
 
 ## Future Enhancements
 

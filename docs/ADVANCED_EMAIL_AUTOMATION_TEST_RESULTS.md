@@ -23,7 +23,7 @@
 - Action parameters
 - Confidence thresholds
 
-```
+```text
 tests/unit/test_policy_engine.py::TestPolicyEngineBasics::test_get_nested_field PASSED
 tests/unit/test_policy_engine.py::TestPolicyEngineBasics::test_eval_clause_equals PASSED
 tests/unit/test_policy_engine.py::TestPolicyEngineBasics::test_eval_clause_comparison PASSED
@@ -39,7 +39,7 @@ tests/unit/test_policy_engine.py::TestPolicyMatching::test_multiple_policies PAS
 tests/unit/test_policy_engine.py::TestPolicyMatching::test_now_placeholder_resolution PASSED
 tests/unit/test_policy_engine.py::TestPolicyMatching::test_action_params PASSED
 tests/unit/test_policy_engine.py::TestPolicyMatching::test_confidence_minimum PASSED
-```
+```text
 
 #### Unsubscribe Tests (`test_unsubscribe.py`)
 
@@ -55,7 +55,7 @@ tests/unit/test_policy_engine.py::TestPolicyMatching::test_confidence_minimum PA
 - HTTP preference over mailto
 - Error handling
 
-```
+```text
 tests/unit/test_unsubscribe.py::TestUnsubscribeHeaderParsing::test_parse_both_targets PASSED
 tests/unit/test_unsubscribe.py::TestUnsubscribeHeaderParsing::test_parse_http_only PASSED
 tests/unit/test_unsubscribe.py::TestUnsubscribeHeaderParsing::test_parse_mailto_only PASSED
@@ -67,7 +67,7 @@ tests/unit/test_unsubscribe.py::TestUnsubscribeExecution::test_http_unsubscribe_
 tests/unit/test_unsubscribe.py::TestUnsubscribeExecution::test_mailto_unsubscribe_queued PASSED
 tests/unit/test_unsubscribe.py::TestUnsubscribeExecution::test_http_preferred_over_mailto PASSED
 tests/unit/test_unsubscribe.py::TestUnsubscribeExecution::test_no_targets_available PASSED
-```
+```text
 
 ---
 
@@ -100,7 +100,7 @@ tests/unit/test_unsubscribe.py::TestUnsubscribeExecution::test_no_targets_availa
     )
 ),
 "regex": lambda a, b: (a is not None and b is not None and re.search(str(b), str(a), re.I) is not None),
-```
+```text
 
 ### 2. Test Pattern Fix
 
@@ -160,7 +160,7 @@ docker-compose up -d
 
 # Run E2E tests inside Docker
 docker-compose exec api pytest tests/e2e/ -v
-```
+```text
 
 ---
 

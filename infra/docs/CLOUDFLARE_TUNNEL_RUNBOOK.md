@@ -58,7 +58,7 @@ Navigate to: **Cloudflare Zero Trust Dashboard** → **Networks** → **Tunnels*
 
 ## Internal Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Cloudflare Edge Network                                     │
 │  - applylens.app         → Tunnel → applylens.int:80        │
@@ -84,7 +84,7 @@ Navigate to: **Cloudflare Zero Trust Dashboard** → **Networks** → **Tunnels*
 │         └─ /prometheus/   → Prometheus (proxy)              │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -154,7 +154,7 @@ Check in: **Cloudflare Dashboard** → **DNS** → **Records**
 ```bash
 # Inside the cloudflared container
 docker exec infra-cloudflared cloudflared tunnel info applylens
-```
+```text
 
 Expected output should show 4 active connections to Cloudflare edge.
 
@@ -164,14 +164,14 @@ Expected output should show 4 active connections to Cloudflare edge.
 # From inside the Docker network
 docker exec applylens-nginx ping -c 1 applylens.int
 docker exec applylens-nginx ping -c 1 applylens-api.int
-```
+```text
 
 ### 3. Test External Access
 
 ```powershell
 # Run the smoke test script
 .\scripts\smoke-applylens.ps1
-```
+```text
 
 Or manually:
 
@@ -188,7 +188,7 @@ curl https://api.applylens.app/ready
 curl -I https://api.applylens.app/emails `
   -H "Origin: https://applylens.app" `
   -H "Access-Control-Request-Method: POST"
-```
+```text
 
 ---
 
@@ -202,7 +202,7 @@ docker logs infra-cloudflared
 
 # Restart tunnel
 docker compose -f infra/docker-compose.yml restart cloudflared
-```
+```text
 
 ### 404 Errors
 

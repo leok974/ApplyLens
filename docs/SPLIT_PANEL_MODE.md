@@ -35,7 +35,7 @@ Users can toggle between modes with a toolbar button, and the preference is save
 ```tsx
 "fixed inset-y-0 right-0 z-40 transform bg-card text-card-foreground shadow-2xl transition-transform"
 open ? "translate-x-0" : "translate-x-full"
-```
+```text
 
 ### 2. Split Mode (New)
 
@@ -58,7 +58,7 @@ open ? "translate-x-0" : "translate-x-full"
 
 ```tsx
 "relative z-0 bg-card text-card-foreground border-l border-[color:hsl(var(--color-border))] h-full"
-```
+```text
 
 ## Implementation
 
@@ -78,7 +78,7 @@ export function EmailDetailsPanel({
   mode?: PanelMode;  // NEW: optional mode prop
   // ...other prop types
 })
-```
+```text
 
 **Dynamic Container Classes**:
 
@@ -93,7 +93,7 @@ const containerClass =
         // split mode: static block that fills parent height
         "relative z-0 bg-card text-card-foreground border-l border-[color:hsl(var(--color-border))] h-full"
       );
-```
+```text
 
 **Conditional Close Button Visibility**:
 
@@ -107,7 +107,7 @@ const containerClass =
 >
   <X className="h-5 w-5" />
 </Button>
-```
+```text
 
 **Resize Handle**:
 
@@ -127,7 +127,7 @@ const [panelMode, setPanelMode] = React.useState<PanelMode>(() => {
   const saved = localStorage.getItem(MODE_KEY) as PanelMode | null;
   return saved === "split" || saved === "overlay" ? saved : "overlay";
 });
-```
+```text
 
 **Toggle Function**:
 
@@ -141,7 +141,7 @@ function togglePanelMode() {
     return next;
   });
 }
-```
+```text
 
 **Toolbar Button**:
 
@@ -157,7 +157,7 @@ function togglePanelMode() {
     </>
   )}
 </Button>
-```
+```text
 
 **Note**: Button label shows the **target mode** (what you'll switch TO), not the current mode.
 
@@ -182,7 +182,7 @@ function togglePanelMode() {
     <EmailDetailsPanel mode="overlay" open={openPanel} {...props} />
   </div>
 )}
-```
+```text
 
 ## User Experience
 
@@ -267,7 +267,7 @@ When switching modes:
 
 ### Grid Structure (Split Mode)
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │  Filters Panel  │  Email List  │ Panel │
 │                 │              │       │
@@ -275,7 +275,7 @@ When switching modes:
 │  18rem          │   1fr        │ sized)│
 │                 │              │       │
 └─────────────────────────────────────────┘
-```
+```text
 
 **CSS Grid**:
 
@@ -285,7 +285,7 @@ grid-cols-1 md:grid-cols-[18rem,1fr]
 
 /* Inner grid (split mode only): list + panel */
 grid-template-columns: 1fr auto
-```
+```text
 
 **Panel Width**:
 
@@ -302,7 +302,7 @@ grid-template-columns: 1fr auto
   <EmailList />  // Scrolls independently
 </div>
 <EmailDetailsPanel />  // Has own ScrollArea
-```
+```text
 
 **Overlay Mode**:
 
@@ -311,7 +311,7 @@ grid-template-columns: 1fr auto
   <EmailList />  // Full height scrolling
   <EmailDetailsPanel />  // Fixed position, own scroll
 </div>
-```
+```text
 
 ## Visual Design
 
@@ -378,7 +378,7 @@ Both modes:
 role="dialog"
 aria-modal="true"
 aria-label="Resize panel" (on drag handle)
-```
+```text
 
 ### Keyboard Navigation
 
@@ -472,7 +472,7 @@ aria-label="Resize panel" (on drag handle)
   onClose={() => setOpenPanel(false)}
   // ...other props
 />
-```
+```text
 
 **After** (new API, backward compatible):
 
@@ -483,7 +483,7 @@ aria-label="Resize panel" (on drag handle)
   onClose={() => setOpenPanel(false)}
   // ...other props
 />
-```
+```text
 
 **No breaking changes**: `mode` prop is optional and defaults to `"overlay"`.
 

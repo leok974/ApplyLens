@@ -124,7 +124,7 @@ CREATE TABLE policy_stats (
     updated_at TIMESTAMP,
     UNIQUE(policy_id, user_id)
 );
-```
+```text
 
 ---
 
@@ -151,7 +151,7 @@ policy_approved_total{policy_id, user}
 policy_rejected_total{policy_id, user}
 user_weight_updates_total{user, sign}  # sign = "plus" or "minus"
 ats_enriched_total
-```
+```text
 
 ---
 
@@ -162,13 +162,13 @@ ats_enriched_total
 ```bash
 cd services/api
 alembic upgrade head
-```
+```text
 
 **Expected Output**:
 
-```
+```text
 INFO  [alembic.runtime.migration] Running upgrade 0016_phase4_actions -> 0017_phase6_personalization
-```
+```text
 
 ### 2. Update Elasticsearch Mapping
 
@@ -176,13 +176,13 @@ INFO  [alembic.runtime.migration] Running upgrade 0016_phase4_actions -> 0017_ph
 curl -X PUT "http://localhost:9200/emails/_mapping" \
   -H "Content-Type: application/json" \
   -d @services/api/es/mappings/ats_fields.json
-```
+```text
 
 **Expected Output**:
 
 ```json
 {"acknowledged":true}
-```
+```text
 
 ### 3. Schedule Cron Jobs
 
@@ -193,13 +193,13 @@ crontab -e
 # Add these lines:
 0 2 * * * cd /app && python analytics/enrich/ats_enrich_emails.py >> /var/log/ats_enrich.log 2>&1
 15 2 * * * cd /app && python services/api/app/cron/recompute_policy_stats.py >> /var/log/policy_stats.log 2>&1
-```
+```text
 
 ### 4. Restart API Server
 
 ```bash
 docker-compose restart api
-```
+```text
 
 ---
 
@@ -210,11 +210,11 @@ docker-compose restart api
 ```powershell
 cd d:\ApplyLens
 pwsh ./scripts/test-phase6.ps1
-```
+```text
 
 **Expected Output**:
 
-```
+```text
 ============================================
 Phase 6 Smoke Tests - Personalization & ATS
 ============================================
@@ -239,7 +239,7 @@ Phase 6 Smoke Tests - Personalization & ATS
 
 [Test 10] Prometheus Metrics
 ✓ Found 5/5 Phase 6 metrics in /metrics endpoint
-```
+```text
 
 ### Manual Tests
 
@@ -258,13 +258,13 @@ curl -X POST "http://localhost:8003/actions/$FIRST_ID/approve" \
 
 # Check user weights (DB)
 psql -c "SELECT * FROM user_weights ORDER BY ABS(weight) DESC LIMIT 5;"
-```
+```text
 
 **Test Policy Stats**:
 
 ```bash
 curl http://localhost:8003/policy/stats | jq '.'
-```
+```text
 
 **Test Money Mode**:
 
@@ -277,7 +277,7 @@ curl http://localhost:8003/money/duplicates | jq '.duplicates | length'
 
 # Spending summary
 curl http://localhost:8003/money/summary | jq '.total_amount'
-```
+```text
 
 **Test ATS Enrichment**:
 
@@ -288,7 +288,7 @@ python ats_enrich_emails.py
 
 # Verify in ES
 curl "http://localhost:9200/emails/_search?q=ats.system:*&size=0" | jq '.hits.total.value'
-```
+```text
 
 ---
 
@@ -304,7 +304,7 @@ curl "http://localhost:9200/emails/_search?q=ats.system:*&size=0" | jq '.hits.to
 # - category:promo weight += 0.2
 # - Policy stats: approved++, precision recalculated
 # - Metrics: user_weight_updates_total{user="alice", sign="plus"}++
-```
+```text
 
 **Query Weights**:
 
@@ -313,7 +313,7 @@ SELECT feature, weight
 FROM user_weights
 WHERE user_id = 'alice@example.com'
 ORDER BY weight DESC LIMIT 5;
-```
+```text
 
 ### Example 2: Policy Performance Tracking
 
@@ -321,7 +321,7 @@ ORDER BY weight DESC LIMIT 5;
 
 ```bash
 curl http://localhost:8003/policy/stats | jq '.'
-```
+```text
 
 ```json
 [
@@ -334,7 +334,7 @@ curl http://localhost:8003/policy/stats | jq '.'
     "fired": 130
   }
 ]
-```
+```text
 
 ### Example 3: Money Mode - Track Expenses
 
@@ -342,7 +342,7 @@ curl http://localhost:8003/policy/stats | jq '.'
 
 ```bash
 curl -O http://localhost:8003/money/receipts.csv
-```
+```text
 
 **CSV Output**:
 
@@ -350,7 +350,7 @@ curl -O http://localhost:8003/money/receipts.csv
 date,merchant,amount,email_id,subject,category
 2025-10-10,amazon.com,49.99,msg123,"Your Amazon order",commerce
 2025-10-12,uber.com,15.50,msg456,"Trip receipt",finance
-```
+```text
 
 ### Example 4: Find Duplicate Charges
 
@@ -358,7 +358,7 @@ date,merchant,amount,email_id,subject,category
 
 ```bash
 curl http://localhost:8003/money/duplicates?window_days=7 | jq '.duplicates[0]'
-```
+```text
 
 ```json
 {
@@ -368,7 +368,7 @@ curl http://localhost:8003/money/duplicates?window_days=7 | jq '.duplicates[0]'
   "later": {"id": "msg2", "date": "2025-10-12"},
   "days_apart": 2
 }
-```
+```text
 
 ---
 
@@ -419,7 +419,7 @@ curl http://localhost:8003/money/duplicates?window_days=7 | jq '.duplicates[0]'
 
 ```sql
 SELECT * FROM user_weights WHERE user_id = 'alice@example.com';
-```
+```text
 
 **Debug**: Enable logging in `core/learner.py`
 
@@ -429,7 +429,7 @@ SELECT * FROM user_weights WHERE user_id = 'alice@example.com';
 
 ```bash
 curl http://localhost:8003/actions/tray | jq 'length'
-```
+```text
 
 **Debug**: Check if policy_id is set on ProposedAction
 
@@ -439,13 +439,13 @@ curl http://localhost:8003/actions/tray | jq 'length'
 
 ```bash
 crontab -l | grep ats_enrich
-```
+```text
 
 **Manual Run**:
 
 ```bash
 python analytics/enrich/ats_enrich_emails.py
-```
+```text
 
 ### Issue: Money endpoints return 0 results
 
@@ -453,7 +453,7 @@ python analytics/enrich/ats_enrich_emails.py
 
 ```bash
 curl "http://localhost:9200/emails/_search?q=category:finance&size=1"
-```
+```text
 
 ---
 
@@ -475,7 +475,7 @@ curl "http://localhost:9200/emails/_search?q=category:finance&size=1"
 
 ## Commit Message
 
-```
+```text
 feat: Phase 6 - Personalization & ATS Enrichment
 
 Complete implementation of per-user learning and recruiter intelligence:
@@ -518,7 +518,7 @@ Metrics:
 
 Files: 13 new, 5 modified
 Status: Production-ready ✅
-```
+```text
 
 ---
 

@@ -25,7 +25,7 @@ python scripts/check_parity.py `
 
 # Check results
 Get-Content parity.json | ConvertFrom-Json | Select-Object -ExpandProperty summary
-```
+```text
 
 ### 2. Review Mismatch Details
 
@@ -35,7 +35,7 @@ Get-Content parity.json | ConvertFrom-Json | Select-Object -ExpandProperty misma
 
 # View CSV for easier analysis
 Import-Csv parity.csv | Format-Table -AutoSize
-```
+```text
 
 ---
 
@@ -81,7 +81,7 @@ python scripts/analyze_risk.py --backfill --batch-size 50
 
 # Verify fix
 python scripts/check_parity.py --fields risk_score --sample 100
-```
+```text
 
 ### 2. Missing ES Documents
 
@@ -99,7 +99,7 @@ docker-compose exec db psql -U postgres -d applylens -c "SELECT COUNT(*) FROM em
 
 # Reindex missing documents
 # TODO: Add script to bulk reindex missing IDs
-```
+```text
 
 ### 3. Risk Score Computation Drift
 
@@ -136,7 +136,7 @@ print(f'Computed score: {score}')
 print(f'Breakdown: {breakdown}')
 db.close()
 "
-```
+```text
 
 ### 4. Category Classification Drift
 
@@ -157,7 +157,7 @@ docker-compose exec db psql -U postgres -d applylens -c "
 
 # Rerun classification (if logic changed)
 # TODO: Add category backfill script
-```
+```text
 
 ---
 
@@ -190,7 +190,7 @@ foreach ($id in $ids | Select-Object -First 10) {
     Write-Host "Recomputing $id..."
     # TODO: Add API endpoint to recompute single email
 }
-```
+```text
 
 ---
 
@@ -214,7 +214,7 @@ foreach ($id in $ids | Select-Object -First 10) {
 # Check GitHub Actions artifacts
 # Navigate to: https://github.com/leok974/ApplyLens/actions
 # Download: parity.json, parity.csv from latest run
-```
+```text
 
 ---
 
@@ -231,7 +231,7 @@ rate(applylens_parity_mismatches_total[1h])
 
 # Time since last check
 (time() - applylens_parity_last_check_timestamp) / 3600
-```
+```text
 
 ### Alert Thresholds
 
@@ -243,7 +243,7 @@ for: 15m
 # Alert if check hasn't run in 24 hours
 expr: (time() - applylens_parity_last_check_timestamp) > 86400
 for: 5m
-```
+```text
 
 ---
 
@@ -278,7 +278,7 @@ FROM emails
 WHERE updated_at > NOW() - INTERVAL '1 hour'
 ORDER BY updated_at DESC
 LIMIT 20;
-```
+```text
 
 ### Elasticsearch
 
@@ -291,7 +291,7 @@ curl http://localhost:9200/emails/_mapping?pretty
 
 # Sample documents
 curl http://localhost:9200/emails/_search?pretty&size=5
-```
+```text
 
 ---
 
