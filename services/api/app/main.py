@@ -13,12 +13,20 @@ from .es import ensure_index
 from .metrics import DB_UP, ES_UP
 from .tracing import init_tracing
 
-Base.metadata.create_all(bind=engine)
-
 # CORS allowlist from environment (comma-separated)
 ALLOWED_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5175").split(",")
 
 app = FastAPI(title="ApplyLens API")
+
+@app.on_event("startup")
+async def _maybe_create_tables():
+    """Create database tables on startup if enabled.
+    
+    Prefer Alembic migrations in real environments; this is only for local/dev if enabled.
+    Disabled in test environment to avoid DB connection at import time.
+    """
+    if settings.CREATE_TABLES_ON_STARTUP:
+        Base.metadata.create_all(bind=engine)
 
 # Initialize OpenTelemetry tracing (optional, controlled by OTEL_ENABLED)
 init_tracing(app)

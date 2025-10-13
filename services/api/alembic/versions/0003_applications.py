@@ -1,7 +1,7 @@
 """update applications status values and add fields
 
 Revision ID: 0003_applications
-Revises: 0002_oauth_gmail
+Revises: 0002a_create_appstatus_enum
 Create Date: 2025-10-09
 """
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 revision = "0003_applications"
-down_revision = "0002_oauth_gmail"
+down_revision = "0002a_create_appstatus_enum"
 branch_labels = None
 depends_on = None
 
