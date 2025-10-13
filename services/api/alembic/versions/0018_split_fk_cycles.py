@@ -21,17 +21,31 @@ def upgrade():
     deadlocks during bulk operations. We drop the inline FKs and recreate
     them as DEFERRABLE INITIALLY DEFERRED constraints.
     """
-    # Drop inline constraints if present (names may vary across DBs)
-    # Try both common names and no-op on failures to keep it idempotent.
-    try:
-        op.drop_constraint("emails_application_id_fkey", "emails", type_="foreignkey")
-    except Exception:
-        pass
+    # Use raw SQL with DO blocks for idempotent constraint handling
+    # This avoids transaction failures from try/except in Python
     
-    try:
-        op.drop_constraint("applications_last_email_id_fkey", "applications", type_="foreignkey")
-    except Exception:
-        pass
+    op.execute("""
+    DO $$
+    BEGIN
+        -- Drop emails.application_id FK if exists
+        IF EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'emails_application_id_fkey' 
+            AND table_name = 'emails'
+        ) THEN
+            ALTER TABLE emails DROP CONSTRAINT emails_application_id_fkey;
+        END IF;
+        
+        -- Drop applications.last_email_id FK if exists  
+        IF EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'applications_last_email_id_fkey' 
+            AND table_name = 'applications'
+        ) THEN
+            ALTER TABLE applications DROP CONSTRAINT applications_last_email_id_fkey;
+        END IF;
+    END$$;
+    """)
 
     # Recreate as deferrable so insert/update order doesn't deadlock CI
     op.create_foreign_key(
@@ -63,12 +77,24 @@ def downgrade():
     reintroducing the cycle. Alembic may not allow this if other
     dependencies exist.
     """
-    try:
-        op.drop_constraint("fk_emails_application", "emails", type_="foreignkey")
-    except Exception:
-        pass
-    
-    try:
-        op.drop_constraint("fk_applications_last_email", "applications", type_="foreignkey")
-    except Exception:
-        pass
+    op.execute("""
+    DO $$
+    BEGIN
+        -- Drop deferrable FK constraints if they exist
+        IF EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'fk_emails_application' 
+            AND table_name = 'emails'
+        ) THEN
+            ALTER TABLE emails DROP CONSTRAINT fk_emails_application;
+        END IF;
+        
+        IF EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE constraint_name = 'fk_applications_last_email' 
+            AND table_name = 'applications'
+        ) THEN
+            ALTER TABLE applications DROP CONSTRAINT fk_applications_last_email;
+        END IF;
+    END$$;
+    """)
