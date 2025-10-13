@@ -294,6 +294,8 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 ```
 
 **Documentation:**
-- [Phase 12.3 Complete Guide](PHASE_12.3_COMPLETE.md)
-- [Deployment Checklist](DEPLOYMENT.md) *(coming soon)*
+- [📚 Complete Documentation Index](docs/README.md) - All docs in one place
+- [Phase 6 Personalization](docs/PHASE_6_PERSONALIZATION.md) - Latest features (learning, metrics, money mode)
+- [Quick Start Guide](docs/QUICK_START_E2E.md) - End-to-end setup
+- [Run Full Stack](docs/RUN_FULL_STACK.md) - Local development
 
