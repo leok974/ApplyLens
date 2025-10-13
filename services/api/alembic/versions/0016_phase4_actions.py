@@ -45,7 +45,8 @@ def upgrade():
         sa.Column("action", sa.Enum(
             "label_email", "archive_email", "move_to_folder", "unsubscribe_via_header",
             "create_calendar_event", "create_task", "block_sender", "quarantine_attachment",
-            name="actiontype"
+            name="actiontype",
+            create_type=False  # Don't create the enum, it already exists from 0002b or the IF NOT EXISTS above
         ), nullable=False),
         sa.Column("confidence_threshold", sa.Float, server_default="0.7", nullable=False),
         sa.Column("created_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
@@ -57,7 +58,7 @@ def upgrade():
         "proposed_actions",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("email_id", sa.Integer, index=True, nullable=False),
-        sa.Column("action", sa.Enum(name="actiontype"), nullable=False),
+        sa.Column("action", sa.Enum(name="actiontype", create_type=False), nullable=False),
         sa.Column("params", sa.JSON, server_default="{}"),
         sa.Column("confidence", sa.Float, nullable=False),
         sa.Column("rationale", sa.JSON, server_default="{}"),
@@ -73,7 +74,7 @@ def upgrade():
         "audit_actions",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("email_id", sa.Integer, index=True, nullable=False),
-        sa.Column("action", sa.Enum(name="actiontype"), nullable=False),
+        sa.Column("action", sa.Enum(name="actiontype", create_type=False), nullable=False),
         sa.Column("params", sa.JSON, server_default="{}"),
         sa.Column("actor", sa.String, nullable=False),
         sa.Column("outcome", sa.String, nullable=False),
