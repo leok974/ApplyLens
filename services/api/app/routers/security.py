@@ -9,8 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Email
-from app.security.analyzer import (BlocklistProvider, EmailRiskAnalyzer,
-                                   RiskAnalysis)
+from app.security.analyzer import BlocklistProvider, EmailRiskAnalyzer, RiskAnalysis
 from app.security.events import BUS
 
 router = APIRouter(prefix="/security", tags=["security"])

@@ -121,8 +121,7 @@ def execute_grouped(payload: ExecuteGroup):
         }
     """
     # Fan-out to /unsubscribe/execute for each email id
-    from app.routers.unsubscribe import \
-        execute_unsubscribe  # reuse existing logic
+    from app.routers.unsubscribe import execute_unsubscribe  # reuse existing logic
 
     applied = 0
     for eid in payload.email_ids:

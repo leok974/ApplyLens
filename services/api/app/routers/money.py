@@ -14,8 +14,7 @@ from typing import Any, Dict
 from elasticsearch import Elasticsearch
 from fastapi import APIRouter, Depends, HTTPException, Response
 
-from ..core.money import (build_receipts_csv, detect_duplicates,
-                          summarize_spending)
+from ..core.money import build_receipts_csv, detect_duplicates, summarize_spending
 
 router = APIRouter(prefix="/money", tags=["money"])
 

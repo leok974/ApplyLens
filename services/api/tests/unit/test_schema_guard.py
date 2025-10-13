@@ -9,8 +9,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.utils.schema_guard import (check_column_exists, require_columns,
-                                    require_min_migration)
+from app.utils.schema_guard import (
+    check_column_exists,
+    require_columns,
+    require_min_migration,
+)
 
 
 class TestSchemaGuard:

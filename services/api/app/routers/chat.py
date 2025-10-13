@@ -17,12 +17,22 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ..core.intent import (detect_intent, explain_intent,
-                           explain_intent_tokens, extract_unless_brands)
-from ..core.mail_tools import (clean_promos, create_calendar_events,
-                               create_tasks, find_emails, flag_suspicious,
-                               follow_up, summarize_emails,
-                               unsubscribe_inactive)
+from ..core.intent import (
+    detect_intent,
+    explain_intent,
+    explain_intent_tokens,
+    extract_unless_brands,
+)
+from ..core.mail_tools import (
+    clean_promos,
+    create_calendar_events,
+    create_tasks,
+    find_emails,
+    flag_suspicious,
+    follow_up,
+    summarize_emails,
+    unsubscribe_inactive,
+)
 from ..core.rag import rag_search
 from ..db import SessionLocal
 from ..models import ActionType, AuditAction, Policy, ProposedAction

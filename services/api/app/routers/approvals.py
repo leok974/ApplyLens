@@ -17,8 +17,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.db import (approvals_bulk_insert, approvals_get,
-                    approvals_update_status)
+from app.db import approvals_bulk_insert, approvals_get, approvals_update_status
 from app.logic.audit_es import emit_audit
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])

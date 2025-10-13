@@ -7,10 +7,14 @@ bill and payment email text.
 
 import datetime as dt
 
-from app.ingest.due_dates import (_coerce_date_token, extract_due_dates,
-                                  extract_due_dates_from_subject,
-                                  extract_earliest_due_date,
-                                  extract_money_amounts, is_bill_related)
+from app.ingest.due_dates import (
+    _coerce_date_token,
+    extract_due_dates,
+    extract_due_dates_from_subject,
+    extract_earliest_due_date,
+    extract_money_amounts,
+    is_bill_related,
+)
 
 
 def test_extract_mmddyyyy_after_due():

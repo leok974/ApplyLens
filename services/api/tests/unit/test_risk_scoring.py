@@ -6,6 +6,7 @@ to ensure accurate and deterministic risk calculation.
 """
 
 import os
+
 # Import the functions we're testing
 import sys
 from datetime import datetime
@@ -14,11 +15,17 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from scripts.analyze_risk import (RECRUITER_DOMAINS, SUSPICIOUS_KEYWORDS,
-                                  TRUSTED_DOMAINS, WEIGHTS, compute_risk_score,
-                                  compute_sender_domain_risk,
-                                  compute_source_confidence_risk,
-                                  compute_subject_keyword_risk, extract_domain)
+from scripts.analyze_risk import (
+    RECRUITER_DOMAINS,
+    SUSPICIOUS_KEYWORDS,
+    TRUSTED_DOMAINS,
+    WEIGHTS,
+    compute_risk_score,
+    compute_sender_domain_risk,
+    compute_source_confidence_risk,
+    compute_subject_keyword_risk,
+    extract_domain,
+)
 
 # ============================================================================
 # FIXTURES

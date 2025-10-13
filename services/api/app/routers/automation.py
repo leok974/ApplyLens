@@ -14,8 +14,11 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.metrics import (risk_emails_scored_total, risk_recompute_duration,
-                         risk_recompute_requests)
+from app.metrics import (
+    risk_emails_scored_total,
+    risk_recompute_duration,
+    risk_recompute_requests,
+)
 from app.models import Email
 
 router = APIRouter(prefix="/automation", tags=["automation"])

@@ -10,8 +10,12 @@ Tests natural language date phrase parsing for:
 
 import datetime as dt
 
-from app.logic.timewin import (cutoff_from_relative_days, next_weekday,
-                               parse_due_cutoff, parse_relative_days)
+from app.logic.timewin import (
+    cutoff_from_relative_days,
+    next_weekday,
+    parse_due_cutoff,
+    parse_relative_days,
+)
 
 
 def test_next_weekday_from_wednesday_to_friday():

@@ -202,8 +202,7 @@ async def _maybe_parse_pdf_text(
 
             # Extract text using pdfminer.six
             try:
-                from pdfminer.high_level import \
-                    extract_text as pdf_extract_text
+                from pdfminer.high_level import extract_text as pdf_extract_text
 
                 pdf_text = pdf_extract_text(buf) or ""
                 pdf_text = pdf_text.strip()

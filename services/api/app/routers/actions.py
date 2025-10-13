@@ -27,8 +27,7 @@ from ..core.executors import execute_action
 from ..core.learner import score_ctx_with_user, update_user_weights
 from ..core.yardstick import evaluate_policy, validate_condition
 from ..db import get_db
-from ..models import (ActionType, AuditAction, Email, Policy, PolicyStats,
-                      ProposedAction)
+from ..models import ActionType, AuditAction, Email, Policy, PolicyStats, ProposedAction
 from ..telemetry.metrics import METRICS
 
 router = APIRouter(prefix="/actions", tags=["actions"])

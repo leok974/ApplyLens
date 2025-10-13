@@ -2,8 +2,7 @@
 Tests for email parsing heuristics module.
 """
 
-from app.services.email_parse import (extract_company, extract_role,
-                                      extract_source)
+from app.services.email_parse import extract_company, extract_role, extract_source
 
 
 def test_extract_company_from_sender():

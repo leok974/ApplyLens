@@ -13,8 +13,11 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from sqlalchemy.orm import Session
 
-from .ingest.due_dates import (extract_due_dates, extract_earliest_due_date,
-                               extract_money_amounts)
+from .ingest.due_dates import (
+    extract_due_dates,
+    extract_earliest_due_date,
+    extract_money_amounts,
+)
 from .ingest.gmail_metrics import compute_thread_reply_metrics
 from .models import Application, AppStatus, Email, OAuthToken
 from .security.analyzer import BlocklistProvider, EmailRiskAnalyzer

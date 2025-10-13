@@ -360,8 +360,12 @@ from sqlalchemy import and_, desc  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import get_db  # noqa: E402
-from app.models import (Email, ProfileCategoryStats,  # noqa: E402
-                        ProfileInterests, ProfileSenderStats)
+from app.models import (
+    Email,
+    ProfileCategoryStats,  # noqa: E402
+    ProfileInterests,
+    ProfileSenderStats,
+)
 
 logger = logging.getLogger(__name__)
 

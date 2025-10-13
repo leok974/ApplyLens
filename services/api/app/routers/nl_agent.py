@@ -20,12 +20,16 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.logic.policy_engine import apply_policies
+
 # Import search helpers and policy engine
-from app.logic.search import (find_bills_due_before, find_expired_promos,
-                              find_high_risk, find_unsubscribe_candidates)
+from app.logic.search import (
+    find_bills_due_before,
+    find_expired_promos,
+    find_high_risk,
+    find_unsubscribe_candidates,
+)
 from app.logic.timewin import parse_due_cutoff
-from app.routers.productivity import (CreateRemindersRequest, Reminder,
-                                      create_reminders)
+from app.routers.productivity import CreateRemindersRequest, Reminder, create_reminders
 
 router = APIRouter(prefix="/nl", tags=["nl-agent"])
 
