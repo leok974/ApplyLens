@@ -20,6 +20,7 @@ These alerts detect when you're consuming your error budget too quickly, giving 
 **File:** `infra/grafana/provisioning/alerting/rules-applylens.yaml`
 
 **Alert Details:**
+
 - **UID:** `applens_burn_fast_1h`
 - **Title:** SLO burn rate high (1h > 14.4x)
 - **Severity:** critical 🔴
@@ -29,17 +30,20 @@ These alerts detect when you're consuming your error budget too quickly, giving 
 - **Purpose:** Quick detection of sharp spikes that will deplete error budget rapidly
 
 **Query:**
+
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[1h]))
  / sum(rate(applylens_http_requests_total[1h]))) / 0.001
-```
+```text
 
 **What It Means:**
+
 - **14.4× burn rate** = Consuming error budget 14.4 times faster than sustainable
 - If sustained, **depletes 30-day budget in ~2 days**
 - **Critical alert** - requires immediate investigation
 
 **When It Fires:**
+
 - Sustained 5xx error rate spike
 - API returning errors for significant portion of traffic
 - Incident requiring immediate response
@@ -51,6 +55,7 @@ These alerts detect when you're consuming your error budget too quickly, giving 
 **File:** `infra/grafana/provisioning/alerting/rules-applylens.yaml`
 
 **Alert Details:**
+
 - **UID:** `applens_burn_slow_6h`
 - **Title:** SLO burn rate high (6h > 6x)
 - **Severity:** warning ⚠️
@@ -60,17 +65,20 @@ These alerts detect when you're consuming your error budget too quickly, giving 
 - **Purpose:** Catch sustained degradation; resistant to noise
 
 **Query:**
+
 ```promql
 (sum(rate(applylens_http_requests_total{status=~"5.."}[6h]))
  / sum(rate(applylens_http_requests_total[6h]))) / 0.001
-```
+```text
 
 **What It Means:**
+
 - **6× burn rate** = Consuming error budget 6 times faster than sustainable
 - If sustained, **depletes 30-day budget in ~5 days**
 - **Warning alert** - investigate and plan mitigation
 
 **When It Fires:**
+
 - Elevated error rates over hours (not just spike)
 - Sustained degradation
 - Potential systemic issue
@@ -100,7 +108,7 @@ Burn rate = **Current error rate ÷ Allowed error rate**
 
 **Why use both 1h and 6h windows?**
 
-```
+```text
 Fast Window (1h):
   ✅ Detects incidents quickly (within an hour)
   ❌ Sensitive to short spikes/noise
@@ -114,7 +122,7 @@ Slow Window (6h):
 Best Practice: Use BOTH
   → 1h catches sharp spikes (page immediately)
   → 6h confirms sustained issues (investigate)
-```
+```text
 
 ---
 
@@ -122,7 +130,7 @@ Best Practice: Use BOTH
 
 ### Calculation
 
-```
+```text
 Burn Rate = (Current Error Rate) / (Allowed Error Rate)
 
 For 99.9% SLO:
@@ -131,30 +139,32 @@ For 99.9% SLO:
 Example:
   If 5xx rate = 1.44% (0.0144)
   Burn Rate = 0.0144 / 0.001 = 14.4×
-```
+```text
 
 ### Threshold Selection
 
 **14.4× (1h window):**
+
 - At this rate, you deplete 30-day budget in **50 hours** (~2 days)
 - Standard Google SRE threshold for fast-window paging
 - Fires after 5 minutes to reduce false positives
 
 **6× (6h window):**
+
 - At this rate, you deplete 30-day budget in **5 days**
 - Catches sustained issues before budget fully depleted
 - Fires after 30 minutes for stability
 
 ### Budget Depletion Time
 
-```
+```text
 Time to deplete = 30 days / burn_rate
 
 Examples:
   6× burn   → 30 / 6   = 5 days
   14.4× burn → 30 / 14.4 = 2.08 days
   100× burn  → 30 / 100  = 0.3 days = 7.2 hours
-```
+```text
 
 ---
 
@@ -167,7 +177,7 @@ Make sure your webhook listener is running to see notifications:
 ```powershell
 # Terminal 1: Start webhook listener
 python D:\ApplyLens\tools\grafana_webhook.py
-```
+```text
 
 ### Test 1: Trigger Fast Burn Rate Alert (1h)
 
@@ -192,9 +202,10 @@ Write-Host "`nWatch:" -ForegroundColor Cyan
 Write-Host "   • Dashboard: http://localhost:3000/d/applylens-overview" -ForegroundColor White
 Write-Host "   • Alerts: http://localhost:3000/alerting/list" -ForegroundColor White
 Write-Host "   • Webhook listener terminal for notifications`n" -ForegroundColor White
-```
+```text
 
 **Expected Behavior:**
+
 1. **Immediately:** 1h burn rate panel spikes
 2. **After 5 min:** Fast burn rate alert goes to **Firing** (if sustained)
 3. **Webhook listener:** Receives critical alert notification
@@ -209,7 +220,7 @@ Write-Host "⏳ Watch burn rate decay..." -ForegroundColor Cyan
 Write-Host "   • 1h panel drops gradually as 1h window ages out errors" -ForegroundColor Gray
 Write-Host "   • 6h panel drops slower (longer memory)" -ForegroundColor Gray
 Write-Host "   • Alerts resolve when burn rate drops below threshold`n" -ForegroundColor Gray
-```
+```text
 
 ### Test 3: Check Alert States
 
@@ -221,7 +232,7 @@ $rules | Where-Object { $_.title -like "*burn*" } | Select-Object title, uid, @{
 
 # Via Grafana UI
 start http://localhost:3000/alerting/list
-```
+```text
 
 ---
 
@@ -230,14 +241,17 @@ start http://localhost:3000/alerting/list
 Your dashboard now has **complete SLO monitoring**:
 
 **Panels showing burn rate:**
+
 - **Panel 9:** SLO Burn Rate (1h) timeseries
 - **Panel 10:** SLO Burn Rate (6h) timeseries
 
 **Alerts monitoring burn rate:**
+
 - **Alert 5:** SLO burn rate high (1h > 14.4×) [critical]
 - **Alert 6:** SLO burn rate high (6h > 6×) [warning]
 
 **Workflow:**
+
 1. **Dashboard panels** show real-time burn rate visualization
 2. **Alerts** notify you when burn rate exceeds thresholds
 3. **Webhook** receives notifications for on-call response
@@ -278,25 +292,27 @@ If you have low traffic, burn rate can be noisy. Consider:
 # Increase 'for' duration
 for: 10m  # Instead of 5m for fast alert
 for: 1h   # Instead of 30m for slow alert
-```
+```text
 
 ### Adjusting for Different SLO
 
 **For 99.5% SLO:**
+
 ```yaml
 # Change divisor from 0.001 to 0.005
 expr: |
   (sum(rate(applylens_http_requests_total{status=~"5.."}[1h]))
    / sum(rate(applylens_http_requests_total[1h]))) / 0.005
-```
+```text
 
 **For 99.95% SLO:**
+
 ```yaml
 # Change divisor from 0.001 to 0.0005
 expr: |
   (sum(rate(applylens_http_requests_total{status=~"5.."}[1h]))
    / sum(rate(applylens_http_requests_total[1h]))) / 0.0005
-```
+```text
 
 ### Adjusting Burn Rate Thresholds
 
@@ -317,21 +333,24 @@ Common thresholds for different SLOs:
 
 - **Site Reliability Engineering:** Chapter on SLIs, SLOs, and Error Budgets
 - **The Site Reliability Workbook:** Chapter 2 - Implementing SLOs
-- **Alerting on SLOs:** https://sre.google/workbook/alerting-on-slos/
+- **Alerting on SLOs:** <https://sre.google/workbook/alerting-on-slos/>
 
 ### Key Concepts
 
 **Multi-window alerting:**
+
 - Multiple time windows provide balance between speed and accuracy
 - Fast window catches incidents quickly
 - Slow window confirms sustained issues
 
 **Burn rate vs. error rate:**
+
 - Error rate: absolute percentage of errors
 - Burn rate: relative to your SLO target
 - Burn rate normalizes across different SLO targets
 
 **Error budget policies:**
+
 - Define actions at different budget consumption levels
 - Example: 50% budget consumed → freeze feature launches
 - Example: 10% budget remaining → all hands on reliability
@@ -347,7 +366,7 @@ Create a panel showing remaining error budget:
 ```promql
 # Error budget remaining (days)
 30 - (30 * (sum(increase(applylens_http_requests_total{status=~"5.."}[30d])) / sum(increase(applylens_http_requests_total[30d])) / 0.001))
-```
+```text
 
 ### 2. Add Latency-Based SLO
 
@@ -360,7 +379,7 @@ Track p99 latency SLO (e.g., 99% of requests < 500ms):
       sum(rate(applylens_http_request_duration_seconds_bucket[1h])) by (le)
     ) > 0.5
   for: 5m
-```
+```text
 
 ### 3. Create Runbook Links
 
@@ -371,7 +390,7 @@ annotations:
   summary: "SLO burn rate high (fast window)"
   description: "1h burn rate > 14.4×. See runbook."
   runbook_url: "https://wiki.example.com/runbooks/slo-burn-rate"
-```
+```text
 
 ### 4. Set Up On-Call Integration
 
@@ -386,7 +405,7 @@ Configure PagerDuty or similar for critical alerts:
       type: pagerduty
       settings:
         integrationKey: <your-key>
-```
+```text
 
 Then route critical severity to PagerDuty:
 
@@ -396,7 +415,7 @@ routes:
   - receiver: PagerDuty
     object_matchers:
       - [ "severity", "=", "critical" ]
-```
+```text
 
 ---
 
@@ -415,6 +434,7 @@ Your SLO alerting system is successful when:
 ## 📁 Files Modified
 
 **1. infra/grafana/provisioning/alerting/rules-applylens.yaml**
+
 - Added 2 burn rate alert rules
 - Total Grafana rules: 6
 - Both using multi-window SRE pattern
@@ -424,6 +444,7 @@ Your SLO alerting system is successful when:
 **✅ Production-grade SLO burn rate alerting is complete!**
 
 You now have:
+
 - 🎯 11 dashboard panels (7 original + 4 SLO panels)
 - 🚨 12 alert rules (6 Grafana + 6 Prometheus)
 - 📊 Multi-window burn rate monitoring (1h + 6h)
@@ -431,6 +452,7 @@ You now have:
 - 📚 Complete SRE-style monitoring stack
 
 Your monitoring system now follows **Google SRE best practices** with:
+
 - Error budget tracking
 - Multi-window burn rate alerting
 - Fast detection with noise resistance

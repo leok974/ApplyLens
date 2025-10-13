@@ -1,11 +1,13 @@
 # shadcn/ui Component Library - Complete Setup
 
 ## Overview
+
 Installed and configured shadcn/ui component library with full integration into existing dark theme palette. All components use CSS custom properties mapped to your existing color system.
 
 ## What Was Installed
 
 ### Core Dependencies (Already Present)
+
 - ✅ `class-variance-authority` - For component variants
 - ✅ `clsx` - Conditional classes
 - ✅ `tailwind-merge` - Merge Tailwind classes
@@ -15,6 +17,7 @@ Installed and configured shadcn/ui component library with full integration into 
 ### Configuration Files
 
 #### `components.json`
+
 ```json
 {
   "$schema": "https://ui.shadcn.com/schema.json",
@@ -33,9 +36,10 @@ Installed and configured shadcn/ui component library with full integration into 
     "ui": "@/components/ui"
   }
 }
-```
+```text
 
 #### `src/lib/utils.ts`
+
 ```typescript
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -43,10 +47,12 @@ import { twMerge } from 'tailwind-merge'
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
-```
+```text
 
 #### `src/lib/layout.ts` (NEW)
+
 Common layout class helpers:
+
 ```typescript
 export const pageShell = 'mx-auto max-w-6xl px-4 py-6'
 export const listStack = 'mt-4 grid gap-3'
@@ -54,11 +60,12 @@ export const panel = 'rounded-xl border bg-card p-4 shadow-card'
 export const filterBar = 'rounded-xl border bg-card p-4 shadow-card flex flex-wrap items-center gap-2'
 export const headerContainer = 'sticky top-0 z-30 border-b bg-background/95 backdrop-blur'
 export const headerInner = 'mx-auto flex max-w-6xl items-center gap-3 px-4 py-3'
-```
+```text
 
 ## Installed Components
 
 ### Form Components
+
 - ✅ **Button** - Primary action button with variants
 - ✅ **Input** - Text input fields
 - ✅ **Textarea** - Multi-line text input
@@ -66,27 +73,32 @@ export const headerInner = 'mx-auto flex max-w-6xl items-center gap-3 px-4 py-3'
 - ✅ **Select** - Dropdown select
 
 ### Layout Components
+
 - ✅ **Card** - Container with header/content/footer
 - ✅ **Badge** - Small label indicators
 - ✅ **Separator** - Horizontal/vertical dividers
 - ✅ **Scroll Area** - Custom scrollable regions
 
 ### Overlay Components
+
 - ✅ **Dialog** - Modal dialogs
 - ✅ **Dropdown Menu** - Context menus
 - ✅ **Tooltip** - Hover tooltips
 - ✅ **Hover Card** - Rich hover popovers
 
 ### Feedback Components
+
 - ✅ **Sonner** - Toast notifications (modern replacement for deprecated toast)
 - ✅ **Skeleton** - Loading placeholders
 
 ### Navigation Components
+
 - ✅ **Tabs** - Tabbed interfaces
 
 ## Theme Integration
 
 ### CSS Custom Properties (mapped to your palette)
+
 ```css
 :root {
   --background: 222 33% 10%;       /* #10141b (surface) */
@@ -102,9 +114,10 @@ export const headerInner = 'mx-auto flex max-w-6xl items-center gap-3 px-4 py-3'
   --ring: 225 100% 65%;            /* #7aa2ff (ring) */
   --radius: 0.75rem;
 }
-```
+```text
 
 ### Tailwind Config (updated)
+
 ```typescript
 export default {
   darkMode: 'class',
@@ -126,11 +139,12 @@ export default {
     }
   }
 }
-```
+```text
 
 ## Usage Examples
 
 ### Header with shadcn Components
+
 ```tsx
 import { Button } from '@/components/ui/button'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -157,9 +171,10 @@ export function Header() {
     </header>
   )
 }
-```
+```text
 
 ### Email Card
+
 ```tsx
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -186,9 +201,10 @@ export function EmailCard({ subject, date, snippet, labels, link }) {
     </Card>
   )
 }
-```
+```text
 
 ### Filter Bar
+
 ```tsx
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -221,9 +237,10 @@ function FilterBar() {
     </div>
   )
 }
-```
+```text
 
 ### Toast Notifications (Sonner)
+
 ```tsx
 // In your app root (main.tsx or App.tsx)
 import { Toaster } from '@/components/ui/sonner'
@@ -249,9 +266,10 @@ function handleError() {
     description: 'Please check your connection and try again.'
   })
 }
-```
+```text
 
 ### Dropdown Menu
+
 ```tsx
 import {
   DropdownMenu,
@@ -275,11 +293,12 @@ function ActionsMenu() {
     </DropdownMenu>
   )
 }
-```
+```text
 
 ## Component Variants
 
 ### Button Variants
+
 ```tsx
 <Button>Default (Primary)</Button>
 <Button variant="secondary">Secondary</Button>
@@ -293,24 +312,27 @@ function ActionsMenu() {
 <Button size="default">Default</Button>
 <Button size="lg">Large</Button>
 <Button size="icon">🔍</Button>
-```
+```text
 
 ### Badge Variants
+
 ```tsx
 <Badge>Default</Badge>
 <Badge variant="secondary">Secondary</Badge>
 <Badge variant="outline">Outline</Badge>
 <Badge variant="destructive">Destructive</Badge>
-```
+```text
 
 ## Migration Strategy
 
 ### Phase 1: Keep Both Systems (Current)
+
 - ✅ Dark hotfix CSS stays active (protects legacy code)
 - ✅ shadcn components work out of the box
 - ✅ Can mix old custom classes with new shadcn components
 
 ### Phase 2: Gradual Migration (Page by Page)
+
 ```tsx
 // Before (custom classes)
 <div className="rounded-xl2 border border-[var(--border)] bg-[var(--elev1)] p-4">
@@ -327,9 +349,10 @@ function ActionsMenu() {
     <p className="text-muted-foreground">{description}</p>
   </CardContent>
 </Card>
-```
+```text
 
 ### Phase 3: Cleanup (Optional)
+
 - Remove dark-hotfix.css selectors that are no longer needed
 - Consolidate to shadcn components everywhere
 - Keep only essential custom utilities
@@ -337,11 +360,13 @@ function ActionsMenu() {
 ## Adding More Components
 
 To add any additional shadcn component:
+
 ```bash
 pnpm dlx shadcn@latest add <component-name>
-```
+```text
 
 Available components:
+
 - accordion, alert, alert-dialog, aspect-ratio, avatar
 - breadcrumb, calendar, carousel, chart, checkbox
 - collapsible, command, context-menu, data-table
@@ -352,26 +377,31 @@ Available components:
 ## Benefits
 
 ### ✅ Consistency
+
 - All components follow same design system
 - Predictable API across components
 - Shared color tokens
 
 ### ✅ Accessibility
+
 - Built on Radix UI primitives (WCAG compliant)
 - Keyboard navigation out of the box
 - Screen reader support
 
 ### ✅ Type Safety
+
 - Full TypeScript support
 - Autocomplete for props
 - Compile-time checks
 
 ### ✅ Customization
+
 - Uses your existing color palette
 - All components in your codebase (not node_modules)
 - Easy to modify/extend
 
 ### ✅ Performance
+
 - Tree-shakeable
 - Only import what you use
 - Small bundle size
@@ -379,6 +409,7 @@ Available components:
 ## Tips & Best Practices
 
 1. **Use cn() for conditional classes**
+
    ```tsx
    import { cn } from '@/lib/utils'
    
@@ -389,6 +420,7 @@ Available components:
    ```
 
 2. **Leverage variant system**
+
    ```tsx
    // In your component
    const buttonVariants = cva('base-classes', {
@@ -402,6 +434,7 @@ Available components:
    ```
 
 3. **Use layout helpers**
+
    ```tsx
    import { pageShell, listStack } from '@/lib/layout'
    
@@ -413,6 +446,7 @@ Available components:
    ```
 
 4. **Prefer composition**
+
    ```tsx
    <Button asChild>
      <a href="/tracker">View Tracker</a>
@@ -422,11 +456,12 @@ Available components:
 ## Testing
 
 All components work with your existing E2E tests:
+
 ```typescript
 // Playwright example
 await page.getByRole('button', { name: 'Sync 7 days' }).click()
 await expect(page.getByRole('dialog')).toBeVisible()
-```
+```text
 
 ## Summary
 

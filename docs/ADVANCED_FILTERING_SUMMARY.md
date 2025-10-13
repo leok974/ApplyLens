@@ -1,6 +1,7 @@
 # Advanced Search Filtering Implementation
 
 ## Overview
+
 Added interactive label and date range filtering to the search interface, allowing users to narrow results by specific labels (offer/interview/rejection) and date ranges while preserving smart scoring functionality.
 
 ## Features Implemented
@@ -13,6 +14,7 @@ Added interactive label and date range filtering to the search interface, allowi
    - `date_to: Optional[str]` - ISO 8601 date/time string for range end
 
 2. **Filter Building Logic**:
+
    ```python
    filters = []
    
@@ -41,6 +43,7 @@ Added interactive label and date range filtering to the search interface, allowi
 3. **Query Structure**:
    - Wraps base query in bool query when filters present
    - Combines `must` (text search) with `filter` (label/date/etc.)
+
    ```python
    if filters:
        query = {
@@ -56,6 +59,7 @@ Added interactive label and date range filtering to the search interface, allowi
 ### Frontend Components
 
 #### 1. `LabelFilterChips.tsx` - Interactive Label Filtering
+
 - **Purpose**: Toggle chips for offer/interview/rejection labels
 - **Features**:
   - Color-coded by label type (yellow/green/gray)
@@ -67,6 +71,7 @@ Added interactive label and date range filtering to the search interface, allowi
   - `onChange: (next: string[]) => void` - Callback when selection changes
 
 #### 2. `DateRangeControls.tsx` - Date Range Picker
+
 - **Purpose**: Filter results by date range
 - **Features**:
   - From/To date inputs (native date picker)
@@ -80,6 +85,7 @@ Added interactive label and date range filtering to the search interface, allowi
 ### Search Page Updates (`apps/web/src/pages/Search.tsx`)
 
 1. **State Management**:
+
    ```typescript
    const [labels, setLabels] = useState<string[]>([])
    const [dates, setDates] = useState<{ from?: string; to?: string }>({})
@@ -88,6 +94,7 @@ Added interactive label and date range filtering to the search interface, allowi
 2. **API Integration**:
    - Updated `searchEmails` call to pass labels and date parameters
    - Added useEffect to re-run search when filters change
+
    ```typescript
    useEffect(() => {
      if (q.trim()) onSearch()
@@ -102,6 +109,7 @@ Added interactive label and date range filtering to the search interface, allowi
 ### API Client Updates (`apps/web/src/lib/api.ts`)
 
 Updated `searchEmails` function signature:
+
 ```typescript
 export async function searchEmails(
   query: string,
@@ -112,20 +120,22 @@ export async function searchEmails(
   dateFrom?: string,      // NEW
   dateTo?: string         // NEW
 ): Promise<SearchHit[]>
-```
+```text
 
 URL construction with repeatable labels parameter:
+
 ```typescript
 if (labels && labels.length > 0) {
   labels.forEach(l => {
     url += `&labels=${encodeURIComponent(l)}`
   })
 }
-```
+```text
 
 ## How It Works
 
 ### Filter Combination Logic
+
 - **Labels**: Multiple labels combine with OR logic (matches any selected label)
 - **Date Range**: Both bounds are optional; can filter by from-only, to-only, or both
 - **All Filters**: Combine with AND logic (must match all conditions)
@@ -134,23 +144,33 @@ if (labels && labels.length > 0) {
 ### Example API Calls
 
 1. **Filter by label**:
+
    ```
+
    GET /api/search?q=interview&labels=offer&labels=interview
+
    ```
 
 2. **Filter by date range**:
+
    ```
+
    GET /api/search?q=application&date_from=2025-10-01&date_to=2025-10-15
+
    ```
 
 3. **Combined filtering**:
+
    ```
+
    GET /api/search?q=test&labels=offer&date_from=2025-10-01&scale=3d
+
    ```
 
 ## Testing
 
 ### Backend Testing
+
 ```bash
 # Test label filtering
 curl "http://localhost:8003/search?q=interview&labels=offer&labels=interview"
@@ -160,9 +180,10 @@ curl "http://localhost:8003/search?q=application&date_from=2025-10-01&date_to=20
 
 # Test combined filters
 curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scale=3d"
-```
+```text
 
 ### Frontend Testing
+
 1. Visit `http://localhost:5173/search`
 2. Search for "interview"
 3. Click "Offer" chip → should filter to only offers
@@ -172,6 +193,7 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 7. Change scale in Settings → verify it updates query
 
 ### Expected Behavior
+
 - ✅ Clicking label chips toggles them on/off
 - ✅ Active chips have darker background (bg-yellow-200 vs bg-yellow-100)
 - ✅ Multiple labels combine with OR logic
@@ -184,9 +206,11 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 ## Files Modified
 
 ### Backend
+
 - `services/api/app/routers/search.py` - Added filter parameters and query structure
 
 ### Frontend
+
 - `apps/web/src/components/LabelFilterChips.tsx` - NEW component
 - `apps/web/src/components/DateRangeControls.tsx` - NEW component
 - `apps/web/src/pages/Search.tsx` - Added filter UI and state management
@@ -195,6 +219,7 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 ## Integration with Existing Features
 
 ### Preserves All Previous Functionality
+
 - ✅ Smart scoring (ATS synonyms, label boosts, recency decay)
 - ✅ Recency scale toggle (3d/7d/14d in Settings)
 - ✅ Impact-ordered email labels
@@ -203,6 +228,7 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 - ✅ Highlight rendering
 
 ### Complements Smart Search
+
 - Filters work **within** the smart-scored results
 - Recency decay still applies to filtered results
 - Label boosts still prioritize offers/interviews
@@ -211,6 +237,7 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 ## Visual Design
 
 ### Filter Panel
+
 - Light gray background (`#f8f9fa`)
 - Rounded corners (8px)
 - Organized in two sections (labels + dates)
@@ -218,6 +245,7 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 - Clear visual separation from results
 
 ### Label Chips
+
 - **Offer**: Yellow ring, yellow-100/200 background
 - **Interview**: Green ring, green-100/200 background
 - **Rejection**: Gray ring, gray-100/200 background
@@ -225,6 +253,7 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 - Transition effects for smooth state changes
 
 ### Date Inputs
+
 - Native browser date picker (type="date")
 - Compact size (text-xs)
 - Rounded borders
@@ -263,6 +292,7 @@ curl "http://localhost:8003/search?q=test&labels=offer&date_from=2025-10-01&scal
 This implementation adds powerful, user-friendly filtering capabilities to the search interface while preserving all existing smart scoring functionality. Users can now easily narrow results by clicking label chips or selecting date ranges, making it much faster to find specific types of emails from specific time periods.
 
 **Key Benefits**:
+
 - ✅ Intuitive UI with visual feedback
 - ✅ Flexible filtering (any combination of labels/dates)
 - ✅ Preserves smart scoring within filtered results

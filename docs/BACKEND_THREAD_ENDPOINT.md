@@ -4,9 +4,9 @@
 
 ## Endpoint Specification
 
-```
+```text
 GET /api/threads/:threadId
-```
+```text
 
 ### Query Parameters
 
@@ -47,7 +47,7 @@ GET /api/threads/:threadId
     }
   ]
 }
-```
+```text
 
 ## Implementation Options
 
@@ -95,7 +95,7 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
     ]
     
     return {"messages": messages}
-```
+```text
 
 ### Option 2: Database Query (Alternative)
 
@@ -137,7 +137,7 @@ async def get_thread(
     ]
     
     return {"messages": messages}
-```
+```text
 
 ### Option 3: Gmail API (Real-time)
 
@@ -185,7 +185,7 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
         })
     
     return {"messages": messages}
-```
+```text
 
 ## Error Handling
 
@@ -204,11 +204,12 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch thread: {str(e)}")
-```
+```text
 
 ## Performance Considerations
 
 1. **Caching**: Cache thread results for 5-10 minutes
+
    ```python
    from functools import lru_cache
    
@@ -218,16 +219,19 @@ async def get_thread(thread_id: str, limit: int = Query(20, ge=1, le=100)):
    ```
 
 2. **Pagination**: Limit to 20 messages by default
+
    ```python
    limit: int = Query(20, ge=1, le=100)
    ```
 
 3. **Field Selection**: Only return necessary fields
+
    ```python
    "_source": ["id", "from", "date", "snippet", "body_html", "body_text"]
    ```
 
 4. **Async Operations**: Use async/await for I/O
+
    ```python
    async def get_thread(...):
        result = await es_client.search(...)
@@ -259,7 +263,7 @@ curl http://localhost:8000/api/threads/thread_abc123?limit=10
     }
   ]
 }
-```
+```text
 
 ### Test with Python
 
@@ -268,7 +272,7 @@ import requests
 
 response = requests.get("http://localhost:8000/api/threads/thread_abc123")
 print(response.json())
-```
+```text
 
 ## Integration Points
 
@@ -284,7 +288,7 @@ class Email(Base):
     thread_id = Column(String, index=True)  # <-- Add index for performance
     from_addr = Column(String)
     # ... other fields
-```
+```text
 
 ### 2. Add to Router
 
@@ -293,7 +297,7 @@ class Email(Base):
 from .threads import router as threads_router
 
 app.include_router(threads_router, prefix="/api")
-```
+```text
 
 ### 3. Update Elasticsearch Index
 
@@ -309,18 +313,20 @@ Ensure `thread_id` is indexed:
     }
   }
 }
-```
+```text
 
 ## Migration Path
 
 If you don't have thread data yet:
 
 1. **Phase 1**: Return empty array
+
    ```python
    return {"messages": []}
    ```
 
 2. **Phase 2**: Populate thread_id from Gmail
+
    ```python
    # Backfill script
    for email in emails:
@@ -328,6 +334,7 @@ If you don't have thread data yet:
    ```
 
 3. **Phase 3**: Enable full thread support
+
    ```python
    # Use actual thread_id from database
    ```
@@ -335,6 +342,7 @@ If you don't have thread data yet:
 ## Expected Frontend Behavior
 
 The frontend will:
+
 1. Call `getThread(threadId)` when opening an email
 2. Display all messages in chronological order
 3. Allow user to navigate between messages
@@ -354,4 +362,3 @@ The frontend will:
 **Estimated Effort**: 2-4 hours  
 **Dependencies**: Elasticsearch/Database with thread_id field  
 **Testing**: Frontend integration test available
-

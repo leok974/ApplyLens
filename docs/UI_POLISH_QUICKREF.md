@@ -3,7 +3,8 @@
 ## 🎨 Impact-Ordered Labels
 
 ### Visual Hierarchy
-```
+
+```text
 ┌─────────────────────────────────────┐
 │ Search Results for "interview"      │
 ├─────────────────────────────────────┤
@@ -28,11 +29,11 @@
 │ │               [Rejection] ←── Gray, de-emphasized │
 │ └─────────────────────────────────┘ │
 └─────────────────────────────────────┘
-```
+```text
 
 ## 🔧 Recency Scale Selector (Settings)
 
-```
+```text
 ┌──────────────────────────────────────┐
 │ Settings                             │
 ├──────────────────────────────────────┤
@@ -51,18 +52,18 @@
 │ • Others:     1.0×                  │
 │ • Rejection:  0.5× (de-emphasized)  │
 └──────────────────────────────────────┘
-```
+```text
 
 ## 📊 Scoring Hint (Search Header)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────┐
 │ Results (42) for "interview google"                        │
 │ Scoring: offer^4 • interview^3 • rejection^0.5 •          │
 │          Recency: 7-day decay (gauss scale=7d, decay=0.5) •│
 │          Scale: 7d                                         │
 └────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## 🎨 Label Color Palette
 
@@ -91,16 +92,18 @@ Rejection (Gray - De-emphasized)
 │ ring-gray-300  │  Darker gray border
 │ opacity-80     │  Slightly faded
 └────────────────┘
-```
+```text
 
 ## 🔌 API Integration
 
 ### Request with Scale
+
 ```http
 GET /api/search/?q=interview&size=20&scale=3d
-```
+```text
 
 ### Response Structure
+
 ```json
 {
   "total": 42,
@@ -114,11 +117,12 @@ GET /api/search/?q=interview&size=20&scale=3d
     }
   ]
 }
-```
+```text
 
 ## 🧪 Testing Checklist
 
 ### Visual Tests
+
 - [ ] Labels appear in impact order (offer first, rejection last)
 - [ ] Offer labels are yellow
 - [ ] Interview labels are green
@@ -128,6 +132,7 @@ GET /api/search/?q=interview&size=20&scale=3d
 - [ ] Current scale shown in hint
 
 ### Functional Tests
+
 - [ ] Settings dropdown changes recency scale
 - [ ] Scale persists across page refreshes (localStorage)
 - [ ] Search results reflect new scale
@@ -135,6 +140,7 @@ GET /api/search/?q=interview&size=20&scale=3d
 - [ ] Multiple labels on same email sorted correctly
 
 ### API Tests
+
 - [ ] `?scale=3d` parameter accepted
 - [ ] `?scale=7d` parameter accepted (default)
 - [ ] `?scale=14d` parameter accepted
@@ -144,6 +150,7 @@ GET /api/search/?q=interview&size=20&scale=3d
 ## 📝 Component Usage
 
 ### EmailLabels Component
+
 ```tsx
 import EmailLabels from '../components/EmailLabels'
 
@@ -158,9 +165,10 @@ import EmailLabels from '../components/EmailLabels'
 
 // Handles null/undefined
 <EmailLabels labels={email.labels || []} />
-```
+```text
 
 ### SearchResultsHeader Component
+
 ```tsx
 import SearchResultsHeader from '../components/SearchResultsHeader'
 
@@ -176,9 +184,10 @@ import SearchResultsHeader from '../components/SearchResultsHeader'
   query={searchQuery} 
   total={totalResults} 
 />
-```
+```text
 
 ### Search Preferences
+
 ```typescript
 import { getRecencyScale, setRecencyScale } from '../state/searchPrefs'
 
@@ -187,26 +196,29 @@ const scale = getRecencyScale()  // "3d" | "7d" | "14d"
 
 // Set new scale
 setRecencyScale("3d")  // Saves to localStorage
-```
+```text
 
 ## 🚀 Deployment Notes
 
 ### No Breaking Changes
+
 - ✅ All changes are additive
 - ✅ Backward compatible with existing code
 - ✅ Default behavior unchanged (7d scale)
 - ✅ Works without Settings page
 
 ### Feature Flags (Optional)
+
 ```typescript
 // Disable scoring hint if needed
 <SearchResultsHeader query={q} total={total} showHint={false} />
 
 // Hide labels if needed
 {showLabels && <EmailLabels labels={email.labels} />}
-```
+```text
 
 ### Rollback Plan
+
 1. Remove `scale` param from API calls → defaults to 7d
 2. Replace `<EmailLabels>` with old badge rendering
 3. Remove `<SearchResultsHeader>` → use plain text
@@ -214,6 +226,7 @@ setRecencyScale("3d")  // Saves to localStorage
 ---
 
 **Files to Deploy**:
+
 - Frontend: 4 new + 4 updated
 - Backend: 1 updated (search.py)
 

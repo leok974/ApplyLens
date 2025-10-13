@@ -5,9 +5,11 @@
 ## Fixes Applied
 
 ### 1. React Router v7 Future Flags ✅
+
 **File**: `apps/web/src/main.tsx`
 
 Added future flags to silence React Router deprecation warnings:
+
 ```tsx
 <BrowserRouter
   future={{
@@ -15,29 +17,33 @@ Added future flags to silence React Router deprecation warnings:
     v7_relativeSplatPath: true,
   }}
 >
-```
+```text
 
 This opts into React Router v7 behavior now, preventing console warnings.
 
 ---
 
 ### 2. Favicon Fix ✅
-**Files**: 
+
+**Files**:
+
 - `apps/web/public/favicon.svg` (created)
 - `apps/web/index.html` (updated)
 
 Created a simple SVG favicon with the 📬 emoji on a purple gradient background.
 
 Added to HTML:
+
 ```html
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-```
+```text
 
 This fixes the 404 error for favicon.ico in the browser console.
 
 ---
 
 ### 3. Safe Date Formatting ✅
+
 **File**: `apps/web/src/lib/date.ts` (created)
 
 Created utility functions to safely format dates and avoid showing "1969/1970" for invalid dates:
@@ -45,15 +51,17 @@ Created utility functions to safely format dates and avoid showing "1969/1970" f
 ```typescript
 export function safeFormatDate(iso?: string | null): string | null
 export function relativeTime(iso?: string | null): string | null
-```
+```text
 
 Features:
+
 - Returns `null` for invalid/missing dates (renders as "—")
 - Avoids epoch-0 timestamps (1969/1970)
 - Guards against NaN and invalid date strings
 - Provides relative time formatting (e.g., "2h ago", "3d ago")
 
 **Updated Components**:
+
 - `EmailCard.tsx` - Email received dates
 - `Search.tsx` - Search result dates
 - `InboxWithActions.tsx` - Inbox table dates
@@ -67,9 +75,10 @@ After restarting the web container:
 ```bash
 cd infra
 docker compose restart web
-```
+```text
 
 Expected results:
+
 1. ✅ No React Router warnings in console
 2. ✅ No favicon 404 errors
 3. ✅ Dates display properly (no "Dec 31, 1969" or "Jan 1, 1970")
@@ -79,7 +88,7 @@ Expected results:
 
 ## Browser Experience
 
-Open http://localhost:5175/ and verify:
+Open <http://localhost:5175/> and verify:
 
 1. **Console is clean** - No deprecation warnings or errors
 2. **Favicon appears** - Purple mailbox icon in browser tab
@@ -90,7 +99,7 @@ Open http://localhost:5175/ and verify:
 
 ## Files Changed
 
-```
+```text
 apps/web/
 ├── index.html                           # Added favicon link
 ├── src/
@@ -104,7 +113,7 @@ apps/web/
 │       └── Search.tsx                   # Use safeFormatDate()
 └── public/
     └── favicon.svg                      # NEW: SVG favicon
-```
+```text
 
 ---
 
@@ -113,6 +122,7 @@ apps/web/
 Optional enhancements:
 
 1. **Use relative time in some places**:
+
    ```tsx
    import { relativeTime } from '../lib/date'
    
@@ -121,6 +131,7 @@ Optional enhancements:
    ```
 
 2. **Customize date format**:
+
    ```tsx
    const shortFormat = new Intl.DateTimeFormat('en-US', {
      month: 'short',
@@ -133,6 +144,7 @@ Optional enhancements:
    ```
 
 3. **Add tooltip with full timestamp**:
+
    ```tsx
    <span title={email.received_at}>
      {relativeTime(email.received_at)}

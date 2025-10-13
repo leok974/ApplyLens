@@ -7,6 +7,7 @@ Complete Grafana setup guide for monitoring backfill health via Prometheus metri
 ### 1. Dashboard (`backfill-health-dashboard.json`)
 
 **Panels:**
+
 - **Missing dates[] (bills)** — Stat panel showing count of bills without dates[] field
   - ✅ Green when 0
   - 🔴 Red when > 0
@@ -23,6 +24,7 @@ Complete Grafana setup guide for monitoring backfill health via Prometheus metri
 - **Last refresh (unix seconds)** — Stat panel showing last metrics refresh timestamp
 
 **Features:**
+
 - **Instance variable** — Multi-select dropdown to filter by API instance
 - **Tags**: applylens, backfill, mailbox
 - **Auto-refresh**: Every 30 seconds
@@ -35,15 +37,18 @@ Complete Grafana setup guide for monitoring backfill health via Prometheus metri
 **Trigger:** When `bills_missing_dates > 0` for 10 minutes
 
 **Evaluation:**
+
 - Query: `bills_missing_dates{instance=~"$instance"}`
 - Reduce: Last value
 - Threshold: Greater than 1
 - Duration: 10 minutes
 
 **Labels:**
+
 - service: applylens-api
 
 **Annotations:**
+
 - Summary: "Bills missing dates[] > 0 for 10m"
 - Runbook URL: Configurable
 
@@ -76,9 +81,10 @@ scrape_configs:
           - 'api:8003'          # Docker service name
           # - 'localhost:8003'  # Local development
     metrics_path: '/metrics'
-```
+```text
 
 **Reload Prometheus:**
+
 ```bash
 # Docker
 docker-compose restart prometheus
@@ -88,7 +94,7 @@ docker-compose kill -s SIGHUP prometheus
 
 # Verify targets
 curl http://localhost:9090/api/v1/targets
-```
+```text
 
 ### 3. FastAPI Metrics Endpoint
 
@@ -106,7 +112,7 @@ bills_missing_dates 0.0
 # TYPE bills_with_dates gauge
 bills_with_dates 1243.0
 # ...
-```
+```text
 
 ## Installation
 
@@ -142,9 +148,10 @@ curl -X POST "${GRAFANA_HOST}/api/dashboards/db" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${GRAFANA_TOKEN}" \
   --data-binary @grafana/backfill-health-dashboard.json
-```
+```text
 
 **PowerShell:**
+
 ```powershell
 $token = "your-api-token-here"
 $host = "http://localhost:3000"
@@ -154,7 +161,7 @@ Invoke-RestMethod -Method POST `
   -Headers @{"Authorization"="Bearer ${token}"} `
   -ContentType "application/json" `
   -InFile "grafana\backfill-health-dashboard.json"
-```
+```text
 
 **Import Alert Rule:**
 
@@ -163,16 +170,17 @@ curl -X POST "${GRAFANA_HOST}/api/ruler/grafana/api/v1/rules" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${GRAFANA_TOKEN}" \
   --data-binary @grafana/alert-backfill-missing.json
-```
+```text
 
 **PowerShell:**
+
 ```powershell
 Invoke-RestMethod -Method POST `
   -Uri "${host}/api/ruler/grafana/api/v1/rules" `
   -Headers @{"Authorization"="Bearer ${token}"} `
   -ContentType "application/json" `
   -InFile "grafana\alert-backfill-missing.json"
-```
+```text
 
 ### Method 3: Grafana Provisioning (Persistent/GitOps)
 
@@ -180,7 +188,7 @@ For persistent configuration that survives container restarts:
 
 **1. Create provisioning directory structure:**
 
-```
+```text
 grafana/
 ├── provisioning/
 │   ├── dashboards/
@@ -188,7 +196,7 @@ grafana/
 │   │   └── backfill-health-dashboard.json
 │   └── datasources/
 │       └── prometheus.yml
-```
+```text
 
 **2. Create `grafana/provisioning/dashboards/dashboards.yml`:**
 
@@ -205,12 +213,13 @@ providers:
     allowUiUpdates: true
     options:
       path: /etc/grafana/provisioning/dashboards
-```
+```text
 
 **3. Copy dashboard JSON:**
+
 ```bash
 cp grafana/backfill-health-dashboard.json grafana/provisioning/dashboards/
-```
+```bash
 
 **4. Update docker-compose.yml:**
 
@@ -224,12 +233,13 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     ports:
       - "3000:3000"
-```
+```text
 
 **5. Restart Grafana:**
+
 ```bash
 docker-compose restart grafana
-```
+```text
 
 ## Configuration
 
@@ -249,29 +259,32 @@ sed -i 's/"datasourceUid": "prometheus"/"datasourceUid": "YOUR_UID"/g' grafana/a
 # PowerShell
 (Get-Content grafana\backfill-health-dashboard.json) -replace '"uid": "prometheus"', '"uid": "YOUR_UID"' | Set-Content grafana\backfill-health-dashboard.json
 (Get-Content grafana\alert-backfill-missing.json) -replace '"datasourceUid": "prometheus"', '"datasourceUid": "YOUR_UID"' | Set-Content grafana\alert-backfill-missing.json
-```
+```text
 
 ### Customize Alert Thresholds
 
 Edit `grafana/alert-backfill-missing.json`:
 
 **Change threshold value** (currently > 0):
+
 ```json
 "params": [
   1,      // Threshold value (change this)
   "gt"    // Comparison: gt (>), lt (<), eq (==)
 ]
-```
+```text
 
 **Change alert duration** (currently 10m):
+
 ```json
 "for": "10m"  // Change to "5m", "30m", etc.
-```
+```text
 
 **Change evaluation interval** (currently 1m):
+
 ```json
 "interval": "1m"  // Change to "30s", "5m", etc.
-```
+```text
 
 ## Usage
 
@@ -295,6 +308,7 @@ Edit `grafana/alert-backfill-missing.json`:
 3. View **State**: Normal, Pending, Alerting, NoData, Error
 
 **Alert States:**
+
 - ✅ **Normal**: All bills have dates
 - ⏳ **Pending**: Missing dates detected, waiting for 10m threshold
 - 🔴 **Alerting**: Bills missing dates for > 10 minutes
@@ -361,22 +375,25 @@ Now alerts with `service=applylens-api` label route to your contact point.
 ### Dashboard shows "No data"
 
 **Check Prometheus scrape:**
+
 ```bash
 # Verify target is UP
 curl http://prometheus:9090/api/v1/targets | jq '.data.activeTargets[] | select(.job=="applylens-api")'
 
 # Should show state: "up"
-```
+```text
 
 **Check metrics exist:**
+
 ```bash
 # Query Prometheus directly
 curl 'http://prometheus:9090/api/v1/query?query=bills_missing_dates' | jq .
 
 # Should return value
-```
+```text
 
 **Check data source:**
+
 - Grafana → Connections → Data sources → Prometheus
 - Click **Save & test**
 - Should show green checkmark
@@ -384,26 +401,30 @@ curl 'http://prometheus:9090/api/v1/query?query=bills_missing_dates' | jq .
 ### Alert doesn't fire
 
 **Check alert rule:**
+
 ```bash
 # Get alert rule status
 curl http://localhost:3000/api/ruler/grafana/api/v1/rules \
   -H "Authorization: Bearer ${GRAFANA_TOKEN}" | jq .
-```
+```text
 
 **Check evaluation:**
+
 - Grafana → Alerting → Alert rules → "Backfill: Missing bill dates > 0"
 - Click **View details**
 - See evaluation history and query results
 
 **Trigger manually:**
+
 ```bash
 # Set high missing count (for testing)
 # This would require modifying your ES data or mocking
-```
+```text
 
 ### Panels show wrong values
 
 **Verify metric format:**
+
 ```bash
 # Check Prometheus metric
 curl http://localhost:8003/metrics | grep bills_
@@ -412,9 +433,10 @@ curl http://localhost:8003/metrics | grep bills_
 # bills_missing_dates 0.0
 # bills_with_dates 1243.0
 # bills_with_expires_at 1243.0
-```
+```text
 
 **Check query in panel:**
+
 - Dashboard → Panel → Edit
 - See query: `bills_missing_dates{instance=~"$instance"}`
 - Run query in Prometheus: `http://prometheus:9090/graph`
@@ -422,14 +444,16 @@ curl http://localhost:8003/metrics | grep bills_
 ### Instance variable is empty
 
 **Check label exists:**
+
 ```bash
 # Query label values
 curl 'http://prometheus:9090/api/v1/label/instance/values' | jq .
 
 # Should return list of instances
-```
+```text
 
 **Update query:**
+
 - Dashboard → Settings → Variables → instance
 - Query: `label_values(bills_missing_dates, instance)`
 - Click **Update**
@@ -462,7 +486,7 @@ Add a new panel showing backfill coverage:
     }
   }
 }
-```
+```text
 
 ### Add Table Panel for Multi-Instance View
 
@@ -480,7 +504,7 @@ Show all instances in a table:
     }
   ]
 }
-```
+```text
 
 ### Create Unified Dashboard
 
@@ -518,12 +542,14 @@ Add navigation link:
 ### Update Dashboard
 
 **Method 1: UI**
+
 1. Make changes in Grafana
 2. Dashboard → Share → Export
 3. Save to `grafana/backfill-health-dashboard.json`
 4. Commit to Git
 
 **Method 2: JSON**
+
 1. Edit `grafana/backfill-health-dashboard.json`
 2. Re-import via UI or API
 3. Grafana will update existing dashboard (same UID)
@@ -537,12 +563,13 @@ curl -H "Authorization: Bearer ${GRAFANA_TOKEN}" \
   jq -r '.[] | .uid' | \
   xargs -I {} curl -H "Authorization: Bearer ${GRAFANA_TOKEN}" \
     http://localhost:3000/api/dashboards/uid/{} > backup-{}.json
-```
+```text
 
 ### Version Control
 
 Add to `.gitignore`:
-```
+
+```text
 # Grafana runtime
 grafana/data/
 grafana/*.db
@@ -550,18 +577,19 @@ grafana/*.db
 # Keep provisioning
 !grafana/provisioning/
 !grafana/*.json
-```
+```text
 
 ## Resources
 
-- **Grafana Docs**: https://grafana.com/docs/grafana/latest/
-- **Prometheus Docs**: https://prometheus.io/docs/
+- **Grafana Docs**: <https://grafana.com/docs/grafana/latest/>
+- **Prometheus Docs**: <https://prometheus.io/docs/>
 - **ApplyLens Monitoring**: `kibana/README_monitoring.md`
 - **API Metrics**: `services/api/app/routers/metrics.py`
 
 ## Support
 
 For issues or questions:
+
 - Check logs: `docker-compose logs grafana`
 - Verify Prometheus targets: `http://prometheus:9090/targets`
 - Test API metrics: `curl http://localhost:8003/metrics`

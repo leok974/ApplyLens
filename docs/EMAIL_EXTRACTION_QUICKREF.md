@@ -3,6 +3,7 @@
 ## 🚀 Quick Start
 
 ### Start Development Environment
+
 ```bash
 # Terminal 1: Start FastAPI backend
 cd services/api
@@ -11,13 +12,14 @@ python -m uvicorn app.main:app --reload --port 8003
 # Terminal 2: Start Vite frontend
 cd apps/web
 npm run dev
-```
+```text
 
 ### Access Points
-- **Frontend**: http://localhost:5175/tracker
-- **API Docs**: http://localhost:8003/docs
-- **Extract Endpoint**: POST http://localhost:8003/api/applications/extract
-- **Backfill Endpoint**: POST http://localhost:8003/api/applications/backfill-from-email
+
+- **Frontend**: <http://localhost:5175/tracker>
+- **API Docs**: <http://localhost:8003/docs>
+- **Extract Endpoint**: POST <http://localhost:8003/api/applications/extract>
+- **Backfill Endpoint**: POST <http://localhost:8003/api/applications/backfill-from-email>
 
 ## 📋 API Reference
 
@@ -26,6 +28,7 @@ npm run dev
 **Purpose**: Extract fields from email without saving
 
 **Request**:
+
 ```json
 {
   "subject": "Application for Senior Engineer",
@@ -34,9 +37,10 @@ npm run dev
   "text": "Email body...",
   "html": "<html>..."
 }
-```
+```text
 
 **Response**:
+
 ```json
 {
   "company": "acme",
@@ -45,9 +49,10 @@ npm run dev
   "source_confidence": 0.95,
   "debug": { ... }
 }
-```
+```text
 
 **Confidence Levels**:
+
 - `0.95`: Known ATS (Greenhouse, Lever, Workday)
 - `0.6`: Mailing list
 - `0.5`: Generic ESP
@@ -58,6 +63,7 @@ npm run dev
 **Purpose**: Extract AND save to database
 
 **Request**:
+
 ```json
 {
   "thread_id": "18f2a3b4c5d6e7f8",
@@ -66,9 +72,10 @@ npm run dev
   "text": "Email body...",
   "headers": {}
 }
-```
+```text
 
 **Response**:
+
 ```json
 {
   "saved": {
@@ -83,9 +90,10 @@ npm run dev
   "extracted": { ... },
   "updated": false
 }
-```
+```text
 
 **Logic**:
+
 1. Try to find existing app by `thread_id`
 2. If not found, try to match by `company` + `role`
 3. If found, update only if new confidence is higher
@@ -96,6 +104,7 @@ npm run dev
 ### CreateFromEmailButton
 
 **Props**:
+
 ```typescript
 interface CreateFromEmailButtonProps {
   threadId: string;              // Required
@@ -109,9 +118,10 @@ interface CreateFromEmailButtonProps {
   onPrefill?: (prefill) => void; // Callback for prefill
   onCreated?: () => void;        // Callback after save
 }
-```
+```text
 
 **Usage in Tracker**:
+
 ```typescript
 {r.thread_id && (
   <CreateFromEmailButton
@@ -123,15 +133,17 @@ interface CreateFromEmailButtonProps {
     onCreated={() => fetchRows()}
   />
 )}
-```
+```text
 
 **Buttons**:
+
 - **"Create from Email"** → Calls backfill, saves immediately
 - **"Prefill Only"** → Calls extract, opens dialog with prefilled fields
 
 ### openCreateWithPrefill
 
 **Function**:
+
 ```typescript
 const openCreateWithPrefill = (prefill?: Partial<typeof form>) => {
   if (prefill) {
@@ -139,24 +151,27 @@ const openCreateWithPrefill = (prefill?: Partial<typeof form>) => {
   }
   ;(document.getElementById('create-dialog') as any)?.showModal?.()
 }
-```
+```text
 
 **Purpose**: Merge extracted fields into form and open create dialog
 
 ## 🔍 Extraction Heuristics
 
 ### Company Detection
+
 1. Extract domain from sender email (skip gmail/outlook/yahoo)
 2. Scan signature blocks (first 30 lines)
 3. Look for "Jane from Acme" patterns
 4. Parse display name
 
 ### Role Extraction
+
 - **Primary**: Subject line matching (engineer|designer|manager|scientist|analyst|developer|lead)
 - **Fallback**: Body text matching
 - **Pattern**: `/(for|—|-)\s*(...role keywords...)/i`
 
 ### Source Detection
+
 - **Headers**: `List-Unsubscribe`, `X-Mailer`, `Received`
 - **Known ATS**: Greenhouse, Lever, Workday (domain/header matching)
 - **Body Keywords**: Recruiting platform signatures
@@ -164,8 +179,9 @@ const openCreateWithPrefill = (prefill?: Partial<typeof form>) => {
 ## 🧪 Testing
 
 ### Manual Test Flow
+
 1. Start dev environment
-2. Navigate to http://localhost:5175/tracker
+2. Navigate to <http://localhost:5175/tracker>
 3. Find a row with `thread_id` (shows button)
 4. Click **"Prefill Only"**:
    - ✅ Dialog opens
@@ -177,6 +193,7 @@ const openCreateWithPrefill = (prefill?: Partial<typeof form>) => {
    - ✅ List refreshes
 
 ### cURL Testing
+
 ```bash
 # Test extraction
 curl -X POST http://localhost:8003/api/applications/extract \
@@ -196,9 +213,10 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
     "from": "recruiter@acme.ai",
     "text": "Thanks for your application..."
   }'
-```
+```text
 
 ### Check Database
+
 ```bash
 # Connect to SQLite/PostgreSQL
 sqlite3 path/to/applylens.db
@@ -215,19 +233,22 @@ FROM applications
 WHERE thread_id IS NOT NULL 
 GROUP BY thread_id 
 HAVING COUNT(*) > 1;
-```
+```text
 
 ## 🐛 Debugging
 
 ### Backend Logs
+
 ```bash
 # Start with debug logging
 cd services/api
 uvicorn app.main:app --reload --port 8003 --log-level debug
-```
+```text
 
 ### Frontend Console
+
 Open browser DevTools (F12):
+
 - Check Network tab for API calls
 - Check Console for toast logs
 - Look for `[Toast]` prefix in logs
@@ -235,20 +256,24 @@ Open browser DevTools (F12):
 ### Common Issues
 
 **Button Not Showing**:
+
 - ✅ Check if row has `thread_id`
 - ✅ Verify import in `Tracker.tsx`
 
 **Extraction Returns Empty**:
+
 - ✅ Check email content in request
 - ✅ Verify `email_parsing.py` functions exist
 - ✅ Test with sample data directly
 
 **Duplicate Applications**:
+
 - ✅ Check `thread_id` matching logic
 - ✅ Verify company+role normalization
 - ✅ Review confidence comparison
 
 **Toast Not Appearing**:
+
 - ✅ Check `useToast` hook
 - ✅ Verify console logs
 - ✅ Replace with global toast context
@@ -256,12 +281,14 @@ Open browser DevTools (F12):
 ## 📁 File Locations
 
 ### Backend
+
 - **Routes**: `services/api/app/routes_applications.py`
 - **Models**: `services/api/app/models.py`
 - **Parsing**: `services/api/app/email_parsing.py`
 - **Tests**: `services/api/tests/test_email_parsing.py`
 
 ### Frontend
+
 - **Button**: `apps/web/src/components/CreateFromEmailButton.tsx`
 - **Tracker**: `apps/web/src/pages/Tracker.tsx`
 - **Toast**: `apps/web/src/components/toast/useToast.ts`
@@ -270,12 +297,14 @@ Open browser DevTools (F12):
 ## 🔧 Configuration
 
 ### Backend Port
+
 ```python
 # services/api/app/settings.py
 API_PORT: int = 8003
-```
+```text
 
 ### Frontend Proxy
+
 ```typescript
 // apps/web/vite.config.ts
 server: {
@@ -286,22 +315,25 @@ server: {
     }
   }
 }
-```
+```text
 
 ## 💡 Tips
 
 ### Improve Extraction Accuracy
+
 1. Add more company patterns to `email_parsing.py`
 2. Update role regex for domain-specific titles
 3. Add more known ATS systems
 4. Increase confidence thresholds
 
 ### Performance Optimization
+
 1. Cache extraction results by thread_id
 2. Batch process multiple emails
 3. Add database indexes on `thread_id`, `company`, `role`
 
 ### User Experience
+
 1. Show extraction confidence in UI
 2. Allow manual override of extracted fields
 3. Add extraction preview before saving
@@ -325,7 +357,7 @@ sqlite3 applylens.db "SELECT * FROM applications ORDER BY id DESC LIMIT 5"
 # Run tests
 cd services/api && pytest tests/test_email_parsing.py
 cd apps/web && npm run test:e2e
-```
+```text
 
 ## 📚 Related Docs
 
@@ -336,4 +368,4 @@ cd apps/web && npm run test:e2e
 
 ---
 
-**Need Help?** Check FastAPI docs at http://localhost:8003/docs
+**Need Help?** Check FastAPI docs at <http://localhost:8003/docs>

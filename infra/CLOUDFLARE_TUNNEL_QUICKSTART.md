@@ -5,19 +5,22 @@
 ### Option 1: Automated Setup (Recommended)
 
 **Windows PowerShell:**
+
 ```powershell
 cd D:\ApplyLens\infra
 .\setup-cloudflare-tunnel.ps1
-```
+```text
 
 **Linux/Mac:**
+
 ```bash
 cd /path/to/ApplyLens/infra
 chmod +x setup-cloudflare-tunnel.sh
 ./setup-cloudflare-tunnel.sh
-```
+```text
 
 The script will:
+
 1. Authenticate you to Cloudflare
 2. Create the tunnel
 3. Copy credentials
@@ -49,54 +52,62 @@ cp ~/.cloudflared/<UUID>.json cloudflared/<UUID>.json
 # 6. Create DNS routes (replace yourdomain.com)
 cloudflared tunnel route dns applylens yourdomain.com
 cloudflared tunnel route dns applylens www.yourdomain.com
-```
+```text
 
 ## Daily Usage
 
 ### Start All Services
+
 ```bash
 cd infra
 docker compose up -d
-```
+```text
 
 ### Start Just the Tunnel
+
 ```bash
 docker compose up -d cloudflared
-```
+```text
 
 ### Check Tunnel Status
+
 ```bash
 docker compose logs -f cloudflared
-```
+```text
 
 ### Stop Tunnel
+
 ```bash
 docker compose stop cloudflared
-```
+```text
 
 ### Restart Tunnel
+
 ```bash
 docker compose restart cloudflared
-```
+```text
 
 ## Verification
 
 ### Check Tunnel Connection
+
 ```bash
 # Should show "Connection registered" messages
 docker compose logs cloudflared | grep -i "connection"
-```
+```text
 
 ### Test Your Endpoints
+
 ```bash
 # Replace yourdomain.com with your actual domain
 curl https://yourdomain.com/health
 curl https://www.yourdomain.com/health
 curl https://kibana.yourdomain.com
-```
+```text
 
 ### View Tunnel in Cloudflare Dashboard
-1. Go to https://one.dash.cloudflare.com
+
+1. Go to <https://one.dash.cloudflare.com>
 2. Navigate to: Access → Tunnels
 3. Click on "applylens" tunnel
 4. View status, traffic, and logs
@@ -104,6 +115,7 @@ curl https://kibana.yourdomain.com
 ## Troubleshooting
 
 ### Tunnel Won't Start
+
 ```bash
 # Check configuration
 cat cloudflared/config.yml
@@ -113,9 +125,10 @@ ls -la cloudflared/
 
 # Check docker logs
 docker compose logs cloudflared
-```
+```text
 
 ### 502 Bad Gateway
+
 ```bash
 # Ensure API is running
 docker compose ps api
@@ -124,25 +137,27 @@ docker compose ps api
 docker compose logs api
 
 # Verify service names in config.yml match docker-compose.yml
-```
+```text
 
 ### DNS Not Resolving
+
 ```bash
 # List DNS routes
 cloudflared tunnel route dns list
 
 # Should show your domain → applylens tunnel
-```
+```text
 
 ### Re-authenticate
+
 ```bash
 # If authentication expired
 cloudflared tunnel login
-```
+```text
 
 ## Configuration Files
 
-```
+```text
 infra/
 ├── cloudflared/
 │   ├── config.yml           # Tunnel configuration
@@ -151,7 +166,7 @@ infra/
 │   └── .gitkeep             # Setup instructions
 ├── docker-compose.yml       # Includes cloudflared service
 └── setup-cloudflare-tunnel.* # Automated setup scripts
-```
+```text
 
 ## Common Commands
 
@@ -165,11 +180,12 @@ infra/
 
 ## Architecture
 
-```
+```text
 Internet → Cloudflare Edge → Encrypted Tunnel → cloudflared container → api:8003
-```
+```text
 
 **Benefits:**
+
 - ✅ No public IP needed
 - ✅ No port forwarding
 - ✅ Free SSL/TLS

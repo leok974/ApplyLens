@@ -3,13 +3,15 @@
 ## ⚡ Quick Commands
 
 ### Access Services
+
 ```powershell
 start http://localhost:9090          # Prometheus
 start http://localhost:3000          # Grafana (admin/admin)
 start http://localhost:8003/metrics  # API metrics (raw)
-```
+```text
 
 ### Hot Reload Prometheus (No Restart!)
+
 ```powershell
 # 1. Edit config
 notepad D:\ApplyLens\infra\prometheus\alerts.yml
@@ -19,24 +21,27 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # 3. Hot reload (instant!)
 Invoke-WebRequest -Method POST http://localhost:9090/-/reload
-```
+```text
 
 ### Generate Test Traffic
+
 ```powershell
 1..5 | % { 
     curl http://localhost:8003/healthz | Out-Null
     curl http://localhost:8003/readiness | Out-Null
     Start-Sleep -Milliseconds 200
 }
-```
+```text
 
 ### Check Target Health
+
 ```powershell
 $t = (irm http://localhost:9090/api/v1/targets).data.activeTargets | ? {$_.labels.job -eq "applylens-api"}
 $t | select scrapeUrl, health, lastError | ft
-```
+```text
 
 ### Query Metrics
+
 ```powershell
 # Request rate
 $q = "sum(rate(applylens_http_requests_total[5m]))"
@@ -45,17 +50,18 @@ $q = "sum(rate(applylens_http_requests_total[5m]))"
 # System health
 irm "http://localhost:9090/api/v1/query?query=applylens_db_up" | % data | % result | % value
 irm "http://localhost:9090/api/v1/query?query=applylens_es_up" | % data | % result | % value
-```
+```text
 
 ---
 
 ## 📊 Dashboard Quick Access
 
-**Direct URL:** http://localhost:3000/d/applylens-overview
+**Direct URL:** <http://localhost:3000/d/applylens-overview>
 
 **Or navigate:** Dashboards → ApplyLens → ApplyLens API Overview
 
 **Panels:**
+
 1. HTTP req/s (by method & status)
 2. HTTP latency (p50/p90/p99)
 3. Backfill outcomes (1h bar gauge)
@@ -67,9 +73,10 @@ irm "http://localhost:9090/api/v1/query?query=applylens_es_up" | % data | % resu
 
 ## 🚨 Alert Rules
 
-**View:** http://localhost:9090/alerts
+**View:** <http://localhost:9090/alerts>
 
 **6 Rules:**
+
 - **ApplyLensApiDown** (critical) - API down >1m
 - **HighHttpErrorRate** (warning) - 5xx >5% for 5m
 - **BackfillFailing** (warning) - Errors in last 10m
@@ -82,17 +89,20 @@ irm "http://localhost:9090/api/v1/query?query=applylens_es_up" | % data | % resu
 ## 🔧 Common Operations
 
 ### Restart Services
+
 ```powershell
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart prometheus grafana
-```
+```text
 
 ### View Logs
+
 ```powershell
 docker logs infra-prometheus --tail 50
 docker logs infra-grafana --tail 50
-```
+```text
 
 ### Verify Provisioning
+
 ```powershell
 # Check alert rules loaded
 (irm http://localhost:9090/api/v1/rules).data.groups | ? name -eq "applylens" | % rules | % name
@@ -100,13 +110,13 @@ docker logs infra-grafana --tail 50
 # Check Grafana dashboard
 $cred = New-Object PSCredential("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force))
 irm http://localhost:3000/api/search -Credential $cred | ? title -match "ApplyLens" | select title, folderTitle
-```
+```text
 
 ---
 
 ## 📁 File Locations
 
-```
+```bash
 infra/
 ├── docker-compose.yml                                    # Updated (lifecycle flag)
 ├── prometheus/
@@ -118,27 +128,31 @@ infra/
         └── dashboards/
             ├── applylens.yml                             # Provider config
             └── json/applylens-overview.json              # Dashboard JSON
-```
+```text
 
 ---
 
 ## 💡 Key Features
 
 ✅ **Auto-Provisioning**
+
 - Datasource automatically configured on startup
 - Dashboard auto-loads in "ApplyLens" folder
 - No manual Grafana UI configuration needed
 
 ✅ **Hot Reload**
+
 - Edit `alerts.yml` or `prometheus.yml`
 - POST to `http://localhost:9090/-/reload`
 - Changes apply instantly without restart
 
 ✅ **Pre-installed Plugins**
+
 - grafana-piechart-panel
 - Add more: `GF_INSTALL_PLUGINS=plugin1,plugin2` in docker-compose.yml
 
 ✅ **Fast Scraping**
+
 - 15-second interval (was 30s)
 - Near real-time metrics in dashboard
 
@@ -168,4 +182,4 @@ infra/
 
 ---
 
-**Everything is ready!** Open http://localhost:3000 and explore your dashboard. 🎉
+**Everything is ready!** Open <http://localhost:3000> and explore your dashboard. 🎉

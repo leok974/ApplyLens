@@ -2,7 +2,7 @@
 
 ## UI Components Layout
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ ApplyLens Search                                                         │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -34,65 +34,71 @@
 │    "Your account has been compromised. Click here..."                   │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## Component States
 
 ### High-Risk Chip
 
 #### **Inactive State (Default)**
-```
+
+```text
 ┌──────────────────────────┐
 │ [OFF] High Risk (≥80)    │  ← Gray background
 │                          │     Gray border
 └──────────────────────────┘     Default text color
-```
+```text
 
 #### **Active State**
-```
+
+```text
 ┌──────────────────────────┐
 │ [ON]  🔴 High Risk (≥80) │  ← Red background (bg-red-500/15)
 │                          │     Red border (border-red-600/30)
 └──────────────────────────┘     Red text (text-red-300)
-```
+```text
 
 #### **Hover State (Inactive)**
-```
+
+```text
 ┌──────────────────────────┐
 │ [OFF] High Risk (≥80)    │  ← Light gray background
 │       ↑ cursor pointer   │     Smooth transition
 └──────────────────────────┘
-```
+```text
 
 #### **Hover State (Active)**
-```
+
+```text
 ┌──────────────────────────┐
 │ [ON]  🔴 High Risk (≥80) │  ← Brighter red background
 │       ↑ cursor pointer   │     Smooth transition
 └──────────────────────────┘
-```
+```text
 
 ### Quarantined Chip
 
 #### **Inactive State (Default)**
-```
+
+```text
 ┌──────────────────────────┐
 │ [OFF] Quarantined only   │  ← Gray background
 │                          │     Gray border
 └──────────────────────────┘     Default text color
-```
+```text
 
 #### **Active State**
-```
+
+```text
 ┌──────────────────────────┐
 │ [ON]  🟡 Quarantined only│  ← Amber background (bg-amber-500/15)
 │                          │     Amber border (border-amber-600/30)
 └──────────────────────────┘     Amber text (text-amber-300)
-```
+```text
 
 ### Both Filters Active
 
-```
+```text
 🛡️ Security filters:
 
 ┌──────────────────────────┐  ┌──────────────────────────┐
@@ -100,7 +106,7 @@
 └──────────────────────────┘  └──────────────────────────┘
 
 Clear filters  ← Appears only when filters are active
-```
+```text
 
 ## Icon Guide
 
@@ -115,6 +121,7 @@ Clear filters  ← Appears only when filters are active
 ## Color Scheme
 
 ### High-Risk Filter (Red Theme)
+
 ```css
 Active:
   background: bg-red-500/15      /* #ef444415 */
@@ -123,9 +130,10 @@ Active:
 
 Hover (Active):
   background: bg-red-500/20      /* #ef444420 */
-```
+```text
 
 ### Quarantined Filter (Amber Theme)
+
 ```css
 Active:
   background: bg-amber-500/15    /* #f5920015 */
@@ -134,9 +142,10 @@ Active:
 
 Hover (Active):
   background: bg-amber-500/20    /* #f5920020 */
-```
+```text
 
 ### Inactive (Both Chips)
+
 ```css
 background: bg-muted/30          /* neutral gray */
 border: border                   /* subtle border */
@@ -144,12 +153,13 @@ text: inherit                    /* default text color */
 
 Hover:
   background: bg-muted/50        /* slightly darker gray */
-```
+```text
 
 ## Responsive Behavior
 
 ### Desktop (≥1024px)
-```
+
+```text
 ┌──────────────────────────────────────────────────────────┐
 │ 🛡️ Security filters:                                     │
 │                                                           │
@@ -157,10 +167,11 @@ Hover:
 │                                                           │
 │  Clear filters                                           │
 └──────────────────────────────────────────────────────────┘
-```
+```text
 
 ### Mobile (≤768px)
-```
+
+```text
 ┌─────────────────────────┐
 │ 🛡️ Security filters:    │
 │                          │
@@ -171,38 +182,42 @@ Hover:
 │                          │
 │ Clear filters           │
 └─────────────────────────┘
-```
+```text
 
 ## URL Bar Examples
 
 ### No Filters
-```
+
+```text
 https://applylens.com/search?q=invoice
-```
+```text
 
 ### High-Risk Only
-```
+
+```text
 https://applylens.com/search?q=invoice&risk_min=80
                                         └─────────┘
-```
+```text
 
 ### Quarantined Only
-```
+
+```text
 https://applylens.com/search?q=test&quarantined=true
                                     └──────────────────┘
-```
+```text
 
 ### Both Filters
-```
+
+```text
 https://applylens.com/search?q=security&risk_min=80&quarantined=true
                                         └─────────┘ └──────────────────┘
-```
+```text
 
 ## User Interaction Flow
 
 ### Scenario 1: Enable High-Risk Filter
 
-```
+```text
 1. User sees chips in inactive state:
    ┌────────────────────┐
    │ [OFF] High Risk    │
@@ -226,11 +241,11 @@ https://applylens.com/search?q=security&risk_min=80&quarantined=true
 
 6. Results update:
    Only high-risk emails shown
-```
+```text
 
 ### Scenario 2: Clear All Filters
 
-```
+```text
 1. Both filters active:
    [ON] 🔴 High Risk    [ON] 🟡 Quarantined
    
@@ -247,22 +262,24 @@ https://applylens.com/search?q=security&risk_min=80&quarantined=true
    GET /api/search/?q=test
 
 5. All results shown
-```
+```text
 
 ## Accessibility
 
 ### Keyboard Navigation
-```
+
+```text
 Tab → Focus on High-Risk chip
 Space → Toggle High-Risk
 Tab → Focus on Quarantined chip
 Space → Toggle Quarantined
 Tab → Focus on Clear button
 Enter → Clear all filters
-```
+```text
 
 ### Screen Reader Announcements
-```
+
+```text
 High-Risk chip:
   "High Risk, greater than or equal to 80, switch, on/off"
 
@@ -271,9 +288,10 @@ Quarantined chip:
 
 Clear button:
   "Clear filters, button"
-```
+```text
 
 ### ARIA Attributes
+
 ```html
 <label data-testid="chip-high-risk" className="...">
   <Switch 
@@ -283,29 +301,32 @@ Clear button:
   />
   <span>High Risk (≥80)</span>
 </label>
-```
+```text
 
 ## Dark Mode Support
 
 ### High-Risk Chip (Active)
+
 ```css
 Light Mode:
   bg-red-500/15 border-red-600/30 text-red-300
 
 Dark Mode:
   (Same - colors already dark-mode optimized)
-```
+```text
 
 ### Quarantined Chip (Active)
+
 ```css
 Light Mode:
   bg-amber-500/15 border-amber-600/30 text-amber-300
 
 Dark Mode:
   (Same - colors already dark-mode optimized)
-```
+```text
 
 ### Inactive State
+
 ```css
 Light Mode:
   bg-muted/30 (light gray)
@@ -313,7 +334,7 @@ Light Mode:
 Dark Mode:
   bg-muted/30 (dark gray)
   (Automatically adapts via CSS custom properties)
-```
+```text
 
 ## Animation Timing
 
@@ -323,11 +344,11 @@ Hover effect: 150ms ease-in-out
 Switch toggle: 200ms cubic-bezier(0.4, 0, 0.2, 1)
 URL update: Instant (no animation)
 Results refresh: 300ms fade-in
-```
+```text
 
 ## Z-Index Layers
 
-```
+```text
 Layer 0: Page background
 Layer 1: Search results
 Layer 2: Filter chips (normal)
@@ -335,7 +356,7 @@ Layer 3: Filter chips (hover)
 Layer 4: Clear button (hover)
 Layer 10: Dropdown suggestions
 Layer 50: Modal overlays
-```
+```text
 
 ## Browser Compatibility
 

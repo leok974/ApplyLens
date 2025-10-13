@@ -64,21 +64,24 @@
 **Best For:** Unix developers, CI/CD pipelines, quick experimentation
 
 **Quick Start:**
+
 ```bash
 make phase2-all
-```
+```text
 
 **Features:**
+
 - Simple make targets
 - CLI override support
 - Pipes to jq for formatted output
 - Meta target chains all steps
 
 **Configuration:**
+
 ```bash
 make export-weak EXPORT_DAYS=90
 make apply-labels API_BASE=https://api.example.com
-```
+```text
 
 ---
 
@@ -87,18 +90,21 @@ make apply-labels API_BASE=https://api.example.com
 **Best For:** JavaScript/Node.js developers, cross-platform teams
 
 **Quick Start:**
+
 ```bash
 npm install
 npm run phase2:all
-```
+```text
 
 **Features:**
+
 - Cross-platform compatibility
 - Environment variable support
 - Multiple utility scripts (stats, profile, clean)
 - Help command for reference
 
 **Configuration:**
+
 ```bash
 # PowerShell
 $env:ES_URL="http://localhost:9200"
@@ -106,7 +112,7 @@ npm run phase2:export
 
 # Unix/Linux/Mac
 ES_URL=http://localhost:9200 npm run phase2:export
-```
+```text
 
 ---
 
@@ -115,11 +121,13 @@ ES_URL=http://localhost:9200 npm run phase2:export
 **Best For:** Windows users, rich output with verification
 
 **Quick Start:**
+
 ```powershell
 .\scripts\phase2-all.ps1
-```
+```text
 
 **Features:**
+
 - Color-coded output (cyan/yellow/green/red)
 - Real-time progress indicators
 - Post-workflow verification:
@@ -130,9 +138,10 @@ ES_URL=http://localhost:9200 npm run phase2:export
 - Parameter-based configuration
 
 **Configuration:**
+
 ```powershell
 .\scripts\phase2-all.ps1 -Days 90 -Limit 50000 -ApiBase https://api.example.com
-```
+```text
 
 ---
 
@@ -156,7 +165,7 @@ ES_URL=http://localhost:9200 npm run phase2:export
 
 All three automation options run the same underlying workflow:
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │ Phase 1: Export Weak Labels                        │
 │                                                      │
@@ -208,13 +217,14 @@ All three automation options run the same underlying workflow:
 │        • Ready for profile analytics                │
 │        • UI filtering enabled                       │
 └─────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
 ## 📈 Expected Results
 
 ### Export Phase Output
+
 ```json
 {
   "seen": 15234,
@@ -227,10 +237,11 @@ All three automation options run the same underlying workflow:
     "other": 4877
   }
 }
-```
+```text
 
 ### Training Phase Output
-```
+
+```text
 ✅ Saved model to label_model.joblib
 
               precision    recall  f1-score   support
@@ -244,15 +255,17 @@ All three automation options run the same underlying workflow:
     accuracy                           0.89     12500
    macro avg       0.90      0.90      0.90     12500
 weighted avg       0.89      0.89      0.89     12500
-```
+```text
 
 ### Apply Phase Output
+
 ```json
 {"updated": 15234}
-```
+```text
 
 ### Verification (PowerShell Only)
-```
+
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📈 Verification Results
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -273,7 +286,7 @@ Profile Summary:
       newsletter.example.com (421 emails)
 
 ✅ Phase 2 pipeline complete!
-```
+```text
 
 ---
 
@@ -282,35 +295,40 @@ Profile Summary:
 ### First-Time Setup (Recommended)
 
 **Windows:**
+
 ```powershell
 .\scripts\phase2-all.ps1
-```
+```text
 
 **Mac/Linux:**
+
 ```bash
 npm install
 npm run phase2:all
-```
+```text
 
 ### CI/CD Integration
 
 **GitHub Actions:**
+
 ```yaml
 - name: Run Phase-2 Pipeline
   run: make phase2-all
-```
+```text
 
 **GitLab CI:**
+
 ```yaml
 phase2:
   script:
     - npm install
     - npm run phase2:all
-```
+```text
 
 ### Development Iteration
 
 **Retrain Model Only:**
+
 ```bash
 # Makefile
 make train-labels
@@ -320,9 +338,10 @@ npm run phase2:train
 
 # PowerShell (run full pipeline, it's quick)
 .\scripts\phase2-all.ps1
-```
+```text
 
 **Apply Labels Only:**
+
 ```bash
 # Makefile
 make apply-labels
@@ -331,11 +350,12 @@ make apply-labels
 npm run phase2:apply
 
 # PowerShell (same as above)
-```
+```text
 
 ### Production Deployment
 
 **Custom Configuration:**
+
 ```bash
 # Makefile
 make phase2-all \
@@ -355,7 +375,7 @@ npm run phase2:all
   -ApiBase https://api.prod.applylens.app `
   -Days 90 `
   -Limit 100000
-```
+```text
 
 ---
 
@@ -466,6 +486,7 @@ Before running automation:
 ## 🚢 Ready to Commit
 
 ### Files to Add
+
 ```bash
 git add Makefile
 git add package.json
@@ -473,10 +494,11 @@ git add scripts/phase2-all.ps1
 git add PHASE_2_AUTOMATION.md
 git add PHASE_2_QUICK_REF.md
 git add README.md
-```
+```text
 
 ### Suggested Commit Message
-```
+
+```text
 feat: add Phase-2 automation tools with multi-platform support
 
 Implements three automation options for Phase-2 email categorization
@@ -522,7 +544,7 @@ All three options run the same pipeline:
 Result: Users can run `make phase2-all` (Unix), `npm run phase2:all`
 (cross-platform), or `.\scripts\phase2-all.ps1` (Windows) to execute
 the complete Phase-2 categorization pipeline.
-```
+```text
 
 ---
 
@@ -531,6 +553,7 @@ the complete Phase-2 categorization pipeline.
 ### Immediate (User Action Required)
 
 1. **Test all three automation options**
+
    ```bash
    # Unix/Linux/Mac
    make phase2-all
@@ -543,12 +566,14 @@ the complete Phase-2 categorization pipeline.
    ```
 
 2. **Verify results**
+
    ```bash
    curl "http://localhost:8003/labels/stats" | jq
    curl "http://localhost:8003/profile/summary?days=60" | jq
    ```
 
 3. **Commit Phase-2 + automation**
+
    ```bash
    git add Makefile package.json scripts/phase2-all.ps1
    git add PHASE_2_AUTOMATION.md PHASE_2_QUICK_REF.md README.md
@@ -610,6 +635,7 @@ the complete Phase-2 categorization pipeline.
 **Testing**: ✅ 100% Verified (endpoints working)
 
 **Total Implementation**:
+
 - **15 files** created/modified
 - **~5,200 lines** of code + docs + automation
 - **3 platforms** supported (Unix/Windows/Cross-platform)

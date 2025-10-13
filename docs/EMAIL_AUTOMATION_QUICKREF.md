@@ -17,7 +17,7 @@ python -m app.scripts.update_es_mapping
 
 # Restart API
 docker-compose restart api
-```
+```text
 
 ### 2. Classify an Email
 
@@ -38,7 +38,7 @@ result = classify_email(email)
 #   "confidence": 0.9,
 #   "profile_tags": ["brand:amazon", "urgent"]
 # }
-```
+```text
 
 ### 3. Evaluate Policies
 
@@ -56,7 +56,7 @@ email = {
 
 actions = engine.evaluate_all(email)
 # [{"action": "archive", "policy_id": "promo-expired-archive"}]
-```
+```text
 
 ### 4. Preview Actions (API)
 
@@ -70,7 +70,7 @@ curl -X POST http://localhost:8000/mail/actions/preview \
       "confidence": 0.85
     }]
   }'
-```
+```text
 
 ### 5. Execute Actions (API)
 
@@ -86,7 +86,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
       "rationale": "Expired promotion"
     }]
   }'
-```
+```text
 
 ---
 
@@ -112,6 +112,7 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 | **Critical** | **80-100** | **Auto-quarantine** |
 
 **Indicators**:
+
 - Urgent language: +10
 - Suspicious links (bit.ly): +15
 - Money requests: +20
@@ -123,36 +124,40 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 ## 🎯 Default Policies
 
 ### 1. Expired Promo Archive
+
 ```json
 {
   "if": {"category": "promotions", "expires_at": "<now"},
   "then": {"action": "archive", "confidence_min": 0.7}
 }
-```
+```text
 
 ### 2. High-Risk Quarantine
+
 ```json
 {
   "if": {"risk_score": ">=80"},
   "then": {"action": "quarantine", "confidence_min": 0.5, "notify": true}
 }
-```
+```text
 
 ### 3. Bill Reminder
+
 ```json
 {
   "if": {"category": "bills", "labels": "not_in paid"},
   "then": {"action": "label", "params": {"label": "needs_attention"}}
 }
-```
+```text
 
 ### 4. Application Priority
+
 ```json
 {
   "if": {"category": "applications"},
   "then": {"action": "label", "params": {"label": "important"}}
 }
-```
+```text
 
 ---
 
@@ -182,16 +187,19 @@ curl -X POST http://localhost:8000/mail/actions/execute \
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 pytest services/api/tests/unit/test_classifier.py -v
-```
+```text
 
 ### E2E Tests
+
 ```bash
 pytest services/api/tests/e2e/ -v
-```
+```text
 
 ### Test Coverage
+
 - ✅ 37 unit tests
 - ✅ 16 E2E tests
 - ✅ All safety checks tested
@@ -214,7 +222,7 @@ user_profile (
   user_id, interests[], brand_prefs[],
   active_categories[], mute_rules, open_rates
 )
-```
+```text
 
 ### New Email Columns
 
@@ -227,50 +235,58 @@ emails (
   profile_tags TEXT[],
   features_json JSONB
 )
-```
+```text
 
 ---
 
 ## 💡 Common Use Cases
 
 ### Auto-Archive Expired Promos
+
 ```python
 # Automatically runs via policy engine
 # No manual intervention needed
-```
+```text
 
 ### Quarantine Phishing
+
 ```python
 # High risk_score (>=80) triggers quarantine
 # User notified for review
-```
+```text
 
 ### Priority Job Emails
+
 ```python
 # ATS domains auto-labeled "important"
 # Never miss an interview
-```
+```text
 
 ### Bill Reminders
+
 ```python
 # Unpaid bills get "needs_attention" label
 # Visual reminder in inbox
-```
+```text
 
 ---
 
 ## 🔍 Troubleshooting
 
 ### Issue: Classification wrong
+
 **Fix**: Adjust regex patterns in `app/logic/classify.py`
 
 ### Issue: Actions not executing
+
 **Fix**: Check Gmail API integration (currently stubbed)
 
 ### Issue: Migration fails
+
 **Fix**: `alembic downgrade -1` then `alembic upgrade head`
 
 ### Issue: Low confidence
+
 **Fix**: Improve classification logic or lower threshold
 
 ---
@@ -278,6 +294,7 @@ emails (
 ## 📚 Full Documentation
 
 See [EMAIL_AUTOMATION_SYSTEM_COMPLETE.md](./EMAIL_AUTOMATION_SYSTEM_COMPLETE.md) for:
+
 - Complete architecture
 - Detailed API docs
 - Policy engine guide
@@ -297,6 +314,7 @@ See [EMAIL_AUTOMATION_SYSTEM_COMPLETE.md](./EMAIL_AUTOMATION_SYSTEM_COMPLETE.md)
 ---
 
 **Quick Links**:
+
 - [Complete Guide](./EMAIL_AUTOMATION_SYSTEM_COMPLETE.md)
 - [API Docs](http://localhost:8000/docs#/mail-tools)
 - [GitHub](https://github.com/leok974/ApplyLens)

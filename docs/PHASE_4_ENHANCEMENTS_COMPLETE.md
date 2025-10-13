@@ -2,7 +2,7 @@
 
 **Date:** January 12, 2025  
 **Status:** ✅ COMPLETE  
-**Deployment:** Live on http://localhost:8003 + http://localhost:5175
+**Deployment:** Live on <http://localhost:8003> + <http://localhost:5175>
 
 ---
 
@@ -30,6 +30,7 @@ Successfully implemented all Phase 4 enhancement features requested:
 **Endpoint:** `POST /api/actions/{action_id}/always`
 
 **Request Body:**
+
 ```json
 {
   "rationale_features": {
@@ -38,17 +39,19 @@ Successfully implemented all Phase 4 enhancement features requested:
     "risk_score": 0.15
   }
 }
-```
+```text
 
 **Response:**
+
 ```json
 {
   "ok": true,
   "policy_id": 42
 }
-```
+```text
 
 **Behavior:**
+
 - Extracts stable features from action rationale (category, sender_domain)
 - Creates a new policy with `all` condition matching features
 - Sets priority to 40 (learned policies)
@@ -56,6 +59,7 @@ Successfully implemented all Phase 4 enhancement features requested:
 - Enables policy immediately
 
 **Example Policy Created:**
+
 ```json
 {
   "name": "Learned: archive_email for example.com",
@@ -70,7 +74,7 @@ Successfully implemented all Phase 4 enhancement features requested:
     ]
   }
 }
-```
+```text
 
 ### Frontend Integration
 
@@ -89,11 +93,12 @@ export async function alwaysDoThis(
   if (!r.ok) throw new Error(`Failed to create always policy: ${r.statusText}`)
   return r.json()
 }
-```
+```text
 
 **UI Component:** `apps/web/src/components/ActionsTray.tsx`
 
 **Button:**
+
 ```tsx
 <Button
   size="sm"
@@ -105,9 +110,10 @@ export async function alwaysDoThis(
   <Sparkles className="h-3 w-3 mr-1" />
   Always do this
 </Button>
-```
+```text
 
 **Handler:**
+
 ```typescript
 async function handleAlways(action: ProposedAction) {
   setProcessing(action.id)
@@ -131,9 +137,10 @@ async function handleAlways(action: ProposedAction) {
     setProcessing(null)
   }
 }
-```
+```text
 
 **User Flow:**
+
 1. User sees proposed action in tray
 2. User clicks "Always do this" button
 3. System extracts features (category, sender_domain)
@@ -183,17 +190,19 @@ METRICS = {
     "actions_failed": actions_failed,
     "policy_evaluations": policy_evaluations,
 }
-```
+```text
 
 ### Metrics Integration
 
 **Propose Endpoint:**
+
 ```python
 # Track which policies generate proposals
 METRICS["actions_proposed"].labels(policy_name=policy.name).inc()
-```
+```text
 
 **Approve Endpoint:**
+
 ```python
 # Track execution outcomes
 if success:
@@ -206,13 +215,14 @@ else:
         action_type=pa.action.value,
         error_type=error[:50] if error else "unknown"
     ).inc()
-```
+```text
 
 ### Metrics Endpoint
 
-**URL:** http://localhost:8003/metrics
+**URL:** <http://localhost:8003/metrics>
 
 **Sample Output:**
+
 ```prometheus
 # HELP actions_proposed_total Total number of action proposals created
 # TYPE actions_proposed_total counter
@@ -227,11 +237,12 @@ actions_executed_total{action_type="label_email",outcome="success"} 23.0
 # HELP actions_failed_total Total number of failed action executions
 # TYPE actions_failed_total counter
 actions_failed_total{action_type="unsubscribe_via_header",error_type="No List-Unsubscribe header found"} 3.0
-```
+```text
 
 ### Alerting Examples
 
 **Prometheus Alert Rules:**
+
 ```yaml
 groups:
   - name: actions
@@ -254,9 +265,10 @@ groups:
           severity: info
         annotations:
           summary: "No actions proposed in last hour (policies may need tuning)"
-```
+```text
 
 **Grafana Dashboard Queries:**
+
 ```promql
 # Proposal rate by policy
 rate(actions_proposed_total[5m])
@@ -267,7 +279,7 @@ rate(actions_executed_total{outcome="success"}[5m]) /
 
 # Top failing action types
 topk(5, sum by (action_type) (rate(actions_failed_total[1h])))
-```
+```text
 
 ---
 
@@ -286,7 +298,7 @@ $ curl -s http://localhost:8003/openapi.json | jq -r '.paths | keys[] | select(c
 /api/actions/{action_id}/always         # ← NEW
 /api/actions/{action_id}/approve
 /api/actions/{action_id}/reject
-```
+```text
 
 ### OpenAPI Documentation
 
@@ -324,7 +336,7 @@ $ curl -s http://localhost:8003/openapi.json | jq '.paths."/api/actions/{action_
     }
   }
 }
-```
+```text
 
 ---
 
@@ -357,7 +369,7 @@ export type ProposedAction = {
   email_sender?: string
   email_received_at?: string
 }
-```
+```text
 
 **Why:** The `features` field is needed for the "Always do this" button to extract stable characteristics (category, sender_domain) for policy creation.
 
@@ -368,6 +380,7 @@ export type ProposedAction = {
 ### ActionsTray Component
 
 **Changes:**
+
 1. Added `onAlways` prop to `ActionCard`
 2. Added `handleAlways()` async function
 3. Added "Always do this" button below Approve/Reject
@@ -376,6 +389,7 @@ export type ProposedAction = {
 6. Automatically approves action after policy creation
 
 **Button Styling:**
+
 - **Variant:** `ghost` (transparent background)
 - **Color:** Purple-400 text, purple-500/10 hover background
 - **Size:** Small
@@ -383,7 +397,8 @@ export type ProposedAction = {
 - **Label:** "Always do this"
 
 **Visual Hierarchy:**
-```
+
+```text
 ┌─────────────────────────────────────┐
 │ Email: "50% off today only!"       │
 │ From: promos@example.com           │
@@ -393,7 +408,7 @@ export type ProposedAction = {
 │ [✓ Approve] [✗ Reject]            │  ← Primary actions
 │ [✨ Always do this]                │  ← New learned policy
 └─────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -407,12 +422,12 @@ NAME                  STATUS
 infra-api-1           Up 3 minutes         # ← Restarted successfully
 infra-db-1            Up 20 minutes
 infra-es-1            Up 19 minutes (healthy)
-```
+```bash
 
 ```bash
 $ curl -s http://localhost:8003/health
 {"status":"healthy"}
-```
+```bash
 
 ```bash
 $ curl -s http://localhost:8003/metrics | grep actions_
@@ -422,7 +437,7 @@ $ curl -s http://localhost:8003/metrics | grep actions_
 # TYPE actions_executed_total counter
 # HELP actions_failed_total Total number of failed action executions
 # TYPE actions_failed_total counter
-```
+```text
 
 ### Frontend Deployment
 
@@ -430,9 +445,10 @@ $ curl -s http://localhost:8003/metrics | grep actions_
 $ cd apps/web && npm run dev
   VITE v5.4.20  ready in 847 ms
   ➜  Local:   http://localhost:5175/
-```
+```text
 
 **UI Verification:**
+
 - Actions button visible in header (right side)
 - Badge shows pending action count
 - Tray opens on click (slide from right)
@@ -447,18 +463,21 @@ $ cd apps/web && npm run dev
 ### Manual Testing Flow
 
 **Step 1: Generate Proposals**
+
 ```bash
 curl -X POST http://localhost:8003/api/actions/propose \
   -H "Content-Type: application/json" \
   -d '{"email_ids": [1, 2, 3, 4, 5]}'
-```
+```text
 
 **Step 2: View Tray**
+
 ```bash
 curl http://localhost:8003/api/actions/tray?limit=100
-```
+```text
 
 **Step 3: Test "Always" Button**
+
 ```bash
 # Get first action ID
 ACTION_ID=$(curl -s http://localhost:8003/api/actions/tray | jq -r '.[0].id')
@@ -475,22 +494,24 @@ curl -X POST "http://localhost:8003/api/actions/${ACTION_ID}/always" \
 
 # Response:
 # {"ok": true, "policy_id": 42}
-```
+```text
 
 **Step 4: Verify Policy Created**
+
 ```bash
 curl http://localhost:8003/api/actions/policies | jq '.[] | select(.name | contains("Learned"))'
-```
+```text
 
 **Step 5: Check Metrics**
+
 ```bash
 curl -s http://localhost:8003/metrics | grep actions_proposed_total
 # actions_proposed_total{policy_name="High-risk auto-quarantine"} 5.0
-```
+```text
 
 ### UI Testing Flow
 
-1. **Open UI:** http://localhost:5175
+1. **Open UI:** <http://localhost:5175>
 2. **Sync emails:** Click "Sync Now" button
 3. **Generate proposals:** Run propose command
 4. **Open Actions Tray:** Click "Actions" button (top-right)
@@ -504,6 +525,7 @@ curl -s http://localhost:8003/metrics | grep actions_proposed_total
 ## 8. Known Limitations & Future Work
 
 ### Completed Features
+
 - ✅ "Always do this" endpoint and UI
 - ✅ Prometheus metrics (4 counters)
 - ✅ Metrics integrated into propose/approve flows
@@ -514,9 +536,11 @@ curl -s http://localhost:8003/metrics | grep actions_proposed_total
 ### Pending Enhancements (Optional)
 
 #### A. Enhanced Rationale
+
 **Goal:** Add ES aggregations and KNN neighbors to rationale
 
 **Implementation:**
+
 ```python
 def es_aggs_for_sender(domain: str | None, es) -> dict:
     if not domain: return {}
@@ -535,18 +559,21 @@ def es_aggs_for_sender(domain: str | None, es) -> dict:
         "expired_count": res["aggregations"]["expired"]["doc_count"],
         "total_from_sender": total,
     }
-```
+```text
 
 **Benefit:** More context for confidence scoring
 
 #### B. Unit Tests
+
 **Goal:** Test Yardstick evaluation and action flows
 
 **Files:**
+
 - `services/api/tests/test_yardstick_eval.py` (150 lines)
 - `services/api/tests/test_actions_flow.py` (100 lines)
 
 **Example:**
+
 ```python
 def test_always_creates_policy():
     client = TestClient(app)
@@ -565,14 +592,16 @@ def test_always_creates_policy():
     # Verify policy exists
     r = client.get(f"/api/actions/policies/{policy_id}")
     assert r.json()["name"].startswith("Learned:")
-```
+```text
 
 #### C. E2E Tests
+
 **Goal:** Test UI interactions with Playwright
 
 **File:** `apps/web/tests/actions.tray.spec.ts` (150 lines)
 
 **Example:**
+
 ```typescript
 test('Always do this creates policy', async ({ page }) => {
     await page.route('/api/actions/tray', async route => {
@@ -595,17 +624,20 @@ test('Always do this creates policy', async ({ page }) => {
     
     await expect(page.getByText('Policy created')).toBeVisible()
 })
-```
+```text
 
 #### D. PowerShell Quickruns
+
 **Goal:** Convenient scripts for common operations
 
 **Files:**
+
 - `scripts/quickrun-propose.ps1`
 - `scripts/quickrun-always.ps1`
 - `scripts/quickrun-metrics.ps1`
 
 **Example:**
+
 ```powershell
 # quickrun-always.ps1
 param([int]$ActionId)
@@ -622,7 +654,7 @@ $body = @{
 curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
     -H "Content-Type: application/json" `
     -d $body | jq .
-```
+```text
 
 ---
 
@@ -633,6 +665,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 **Decision:** Create `telemetry/metrics.py` instead of inline metrics
 
 **Rationale:**
+
 1. **Centralized definitions** - All metrics in one place
 2. **Easier testing** - Mock METRICS dict
 3. **Prometheus best practices** - Consistent naming/labels
@@ -643,6 +676,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 **Decision:** `handleAlways()` calls `handleApprove()` after policy creation
 
 **Rationale:**
+
 1. **User expectation** - "Always" implies "Yes for this one too"
 2. **Immediate feedback** - User sees action execute
 3. **Audit trail** - Screenshot captured for current action
@@ -656,6 +690,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 **Decision:** Add `features` field to rationale JSON
 
 **Rationale:**
+
 1. **Stable characteristics** - category, sender_domain are deterministic
 2. **Policy creation** - Need features to build condition DSL
 3. **Extensible** - Can add more features (labels, risk_score) later
@@ -703,7 +738,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
   expr: rate(actions_proposed_total[1d]) == 0
   for: 1d
   severity: warning
-```
+```text
 
 **Info Alerts:**
 
@@ -713,13 +748,14 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
   severity: info
   annotations:
     summary: "User created learned policy via Always button"
-```
+```text
 
 ---
 
 ## 11. Rollout Checklist
 
 ### Pre-deployment
+
 - ✅ Code reviewed
 - ✅ Types updated
 - ✅ No lint errors
@@ -728,12 +764,14 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 - ✅ Metrics exposed at /metrics
 
 ### Deployment
+
 - ✅ Backend deployed (API container restarted)
 - ✅ Frontend deployed (Vite dev server running)
 - ✅ Database schema up-to-date
 - ✅ No breaking changes
 
 ### Post-deployment
+
 - ✅ Health check passing
 - ✅ OpenAPI docs updated
 - ✅ Metrics endpoint responding
@@ -741,6 +779,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 - ✅ No console errors
 
 ### User Communication
+
 - ✅ Feature documented (this file)
 - ⏸️ User guide created (optional)
 - ⏸️ Demo video recorded (optional)
@@ -753,12 +792,14 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 ### Quantitative Goals
 
 **Week 1:**
+
 - [ ] 10+ learned policies created via "Always" button
 - [ ] <5% failure rate on policy creation
 - [ ] <2s response time for /always endpoint
 - [ ] 100% of proposals include features in rationale
 
 **Week 2:**
+
 - [ ] 50+ learned policies active
 - [ ] 20% of actions handled by learned policies
 - [ ] <1% false positive rate (user creates then immediately disables policy)
@@ -777,11 +818,13 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 ### Code Ownership
 
 **Backend:**
+
 - `routers/actions.py` - Actions router (always endpoint at line 450)
 - `telemetry/metrics.py` - Prometheus metrics definitions
 - Maintainer: Backend team
 
 **Frontend:**
+
 - `lib/actionsClient.ts` - API client (alwaysDoThis function)
 - `components/ActionsTray.tsx` - UI component (handleAlways handler)
 - Maintainer: Frontend team
@@ -804,6 +847,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 ✅ **Phase 4 enhancements are complete and deployed.**
 
 **What we built:**
+
 1. Backend endpoint for policy creation from actions
 2. Prometheus metrics for observability
 3. Frontend client function and UI button
@@ -811,6 +855,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 5. Success/error handling with user feedback
 
 **What's working:**
+
 - Users can click "Always do this" on any action
 - System creates a learned policy with stable features
 - Metrics track proposal/execution rates
@@ -818,6 +863,7 @@ curl -X POST "http://localhost:8003/api/actions/$ActionId/always" `
 - All code is type-safe with no lint errors
 
 **What's next (optional):**
+
 - Enhanced rationale with ES aggregations
 - Unit tests for Yardstick and actions
 - E2E tests with Playwright

@@ -1,15 +1,18 @@
 # Phase 2: Email Categorization & Profile Analytics
 
 ## Overview
+
 **Core Labeling Logic**
 
 **`services/api/app/labeling/rules.py`**
+
 - High-precision rule engine
 - Pattern matching for categories
 - Domain-based detection
 - Header analysis
 
 **`services/api/app/labeling/export_weak_labels.py`** ⭐ NEW
+
 - Streams emails from Elasticsearch
 - Applies rules to generate weak labels
 - Extracts features for ML
@@ -17,6 +20,7 @@
 - CLI with filtering options
 
 **`services/api/app/labeling/train_ml.py`**
+
 - ML model training script
 - TF-IDF vectorization
 - Logistic regression classifier
@@ -32,6 +36,7 @@
 ### 1. Email Categories
 
 Emails are automatically classified into:
+
 - **newsletter**: Mailing lists with unsubscribe headers
 - **promo**: Promotional content, deals, offers
 - **recruiting**: ATS systems (Lever, Greenhouse, etc.)
@@ -41,6 +46,7 @@ Emails are automatically classified into:
 ### 2. Labeling Approach
 
 **Two-stage labeling**:
+
 1. **High-precision rules** (95% confidence)
    - Header-based detection (List-Unsubscribe, Precedence: bulk)
    - Domain patterns (known ATS domains)
@@ -54,12 +60,14 @@ Emails are automatically classified into:
 ### 3. Time-Relevance Features
 
 **Expiration Detection**:
+
 - Parses "Valid through", "Expires", "Offer ends" patterns
 - Extracts dates in MM/DD/YYYY or "Month DD, YYYY" formats
 - Falls back to received_at + 7 days heuristic
 - Enables auto-hide of expired promos
 
 **Event Time Parsing**:
+
 - Detects "Meeting on", "Scheduled for" patterns
 - Extracts date and time from invitations
 - Powers "upcoming events" digests (future)
@@ -67,17 +75,20 @@ Emails are automatically classified into:
 ### 4. Profile Analytics
 
 **Summary Statistics**:
+
 - Total email volume
 - Category breakdown with percentages
 - Top senders by volume
 - Average emails per day
 
 **Sender Analysis**:
+
 - Filter senders by category
 - Track latest email from each sender
 - Identify subscription opportunities
 
 **Time Series**:
+
 - Email volume over time
 - Category trends
 - Configurable intervals (hourly, daily, weekly)
@@ -87,18 +98,21 @@ Emails are automatically classified into:
 ### Core Labeling Logic
 
 **`services/api/app/labeling/rules.py`**
+
 - High-precision rule engine
 - Pattern matching for categories
 - Domain-based detection
 - Header analysis
 
 **`services/api/app/labeling/train_ml.py`**
+
 - ML model training script
 - TF-IDF vectorization
 - Logistic regression classifier
 - Train/test split and evaluation
 
 **`services/api/app/labeling/relevance.py`**
+
 - Expiration date parsing
 - Event time extraction
 - Time-to-expiry calculations
@@ -107,11 +121,13 @@ Emails are automatically classified into:
 ### API Routers
 
 **`services/api/app/routers/labels.py`**
+
 - `POST /labels/apply` - Apply labels to all emails
 - `POST /labels/apply-batch` - Label specific documents
 - `GET /labels/stats` - Category statistics
 
 **`services/api/app/routers/profile.py`**
+
 - `GET /profile/summary` - Email profile overview
 - `GET /profile/senders` - Sender breakdown
 - `GET /profile/categories/{category}` - Category details
@@ -120,6 +136,7 @@ Emails are automatically classified into:
 ### Infrastructure
 
 **`infra/elasticsearch/emails_v1.template.json`** (Updated)
+
 - Added Phase-2 fields:
   - `category` (keyword)
   - `confidence` (float)
@@ -137,7 +154,7 @@ Emails are automatically classified into:
 ```bash
 cd services/api
 pip install scikit-learn joblib tldextract
-```
+```text
 
 ### 2. Apply Template (Already Done)
 
@@ -157,7 +174,7 @@ curl -X POST "http://localhost:8003/labels/apply" \
 #   "by_category": {"newsletter": 456, "promo": 321, ...},
 #   "by_method": {"rule": 890, "default": 344}
 # }
-```
+```text
 
 ### 4. View Profile Analytics
 
@@ -173,7 +190,7 @@ curl "http://localhost:8003/profile/categories/promo?days=30"
 
 # Get time series
 curl "http://localhost:8003/profile/time-series?days=30&interval=1d"
-```
+```text
 
 ## 🎓 Training ML Model (Optional)
 
@@ -216,7 +233,7 @@ python export_weak_labels.py \
 #     "other": 1500
 #   }
 # }
-```
+```text
 
 **Export Options**:
 
@@ -237,9 +254,10 @@ python export_weak_labels.py \
     --days 30 \
     --limit 5000 \
     --limit-per-cat 1000
-```
+```text
 
 **How it works**:
+
 1. Streams emails from Elasticsearch using scroll API
 2. Applies high-precision rules (`rules.py`) to each email
 3. Extracts features (URL count, money mentions, due dates)
@@ -267,7 +285,7 @@ python train_ml.py /tmp/weak_labels.jsonl label_model.joblib
 #          bill       0.87      0.85      0.86        20
 #         other       0.78      0.82      0.80       122
 # ✅ Model training complete!
-```
+```text
 
 ### Step 3: Use Model
 
@@ -275,14 +293,14 @@ Set environment variable to enable ML fallback:
 
 ```bash
 export LABEL_MODEL_PATH=services/api/app/labeling/label_model.joblib
-```
+```text
 
 Restart API:
 
 ```bash
 cd infra
 docker compose restart api
-```
+```text
 
 Now `/labels/apply` will use ML for emails without rule matches.
 
@@ -297,7 +315,7 @@ FROM emails_v1-*
 | STATS avg_tte = AVG(tte_days), 
         soon = COUNT(IF(tte_days <= 3, 1, NULL)),
         expired = COUNT(IF(tte_days < 0, 1, NULL))
-```
+```text
 
 ### Inactive Subscriptions
 
@@ -308,7 +326,7 @@ FROM emails_v1-*
 | STATS cnt = COUNT(*) BY sender_domain
 | SORT cnt DESC
 | LIMIT 50
-```
+```text
 
 ### Low-Confidence Labels
 
@@ -317,7 +335,7 @@ FROM emails_v1-*
 | WHERE confidence IS NOT NULL AND confidence < 0.5
 | STATS cnt = COUNT(*) BY category
 | SORT cnt DESC
-```
+```text
 
 ### Category Distribution Over Time
 
@@ -326,7 +344,7 @@ FROM emails_v1-*
 | WHERE received_at >= NOW() - 30 DAY
 | STATS emails_per_day = COUNT(*) BY DATE_TRUNC(1 DAY, received_at), category
 | SORT DATE_TRUNC(1 DAY, received_at) ASC
-```
+```text
 
 ## 🔧 API Reference
 
@@ -337,14 +355,16 @@ FROM emails_v1-*
 Apply labels to all emails matching query.
 
 **Request**:
+
 ```json
 {
   "query": {"match_all": {}},  // ES query (optional)
   "batch_size": 200
 }
-```
+```text
 
 **Response**:
+
 ```json
 {
   "updated": 1234,
@@ -361,24 +381,26 @@ Apply labels to all emails matching query.
     "default": 244
   }
 }
-```
+```text
 
 #### `POST /labels/apply-batch`
 
 Label specific documents by ID.
 
 **Request**:
+
 ```json
 {
   "doc_ids": ["abc123", "def456"]
 }
-```
+```text
 
 #### `GET /labels/stats`
 
 Get labeling statistics.
 
 **Response**:
+
 ```json
 {
   "total": 5000,
@@ -389,7 +411,7 @@ Get labeling statistics.
   "avg_confidence": 0.87,
   "low_confidence_count": 42
 }
-```
+```text
 
 ### Profile Router
 
@@ -398,6 +420,7 @@ Get labeling statistics.
 Get email profile summary.
 
 **Response**:
+
 ```json
 {
   "total": 1234,
@@ -411,13 +434,14 @@ Get email profile summary.
     {"sender_domain": "example.com", "count": 42}
   ]
 }
-```
+```text
 
 #### `GET /profile/senders?category=newsletter&days=60`
 
 Get senders filtered by category.
 
 **Response**:
+
 ```json
 {
   "category": "newsletter",
@@ -430,13 +454,14 @@ Get senders filtered by category.
     }
   ]
 }
-```
+```text
 
 #### `GET /profile/categories/newsletter?days=60`
 
 Get detailed breakdown for a category.
 
 **Response**:
+
 ```json
 {
   "category": "newsletter",
@@ -452,13 +477,14 @@ Get detailed breakdown for a category.
     }
   ]
 }
-```
+```text
 
 #### `GET /profile/time-series?days=30&interval=1d`
 
 Get email volume time series.
 
 **Response**:
+
 ```json
 {
   "interval": "1d",
@@ -470,13 +496,14 @@ Get email volume time series.
     }
   ]
 }
-```
+```text
 
 ## 🎨 UI Integration Points
 
 ### Inbox Enhancements
 
 **Add Category Chips**:
+
 ```tsx
 // In InboxWithActions.tsx or similar
 <div className="flex gap-2 mb-4">
@@ -490,9 +517,10 @@ Get email volume time series.
     </button>
   ))}
 </div>
-```
+```text
 
 **Show Expiry Info**:
+
 ```tsx
 // In email row component
 {email.expires_at && (
@@ -500,7 +528,7 @@ Get email volume time series.
     Expires {new Date(email.expires_at).toLocaleDateString()}
   </span>
 )}
-```
+```text
 
 ### Profile Page
 
@@ -521,6 +549,7 @@ Create new route `/profile` that displays:
    - Stacked by category
 
 **Example**:
+
 ```tsx
 // apps/web/src/pages/Profile.tsx
 import { useState, useEffect } from 'react';
@@ -574,7 +603,7 @@ export default function Profile() {
     </div>
   );
 }
-```
+```text
 
 ## 🔄 Workflows
 
@@ -601,7 +630,7 @@ curl "http://localhost:8000/profile/summary?days=60"
 
 # 4. Find newsletter senders to unsubscribe from
 curl "http://localhost:8000/profile/senders?category=newsletter&days=60"
-```
+```text
 
 ### Training Model
 
@@ -625,7 +654,7 @@ docker compose -f infra/docker-compose.yml restart api
 
 # 4. Re-label everything (now with ML fallback)
 curl -X POST "http://localhost:8000/labels/apply"
-```
+```text
 
 ### Scheduled Updates
 
@@ -636,7 +665,7 @@ Add cron job to re-label daily:
 0 3 * * * curl -X POST "http://localhost:8000/labels/apply" \
   -H "Content-Type: application/json" \
   -d '{"query": {"range": {"received_at": {"gte": "now-2d"}}}}'
-```
+```text
 
 ## 🧪 Testing
 
@@ -651,7 +680,7 @@ curl -X POST "http://localhost:8000/labels/apply-batch" \
 # Verify category
 curl "http://localhost:9200/emails_v1-000001/_doc/<doc_id>"
 # Should see: "category": "newsletter", "reason": "Unsubscribe header present"
-```
+```text
 
 ### Test Profile Endpoints
 
@@ -670,7 +699,7 @@ curl "http://localhost:8000/profile/categories/promo?days=7" | jq
 
 # Time series
 curl "http://localhost:8000/profile/time-series?days=30&interval=1d" | jq
-```
+```text
 
 ### Test Relevance Parsing
 
@@ -681,7 +710,7 @@ text = "Sale ends 12/31/2024!"
 received = "2024-12-15T10:00:00Z"
 expires = parse_promo_expiry(text, received)
 print(expires)  # 2024-12-31 23:59:59+00:00
-```
+```text
 
 ## 📈 Metrics & Monitoring
 
@@ -703,24 +732,27 @@ LABEL_CONFIDENCE = Histogram(
     'Label confidence scores',
     ['category']
 )
-```
+```text
 
 ### Grafana Dashboard
 
 **Panel 1: Category Distribution**
-```
+
+```text
 sum by (category) (applylens_labels_applied_total)
-```
+```text
 
 **Panel 2: Labeling Methods**
-```
+
+```text
 sum by (method) (applylens_labels_applied_total)
-```
+```text
 
 **Panel 3: Average Confidence**
-```
+
+```text
 avg(applylens_label_confidence)
-```
+```text
 
 ## 🎯 Success Criteria
 
@@ -770,9 +802,10 @@ avg(applylens_label_confidence)
 **Problem**: All emails have `category: null`
 
 **Solution**: Apply labels:
+
 ```bash
 curl -X POST "http://localhost:8000/labels/apply"
-```
+```text
 
 ### Low Confidence Scores
 
@@ -785,18 +818,20 @@ curl -X POST "http://localhost:8000/labels/apply"
 **Problem**: Expected newsletters not detected
 
 **Solution**: Check for missing fields:
+
 ```bash
 # Verify list_unsubscribe header present
 curl "http://localhost:9200/emails_v1-000001/_search" \
   -d '{"query": {"exists": {"field": "list_unsubscribe"}}}'
-```
+```text
 
 ### Profile Shows Zero Emails
 
 **Problem**: `/profile/summary` returns `total: 0`
 
 **Solution**: Check date filter:
+
 ```bash
 # Try larger time window
 curl "http://localhost:8000/profile/summary?days=365"
-```
+```text

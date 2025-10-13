@@ -3,6 +3,7 @@
 ## Overview
 
 Three major features added to enhance email automation capabilities:
+
 1. **Grouped Unsubscribe UX** - Batch unsubscribe by sender domain
 2. **Risk Heuristics Engine** - Phishing and spoofing detection
 3. **Productivity Tools** - Email-based reminders and calendar events
@@ -12,18 +13,22 @@ Three major features added to enhance email automation capabilities:
 ## 1. Grouped Unsubscribe UX
 
 ### Purpose
+
 Allow users to efficiently unsubscribe from multiple emails from the same sender in a single action.
 
 ### Files Created
+
 - `app/routers/unsubscribe_group.py` - Router with preview and execute endpoints
 - `tests/e2e/test_unsubscribe_grouped.py` - 4 comprehensive test cases
 
 ### API Endpoints
 
 #### POST `/unsubscribe/preview_grouped`
+
 Groups unsubscribe candidates by sender domain.
 
 **Request:**
+
 ```json
 [
   {
@@ -37,9 +42,10 @@ Groups unsubscribe candidates by sender domain.
     "headers": {"List-Unsubscribe": "<https://ex.com/u?2>"}
   }
 ]
-```
+```text
 
 **Response:**
+
 ```json
 {
   "groups": [
@@ -51,29 +57,33 @@ Groups unsubscribe candidates by sender domain.
     }
   ]
 }
-```
+```text
 
 #### POST `/unsubscribe/execute_grouped`
+
 Executes bulk unsubscribe for a domain group.
 
 **Request:**
+
 ```json
 {
   "domain": "news.example.com",
   "email_ids": ["e1", "e2"],
   "params": {"headers": {"List-Unsubscribe": "..."}}
 }
-```
+```text
 
 **Response:**
+
 ```json
 {
   "applied": 2,
   "domain": "news.example.com"
 }
-```
+```text
 
 ### Features
+
 - ✅ Groups by sender domain
 - ✅ Filters out empty domains
 - ✅ Continues execution even if individual emails fail
@@ -81,6 +91,7 @@ Executes bulk unsubscribe for a domain group.
 - ✅ Fans out to existing `/unsubscribe/execute` endpoint
 
 ### Test Coverage
+
 - Preview and execute grouped unsubscribes
 - Empty domain filtering
 - Partial failure handling
@@ -91,23 +102,27 @@ Executes bulk unsubscribe for a domain group.
 ## 2. Risk Heuristics Engine
 
 ### Purpose
+
 Detect phishing attempts, brand impersonation, and suspicious emails using multiple security heuristics.
 
 ### Files Created
+
 - `app/logic/risk.py` - Risk scoring engine
 - `tests/unit/test_risk_heuristics.py` - 18 unit tests
 
 ### Detection Mechanisms
 
 #### Display Name Spoofing (60 points)
+
 Detects when display name mentions a brand but domain doesn't match legitimate domain.
 
 ```python
 risk_score('PayPal Billing <support@paypaI.com>', [])
 # Returns: 60 (brand spoofing detected)
-```
+```text
 
 **Supported Brands:**
+
 - PayPal
 - Microsoft
 - Google
@@ -115,14 +130,16 @@ risk_score('PayPal Billing <support@paypaI.com>', [])
 - Apple
 
 #### Punycode/IDN Homograph Attacks (30 points)
+
 Detects internationalized domain names that look similar to legitimate domains.
 
 ```python
 risk_score('Support <help@xn--pple-43d.com>', [])
 # Returns: 30 (punycode detected)
-```
+```text
 
 #### Suspicious TLDs (30 points)
+
 Flags domains using TLDs commonly associated with phishing.
 
 **Suspicious TLDs:** `.zip`, `.mov`, `.country`, `.support`, `.top`, `.gq`, `.work`, `.tk`, `.ml`, `.ga`, `.cf`
@@ -130,22 +147,25 @@ Flags domains using TLDs commonly associated with phishing.
 ```python
 risk_score('Support <info@example.zip>', [])
 # Returns: 9 (suspicious TLD)
-```
+```text
 
 #### Punycode in URLs (10 points each)
+
 Checks email body URLs for punycode encoding.
 
 ```python
 risk_score('Legit <info@example.com>', ['https://xn--test.com'])
 # Returns: 10 (punycode URL)
-```
+```text
 
 ### API Functions
 
 #### `risk_score(from_hdr: str, urls: List[str]) -> int`
+
 Returns overall risk score (0-100).
 
 #### `analyze_email_risk(email_doc: Dict) -> Dict`
+
 Returns risk score and list of contributing factors.
 
 ```python
@@ -158,17 +178,19 @@ analyze_email_risk({
 #     "risk_score": 60,
 #     "risk_factors": ["display_name_spoof"]
 # }
-```
+```text
 
 ### Integration Point
+
 Can be integrated into email ingest pipeline:
 
 ```python
 from app.logic.risk import risk_score as compute_risk
 doc["risk_score"] = compute_risk(from_h, urls)
-```
+```text
 
 ### Test Coverage
+
 - Display name spoofing (various brands)
 - Punycode domain detection
 - Suspicious TLD detection
@@ -183,9 +205,11 @@ doc["risk_score"] = compute_risk(from_h, urls)
 ## 3. Productivity Tools
 
 ### Purpose
+
 Transform email content into actionable reminders and calendar events.
 
 ### Files Created
+
 - `app/routers/productivity.py` - Reminders and calendar router
 - `tests/e2e/test_productivity_reminders.py` - 10 test cases
 - Updated `app/routers/nl_agent.py` - Added bills reminder intent
@@ -193,9 +217,11 @@ Transform email content into actionable reminders and calendar events.
 ### API Endpoints
 
 #### POST `/productivity/reminders/create`
+
 Create reminders from email content.
 
 **Request:**
+
 ```json
 {
   "items": [
@@ -207,19 +233,22 @@ Create reminders from email content.
     }
   ]
 }
-```
+```text
 
 **Response:**
+
 ```json
 {
   "created": 1
 }
-```
+```text
 
 #### POST `/productivity/calendar/create`
+
 Create calendar events from meeting invites.
 
 **Request:**
+
 ```json
 {
   "items": [
@@ -233,24 +262,28 @@ Create calendar events from meeting invites.
     }
   ]
 }
-```
+```text
 
 **Response:**
+
 ```json
 {
   "created": 1
 }
-```
+```text
 
 #### GET `/productivity/reminders/list`
+
 List recently created reminders.
 
 **Request:**
-```
+
+```text
 GET /productivity/reminders/list?limit=10
-```
+```text
 
 **Response:**
+
 ```json
 {
   "items": [
@@ -263,18 +296,19 @@ GET /productivity/reminders/list?limit=10
   ],
   "total": 1
 }
-```
+```text
 
 ### Natural Language Integration
 
 Updated NL agent to support bill reminders:
 
-```
+```text
 POST /nl/run
 {"text": "show my bills and create reminders due before Friday"}
-```
+```text
 
 **Response:**
+
 ```json
 {
   "intent": "summarize_bills",
@@ -288,22 +322,25 @@ POST /nl/run
     }
   ]
 }
-```
+```text
 
 ### Storage & Future Enhancements
 
 **Current (MVP):**
+
 - Stores to `actions_audit_v1` Elasticsearch index
 - Action: `create_reminder` or `create_calendar_event`
 - Full payload in audit trail
 
 **Future:**
+
 - Google Calendar API integration
 - Google Tasks API integration
 - Reminders sync across devices
 - Calendar event RSVP tracking
 
 ### Test Coverage
+
 - Create single reminder
 - Create multiple reminders
 - Create calendar events
@@ -323,22 +360,25 @@ If using punycode detection for risk heuristics:
 
 ```bash
 pip install idna
-```
+```text
 
 Add to `pyproject.toml`:
+
 ```toml
 [tool.poetry.dependencies]
 idna = "^3.4"
-```
+```text
 
 ### Testing
 
 Run all tests:
+
 ```bash
 pytest -q
-```
+```text
 
 Run specific test suites:
+
 ```bash
 # Grouped unsubscribe
 pytest tests/e2e/test_unsubscribe_grouped.py -v
@@ -348,23 +388,26 @@ pytest tests/unit/test_risk_heuristics.py -v
 
 # Productivity tools
 pytest tests/e2e/test_productivity_reminders.py -v
-```
+```text
 
 ---
 
 ## Summary Statistics
 
 ### Files Added/Modified
+
 - **3 new routers**: unsubscribe_group.py, productivity.py, risk.py
 - **3 test files**: 32 total test cases
 - **2 modified files**: main.py, nl_agent.py
 
 ### Code Metrics
+
 - **1,331 insertions**, 4 deletions
 - **8 files changed**
 - **5 new API endpoints**
 
 ### Test Coverage
+
 - **4 tests** - Grouped unsubscribe
 - **18 tests** - Risk heuristics
 - **10 tests** - Productivity tools
@@ -403,7 +446,7 @@ curl -X POST http://localhost:8003/unsubscribe/execute_grouped \
     "email_ids":["e1","e2"],
     "params":{"headers":{"List-Unsubscribe":"..."}}
   }'
-```
+```text
 
 ### Example 2: Check Email Risk Score
 
@@ -421,7 +464,7 @@ print(f"Risk Factors: {result['risk_factors']}")
 # Output:
 # Risk Score: 79
 # Risk Factors: ['display_name_spoof', 'suspicious_tld', 'punycode_url']
-```
+```text
 
 ### Example 3: Create Bill Reminder via NL
 
@@ -429,7 +472,7 @@ print(f"Risk Factors: {result['risk_factors']}")
 curl -X POST http://localhost:8003/nl/run \
   -H "Content-Type: application/json" \
   -d '{"text":"show my bills and create reminders due before Friday"}'
-```
+```text
 
 ---
 

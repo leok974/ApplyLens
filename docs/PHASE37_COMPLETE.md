@@ -23,18 +23,23 @@ Successfully integrated the ML labeling pipeline into the search API and fronten
 ### 1. API Endpoint Tests
 
 #### Gmail Backfill (7 days)
+
 ```bash
 curl -X POST "http://localhost:8003/api/gmail/backfill?days=7"
-```
+```text
+
 **Result:** ✅ `96 emails inserted, 0 updated, 0 skipped`
 
 #### ML Label Rebuild
+
 ```bash
 curl -X POST "http://localhost:8003/api/ml/label/rebuild?limit=2000"
-```
+```text
+
 **Result:** ✅ `1,894 updated, 1,869 ES synced`
 
 **Category Distribution:**
+
 - `other`: 1,003 (53%)
 - `promotions`: 383 (20%)
 - `ats`: 261 (14%)
@@ -42,15 +47,19 @@ curl -X POST "http://localhost:8003/api/ml/label/rebuild?limit=2000"
 - `bills`: 94 (5%)
 
 #### Profile Rebuild
+
 ```bash
 curl -X POST "http://localhost:8003/api/profile/rebuild"
-```
+```text
+
 **Result:** ✅ `403 emails processed`
 
 #### Profile Summary
+
 ```bash
 curl "http://localhost:8003/api/profile/db-summary"
-```
+```text
+
 **Result:** ✅ Full profile with top senders, categories, interests
 
 ---
@@ -58,10 +67,13 @@ curl "http://localhost:8003/api/profile/db-summary"
 ### 2. Search API Tests
 
 #### Basic Search with ML Fields
+
 ```bash
 curl "http://localhost:8003/api/search/?q=interview&size=5"
-```
+```text
+
 **Result:** ✅ All results show `category` field populated
+
 ```json
 [
   {
@@ -76,22 +88,28 @@ curl "http://localhost:8003/api/search/?q=interview&size=5"
     "expires_at": null
   }
 ]
-```
+```text
 
 #### Single Category Filter
+
 ```bash
 curl "http://localhost:8003/api/search/?q=email&categories=promotions&size=5"
-```
+```text
+
 **Result:** ✅ All 5 results have `category: "promotions"`
 
 #### Multiple Category Filter
+
 ```bash
 curl "http://localhost:8003/api/search/?q=email&categories=ats&categories=promotions&size=10"
-```
+```text
+
 **Result:** ✅ 219 total results, 10 returned (3 ats, 7 promotions)
 
 #### Category Distribution in Search Results
+
 Query: `application` (100 results)
+
 - `other`: 39
 - `promotions`: 34
 - `ats`: 12
@@ -103,12 +121,15 @@ Query: `application` (100 results)
 ### 3. Elasticsearch Direct Verification
 
 #### Document Check
+
 ```bash
 curl "http://localhost:9200/gmail_emails/_doc/199ce400fd0d65d0"
-```
+```text
+
 **Result:** ✅ Document has `category: "other"` field in ES
 
 #### Index Stats
+
 - **Index:** `gmail_emails`
 - **Documents:** 1,866
 - **ML Fields Synced:** 1,869 (some emails lack gmail_id)
@@ -119,7 +140,7 @@ curl "http://localhost:9200/gmail_emails/_doc/199ce400fd0d65d0"
 
 ### Data Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │ 1. Gmail Backfill                                               │
 │    POST /api/gmail/backfill?days=7                              │
@@ -151,7 +172,7 @@ curl "http://localhost:9200/gmail_emails/_doc/199ce400fd0d65d0"
 │    → Returns ML fields (category, expires_at, event_start_at)   │
 │    → Frontend displays badges and filters                       │
 └─────────────────────────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -184,9 +205,10 @@ for email_row in emails:
 if bulk_body:
     response = es_client.bulk(body=bulk_body, refresh=True)
     es_synced = len(bulk_body) // 2
-```
+```text
 
 **Key Features:**
+
 - `doc_as_upsert: True` - Handles missing ES documents
 - `refresh: True` - Makes changes immediately searchable
 - Error logging for failed updates
@@ -199,15 +221,17 @@ if bulk_body:
 **Fixed Issue:** SearchHit constructor was missing ML fields
 
 **Before:**
+
 ```python
 hits.append(SearchHit(
     subject=source.get("subject"),
     # ... other fields ...
     time_to_response_hours=time_to_response_hours,
 ))  # ❌ Missing ML fields
-```
+```text
 
 **After:**
+
 ```python
 hits.append(SearchHit(
     subject=source.get("subject"),
@@ -221,28 +245,32 @@ hits.append(SearchHit(
     interests=source.get("interests", []),
     confidence=source.get("confidence"),
 ))  # ✅ Now includes ML fields
-```
+```text
 
 ---
 
 ### Frontend Components
 
 #### AppHeader (apps/web/src/components/AppHeader.tsx)
+
 - 3-step pipeline UI: Gmail → Label → Profile
 - Loading states and toast notifications
 - onClick handlers for each sync button
 
 #### SearchControls (apps/web/src/components/SearchControls.tsx)
+
 - Category filter buttons (ATS, Promotions, Bills, Banks, Events, Other)
 - Hide expired toggle switch
 - Updates URL search params: `?cat=ats,promotions&hideExpired=1`
 
 #### EmailCard/EmailRow
+
 - ML category badges with color coding
 - Expiry badges: "⏰ expires in 3 days"
 - Event badges: "📅 Dec 15"
 
 #### ProfileSummary (apps/web/src/components/ProfileSummary.tsx)
+
 - Top categories chart
 - Top senders list
 - Interests/keywords
@@ -253,6 +281,7 @@ hits.append(SearchHit(
 ## 🎨 Frontend Integration Status
 
 ### ✅ Complete
+
 - AppHeader with 3-step pipeline
 - SearchControls with category filters
 - ML badges on EmailCard and EmailRow
@@ -260,6 +289,7 @@ hits.append(SearchHit(
 - API type definitions with ML fields
 
 ### ⏳ Pending (Phase 38)
+
 - Integrate ProfileSummary into profile page
 - Add loading skeletons to search results
 - Improve error alerts with retry button
@@ -271,6 +301,7 @@ hits.append(SearchHit(
 ## 📊 Data State
 
 ### PostgreSQL (Source of Truth)
+
 - **Table:** `emails`
 - **Records:** 1,894 labeled
 - **ML Fields:**
@@ -282,6 +313,7 @@ hits.append(SearchHit(
   - `ml_features` (JSONB) - Extracted features
 
 ### Elasticsearch (Search Index)
+
 - **Index:** `gmail_emails`
 - **Documents:** 1,866
 - **Synced:** 1,869 out of 1,894 (25 missing gmail_id)
@@ -292,18 +324,22 @@ hits.append(SearchHit(
 ## 🐛 Issues Resolved
 
 ### Issue 1: ML Fields Returning Null in Search ✅ FIXED
+
 **Root Cause:** SearchHit constructor not extracting ML fields from ES _source  
 **Solution:** Added ML field extraction to response mapping
 
 ### Issue 2: Document Missing Exception ✅ FIXED
+
 **Root Cause:** Using ES update without upsert on non-existent docs  
 **Solution:** Changed `doc_as_upsert: False` → `True`
 
 ### Issue 3: Index Name Mismatch ✅ FIXED
+
 **Root Cause:** Labeling endpoint used `emails_v1-000001`, search used `gmail_emails`  
 **Solution:** Changed both to use `ELASTICSEARCH_INDEX=gmail_emails`
 
 ### Issue 4: event_end_at Attribute Error ✅ FIXED
+
 **Root Cause:** Field doesn't exist in Email model  
 **Solution:** Removed from sync logic, added hasattr() checks
 
@@ -312,22 +348,26 @@ hits.append(SearchHit(
 ## 🚀 Next Steps (Phase 38)
 
 ### 1. Improve ML Rules Engine
+
 - Extract expiry dates from promotions ("Offer ends Dec 15")
 - Extract event dates from invitations ("Workshop on Jan 10")
 - Add confidence scoring for categories
 
 ### 2. UI Polish
+
 - Loading skeletons for search results
 - Better error alerts with retry button
 - Dark mode badge colors
 - Empty state for "No results found"
 
 ### 3. Profile Page Integration
+
 - Add ProfileSummary component to /profile page
 - Real-time updates after sync
 - Interactive charts with filtering
 
 ### 4. Advanced Filters
+
 - Date range picker for received_at
 - Replied/unreplied toggle
 - Company search
@@ -338,6 +378,7 @@ hits.append(SearchHit(
 ## 📝 Testing Checklist
 
 ### Backend API
+
 - [x] Gmail backfill inserts emails
 - [x] ML label rebuild categorizes emails
 - [x] ES sync updates all documents
@@ -349,6 +390,7 @@ hits.append(SearchHit(
 - [x] Profile summary returns full data
 
 ### Frontend UI
+
 - [x] AppHeader sync buttons work
 - [x] SearchControls updates URL params
 - [x] Category filter buttons trigger API calls
@@ -363,26 +405,31 @@ hits.append(SearchHit(
 ## 🎉 Success Criteria - ALL MET
 
 ✅ **1. ML Pipeline Integrated**
+
 - ML labeling system categorizes 1,894 emails
 - 93% accuracy on training set
 - 5 categories: ats, bills, banks, events, promotions, other
 
 ✅ **2. Elasticsearch Synced**
+
 - Bulk update syncs 1,869 documents
 - category, expires_at, event_start_at fields populated
 - Immediate refresh for searchability
 
 ✅ **3. Search API Returns ML Fields**
+
 - SearchHit model includes all ML fields
 - Response mapping extracts from ES _source
 - Verified with curl tests
 
 ✅ **4. Category Filtering Works**
+
 - Single category: `?categories=ats` → only ATS emails
 - Multiple categories: `?categories=ats&categories=promotions` → both types
 - Backend query filters ES results correctly
 
 ✅ **5. Frontend Components Ready**
+
 - AppHeader, SearchControls, EmailCard, ProfileSummary all implemented
 - URL params update on filter changes
 - Toast notifications on sync actions
@@ -392,12 +439,14 @@ hits.append(SearchHit(
 ## 🔗 Related Files
 
 ### Backend
+
 - `services/api/app/routers/labeling.py` - ML labeling + ES sync
 - `services/api/app/routers/search.py` - Search API with filters
 - `services/api/app/ml/predict.py` - ML prediction logic
 - `services/api/app/models.py` - Email model with ML fields
 
 ### Frontend
+
 - `apps/web/src/components/AppHeader.tsx` - 3-step pipeline
 - `apps/web/src/components/SearchControls.tsx` - Category filters
 - `apps/web/src/components/EmailCard.tsx` - ML badges
@@ -406,6 +455,7 @@ hits.append(SearchHit(
 - `apps/web/src/lib/api.ts` - API client with ML types
 
 ### Documentation
+
 - `PHASE37_STATUS.md` - Detailed status tracking
 - `PHASE37_COMPLETE.md` - This file (completion report)
 

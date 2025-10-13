@@ -11,6 +11,7 @@
 Successfully completed schema migration to add missing `emails.category` column, implemented schema guards to prevent future failures, backfilled Elasticsearch data, and verified all components are functioning correctly. All verification checks passed.
 
 ### Critical Achievement
+
 - **Before:** Jobs failed 2 hours into execution with "column does not exist" error
 - **After:** Jobs fail in 3 minutes with clear fix instructions via schema guard
 - **Impact:** Saves ~117 minutes of CI time and provides immediate actionable guidance
@@ -20,20 +21,24 @@ Successfully completed schema migration to add missing `emails.category` column,
 ## Deployment Verification Results
 
 ### 1. Database Migration Status ✅
+
 ```bash
 $ docker-compose exec api alembic current
 0009_add_emails_category (head)
-```
+```text
 
 **Migration Chain:**
+
 - 0006_reply_metrics → 0008_approvals_proposed → 0009_add_emails_category
 
 **Database Schema:**
+
 - ✅ Column `emails.category` exists (Text, nullable, indexed)
 - ✅ Index `ix_emails_category` exists
 - ✅ Backfill completed: categories populated from Gmail labels
 
 ### 2. Backfill Validation ✅
+
 ```bash
 $ docker-compose exec api python scripts/validate_backfill.py --pretty
 Index: gmail_emails_v2
@@ -41,18 +46,21 @@ Missing dates[] (bills): 0
 Bills with dates[]:      1
 Bills with expires_at:   1
 Verdict: OK  @ 2025-10-10T16:06:33.872571Z
-```
+```text
 
 **Result:** All bills have dates populated, 0 missing.
 
 ### 3. Application Health ✅
+
 **API Endpoints:**
+
 - ✅ `/healthz` → "ok" (200)
 - ✅ `/docs` → Swagger UI available (200)
 - ✅ `/metrics` → Prometheus metrics available (200)
 
 **Available Endpoints (36 total):**
-```
+
+```text
 /analytics/dashboards/kpis.csv
 /analytics/latest
 /analytics/search
@@ -88,9 +96,10 @@ Verdict: OK  @ 2025-10-10T16:06:33.872571Z
 /suggest/
 /unsubscribe/execute
 /unsubscribe/preview
-```
+```bash
 
 **Service Status (docker-compose):**
+
 - ✅ api: Up 3+ hours (port 8003)
 - ✅ db: Up 3+ hours (port 5433)
 - ✅ es: Up 3+ hours, healthy (port 9200)
@@ -99,12 +108,14 @@ Verdict: OK  @ 2025-10-10T16:06:33.872571Z
 - ✅ ollama: Up 3+ hours (port 11434)
 
 **Prometheus Metrics:**
+
 - HTTP requests processed: 13 total
 - Request duration p50: ~5ms
 - Database up: 0.0 (health check may be misconfigured, but DB is functional)
 - Elasticsearch up: 0.0 (health check may be misconfigured, but ES is functional)
 
 ### 4. Backfill Job End-to-End Test ✅
+
 ```bash
 $ docker-compose exec api env DRY_RUN=0 BATCH=10 ES_EMAIL_INDEX=gmail_emails_v2 \
     python scripts/backfill_bill_dates.py
@@ -121,15 +132,17 @@ Backfill completed.
 Scanned: 1 bills
 Updated: 0 bills
 Unchanged: 1 bills
-```
+```text
 
-**Result:** 
+**Result:**
+
 - ✅ Schema guard passed
 - ✅ Job executed successfully
 - ✅ 1 bill already had dates (no updates needed)
 - ✅ No errors encountered
 
 ### 5. Elasticsearch Backfill Status ✅
+
 ```bash
 $ docker-compose exec api python scripts/backfill_es_category.py
 
@@ -137,9 +150,10 @@ Backfill Statistics:
 - Total documents: 1822
 - Documents with category: 1816 / 1822
 - Updated in this run: 6
-```
+```text
 
 **Category Distribution:**
+
 - updates: 1510
 - forums: 155
 - promotions: 108
@@ -154,32 +168,37 @@ Backfill Statistics:
 ## Schema Guard Implementation
 
 ### What It Does
+
 Prevents long-running jobs from failing hours into execution when database schema is outdated. Forces jobs to fail fast (within 3 minutes) with actionable error messages.
 
 ### How It Works
+
 ```python
 from app.utils.schema_guard import require_min_migration
 
 # At start of job
 require_min_migration("0009_add_emails_category", "emails.category column")
-```
+```text
 
 **On Success:** Job proceeds normally  
 **On Failure:** Exits immediately with:
-```
+
+```text
 ❌ Schema validation failed:
 Database schema is too old. Current: 0008, Required: 0009
 
 Please run migrations:
   cd services/api
   alembic upgrade head
-```
+```text
 
 ### Where It's Used
+
 1. **`scripts/backfill_bill_dates.py`** - Bill date extraction job
 2. **`.github/workflows/backfill-bills.yml`** - CI workflow pre-job check
 
 ### Testing Results
+
 - ✅ Unit tests: 8/8 passed (`test_schema_guard.py`)
 - ✅ Manual verification: 5/5 checks passed (`verify_schema_guard.py`)
 - ✅ Integration test: Schema guard correctly passed in live backfill
@@ -189,6 +208,7 @@ Please run migrations:
 ## Files Created/Modified
 
 ### Created
+
 1. **`services/api/alembic/versions/0009_add_emails_category.py`**
    - Adds `emails.category` column (Text, nullable, indexed)
    - Backfills from Gmail CATEGORY_* labels
@@ -229,14 +249,17 @@ Please run migrations:
    - Final deployment status and verification results
 
 ### Modified
+
 1. **`services/api/scripts/backfill_bill_dates.py`**
    - Added schema guard at startup:
+
    ```python
    require_min_migration("0009_add_emails_category", "emails.category column")
    ```
 
 2. **`.github/workflows/backfill-bills.yml`**
    - Added pre-job schema validation step:
+
    ```yaml
    - name: Check database schema version
      run: |
@@ -247,6 +270,7 @@ Please run migrations:
    ```
 
 ### Already Existed (Verified)
+
 - **`services/api/app/models.py`**: Email model already had `category` column defined
 
 ---
@@ -254,6 +278,7 @@ Please run migrations:
 ## Known Issues & Notes
 
 ### 1. Health Check Metrics Show 0
+
 **Issue:** Prometheus metrics show `applylens_db_up=0.0` and `applylens_es_up=0.0`
 
 **Impact:** Low - Services are functional and responding correctly
@@ -263,6 +288,7 @@ Please run migrations:
 **Recommendation:** Review health check implementation in monitoring code, but not blocking for deployment
 
 ### 2. Migration Chain Gap
+
 **Historical Context:** Migration chain jumped from 0006 → 0008, skipping 0007
 
 **Current State:** Resolved by creating 0009 (can't retroactively add 0007)
@@ -294,16 +320,19 @@ Please run migrations:
 ## Next Steps (Recommendations)
 
 ### Immediate (Optional)
+
 1. **Fix health check metrics** - Update monitoring code to correctly report DB/ES status
 2. **Monitor production logs** - Watch for any schema-related errors in next 24 hours
 3. **Review CI run times** - Confirm schema guard reduces failure detection time
 
 ### Short-term (Next Sprint)
+
 1. **Add schema guards to other jobs** - Identify other long-running jobs and add version checks
 2. **Create migration naming convention** - Document sequential numbering policy
 3. **Implement migration rollback tests** - Test downgrade functionality
 
 ### Long-term (Next Month)
+
 1. **Automated schema validation** - Add pre-commit hooks to check model/migration consistency
 2. **Migration documentation generator** - Auto-generate migration history from alembic
 3. **Schema change impact analysis** - Tool to identify all code affected by schema changes
@@ -313,18 +342,21 @@ Please run migrations:
 ## Commit History
 
 **Phase 9 (Schema Migration Fix):**
+
 - `62defb1` - Add migration 0009_add_emails_category
 - `fb9b468` - Add schema guard utility and tests
 - `89b9033` - Update backfill_bill_dates with schema guard
 - `a286d02` - Add comprehensive schema migration guide
 
 **Phase 10 (Post-Migration Verification):**
+
 - `8138692` - Complete post-migration verification
 - Added ES category backfill script
 - Added CI schema guard to workflow
 - Created POST_MIGRATION_VERIFICATION_COMPLETE.md
 
 **Phase 11 (Deployment Verification):**
+
 - Executed all verification steps
 - All tests passed
 - Created DEPLOYMENT_COMPLETE_2025-01-10.md
@@ -336,6 +368,7 @@ Please run migrations:
 ✅ **Deployment Complete and Production Ready**
 
 All critical components verified:
+
 - Database migration applied and validated
 - Schema guard preventing future failures
 - Backfill jobs functioning correctly

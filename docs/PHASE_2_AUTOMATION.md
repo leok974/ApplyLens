@@ -13,22 +13,25 @@ Phase-2 provides three automation options for running the complete email categor
 3. **PowerShell** - Windows-native automation with rich output
 
 All three options run the same underlying workflow:
-```
+
+```text
 ES → export_weak_labels.py → weak_labels.jsonl
   → train_ml.py → label_model.joblib
   → POST /labels/apply → ES (with categories)
-```
+```text
 
 ---
 
 ## Option 1: Makefile (Unix/Linux/Mac)
 
 ### Prerequisites
+
 - GNU Make installed
 - Python 3.11+
 - curl and jq (for API calls)
 
 ### Quick Start
+
 ```bash
 # Run complete pipeline
 make phase2-all
@@ -40,9 +43,10 @@ make apply-labels
 
 # Show all available targets
 make help
-```
+```text
 
 ### Configuration (Override Defaults)
+
 ```bash
 # Export more data
 make export-weak EXPORT_DAYS=90 EXPORT_LIMIT=50000
@@ -53,9 +57,10 @@ make apply-labels API_BASE=https://api.applylens.app
 # Custom output paths
 make export-weak WEAK_JSONL=/data/my_labels.jsonl
 make train-labels MODEL_OUT=/models/my_model.joblib
-```
+```text
 
 ### Available Targets
+
 - `make help` - Display all targets with descriptions
 - `make export-weak` - Export weak labels from ES to JSONL
 - `make train-labels` - Train ML model from JSONL
@@ -64,6 +69,7 @@ make train-labels MODEL_OUT=/models/my_model.joblib
 - `make clean-weak` - Remove exported JSONL file
 
 ### Default Configuration
+
 ```makefile
 ES_URL        = http://localhost:9200
 ES_INDEX      = emails_v1-000001
@@ -73,18 +79,20 @@ EXPORT_LPC    = 8000
 WEAK_JSONL    = /tmp/weak_labels.jsonl
 MODEL_OUT     = services/api/app/labeling/label_model.joblib
 API_BASE      = http://localhost:8003
-```
+```text
 
 ---
 
 ## Option 2: npm Scripts (Cross-Platform)
 
 ### Prerequisites
+
 - Node.js 18+ and npm 9+
 - Python 3.11+
 - curl and jq (for stats)
 
 ### Quick Start
+
 ```bash
 # Install dependencies
 npm install
@@ -99,9 +107,10 @@ npm run phase2:apply
 
 # Show help
 npm run phase2:help
-```
+```text
 
 ### Available Scripts
+
 - `npm run phase2:export` - Export weak labels from ES
 - `npm run phase2:train` - Train ML model from JSONL
 - `npm run phase2:apply` - Apply labels to ES docs
@@ -112,6 +121,7 @@ npm run phase2:help
 - `npm run phase2:help` - Display all available scripts
 
 ### Configuration (via Environment Variables)
+
 ```bash
 # Windows PowerShell
 $env:ES_URL="http://localhost:9200"
@@ -120,9 +130,10 @@ npm run phase2:export
 
 # Unix/Linux/Mac
 ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:export
-```
+```text
 
 ### Default Configuration
+
 - ES_URL: `http://localhost:9200`
 - ES_EMAIL_INDEX: `emails_v1-000001`
 - Export days: `60`
@@ -137,11 +148,13 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ## Option 3: PowerShell (Windows)
 
 ### Prerequisites
+
 - PowerShell 5.1+ or PowerShell Core 7+
 - Python 3.11+
 - Invoke-RestMethod (built-in)
 
 ### Quick Start
+
 ```powershell
 # Run complete pipeline with default settings
 .\scripts\phase2-all.ps1
@@ -154,9 +167,10 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 
 # Custom paths
 .\scripts\phase2-all.ps1 -Weak "D:\data\weak_labels.jsonl" -Model "D:\models\label_model.joblib"
-```
+```text
 
 ### Available Parameters
+
 ```powershell
 -EsUrl      # Elasticsearch URL (default: http://localhost:9200)
 -EsIndex    # ES index name (default: emails_v1-000001)
@@ -166,9 +180,10 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 -Weak       # Output JSONL path (default: C:\Windows\Temp\weak_labels.jsonl)
 -Model      # Model output path (default: services/api/app/labeling/label_model.joblib)
 -ApiBase    # API base URL (default: http://localhost:8003)
-```
+```text
 
 ### Examples
+
 ```powershell
 # Export last 30 days
 .\scripts\phase2-all.ps1 -Days 30
@@ -181,9 +196,10 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 
 # Production environment
 .\scripts\phase2-all.ps1 -EsUrl https://es.applylens.app -ApiBase https://api.applylens.app
-```
+```text
 
 ### Output Features
+
 - 🎨 Color-coded progress indicators
 - 📊 Real-time statistics display
 - ✅ Post-workflow verification
@@ -211,51 +227,60 @@ ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 npm run phase2:expo
 ## 🚀 Recommended Usage
 
 ### First-Time Setup
+
 Use **PowerShell** (Windows) or **npm** (Mac/Linux) for rich output and verification:
+
 ```powershell
 # Windows
 .\scripts\phase2-all.ps1
 
 # Mac/Linux
 npm run phase2:all
-```
+```text
 
 ### Automated CI/CD Pipelines
+
 Use **Makefile** or **npm** for simplicity and portability:
+
 ```bash
 # CI/CD with Makefile
 make phase2-all
 
 # CI/CD with npm
 npm run phase2:all
-```
+```text
 
 ### Development Iteration
+
 Use **Makefile** targets for quick experimentation:
+
 ```bash
 # Just retrain model
 make train-labels
 
 # Just apply labels
 make apply-labels
-```
+```text
 
 ### Production Deployment
+
 Use **PowerShell** with custom parameters:
+
 ```powershell
 .\scripts\phase2-all.ps1 `
   -EsUrl https://es.prod.applylens.app `
   -ApiBase https://api.prod.applylens.app `
   -Days 90 `
   -Limit 100000
-```
+```text
 
 ---
 
 ## 📊 Expected Output
 
 ### Makefile
-```
+
+```bash
 >> Exporting weak labels to /tmp/weak_labels.jsonl
 {"seen":15234,"written":12500,"by_category":{"promo":3201,"newsletter":4892,...}}
 
@@ -271,10 +296,11 @@ Use **PowerShell** with custom parameters:
 {"updated":15234}
 
 ✅ Phase-2 pipeline finished
-```
+```bash
 
 ### npm Scripts
-```
+
+```bash
 > npm run phase2:all
 
 > phase2:all
@@ -298,10 +324,11 @@ Use **PowerShell** with custom parameters:
     {"key": "bill", "count": 1543}
   ]
 }
-```
+```text
 
 ### PowerShell
-```
+
+```text
 🎯 Phase 2 - Email Categorization Pipeline
 ==========================================
 
@@ -343,66 +370,82 @@ Profile Summary:
       newsletter.example.com (421 emails)
 
 ✅ Phase 2 pipeline complete!
-```
+```text
 
 ---
 
 ## 🛠️ Troubleshooting
 
 ### Issue: `make: command not found`
+
 **Solution:** Use npm scripts or PowerShell instead:
+
 ```bash
 npm run phase2:all
-```
+```bash
 
 ### Issue: `curl: command not found`
-**Solution:** 
+
+**Solution:**
+
 - **Windows**: Use PowerShell option (uses Invoke-RestMethod)
 - **Mac**: Install curl: `brew install curl`
 - **Linux**: Install curl: `apt install curl` or `yum install curl`
 
 ### Issue: `jq: command not found`
-**Solution:** 
+
+**Solution:**
+
 - **Windows**: Use PowerShell option (parses JSON natively)
 - **Mac**: Install jq: `brew install jq`
 - **Linux**: Install jq: `apt install jq` or `yum install jq`
 
 ### Issue: `cross-env: command not found`
+
 **Solution:** Install npm dependencies:
+
 ```bash
 npm install
-```
+```text
 
 ### Issue: PowerShell execution policy error
+
 **Solution:** Allow script execution:
+
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+```text
 
 ### Issue: Python module not found
+
 **Solution:** Install Python dependencies:
+
 ```bash
 cd services/api
 pip install -e .
 # or
 poetry install
-```
+```text
 
 ### Issue: ES connection refused
+
 **Solution:** Start Elasticsearch:
+
 ```bash
 docker-compose up -d elasticsearch
-```
+```text
 
 ### Issue: API returns 404
+
 **Solution:** Ensure API is running on correct port:
+
 ```bash
 # Check if API is running
 curl http://localhost:8003/health
 
 # Update ApiBase parameter
 .\scripts\phase2-all.ps1 -ApiBase http://localhost:8003
-```
+```text
 
 ---
 
@@ -421,27 +464,30 @@ Before running Phase-2 automation, verify:
 ### Quick Verification Commands
 
 **Makefile:**
+
 ```bash
 make -v                # Check GNU Make version
 python --version       # Check Python version
 curl --version         # Check curl
 jq --version          # Check jq
-```
+```bash
 
 **npm:**
+
 ```bash
 node --version         # Check Node.js version
 npm --version          # Check npm version
 python --version       # Check Python version
-```
+```text
 
 **PowerShell:**
+
 ```powershell
 $PSVersionTable        # Check PowerShell version
 python --version       # Check Python version
 Test-NetConnection -ComputerName localhost -Port 9200  # Check ES
 Test-NetConnection -ComputerName localhost -Port 8003  # Check API
-```
+```text
 
 ---
 
@@ -450,6 +496,7 @@ Test-NetConnection -ComputerName localhost -Port 8003  # Check API
 After running Phase-2 automation:
 
 1. **Verify Results**
+
    ```bash
    # Makefile/npm
    curl "http://localhost:8003/labels/stats" | jq
@@ -459,12 +506,13 @@ After running Phase-2 automation:
    ```
 
 2. **Inspect Categorized Emails**
+
    ```bash
    curl "http://localhost:9200/emails_v1-000001/_search?q=category:promo" | jq
    ```
 
 3. **View in Kibana**
-   - Open: http://localhost:5601
+   - Open: <http://localhost:5601>
    - Query: `category:promo AND expires_at:>now`
 
 4. **Integrate with UI**

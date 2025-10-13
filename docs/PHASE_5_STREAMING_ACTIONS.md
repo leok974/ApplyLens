@@ -5,24 +5,28 @@
 This enhancement adds the ability to **replay queries with action filing** to the Phase 5 chat assistant. Users can now send queries that automatically file proposed actions to the Phase 4 Approvals tray using the `propose=1` parameter.
 
 ## Implementation Date
+
 January 2025
 
 ## Features Added
 
 ### 1. Last Query Tracking
+
 - **State Variable**: `lastQuery` - Stores the most recent query text
 - **Purpose**: Enables replay functionality for "Run actions now" button
 - **Update Location**: Set in the `send()` function before processing
 
 ### 2. File Actions Toggle
+
 - **State Variable**: `fileActions` - Boolean checkbox state
 - **UI Element**: Checkbox labeled "file actions to Approvals"
 - **Purpose**: Visual indicator for users about action filing behavior
 - **Future Enhancement**: Can be wired to automatically set `propose=true` on send
 
 ### 3. "Run actions now" Button
+
 - **Location**: Input bar (right side)
-- **Behavior**: 
+- **Behavior**:
   - Replays the last query with `propose=true` option
   - Disabled when no last query exists or when busy
   - Uses blue styling to distinguish from regular "Send" button
@@ -30,16 +34,18 @@ January 2025
 - **Tooltip**: "Replay last query with actions filed to the Approvals tray"
 
 ### 4. Enhanced send() Function
+
 - **New Signature**: `async function send(text: string, opts?: { propose?: boolean })`
-- **Options Parameter**: 
+- **Options Parameter**:
   - `propose`: When true, adds confirmation message about filed actions
-- **Action Confirmation**: 
+- **Action Confirmation**:
   - When `opts?.propose` is true and actions exist, adds:
   - "✅ **Actions filed to Approvals tray for review**"
 
 ## UI Changes
 
 ### Input Bar Layout
+
 ```tsx
 <div className="flex flex-wrap gap-2 items-center">
   {/* Input field */}
@@ -59,12 +65,13 @@ January 2025
     Run actions now
   </button>
 </div>
-```
+```text
 
 ### Key Layout Features
+
 - **Flex Wrap**: Allows controls to wrap on smaller screens
 - **Min Width**: Input has `min-w-[200px]` to maintain usability
-- **Button Styling**: 
+- **Button Styling**:
   - Send button: Emerald (green) color
   - Run actions now button: Blue color for distinction
 - **Disabled States**: Both buttons disable when `busy` or no input/lastQuery
@@ -74,12 +81,14 @@ January 2025
 ### Component: MailChat.tsx
 
 **New State Variables**:
+
 ```typescript
 const [lastQuery, setLastQuery] = useState<string>('')
 const [fileActions, setFileActions] = useState(false)
-```
+```text
 
 **Modified send() Function**:
+
 ```typescript
 async function send(text: string, opts?: { propose?: boolean }) {
   if (!text.trim() || busy) return
@@ -95,14 +104,16 @@ async function send(text: string, opts?: { propose?: boolean }) {
   
   // ... rest of logic ...
 }
-```
+```text
 
 **New Icons**:
+
 - Added `Play` to lucide-react imports for "Run actions now" button
 
 ## Backend Integration
 
 ### propose=1 Parameter
+
 - **Backend Support**: Already implemented in Phase 5 chat.py router
 - **Behavior**: When `propose=1` is included in the query, the backend:
   1. Generates proposed actions as usual
@@ -110,26 +121,30 @@ async function send(text: string, opts?: { propose?: boolean }) {
   3. Returns the standard ChatResponse with actions
 
 ### API Endpoint
+
 - **URL**: `POST /api/chat`
 - **Request Body**:
+
 ```json
 {
   "messages": [...],
   "propose": true  // Optional, triggers action filing
 }
-```
+```text
 
 **Note**: This implementation uses the existing POST endpoint. Future streaming implementation (EventSource/SSE) would use `GET /api/chat/stream?q=...&propose=1` as mentioned in the original request.
 
 ## User Workflow
 
 ### Standard Query (No Filing)
+
 1. User types query in input field
 2. Clicks "Send" or presses Enter
 3. Assistant responds with proposed actions
 4. Actions are **not** filed to Approvals tray
 
 ### Quick Action Filing
+
 1. User sends a query (becomes `lastQuery`)
 2. User reviews the assistant's response and proposed actions
 3. User clicks "Run actions now" button
@@ -138,6 +153,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
 6. Confirmation message appears: "✅ **Actions filed to Approvals tray for review**"
 
 ### Future: Automatic Filing
+
 - User can check "file actions to Approvals" checkbox
 - Future enhancement: Wire checkbox to automatically set `propose=true` on every send
 - Would eliminate need for "Run actions now" button in most cases
@@ -147,6 +163,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
 ### Manual Testing Steps
 
 1. **Start Services**:
+
    ```powershell
    # Backend (if not running)
    cd d:\ApplyLens
@@ -158,7 +175,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
    ```
 
 2. **Navigate to Chat**:
-   - Open: http://localhost:5176/chat (or port shown in terminal)
+   - Open: <http://localhost:5176/chat> (or port shown in terminal)
 
 3. **Test Standard Query**:
    - Type: "Summarize emails from last week"
@@ -183,6 +200,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
    - Verify: Layout wraps properly on narrow screens
 
 ### Expected Results
+
 - ✅ Last query tracked correctly
 - ✅ "Run actions now" button enables after first query
 - ✅ Replay sends same query with propose=true
@@ -193,6 +211,7 @@ async function send(text: string, opts?: { propose?: boolean }) {
 ## Files Modified
 
 ### apps/web/src/components/MailChat.tsx
+
 - **Added**: `lastQuery` state variable (line 78)
 - **Added**: `fileActions` state variable (line 79)
 - **Modified**: `send()` function signature to accept `opts?: { propose?: boolean }`
@@ -206,7 +225,9 @@ async function send(text: string, opts?: { propose?: boolean }) {
 ## Future Enhancements
 
 ### 1. Streaming Support (EventSource/SSE)
+
 As outlined in the original request, implement true streaming:
+
 ```typescript
 const url = `/api/chat/stream?q=${encodeURIComponent(text)}${opts?.propose ? '&propose=1' : ''}`
 const ev = new EventSource(url)
@@ -214,24 +235,29 @@ ev.addEventListener('filed', (e: any) => {
   const data = JSON.parse(e.data)
   // Update UI with filed action confirmation
 })
-```
+```text
 
 **Benefits**:
+
 - Real-time updates as actions are processed
 - Better UX for long-running queries
 - Server-sent events for action filing confirmations
 
 ### 2. Automatic Filing Mode
+
 Wire the `fileActions` checkbox to automatically set `propose=true`:
+
 ```typescript
 async function send(text: string, opts?: { propose?: boolean }) {
   const shouldPropose = opts?.propose ?? fileActions
   // Use shouldPropose when making API call
 }
-```
+```text
 
 ### 3. Action Count Badge
+
 Show action count in UI header:
+
 ```tsx
 <div className="flex items-center gap-2">
   <h2>Chat Assistant</h2>
@@ -239,19 +265,23 @@ Show action count in UI header:
     <span className="badge">{actionCount} actions</span>
   )}
 </div>
-```
+```text
 
 ### 4. Confirmation Dialog
+
 Add confirmation before filing many actions:
+
 ```typescript
 if (opts?.propose && response.actions.length > 10) {
   const confirmed = window.confirm(`File ${response.actions.length} actions?`)
   if (!confirmed) return
 }
-```
+```text
 
 ### 5. Integration with Actions Tray
+
 Show filed actions in Phase 4 Actions Tray UI:
+
 - Add navigation link from chat to Actions page
 - Show notification when actions filed
 - Allow quick review from chat interface
@@ -259,15 +289,18 @@ Show filed actions in Phase 4 Actions Tray UI:
 ## Integration with Phase 4
 
 ### Approvals System
+
 - **Target**: Phase 4 Approvals Tray (implemented in previous phase)
-- **Flow**: 
+- **Flow**:
   1. Chat assistant generates proposed actions
   2. With `propose=1`, actions filed to Approvals table
   3. User navigates to Actions page to review/approve
   4. Approved actions execute on Gmail via batch operation
 
 ### Action Types
+
 All Phase 5 intent actions can be filed:
+
 - **clean**: Delete/archive emails
 - **unsubscribe**: Unsubscribe + delete
 - **flag**: Mark as spam/important
@@ -276,7 +309,9 @@ All Phase 5 intent actions can be filed:
 - **task**: Create task
 
 ### Database Schema
+
 Actions stored in `approvals` table:
+
 ```sql
 CREATE TABLE approvals (
   id SERIAL PRIMARY KEY,
@@ -289,11 +324,12 @@ CREATE TABLE approvals (
   approved_at TIMESTAMPTZ,
   executed_at TIMESTAMPTZ
 )
-```
+```text
 
 ## Documentation Updates
 
 ### User Guide Section
+
 Add to PHASE_5_CHAT_ASSISTANT.md:
 
 ```markdown
@@ -314,11 +350,11 @@ The chat assistant can automatically file proposed actions to the Approvals tray
 
 ### Future: Automatic Filing
 Check "file actions to Approvals" to automatically file actions on every query.
-```
+```text
 
 ## Commit Message
 
-```
+```text
 feat(chat): add "Run actions now" for action filing
 
 Add ability to replay queries with automatic action filing to
@@ -345,11 +381,12 @@ Testing:
 - Last query tracking works correctly
 - Replay with propose=true shows confirmation
 - Layout responsive on narrow screens
-```
+```text
 
 ## Summary
 
 This enhancement bridges Phase 5 (Chat Assistant) with Phase 4 (Approvals Tray), enabling users to:
+
 1. Chat naturally with their mailbox
 2. Review proposed actions in conversation
 3. File actions for approval with one click
@@ -358,5 +395,5 @@ This enhancement bridges Phase 5 (Chat Assistant) with Phase 4 (Approvals Tray),
 The implementation is clean, user-friendly, and sets the foundation for future streaming enhancements with EventSource/SSE.
 
 **Status**: ✅ Complete and ready for testing
-**Frontend**: Running on http://localhost:5176/chat
-**Backend**: Running on http://localhost:8000
+**Frontend**: Running on <http://localhost:5176/chat>
+**Backend**: Running on <http://localhost:8000>

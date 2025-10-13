@@ -6,6 +6,7 @@
 ## Overview
 
 Enhanced Elasticsearch/OpenSearch search with intelligent scoring:
+
 - **Label boosts**: Offer (4x), Interview (3x), Rejection (0.5x)
 - **7-day recency decay**: Recent emails score higher (Gaussian half-life)
 - **ATS synonyms**: Lever, Workday, SmartRecruiters, Greenhouse
@@ -36,14 +37,14 @@ curl -X DELETE "http://localhost:9200/gmail_emails"
 
 # Restart API (will recreate with new settings)
 # Or set ES_RECREATE_ON_START=true
-```
+```text
 
 ### 2. Restart API
 
 ```bash
 cd services/api
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 The new index settings with ATS synonyms will be created automatically.
 
@@ -62,7 +63,7 @@ curl "http://localhost:8003/search/?q=workday"
 
 # With filters
 curl "http://localhost:8003/search/?q=offer&label_filter=offer&size=10"
-```
+```text
 
 ---
 
@@ -78,16 +79,17 @@ Automatically expands platform names to common variations:
 "workday, myworkdayjobs, wd5.myworkday, myworkday.com",
 "smartrecruiters, smartrecruiters.com, sr.job",
 "greenhouse, greenhouse.io, mailer.greenhouse.io",
-```
+```text
 
 **Example**:
+
 ```bash
 # Search: "lever status"
 # Matches emails from:
 # - lever.co
 # - hire.lever.co
 # - Any "lever" mention
-```
+```text
 
 ### 2. Label Boost Scoring
 
@@ -100,6 +102,7 @@ Important emails surface first:
 | Rejection | 0.5x | Deprioritize (still searchable) |
 
 **Implementation**:
+
 ```python
 # In search.py query
 "functions": [
@@ -110,7 +113,7 @@ Important emails surface first:
     {"filter": {"term": {"label_heuristics": "offer"}}, "weight": 4.0},
     # ...
 ]
-```
+```text
 
 ### 3. 7-Day Recency Decay
 
@@ -127,9 +130,10 @@ Recent emails score higher with Gaussian decay:
         }
     }
 }
-```
+```text
 
 **Scoring Examples**:
+
 - Today: 100% weight
 - 7 days ago: 50% weight
 - 14 days ago: 25% weight
@@ -146,9 +150,10 @@ Important fields get higher weight:
     "sender^1.5",     # 1.5x weight
     "to"              # 1x weight
 ]
-```
+```text
 
 **Example**:
+
 - Query "offer" in subject → Score × 3
 - Query "offer" in body → Score × 1
 - Query "offer" in sender → Score × 1.5
@@ -161,9 +166,10 @@ Smart query parsing:
 f'"{q}" | {q}*'
 # "interview" → Exact phrase "interview"
 # interview*  → Prefix match (interviewing, interviews)
-```
+```text
 
 **Examples**:
+
 - `"job offer"` → Exact phrase "job offer"
 - `interv*` → Matches interview, interviewing, intervening
 
@@ -211,7 +217,7 @@ f'"{q}" | {q}*'
     }
   ]
 }
-```
+```text
 
 ---
 
@@ -221,9 +227,10 @@ f'"{q}" | {q}*'
 
 ```bash
 curl "http://localhost:8003/search/?q=offer&label_filter=offer"
-```
+```text
 
 Results sorted by:
+
 1. Offer label boost (4x)
 2. Recency (7-day decay)
 3. Text relevance
@@ -232,9 +239,10 @@ Results sorted by:
 
 ```bash
 curl "http://localhost:8003/search/?q=lever application"
-```
+```text
 
 Matches:
+
 - "lever" (synonym expansion)
 - "lever.co" emails
 - "hire.lever.co" emails
@@ -244,9 +252,10 @@ Matches:
 
 ```bash
 curl "http://localhost:8003/search/?q=interview&label_filter=interview&size=10"
-```
+```text
 
 Sorted by:
+
 1. Interview label boost (3x)
 2. Recency (recent first)
 3. Text relevance
@@ -255,7 +264,7 @@ Sorted by:
 
 ```bash
 curl "http://localhost:8003/search/?q=status&company=acme&size=20"
-```
+```text
 
 Filters to "acme" company, then ranks by relevance + recency.
 
@@ -268,9 +277,10 @@ Filters to "acme" company, then ranks by relevance + recency.
 ```bash
 cd services/api
 pytest tests/test_search_scoring.py -v
-```
+```text
 
 **Tests**:
+
 - ✅ Response structure validation
 - ✅ Filter application
 - ✅ Pydantic model conformance
@@ -286,9 +296,10 @@ docker run -p 9200:9200 -e "discovery.type=single-node" elasticsearch:8.11.0
 export ES_ENABLED=true
 export ES_URL=http://localhost:9200
 pytest tests/test_search_scoring.py -v -m integration
-```
+```text
 
 **Integration Tests**:
+
 - Label boost ordering (offer > interview > none > rejection)
 - ATS synonym expansion (lever, workday)
 - Recency decay (recent > old)
@@ -318,7 +329,7 @@ curl "http://localhost:8003/search/?q=offer" | jq '.hits[0].score'
 # Compare scores:
 # - Email with "offer" label should score ~4x higher
 # - Recent email should score higher than old email
-```
+```text
 
 ---
 
@@ -350,7 +361,7 @@ function LabelBadge({ label }: { label: string }) {
     </span>
   );
 }
-```
+```text
 
 ### Show Recency Indicator
 
@@ -365,7 +376,7 @@ function RecencyBadge({ receivedAt }: { receivedAt: string }) {
   if (daysAgo < 30) return <span className="text-gray-600">{daysAgo}d ago</span>;
   return <span className="text-gray-400">{daysAgo}d ago</span>;
 }
-```
+```text
 
 ### Highlight Search Terms
 
@@ -382,7 +393,7 @@ function HighlightedText({ text, highlight }: { text: string; highlight?: string
   text={hit.subject}
   highlight={hit.highlight?.subject?.[0]}
 />
-```
+```text
 
 ---
 
@@ -400,7 +411,7 @@ curl -X PUT "http://localhost:9200/gmail_emails_v2" -H 'Content-Type: applicatio
   "settings": { ... },  # New settings with ats_search_analyzer
   "mappings": { ... }   # Updated mappings
 }'
-```
+```text
 
 ### Step 2: Reindex
 
@@ -413,7 +424,7 @@ curl -X POST "http://localhost:9200/_reindex" -H 'Content-Type: application/json
 
 # Monitor progress
 curl "http://localhost:9200/_tasks?detailed=true&actions=*reindex"
-```
+```text
 
 ### Step 3: Swap Alias
 
@@ -425,7 +436,7 @@ curl -X POST "http://localhost:9200/_aliases" -H 'Content-Type: application/json
     {"add": {"index": "gmail_emails_v2", "alias": "gmail_emails"}}
   ]
 }'
-```
+```text
 
 ### Step 4: Verify
 
@@ -435,14 +446,14 @@ curl "http://localhost:9200/_cat/aliases?v"
 
 # Test search
 curl "http://localhost:8003/search/?q=lever"
-```
+```text
 
 ### Step 5: Delete Old Index (Optional)
 
 ```bash
 # After verifying everything works
 curl -X DELETE "http://localhost:9200/gmail_emails_old"
-```
+```text
 
 ---
 
@@ -457,7 +468,7 @@ Warm up frequently used queries:
 curl "http://localhost:8003/search/?q=offer"
 curl "http://localhost:8003/search/?q=interview"
 curl "http://localhost:8003/search/?q=status"
-```
+```text
 
 ### 2. Shard Configuration
 
@@ -471,7 +482,7 @@ For large datasets (>10M docs):
     "refresh_interval": "30s"  # Reduce indexing load
   }
 }
-```
+```text
 
 ### 3. Query Caching
 
@@ -483,7 +494,7 @@ Enable query cache:
     "index.queries.cache.enabled": true
   }
 }
-```
+```text
 
 ### 4. Monitor Performance
 
@@ -497,7 +508,7 @@ curl "http://localhost:9200/gmail_emails/_settings" -H 'Content-Type: applicatio
 
 # Check query stats
 curl "http://localhost:9200/_cat/nodes?v&h=name,search.query_total,search.query_time"
-```
+```text
 
 ---
 
@@ -508,12 +519,15 @@ curl "http://localhost:9200/_cat/nodes?v&h=name,search.query_total,search.query_
 **Problem**: Searching "lever" doesn't match "lever.co"
 
 **Solution**:
+
 1. Check analyzer exists:
+
    ```bash
    curl "http://localhost:9200/gmail_emails/_settings" | jq '.*.settings.index.analysis'
    ```
 
 2. Test analyzer:
+
    ```bash
    curl -X POST "http://localhost:9200/gmail_emails/_analyze" -H 'Content-Type: application/json' -d'
    {
@@ -530,18 +544,22 @@ curl "http://localhost:9200/_cat/nodes?v&h=name,search.query_total,search.query_
 **Problem**: Offer emails don't score higher
 
 **Solution**:
+
 1. Check labels field populated:
+
    ```bash
    curl "http://localhost:9200/gmail_emails/_search?size=1" | jq '.hits.hits[0]._source.labels'
    ```
 
 2. Verify function_score in query:
+
    ```bash
    # Check API logs for ES query
    # Should see "function_score" with "filter": {"terms": {"labels": ["offer"]}}
    ```
 
 3. Test with known offer email:
+
    ```bash
    curl "http://localhost:8003/search/?q=offer&label_filter=offer"
    ```
@@ -551,19 +569,23 @@ curl "http://localhost:9200/_cat/nodes?v&h=name,search.query_total,search.query_
 **Problem**: Old emails score same as new
 
 **Solution**:
+
 1. Check received_at field type:
+
    ```bash
    curl "http://localhost:9200/gmail_emails/_mapping" | jq '.*.mappings.properties.received_at'
    # Should be: {"type": "date"}
    ```
 
 2. Verify dates are ISO format:
+
    ```bash
    curl "http://localhost:9200/gmail_emails/_search?size=1" | jq '.hits.hits[0]._source.received_at'
    # Should be: "2025-10-09T12:00:00Z"
    ```
 
 3. Test gauss decay:
+
    ```bash
    # Search for old and new emails, compare scores
    curl "http://localhost:8003/search/?q=application&size=50" | jq '.hits[] | {subject, received_at, score}'
@@ -577,14 +599,15 @@ curl "http://localhost:9200/_cat/nodes?v&h=name,search.query_total,search.query_
 
 Always use aliases for zero-downtime migrations:
 
-```
+```text
 gmail_emails (alias) → gmail_emails_v1 (index)
                     → gmail_emails_v2 (index) [after migration]
-```
+```text
 
 ### 2. Monitoring
 
 Track these metrics:
+
 - Query latency (p50, p95, p99)
 - Cache hit rate
 - Index size growth
@@ -600,11 +623,12 @@ curl -X PUT "http://localhost:9200/_snapshot/my_backup/snapshot_$(date +%Y%m%d)"
   "ignore_unavailable": true,
   "include_global_state": false
 }'
-```
+```text
 
 ### 4. Scaling
 
 For >50M documents:
+
 - Use 5+ shards
 - Enable force merge for old indices
 - Consider index-per-month pattern
@@ -624,6 +648,7 @@ For >50M documents:
 ✅ **Production-ready** - Migration guide, monitoring, scaling  
 
 **Next Steps**:
+
 1. Reindex if needed (see migration section)
 2. Test with real queries
 3. Add frontend label badges

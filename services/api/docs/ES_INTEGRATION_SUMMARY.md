@@ -21,9 +21,10 @@ Successfully integrated real Elasticsearch search layer and policy execution rou
 - find_unsubscribe_candidates(days)     # Newsletters older than N days
 - find_by_filter(filter_query, limit)   # Generic ES DSL query executor
 - search_emails(...)                    # General-purpose multi-filter search
-```
+```text
 
 **Key Features:**
+
 - Uses official Python Elasticsearch client
 - Supports API key authentication (optional)
 - Configurable index name via `ES_EMAIL_INDEX` env var
@@ -33,17 +34,19 @@ Successfully integrated real Elasticsearch search layer and policy execution rou
 - Field selection optimization
 
 **Environment Variables:**
+
 ```bash
 ES_URL=http://localhost:9200          # Elasticsearch endpoint
 ES_API_KEY=your_key_here              # Optional API key authentication
 ES_EMAIL_INDEX=emails_v1              # Index name (default: emails_v1)
-```
+```text
 
 ### 2. Policy Execution Route (`app/routers/policy_exec.py`)
 
 **New endpoint:** `POST /policies/run` - Generates approval tray for policy-based automation
 
 **Request Model:**
+
 ```json
 {
   "policy_set": {
@@ -68,9 +71,10 @@ ES_EMAIL_INDEX=emails_v1              # Index name (default: emails_v1)
   "es_filter": {"term": {"category": "promotions"}},
   "limit": 300
 }
-```
+```text
 
 **Response Model:**
+
 ```json
 {
   "policy_set_id": "cleanup-promos",
@@ -85,9 +89,10 @@ ES_EMAIL_INDEX=emails_v1              # Index name (default: emails_v1)
     }
   ]
 }
-```
+```text
 
 **Flow:**
+
 1. Query ES with provided filter
 2. Apply policy set to each email
 3. Return proposed actions for user approval
@@ -96,6 +101,7 @@ ES_EMAIL_INDEX=emails_v1              # Index name (default: emails_v1)
 ### 3. Router Integration (`app/main.py`)
 
 Added policy execution router to main app:
+
 ```python
 # Policy execution (approvals tray)
 try:
@@ -103,7 +109,7 @@ try:
     app.include_router(policy_exec_router)
 except ImportError:
     pass  # Policy exec module not available yet
-```
+```text
 
 Graceful degradation pattern - won't crash if module unavailable.
 
@@ -114,6 +120,7 @@ Graceful degradation pattern - won't crash if module unavailable.
 **16 tests - ALL PASSING**
 
 Test Coverage:
+
 - `TestFindHighRisk` (3 tests)
   - Threshold filtering
   - Custom risk scores
@@ -143,6 +150,7 @@ Test Coverage:
   - Missing optional fields
 
 **Test Pattern:**
+
 ```python
 class FakeES:
     """Mock Elasticsearch client for testing."""
@@ -157,13 +165,14 @@ def test_example(monkeypatch):
     
     res = asyncio.get_event_loop().run_until_complete(S.find_expired_promos())
     assert len(res) == 1
-```
+```text
 
 ### E2E Tests (8 + 11 = 19 tests created)
 
 #### Policy Exec Route (`tests/e2e/test_policy_exec_route.py`)
 
 **8 tests created:**
+
 1. `test_policy_exec_generates_proposals` - Basic workflow
 2. `test_policy_exec_multiple_policies` - Multiple policy execution
 3. `test_policy_exec_no_matches` - No emails match policies
@@ -175,6 +184,7 @@ def test_example(monkeypatch):
 #### NL Agent with ES (`tests/e2e/test_nl_with_es_helpers.py`)
 
 **11 tests created:**
+
 1. `test_nl_clean_promos_with_es` - NL → find_expired_promos
 2. `test_nl_unsubscribe_stale_with_es` - NL → find_unsubscribe_candidates
 3. `test_nl_show_suspicious_with_es` - NL → find_high_risk
@@ -188,15 +198,16 @@ def test_example(monkeypatch):
 11. `test_nl_error_handling_invalid_text` - Error handling
 
 **Note:** E2E tests require Docker environment (PostgreSQL database connection). They will run successfully in containerized environment:
+
 ```bash
 docker-compose exec api pytest tests/e2e/test_policy_exec_route.py tests/e2e/test_nl_with_es_helpers.py -v
-```
+```text
 
 ## Test Results
 
 ### Unit Tests: ✅ 100% Pass Rate
 
-```
+```text
 tests/unit/test_search_es.py::TestFindHighRisk::test_find_high_risk_uses_threshold PASSED
 tests/unit/test_search_es.py::TestFindHighRisk::test_find_high_risk_custom_threshold PASSED
 tests/unit/test_search_es.py::TestFindHighRisk::test_find_high_risk_respects_limit PASSED
@@ -215,7 +226,7 @@ tests/unit/test_search_es.py::TestHitNormalization::test_hit_to_email_fallback_i
 tests/unit/test_search_es.py::TestHitNormalization::test_hit_to_email_missing_fields PASSED
 
 =========== 16 passed, 5 warnings in 0.89s ===========
-```
+```text
 
 ### Combined Feature Tests: ✅ 44/44 Passing
 
@@ -229,11 +240,12 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
 - 2 classifier tests with unsubscribe ✅
 
 =========== 44 passed, 28 deselected, 5 warnings in 0.25s ===========
-```
+```text
 
 ## Example ES Filters for `/policies/run`
 
 ### 1. Expired Promos (Last 14 Days)
+
 ```json
 {
   "bool": {
@@ -243,16 +255,18 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
     ]
   }
 }
-```
+```text
 
 ### 2. High-Risk Emails
+
 ```json
 {
   "range": { "risk_score": { "gte": 80 } }
 }
-```
+```text
 
 ### 3. Newsletters from Specific Domain
+
 ```json
 {
   "bool": {
@@ -262,9 +276,10 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
     ]
   }
 }
-```
+```text
 
 ### 4. Stale Promotions (60+ days old)
+
 ```json
 {
   "bool": {
@@ -274,13 +289,13 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
     ]
   }
 }
-```
+```text
 
 ## Integration Workflow
 
 ### Complete Automation Flow
 
-```
+```text
 1. User Action
    ↓
 2. ES Query (find_by_filter)
@@ -294,7 +309,7 @@ pytest tests/unit/ -v -k "search_es or policy_engine or unsubscribe"
 6. Action Execution (separate endpoint)
    ↓
 7. Audit Logging (actions_audit table)
-```
+```text
 
 ### Example: Clean Expired Promos
 
@@ -344,24 +359,27 @@ POST /actions/execute
 {
     "action_ids": ["action_1", "action_2", "..."]
 }
-```
+```text
 
 ## Dependencies
 
 ### Added
-```
+
+```ini
 elasticsearch==8.17.1  # Official Python ES client
-```
+```text
 
 ### Existing (used)
-```
+
+```text
 fastapi>=0.104.1
 pydantic>=2.5.0
-```
+```text
 
 ## Files Created/Modified
 
-### Created (6 files):
+### Created (6 files)
+
 1. ✅ `app/logic/search.py` - ES-backed search (replaced placeholders, ~180 lines)
 2. ✅ `app/routers/policy_exec.py` - Policy execution endpoint (~130 lines)
 3. ✅ `tests/unit/test_search_es.py` - Unit tests (~340 lines)
@@ -369,7 +387,8 @@ pydantic>=2.5.0
 5. ✅ `tests/e2e/test_nl_with_es_helpers.py` - E2E NL tests (~360 lines)
 6. ✅ `docs/ES_INTEGRATION_SUMMARY.md` - This document
 
-### Modified (1 file):
+### Modified (1 file)
+
 7. ✅ `app/main.py` - Added policy_exec_router registration (+7 lines)
 
 **Total:** ~1,400 lines of production code + tests + documentation
@@ -379,6 +398,7 @@ pydantic>=2.5.0
 ### ✅ Ready for Production
 
 **Checklist:**
+
 - ✅ Real ES client integration (no mock/placeholder code)
 - ✅ Error handling (graceful degradation if ES unavailable)
 - ✅ Authentication support (API key optional)
@@ -395,6 +415,7 @@ pydantic>=2.5.0
 ### Deployment Steps
 
 1. **Set environment variables:**
+
    ```bash
    export ES_URL=http://es:9200
    export ES_API_KEY=your_key_here  # optional
@@ -402,11 +423,13 @@ pydantic>=2.5.0
    ```
 
 2. **Install dependencies:**
+
    ```bash
    pip install elasticsearch
    ```
 
 3. **Run tests:**
+
    ```bash
    # Unit tests (no ES required)
    pytest tests/unit/test_search_es.py -v
@@ -417,11 +440,13 @@ pydantic>=2.5.0
    ```
 
 4. **Start services:**
+
    ```bash
    docker-compose up -d
    ```
 
 5. **Verify endpoint:**
+
    ```bash
    curl -X POST http://localhost:8000/policies/run \
      -H "Content-Type: application/json" \
@@ -430,15 +455,17 @@ pydantic>=2.5.0
 
 ## Known Limitations
 
-### Minor Issues:
+### Minor Issues
+
 1. **Deprecation warnings** - `datetime.utcnow()` usage (non-breaking)
    - Solution: Replace with `datetime.now(datetime.UTC)` in future update
-   
+
 2. **E2E tests require Docker** - Expected behavior
    - Unit tests provide full validation without Docker
    - E2E tests validate full integration in containerized env
 
-### Not Issues:
+### Not Issues
+
 - ✅ No ES cluster required for unit tests (monkey-patched)
 - ✅ Graceful router registration (won't crash if import fails)
 - ✅ All tests pass with flying colors
@@ -448,6 +475,7 @@ pydantic>=2.5.0
 ### Example 1: Find and Archive Expired Promos
 
 **Request:**
+
 ```bash
 curl -X POST http://localhost:8000/policies/run \
   -H "Content-Type: application/json" \
@@ -479,9 +507,10 @@ curl -X POST http://localhost:8000/policies/run \
     },
     "limit": 300
   }'
-```
+```text
 
 **Response:**
+
 ```json
 {
   "policy_set_id": "cleanup-promos",
@@ -496,11 +525,12 @@ curl -X POST http://localhost:8000/policies/run \
     }
   ]
 }
-```
+```text
 
 ### Example 2: Flag High-Risk Emails
 
 **Request:**
+
 ```bash
 curl -X POST http://localhost:8000/policies/run \
   -H "Content-Type: application/json" \
@@ -520,11 +550,12 @@ curl -X POST http://localhost:8000/policies/run \
     "es_filter": {"range": {"risk_score": {"gte": 80}}},
     "limit": 50
   }'
-```
+```text
 
 ### Example 3: Unsubscribe from Stale Newsletters
 
 **Request:**
+
 ```bash
 curl -X POST http://localhost:8000/policies/run \
   -H "Content-Type: application/json" \
@@ -556,11 +587,12 @@ curl -X POST http://localhost:8000/policies/run \
     },
     "limit": 200
   }'
-```
+```text
 
 ## Future Enhancements
 
-### Potential Improvements:
+### Potential Improvements
+
 1. **Batch Action Execution** - Execute multiple approved actions atomically
 2. **Scheduled Policy Runs** - Cron-like scheduling for recurring automation
 3. **Policy Analytics** - Track effectiveness over time
@@ -573,6 +605,7 @@ curl -X POST http://localhost:8000/policies/run \
 ## Conclusion
 
 Successfully implemented production-ready Elasticsearch integration with:
+
 - ✅ Real ES client (no mocks in production code)
 - ✅ Policy execution endpoint for approval workflows
 - ✅ Comprehensive test coverage (35 tests total)
@@ -583,6 +616,7 @@ Successfully implemented production-ready Elasticsearch integration with:
 **Status:** Ready for production deployment in Docker environment.
 
 **Next Steps:**
+
 1. Deploy to Docker environment
 2. Run full E2E test suite
 3. Configure ES index mapping

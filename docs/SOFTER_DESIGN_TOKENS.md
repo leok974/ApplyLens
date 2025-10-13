@@ -10,6 +10,7 @@ This document summarizes the comprehensive design token refinement implemented t
 ## Design Philosophy
 
 ### Before
+
 - Pure white backgrounds (`hsl(0 0% 100%)`)
 - Deep navy dark mode (`hsl(222.2 84% 4.9%)`)
 - High-contrast borders (91% lightness)
@@ -17,6 +18,7 @@ This document summarizes the comprehensive design token refinement implemented t
 - Dense text with default line-height
 
 ### After
+
 - Warm gray backgrounds (`hsl(210 20% 97%)`)
 - Midnight slate dark mode (`hsl(222 33% 10%)`)
 - Muted borders (85% lightness in light mode, 22% in dark)
@@ -26,31 +28,35 @@ This document summarizes the comprehensive design token refinement implemented t
 ## Color Palette Changes
 
 ### Light Mode
+
 ```css
 --color-background: hsl(210 20% 97%)    /* Warm gray, not pure white */
 --color-card: hsl(210 25% 98%)          /* Subtle separation from background */
 --color-muted: hsl(210 23% 94%)         /* Chips, muted blocks */
 --color-border: hsl(215 20% 85%)        /* Softer, less contrast */
 --color-accent: hsl(221 75% 64%)        /* Consistent indigo for primary actions */
-```
+```text
 
 ### Dark Mode
+
 ```css
 --color-background: hsl(222 33% 10%)    /* Midnight slate (#0f1520-ish) */
 --color-card: hsl(222 26% 14%)          /* Mid-contrast, slightly elevated */
 --color-muted: hsl(222 20% 18%)         /* Darker blocks */
 --color-border: hsl(222 20% 22%)        /* Low-contrast borders */
 --color-accent: hsl(221 75% 66%)        /* Slightly brighter for visibility */
-```
+```text
 
 ## Typography Improvements
 
 ### Line Height
+
 - **Headers**: `leading-snug` (1.375) - Compact titles
 - **Body text**: `leading-relaxed` (1.625) - Comfortable reading
 - **Preview text**: Explicit `leading-relaxed` for email previews
 
 ### Font Sizes
+
 - Precise sizing: `text-[13px]` instead of `text-sm` where needed
 - Subject lines: `text-base` with `leading-snug`
 - Preview text: `text-[13px]` with `leading-relaxed`
@@ -58,11 +64,13 @@ This document summarizes the comprehensive design token refinement implemented t
 ## Component Updates
 
 ### 1. Global Styles (`index.css`)
+
 ✅ Complete color palette migration to softer tokens  
 ✅ Custom scrollbar styling with rounded thumbs  
 ✅ Uses CSS variable pattern: `[color:hsl(var(--color-{name}))]`
 
 ### 2. EmailRow Component
+
 ✅ Card styling: `rounded-xl` instead of `rounded-2xl`  
 ✅ Background: `bg-card` instead of `bg-white`  
 ✅ Hover state: `hover:bg-[color:hsl(var(--color-muted))]/40`  
@@ -70,6 +78,7 @@ This document summarizes the comprehensive design token refinement implemented t
 ✅ Typography: `leading-snug` for subject, `leading-relaxed` for preview
 
 ### 3. InboxPolishedDemo Page
+
 ✅ Semantic HTML: `<main>` and `<header>` tags  
 ✅ Page background: Uses CSS variable instead of gradient  
 ✅ Header: Backdrop blur with 80% opacity  
@@ -77,6 +86,7 @@ This document summarizes the comprehensive design token refinement implemented t
 ✅ Search button: Changed to `outline` variant
 
 ### 4. EmailDetailsPanel
+
 ✅ Panel background: `bg-card` instead of `bg-white`  
 ✅ Enhanced prose styling with 7+ utility classes  
 ✅ Badge colors: CSS variables  
@@ -84,21 +94,25 @@ This document summarizes the comprehensive design token refinement implemented t
 ✅ Leading-relaxed for email body content
 
 ### 5. EmailList
+
 ✅ Section headers: CSS variable colors  
 ✅ Status dots: Use accent color variable  
 ✅ Skeleton loaders: Updated to match softer card styling  
 ✅ Border radius: `rounded-xl` instead of `rounded-2xl`
 
 ### 6. FiltersPanel
+
 ✅ Background: `bg-card` instead of `bg-white`  
 ✅ Border: CSS variable color
 
 ### 7. BulkBar
+
 ✅ Background: Muted color with 60% opacity  
 ✅ Border: CSS variable  
 ✅ Buttons: Changed from `secondary` to `outline` variant
 
 ### 8. SenderAvatar
+
 ✅ Border: CSS variable color  
 ✅ Avatar background: Uses accent color instead of gradient  
 ✅ Image fallback: `bg-card` instead of `bg-white`
@@ -106,15 +120,18 @@ This document summarizes the comprehensive design token refinement implemented t
 ### 9. UI Components
 
 **Badge** (`components/ui/badge.tsx`)
+
 - Default variant: Uses `bg-[color:hsl(var(--color-muted))]`
 - Subtle variant: Muted background with transparency
 - Border: CSS variable color
 
 **Kbd** (`components/ui/kbd.tsx`)
+
 - Background: Muted color variable
 - Border: CSS variable color
 
 **Segmented** (`components/ui/segmented.tsx`)
+
 - Container: `bg-card` instead of `bg-white`
 - Border: CSS variable color
 - Selected state: Muted background
@@ -136,7 +153,7 @@ className="text-[color:hsl(var(--color-accent))]"
 
 // Hover states
 className="hover:bg-[color:hsl(var(--color-muted))]/40"
-```
+```text
 
 ## Icon Color Strategy
 

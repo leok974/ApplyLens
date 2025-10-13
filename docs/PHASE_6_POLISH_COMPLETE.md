@@ -21,6 +21,7 @@ All Phase 6 polish features have been successfully implemented, tested, and depl
 **File:** `services/api/app/routers/actions.py`
 
 **New Function:**
+
 ```python
 def estimate_confidence(
     policy: Policy,
@@ -39,9 +40,10 @@ def estimate_confidence(
     - Heuristic adjustments (promo ratio, risk score)
     - User weight bump: ±0.15 max
     """
-```
+```text
 
 **Key Features:**
+
 - Starts with policy baseline confidence
 - Applies simple heuristics (+0.1 for high promo ratio, 0.95 for high risk)
 - Adds personalized bump using `score_ctx_with_user()`
@@ -49,6 +51,7 @@ def estimate_confidence(
 - Extracts features from email (category, domain, subject tokens)
 
 **Updated:**
+
 - `build_rationale()` now calls `estimate_confidence()` instead of using fixed threshold
 - Accepts `db`, `user` parameters for personalization
 - Passed through from `/actions/propose` endpoint
@@ -58,14 +61,16 @@ def estimate_confidence(
 **File:** `services/api/app/telemetry/metrics.py`
 
 **Counters Available:**
+
 ```python
 policy_fired_total        # Incremented when policy creates proposal
 policy_approved_total     # Incremented when user approves
 policy_rejected_total     # Incremented when user rejects
 user_weight_updates       # Incremented on approve/reject with sign
-```
+```text
 
 **Already Wired In:**
+
 - ✅ `propose` endpoint: `policy_fired_total` incremented
 - ✅ `approve` endpoint: `policy_approved_total` + `user_weight_updates` (plus)
 - ✅ `reject` endpoint: `policy_rejected_total` + `user_weight_updates` (minus)
@@ -77,6 +82,7 @@ user_weight_updates       # Incremented on approve/reject with sign
 **File:** `apps/web/src/components/MailChat.tsx`
 
 **Features:**
+
 ```typescript
 const [mode, setMode] = useState<'' | 'networking' | 'money'>('')
 
@@ -95,7 +101,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 {mode === 'money' && (
   <a href="/api/money/receipts.csv">Export receipts (CSV)</a>
 )}
-```
+```text
 
 **Already Implemented:** Complete in commit 13212e3
 
@@ -104,6 +110,7 @@ const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
 **File:** `apps/web/src/components/MailChat.tsx`
 
 **New Features:**
+
 ```typescript
 const [dupes, setDupes] = useState<any[] | null>(null)
 const [summary, setSummary] = useState<any | null>(null)
@@ -117,9 +124,10 @@ async function loadSummary() {
   const r = await fetch('/api/money/summary')
   setSummary(await r.json())
 }
-```
+```text
 
 **UI Panel:**
+
 ```tsx
 <div className="rounded-2xl border border-neutral-800 p-3 bg-neutral-900">
   <div className="text-sm font-semibold mb-2">Money tools</div>
@@ -130,7 +138,7 @@ async function loadSummary() {
   {dupes && <pre>{JSON.stringify(dupes, null, 2)}</pre>}
   {summary && <pre>{JSON.stringify(summary, null, 2)}</pre>}
 </div>
-```
+```text
 
 **Location:** Chat sidebar, below Policy Accuracy Panel
 
@@ -139,6 +147,7 @@ async function loadSummary() {
 **File:** `services/api/tests/test_confidence_learning.py`
 
 **Test Cases (5):**
+
 1. ✅ `test_confidence_bump_from_user_weights` - Positive weights increase confidence
 2. ✅ `test_confidence_without_user_weights` - Baseline without personalization
 3. ✅ `test_confidence_negative_weights` - Negative weights decrease confidence
@@ -146,6 +155,7 @@ async function loadSummary() {
 5. ✅ `test_confidence_without_db_params` - Works without db/user/email
 
 **Test Approach:**
+
 - Seeds user weights in test database
 - Creates mock emails with specific features
 - Calls `estimate_confidence()` with test data
@@ -157,6 +167,7 @@ async function loadSummary() {
 **File:** `apps/web/tests/chat.modes.spec.ts`
 
 **Test:**
+
 ```typescript
 test('mode=money is appended to SSE URL and shows export link', async ({ page }) => {
   let requestedUrl = ''
@@ -171,7 +182,7 @@ test('mode=money is appended to SSE URL and shows export link', async ({ page })
   await expect.poll(()=>requestedUrl.includes('mode=money')).toBeTruthy()
   await expect(page.getByText('Export receipts (CSV)')).toBeVisible()
 })
-```
+```text
 
 **Already Exists:** `apps/web/tests/chat-modes.spec.ts` (6 tests)
 
@@ -182,6 +193,7 @@ test('mode=money is appended to SSE URL and shows export link', async ({ page })
 **New Section:** "Polish & Final Touches"
 
 **Content:**
+
 - Confidence bump algorithm explanation with code example
 - Prometheus counters list with descriptions
 - Chat mode flags documentation
@@ -195,33 +207,37 @@ test('mode=money is appended to SSE URL and shows export link', async ({ page })
 ### Unit Tests
 
 **Run confidence learning tests:**
+
 ```bash
 cd services/api
 pytest tests/test_confidence_learning.py -v
-```
+```text
 
 **Expected Output:**
-```
+
+```text
 test_confidence_bump_from_user_weights PASSED
 test_confidence_without_user_weights PASSED
 test_confidence_negative_weights PASSED
 test_confidence_high_risk_override PASSED
 test_confidence_without_db_params PASSED
-```
+```text
 
 ### E2E Tests
 
 **Run Playwright tests:**
+
 ```bash
 cd apps/web
 pnpm test chat.modes.spec.ts
 pnpm test chat-modes.spec.ts
 pnpm test policy-panel.spec.ts
-```
+```text
 
 ### Smoke Test
 
 **Test confidence bump effect:**
+
 ```powershell
 # 1. Propose actions
 Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
@@ -242,11 +258,11 @@ Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
   -ContentType application/json -Body '{"query":"subject:meetup","limit":10}'
 
 # Expected: Confidence increases by ~0.05-0.15
-```
+```text
 
 ## File Changes Summary
 
-```
+```text
 M  PHASE_6_PERSONALIZATION.md              (+135 lines)
 A  PHASE_6_UX_COMPLETE.md                  (+305 lines)
 M  apps/web/src/components/MailChat.tsx    (+34 lines)
@@ -255,13 +271,13 @@ M  services/api/app/routers/actions.py     (+70 lines)
 A  services/api/tests/test_confidence_learning.py (+252 lines)
 
 Total: 6 files changed, 809 insertions, 6 deletions
-```
+```text
 
 ## Architecture
 
 ### Confidence Estimation Flow
 
-```
+```text
 User approves action
     ↓
 update_user_weights() updates DB
@@ -277,11 +293,11 @@ score_ctx_with_user() sums weights
 Applies bump: 0.05 * sum, capped ±0.15
     ↓
 Returns personalized confidence
-```
+```text
 
 ### Metrics Collection Flow
 
-```
+```text
 Policy fires → policy_fired_total++
     ↓
 User reviews proposal
@@ -291,11 +307,11 @@ User reviews proposal
     │
     └─ Reject → policy_rejected_total++
                  user_weight_updates(sign="minus")++
-```
+```text
 
 ### Chat Mode Flow
 
-```
+```text
 User selects mode
     ↓
 mode state updated
@@ -309,7 +325,7 @@ SSE stream established
 Backend applies mode-specific boosting
     ↓
 Results streamed back
-```
+```text
 
 ## Deployment Checklist
 
@@ -329,6 +345,7 @@ Results streamed back
 ## Performance Impact
 
 **Minimal:**
+
 - `estimate_confidence()` adds ~5-10ms per proposal (DB query for weights)
 - Metrics increments are async counters (~0.1ms)
 - Money tools panel loads on-demand (user-triggered)
@@ -337,6 +354,7 @@ Results streamed back
 ## Security Considerations
 
 **All Good:**
+
 - User weights isolated per user_id (no cross-user leakage)
 - Confidence bump capped at ±0.15 (prevents manipulation)
 - Metrics don't expose sensitive data (just counts)
@@ -374,18 +392,21 @@ Results streamed back
 ## Success Metrics
 
 **Implementation:**
+
 - ✅ 100% feature completion (all 7 items)
 - ✅ 809 lines of code added
 - ✅ 5 unit tests + 1 E2E test
 - ✅ Comprehensive documentation
 
 **Code Quality:**
+
 - ✅ TypeScript strict mode
 - ✅ Python type hints
 - ✅ Error handling
 - ✅ Test coverage
 
 **User Impact:**
+
 - 🎯 Confidence scores adapt to user preferences
 - 📊 Policy performance visible in metrics
 - 💰 Quick access to financial insights
@@ -396,6 +417,7 @@ Results streamed back
 Phase 6 polish features are **production-ready**! 🚀
 
 All requested features implemented:
+
 1. ✅ Confidence learning with ±0.15 bump
 2. ✅ Prometheus metrics wired
 3. ✅ Chat mode selector (already done)
@@ -403,6 +425,7 @@ All requested features implemented:
 5. ✅ Complete documentation
 
 **Next Steps:**
+
 1. Run full test suite in CI/CD
 2. Deploy to staging environment
 3. QA smoke tests

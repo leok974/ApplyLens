@@ -5,6 +5,7 @@
 This module provides robust date extraction from bill and payment emails using a Python-first approach with Elasticsearch fallback.
 
 **Features:**
+
 - 🎯 Multiple date format support (mm/dd/yyyy, Month dd yyyy, etc.)
 - 💰 Money amount extraction with currency detection
 - 🏷️ Bill classification heuristic
@@ -13,7 +14,7 @@ This module provides robust date extraction from bill and payment emails using a
 
 ## Architecture
 
-```
+```text
 Email Ingestion Flow:
 ┌─────────────────────────────────────────────────────┐
 │ Gmail API → gmail_service.py                        │
@@ -36,29 +37,32 @@ Email Ingestion Flow:
 │   - ES|QL query: Bills due in next 7 days          │
 │   - Time series visualization by due date           │
 └─────────────────────────────────────────────────────┘
-```
+```text
 
 ## Supported Date Formats
 
 ### 1. mm/dd or mm/dd/yyyy
-```
+
+```text
 "Payment due by 10/15/2025" → 2025-10-15T00:00:00Z
 "Due: 10/15" → 2025-10-15T00:00:00Z (defaults to email received year)
 "Pay by 2/28/25" → 2025-02-28T00:00:00Z (2-digit year → 20xx)
-```
+```text
 
 ### 2. Month dd, yyyy
-```
+
+```text
 "Payment due Oct 15, 2025" → 2025-10-15T00:00:00Z
 "Due by December 25" → 2025-12-25T00:00:00Z (defaults to received year)
 "Amount due: Jan 1, 2026" → 2026-01-01T00:00:00Z
-```
+```text
 
 ### 3. dd Month yyyy
-```
+
+```text
 "Due on 15 Oct 2025" → 2025-10-15T00:00:00Z
 "Payment by 25 Dec" → 2025-12-25T00:00:00Z
-```
+```text
 
 ## Usage
 
@@ -91,7 +95,7 @@ amounts = extract_money_amounts(email_text)
 # Check if email is bill-related
 is_bill = is_bill_related("Bill Statement", email_text)
 # Returns: True
-```
+```text
 
 ### Elasticsearch Document Structure
 
@@ -110,7 +114,7 @@ is_bill = is_bill_related("Bill Statement", email_text)
   "expires_at": "2025-10-15T00:00:00Z",
   "category": "bills"
 }
-```
+```text
 
 ## Deployment
 
@@ -119,9 +123,10 @@ is_bill = is_bill_related("Bill Statement", email_text)
 ```bash
 cd services/api
 python -m app.scripts.update_es_mapping
-```
+```text
 
 This adds:
+
 - `dates`: date array field
 - `money_amounts`: nested object with amount/currency
 - `expires_at`: date field (already exists)
@@ -146,22 +151,24 @@ curl -X PUT "$ES_URL/emails_v1/_settings" `
   -d '{
     "index.default_pipeline": "emails_due_simple"
   }'
-```
+```text
 
 ### 3. Import Kibana Dashboard
 
 **Via UI:**
-1. Open Kibana: http://localhost:5601
+
+1. Open Kibana: <http://localhost:5601>
 2. Go to: Stack Management → Saved Objects → Import
 3. Select: `kibana/bills-due-next7d.ndjson`
 4. Import with "Overwrite conflicts" enabled
 
 **Via API:**
+
 ```bash
 curl -X POST "http://localhost:5601/api/saved_objects/_import" `
   -H "kbn-xsrf: true" `
   --form file=@kibana/bills-due-next7d.ndjson
-```
+```text
 
 ### 4. Backfill Existing Emails (Optional)
 
@@ -170,7 +177,7 @@ To extract dates from already-indexed emails:
 ```bash
 cd services/api
 python -m app.scripts.backfill_bill_dates
-```
+```text
 
 ## Testing
 
@@ -179,9 +186,10 @@ python -m app.scripts.backfill_bill_dates
 ```bash
 cd services/api
 pytest tests/unit/test_due_date_extractor.py -v
-```
+```text
 
 **Coverage:**
+
 - Date format variations (mm/dd, Month dd, dd Month)
 - Year defaults and 2-digit year handling
 - Multiple dates sorting and deduplication
@@ -200,9 +208,10 @@ docker-compose up -d db es kibana
 
 cd ../services/api
 pytest tests/e2e/test_ingest_bill_dates.py -v
-```
+```text
 
 **Coverage:**
+
 - Gmail API message format handling
 - ES document structure validation
 - Multipart email processing
@@ -225,9 +234,10 @@ DUE_SENTENCE_RX = re.compile(
          )""",
     re.I | re.X
 )
-```
+```text
 
 **Keywords matched:**
+
 - `due`
 - `payment due`, `payment is due`
 - `amount due`
@@ -244,6 +254,7 @@ DUE_SENTENCE_RX = re.compile(
 ### Elasticsearch Pipeline (Fallback)
 
 Painless script that:
+
 1. Checks if `dates[]` already populated by Python
 2. If empty, searches `body_text` for simple mm/dd patterns
 3. Normalizes to ISO 8601 format
@@ -251,9 +262,10 @@ Painless script that:
 5. Sets `expires_at` to earliest date
 
 **Pattern used:**
+
 ```javascript
 /due[^\n\r\.:]{0,80}?(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/
-```
+```text
 
 Only handles mm/dd format (simpler than Python for performance).
 
@@ -283,7 +295,7 @@ bills = find_bills_due_before(
 #   },
 #   "sort": [{"dates": "asc"}]
 # }
-```
+```text
 
 ## Performance Considerations
 
@@ -298,6 +310,7 @@ bills = find_bills_due_before(
 ### Dates not being extracted
 
 **Check:**
+
 1. Does text contain "due" or related keywords?
 2. Is date within 80 chars of "due" keyword?
 3. Is date format supported? (see Supported Date Formats)
@@ -306,6 +319,7 @@ bills = find_bills_due_before(
 ### ES pipeline not working
 
 **Check:**
+
 1. Pipeline deployed? `GET /_ingest/pipeline/emails_due_simple`
 2. Default pipeline set? `GET /emails_v1/_settings`
 3. Check pipeline errors: `GET /emails_v1/_search?q=pipeline_error:*`
@@ -313,6 +327,7 @@ bills = find_bills_due_before(
 ### Kibana dashboard empty
 
 **Check:**
+
 1. Index pattern exists: `GET /emails_v1/_count?q=category:bills`
 2. Dates field populated: `GET /emails_v1/_search?q=dates:*`
 3. Date range: Dashboard shows next 7 days only
@@ -323,7 +338,8 @@ bills = find_bills_due_before(
 ### Example 1: Utility Bill
 
 **Input:**
-```
+
+```text
 Subject: Your Electric Bill is Ready
 Body:
   Thank you for being a valued customer.
@@ -332,21 +348,23 @@ Body:
   Due Date: October 15, 2025
   
   Please pay by the due date to avoid late fees.
-```
+```text
 
 **Extracted:**
+
 ```json
 {
   "dates": ["2025-10-15T00:00:00Z"],
   "money_amounts": [{"amount": 127.43, "currency": "USD"}],
   "expires_at": "2025-10-15T00:00:00Z"
 }
-```
+```text
 
 ### Example 2: Credit Card Statement
 
 **Input:**
-```
+
+```text
 Subject: Your Credit Card Statement
 Body:
   Statement Period: Sep 1 - Sep 30, 2025
@@ -354,9 +372,10 @@ Body:
   Payment Due: 10/25/2025
   Minimum Payment: $35.00
   Statement Balance: $1,432.89
-```
+```text
 
 **Extracted:**
+
 ```json
 {
   "dates": ["2025-10-25T00:00:00Z"],
@@ -366,12 +385,13 @@ Body:
   ],
   "expires_at": "2025-10-25T00:00:00Z"
 }
-```
+```text
 
 ### Example 3: Multiple Payment Dates
 
 **Input:**
-```
+
+```text
 Subject: Payment Plan Reminder
 Body:
   Your payment plan schedule:
@@ -379,9 +399,10 @@ Body:
   First payment due: 10/15/2025 - $50.00
   Second payment due: 11/15/2025 - $50.00  
   Final payment due: 12/15/2025 - $50.00
-```
+```text
 
 **Extracted:**
+
 ```json
 {
   "dates": [
@@ -392,7 +413,7 @@ Body:
   "money_amounts": [{"amount": 50.0, "currency": "USD"}],
   "expires_at": "2025-10-15T00:00:00Z"
 }
-```
+```text
 
 ## Future Enhancements
 

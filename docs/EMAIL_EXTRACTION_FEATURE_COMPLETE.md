@@ -17,12 +17,14 @@ Completed: January 2025
 Added two new endpoints to the existing applications router:
 
 #### POST `/api/applications/extract`
+
 - **Purpose**: Extract company, role, and source from email content without saving
 - **Input**: Email metadata (subject, from, headers, text, html)
 - **Output**: Extracted fields + confidence score + debug info
 - **Use Case**: Preview extraction results, prefill form fields
 
 **Request Example**:
+
 ```json
 {
   "subject": "Application for Senior Engineer - Acme Corp",
@@ -31,9 +33,10 @@ Added two new endpoints to the existing applications router:
   "text": "Thanks for applying...",
   "html": ""
 }
-```
+```text
 
 **Response Example**:
+
 ```json
 {
   "company": "acme",
@@ -47,19 +50,21 @@ Added two new endpoints to the existing applications router:
     "has_html": false
   }
 }
-```
+```text
 
 #### POST `/api/applications/backfill-from-email`
+
 - **Purpose**: Extract AND save application to database
 - **Input**: Same as `/extract` + thread_id
 - **Output**: Saved application + extraction results + update flag
-- **Logic**: 
+- **Logic**:
   - Searches for existing app by thread_id
   - Falls back to matching by company + role
   - Updates if found, creates if new
   - Only overwrites source if new confidence is higher
 
 **Request Example**:
+
 ```json
 {
   "thread_id": "18f2a3b4c5d6e7f8",
@@ -68,9 +73,10 @@ Added two new endpoints to the existing applications router:
   "headers": {},
   "text": "Thanks for applying..."
 }
-```
+```text
 
 **Response Example**:
+
 ```json
 {
   "saved": {
@@ -91,7 +97,7 @@ Added two new endpoints to the existing applications router:
   },
   "updated": false
 }
-```
+```text
 
 ### 2. Frontend Components (React/TypeScript)
 
@@ -100,6 +106,7 @@ Added two new endpoints to the existing applications router:
 **File**: `apps/web/src/components/CreateFromEmailButton.tsx`
 
 **New Features**:
+
 - **Two-button UI**:
   - "Create from Email" - Extracts and immediately saves to database
   - "Prefill Only" - Extracts and opens create dialog with prefilled fields
@@ -110,6 +117,7 @@ Added two new endpoints to the existing applications router:
   - `onCreated()` - Called when application is saved (for list refresh)
 
 **Code Structure**:
+
 ```typescript
 interface CreateFromEmailButtonProps {
   threadId: string;
@@ -123,9 +131,10 @@ interface CreateFromEmailButtonProps {
   onPrefill?: (prefill: { company?: string; role?: string; source?: string }) => void;
   onCreated?: () => void;
 }
-```
+```text
 
 **Key Methods**:
+
 - `extract()` - Calls `/api/applications/extract`
 - `backfill()` - Calls `/api/applications/backfill-from-email`
 - `handlePrefill()` - Extracts and invokes onPrefill callback
@@ -135,8 +144,10 @@ interface CreateFromEmailButtonProps {
 **File**: `apps/web/src/pages/Tracker.tsx`
 
 **Changes**:
+
 1. **Imported CreateFromEmailButton** component
 2. **Added openCreateWithPrefill()** function:
+
    ```typescript
    const openCreateWithPrefill = (prefill?: Partial<typeof form>) => {
      if (prefill) {
@@ -145,6 +156,7 @@ interface CreateFromEmailButtonProps {
      ;(document.getElementById('create-dialog') as any)?.showModal?.()
    }
    ```
+
 3. **Rendered button for rows with thread_id**:
    - Shows up in the right column next to "Thread" link
    - Only displays if row has a `thread_id`
@@ -160,6 +172,7 @@ interface CreateFromEmailButtonProps {
 **Note**: Created as a placeholder that logs to console. In production, this should be connected to a global toast context/provider.
 
 **Type Definition**:
+
 ```typescript
 type ToastVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'destructive'
 
@@ -168,24 +181,27 @@ type ToastOptions = {
   description?: string
   variant?: ToastVariant
 }
-```
+```text
 
 ## Extraction Heuristics
 
 The system uses the existing `email_parsing.py` module with these heuristics:
 
 ### Company Detection
+
 1. **Sender Domain Parsing**: Extract from email address (skips free-mail providers)
 2. **Signature Blocks**: Scan first 30 lines for company names
 3. **"From X" Patterns**: Look for "Jane from Acme" patterns
 4. **Display Names**: Parse sender display name
 
 ### Role Extraction
+
 - **Regex Pattern**: `/(?:\bfor\b|[–—-])\s*(...(engineer|designer|manager|scientist|analyst|developer|lead)...)/i`
 - **Subject Line**: Primary source for role titles
 - **Body Text**: Fallback if subject doesn't match
 
 ### Source Detection
+
 1. **Known ATS Systems**: Greenhouse, Lever, Workday
 2. **Header Analysis**: List-Unsubscribe, X-Mailer, Received headers
 3. **Body Keywords**: Domain-specific patterns in email text
@@ -209,19 +225,22 @@ class Application(Base):
     source_confidence = Column(Float, default=0.0)  # Already exists!
     thread_id = Column(String(128), index=True)
     # ... other fields
-```
+```text
 
 **No migration needed** - column already exists in production schema.
 
 ## Testing Status
 
 ### Unit Tests (Created but in apps/api)
+
 **Note**: The TypeScript unit tests in `apps/api/src/__tests__/emailExtractor.test.ts` were created as part of the original diff, but the actual backend is Python. These tests serve as documentation but won't run since the backend is FastAPI.
 
 ### E2E Tests
+
 **Status**: Not yet implemented
 
 **Recommended Tests**:
+
 1. Extract and prefill from email
 2. Create application from email (backfill)
 3. Handle extraction failures gracefully
@@ -246,33 +265,39 @@ class Application(Base):
 ## Files Modified/Created
 
 ### Backend (Python)
+
 - ✅ `services/api/app/routes_applications.py` - Added extract + backfill endpoints
 
 ### Frontend (TypeScript/React)
+
 - ✅ `apps/web/src/components/CreateFromEmailButton.tsx` - Enhanced with extraction
 - ✅ `apps/web/src/pages/Tracker.tsx` - Added button integration
 - ✅ `apps/web/src/components/toast/useToast.ts` - Created placeholder hook
 
 ### Documentation
+
 - ✅ `apps/api/` - TypeScript reference implementations (not used, Python backend)
 - ✅ This file - Implementation summary
 
 ## Integration Points
 
 ### Backend Dependencies
+
 - **FastAPI**: REST framework
 - **SQLAlchemy**: ORM for database access
 - **Pydantic**: Request/response validation
 - **email_parsing.py**: Existing heuristic functions
 
 ### Frontend Dependencies
+
 - **React**: UI framework
 - **TypeScript**: Type safety
 - **Vite**: Build tool + dev server (proxies `/api` to port 8003)
 - **TailwindCSS**: Styling
 
 ### API Flow
-```
+
+```text
 Frontend (port 5175)
     ↓ HTTP POST /api/applications/extract
 Vite Proxy
@@ -282,21 +307,24 @@ FastAPI Backend (port 8003)
     ↓ Return ExtractResult
 Frontend
     ↓ Display in UI / Prefill form
-```
+```text
 
 ## Known Issues / Future Work
 
 ### High Priority
+
 1. **Replace useToast placeholder** - Connect to global toast context
 2. **Add E2E tests** - Validate full extraction flow
 3. **Error handling improvements** - Better user feedback for edge cases
 
 ### Medium Priority
+
 4. **Confidence threshold UI** - Let users adjust when to auto-accept extractions
 5. **Extraction preview** - Show debug info before creating application
 6. **Batch extraction** - Process multiple emails at once
 
 ### Low Priority
+
 7. **ML-based extraction** - Replace heuristics with trained model
 8. **Custom extraction rules** - Allow user-defined patterns
 9. **Source verification** - Link to original email in Gmail
@@ -304,15 +332,18 @@ Frontend
 ## Configuration
 
 ### Environment Variables
+
 None required for basic functionality. Uses existing FastAPI settings.
 
 ### Backend Port
+
 ```python
 # services/api/app/settings.py
 API_PORT: int = 8003
-```
+```text
 
 ### Frontend Proxy
+
 ```typescript
 // apps/web/vite.config.ts
 server: {
@@ -324,7 +355,7 @@ server: {
     }
   }
 }
-```
+```text
 
 ## Usage Examples
 
@@ -347,6 +378,7 @@ server: {
 ### For Developers
 
 **Test extraction endpoint**:
+
 ```bash
 curl -X POST http://localhost:8003/api/applications/extract \
   -H "Content-Type: application/json" \
@@ -356,9 +388,10 @@ curl -X POST http://localhost:8003/api/applications/extract \
     "text": "Thanks for your application...",
     "headers": {}
   }'
-```
+```text
 
 **Test backfill endpoint**:
+
 ```bash
 curl -X POST http://localhost:8003/api/applications/backfill-from-email \
   -H "Content-Type: application/json" \
@@ -368,7 +401,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
     "from": "jane@acme.ai",
     "text": "Thanks for your application..."
   }'
-```
+```text
 
 ## Performance Considerations
 
@@ -389,7 +422,7 @@ curl -X POST http://localhost:8003/api/applications/backfill-from-email \
 If issues arise:
 
 1. **Backend**: Remove `/extract` and `/backfill-from-email` endpoints
-2. **Frontend**: 
+2. **Frontend**:
    - Revert `CreateFromEmailButton.tsx` to original
    - Remove import from `Tracker.tsx`
    - Delete `useToast.ts`
@@ -415,6 +448,7 @@ If issues arise:
 ## Support
 
 For issues or questions:
+
 1. Check existing extraction results in database
 2. Review FastAPI logs at `http://localhost:8003/docs`
 3. Test endpoints directly via Swagger UI

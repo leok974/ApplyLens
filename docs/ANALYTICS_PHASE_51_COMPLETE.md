@@ -15,10 +15,12 @@ This is a tight, drop-in upgrade that layers onto existing analytics infrastruct
 ### Phase 51.1 — CSV Dashboard Exporter
 
 **New Files:**
+
 - `analytics/dashboards/exporter.py` - KPI time-series CSV export
 - `analytics/pipeline.py` - Main pipeline with CSV export hook
 
 **Features:**
+
 - Exports daily KPI metrics to CSV format
 - Generates two formats:
   - **Wide format** (`kpis.csv`): One column per metric
@@ -26,6 +28,7 @@ This is a tight, drop-in upgrade that layers onto existing analytics infrastruct
 - Output directory: `analytics/outputs/dashboards/`
 
 **KPI Fields:**
+
 - `seo_coverage_pct` - SEO page coverage percentage
 - `playwright_pass_pct` - Playwright test pass rate
 - `avg_p95_ms` - Average P95 latency
@@ -34,6 +37,7 @@ This is a tight, drop-in upgrade that layers onto existing analytics infrastruct
 ### Phase 51.2 — Analytics Search API
 
 **New Files:**
+
 - `services/api/app/routers/analytics.py` - Analytics API endpoints
 - `analytics/rag/embedder_local.py` - Text embedding (stub)
 - `analytics/rag/query_engine.py` - Vector store search
@@ -53,21 +57,24 @@ GET /analytics/search?q=seo%20coverage%20drop&k=5
 # Get KPI CSV preview
 GET /analytics/dashboards/kpis.csv
 → {"status": "ok", "path": "...", "preview": [...], "total_rows": 7}
-```
+```text
 
 **Integration:**
+
 - Auto-registered in `main.py` (gracefully handles missing modules)
 - Uses try/except to avoid hard dependencies
 
 ### Phase 51.3 — Weight Recommendations
 
 **New Files:**
+
 - `analytics/recommenders/weights.py` - Heuristic weight adjustment logic
 - `analytics/summarizers/report_builder.py` - Report generator with recommendations
 - `analytics/collectors/kpi_extractor.py` - KPI extraction from raw metrics
 - `analytics/config/test_page_map.json.example` - Optional test-to-page mapping
 
 **Features:**
+
 - Analyzes anomalies to recommend safe weight adjustments
 - Based on:
   - SEO page failures (`ok == false`)
@@ -76,15 +83,18 @@ GET /analytics/dashboards/kpis.csv
 - Conservative deltas (capped at 0.2 per run)
 
 **Recommendation Types:**
+
 - `page_priority:/path` - Increase attention to failing pages
 - `variant:stability_over_speed` - Prefer stable variants when tests drop
 
 ### Optional — PR Comment Workflow
 
 **New File:**
+
 - `.github/workflows/analytics-pr-comment.yml` - PR comment automation
 
 **Features:**
+
 - Posts analytics insights to PRs
 - Posts weight recommendations as separate comment
 - Uses sticky comments (updates existing comment)
@@ -97,14 +107,15 @@ GET /analytics/dashboards/kpis.csv
 ```bash
 # From project root
 python -m analytics.pipeline --window-days 7
-```
+```text
 
 **Expected Output:**
-```
+
+```text
 ✅ CSV dashboards exported:
    kpis_csv: analytics/outputs/dashboards/kpis.csv
    kpis_long_csv: analytics/outputs/dashboards/kpis_long.csv
-```
+```text
 
 ### 2. Check CSV Outputs
 
@@ -116,7 +127,7 @@ Get-Content analytics\outputs\dashboards\kpis.csv | Select-Object -First 10
 # date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 # 2025-10-01,95.2,98.5,245,12
 # 2025-10-02,96.1,97.8,238,8
-```
+```text
 
 ### 3. Test Analytics API
 
@@ -133,7 +144,7 @@ curl "http://localhost:8003/analytics/search?q=seo+coverage&k=5"
 
 # Test CSV preview
 curl http://localhost:8003/analytics/dashboards/kpis.csv
-```
+```text
 
 ### 4. View Recommendations
 
@@ -143,9 +154,10 @@ python -m analytics.pipeline --window-days 7
 
 # View report
 code analytics/outputs/insight-summary.md
-```
+```text
 
 **Example Recommendations Section:**
+
 ```markdown
 ## Recommendations
 
@@ -161,11 +173,11 @@ Elevate attention to pages implicated by SEO/Test failures; prefer stable varian
 - /pricing (+0.10) from 2 failure signals
 - /checkout (+0.15) from 3 failure signals
 - Playwright drop → prefer stability variant (+0.10)
-```
+```text
 
 ## 📁 File Structure
 
-```
+```text
 analytics/
 ├── .gitignore                          # Ignore data/outputs
 ├── pipeline.py                         # Main pipeline entry point
@@ -189,7 +201,7 @@ services/api/app/routers/
 
 .github/workflows/
 └── analytics-pr-comment.yml           # PR comment automation
-```
+```text
 
 ## 🔧 Configuration
 
@@ -204,20 +216,21 @@ Create `analytics/config/test_page_map.json` to help extract page paths from tes
   "homepage performance": "/",
   "search functionality": "/search"
 }
-```
+```text
 
 ### Data Directory Structure
 
 The pipeline expects daily metrics in JSON format:
 
-```
+```text
 analytics/data/
 ├── 2025-10-01.json
 ├── 2025-10-02.json
 └── 2025-10-03.json
-```
+```text
 
 Each JSON file should contain:
+
 ```json
 {
   "seo": {
@@ -245,7 +258,7 @@ Each JSON file should contain:
     "autofix_delta_count": 12
   }
 }
-```
+```text
 
 ## 🎯 Integration Points
 
@@ -260,7 +273,7 @@ try:
     app.include_router(analytics_router)
 except ImportError:
     pass  # Analytics module not available
-```
+```text
 
 This ensures the API doesn't break if analytics modules are missing.
 
@@ -272,7 +285,7 @@ CSV export runs after report writing in `pipeline.py`:
 # Phase 51.1 — CSV dashboards
 from analytics.dashboards.exporter import export_csv_series
 export_csv_series(DATA_DIR, OUT_DIR / "dashboards")
-```
+```text
 
 ### Report Integration
 
@@ -287,7 +300,7 @@ try:
         # Add recommendations section to markdown
 except Exception:
     # Fail gracefully
-```
+```text
 
 ## 🎨 Frontend Integration (Optional)
 
@@ -331,7 +344,7 @@ export default function Analytics() {
     </div>
   );
 }
-```
+```text
 
 ## 📊 Grafana Integration (Optional)
 
@@ -374,7 +387,7 @@ anomalies = [{'field': 'playwright_pass_pct', 'z': -3.0}]
 rec = recommend_weight_diffs(merged, anomalies)
 print(rec)
 "
-```
+```text
 
 ## 🔍 Troubleshooting
 
@@ -401,18 +414,21 @@ print(rec)
 ## 🚀 Next Steps
 
 ### Immediate
+
 - [x] Create sample data files in `analytics/data/`
 - [ ] Run pipeline to test CSV export
 - [ ] Test analytics API endpoints
 - [ ] Review recommendations output
 
 ### This Week
+
 - [ ] Set up Grafana CSV datasource (optional)
 - [ ] Create test-to-page mapping file
 - [ ] Add frontend analytics page
 - [ ] Configure PR comment workflow
 
 ### This Month
+
 - [ ] Replace dummy embedder with real model
 - [ ] Implement proper vector similarity scoring
 - [ ] Add more KPI metrics
