@@ -22,8 +22,7 @@ import base64
 import os
 
 from ..db import get_db
-from ..models import Email, ProposedAction, AuditAction, Policy, ActionType
-from ..models.personalization import PolicyStats
+from ..models import Email, ProposedAction, AuditAction, Policy, ActionType, PolicyStats
 from ..core.yardstick import evaluate_policy, validate_condition
 from ..core.executors import execute_action
 from ..core.learner import update_user_weights, featureize

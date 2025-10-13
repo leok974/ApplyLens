@@ -5,7 +5,7 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Phase 6 Smoke Tests - Personalization & ATS" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 
-$API_BASE = "http://localhost:8003"
+$API_BASE = "http://localhost:8003/api"
 
 # Test 1: Money Mode - CSV Export
 Write-Host "`n[Test 1] Money Mode - Export Receipts CSV" -ForegroundColor Yellow
@@ -124,7 +124,7 @@ Write-Host "  (Open in browser to test SSE streaming)" -ForegroundColor Gray
 # Test 10: Prometheus Metrics
 Write-Host "`n[Test 10] Prometheus Metrics" -ForegroundColor Yellow
 try {
-    $metrics = Invoke-WebRequest "$API_BASE/metrics" -ErrorAction Stop | Select-Object -Expand Content
+    $metrics = Invoke-WebRequest "http://localhost:8003/metrics" -ErrorAction Stop | Select-Object -Expand Content
     
     # Check for Phase 6 metrics
     $phase6Metrics = @(
