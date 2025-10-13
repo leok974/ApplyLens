@@ -39,10 +39,10 @@ DEFAULT_ES_INDEX = os.getenv("ES_EMAIL_INDEX", "emails_v1-000001")
 
 def build_query(days: Optional[int]) -> Dict[str, Any]:
     """Build Elasticsearch query with optional time filter.
-    
+
     Args:
         days: Lookback window in days, or None for all emails
-        
+
     Returns:
         Elasticsearch query dict
     """
@@ -58,22 +58,22 @@ def open_jsonl(path: str):
 
 def features_for(doc: Dict[str, Any]) -> Dict[str, Any]:
     """Extract features from email document for ML model.
-    
+
     Args:
         doc: Email document from Elasticsearch
-        
+
     Returns:
         Dict with text and numeric features
     """
     subj = doc.get("subject", "") or ""
     body = doc.get("body_text", "") or ""
     text = f"{subj}\n{body}"
-    
+
     urls = doc.get("urls") or []
     money_hits = 1 if any(x in text for x in ["$", "€", "£"]) else 0
     due_date_hit = 1 if re.search(r"\bdue\b", text, re.I) else 0
     sender_tf = 1  # placeholder; later compute true per-sender frequency
-    
+
     return {
         "text": text,
         "url_count": len(urls),
@@ -91,13 +91,13 @@ def iter_es(
 ) -> Iterable[Dict[str, Any]]:
     """
     Scroll through ES results yielding _source docs.
-    
+
     Args:
         es_url: Elasticsearch base URL
         index: Index name
         query: Elasticsearch query
         batch: Batch size for scrolling
-        
+
     Yields:
         Email documents from _source
     """
@@ -107,15 +107,13 @@ def iter_es(
         "sort": [{"received_at": {"order": "desc"}}],
         "_source": True,
     }
-    
+
     # Initial search with scroll
     response = requests.post(
-        f"{es_url}/{index}/_search?scroll=2m",
-        json=search_body,
-        timeout=60
+        f"{es_url}/{index}/_search?scroll=2m", json=search_body, timeout=60
     )
     response.raise_for_status()
-    
+
     data = response.json()
     scroll_id = data.get("_scroll_id")
     hits = data["hits"]["hits"]
@@ -124,15 +122,15 @@ def iter_es(
     while hits:
         for hit in hits:
             yield hit["_source"]
-        
+
         # Continue scrolling
         response = requests.post(
             f"{es_url}/_search/scroll",
             json={"scroll": "2m", "scroll_id": scroll_id},
-            timeout=60
+            timeout=60,
         )
         response.raise_for_status()
-        
+
         data = response.json()
         scroll_id = data.get("_scroll_id")
         hits = data["hits"]["hits"]
@@ -148,7 +146,7 @@ def export(
     include_unlabeled: bool,
 ) -> Dict[str, Any]:
     """Export weakly-labeled training data from Elasticsearch.
-    
+
     Args:
         es_url: Elasticsearch base URL
         index: Index name
@@ -157,7 +155,7 @@ def export(
         limit: Hard cap on total rows (None = no cap)
         limit_per_cat: Cap per category (None = no cap)
         include_unlabeled: Keep rows without rule-derived label
-        
+
     Returns:
         Dict with export statistics
     """
@@ -189,18 +187,16 @@ def export(
 
             # Extract features
             features = features_for(doc)
-            
+
             # Build training row
             row = {
                 # Text for vectorizer
                 "subject": doc.get("subject", ""),
                 "body_text": doc.get("body_text", ""),
-
                 # Identifiers + metadata
                 "id": doc.get("id"),
                 "sender_domain": doc.get("sender_domain"),
                 "received_at": doc.get("received_at"),
-
                 # Features used by train_ml.py
                 "features": {
                     "url_count": features["url_count"],
@@ -208,7 +204,6 @@ def export(
                     "due_date_hit": features["due_date_hit"],
                     "sender_tf": features["sender_tf"],
                 },
-
                 # Labels
                 "weak_label": category or "other",
                 "weak_reason": reason,
@@ -217,7 +212,7 @@ def export(
             # Write to JSONL
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             total_written += 1
-            
+
             if category:
                 cat_counts[category] = cat_counts.get(category, 0) + 1
 
@@ -262,53 +257,55 @@ Examples:
 
   # Include unlabeled emails
   python export_weak_labels.py --days 60 --include-unlabeled
-        """
+        """,
     )
-    
+
     parser.add_argument(
         "--es-url",
         default=DEFAULT_ES_URL,
-        help="Elasticsearch URL (default: %(default)s)"
+        help="Elasticsearch URL (default: %(default)s)",
     )
     parser.add_argument(
         "--index",
         default=DEFAULT_ES_INDEX,
-        help="Elasticsearch index (default: %(default)s)"
+        help="Elasticsearch index (default: %(default)s)",
     )
     parser.add_argument(
         "--out",
         default="weak_labels.jsonl",
-        help="Output JSONL file path (default: %(default)s)"
+        help="Output JSONL file path (default: %(default)s)",
     )
     parser.add_argument(
         "--days",
         type=int,
         default=60,
-        help="Lookback window in days (0 = all) (default: %(default)s)"
+        help="Lookback window in days (0 = all) (default: %(default)s)",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=0,
-        help="Hard cap on total rows (0 = no cap) (default: %(default)s)"
+        help="Hard cap on total rows (0 = no cap) (default: %(default)s)",
     )
     parser.add_argument(
         "--limit-per-cat",
         type=int,
         default=2000,
-        help="Cap per category for balance (0 = no cap) (default: %(default)s)"
+        help="Cap per category for balance (0 = no cap) (default: %(default)s)",
     )
     parser.add_argument(
         "--include-unlabeled",
         action="store_true",
-        help="Keep rows without rule-derived label (weak_label=other)"
+        help="Keep rows without rule-derived label (weak_label=other)",
     )
-    
+
     args = parser.parse_args()
 
     # Normalize arguments
     limit = args.limit if args.limit and args.limit > 0 else None
-    limit_per_cat = args.limit_per_cat if args.limit_per_cat and args.limit_per_cat > 0 else None
+    limit_per_cat = (
+        args.limit_per_cat if args.limit_per_cat and args.limit_per_cat > 0 else None
+    )
     days = args.days if args.days and args.days > 0 else None
 
     # Run export
@@ -322,14 +319,15 @@ Examples:
             limit_per_cat=limit_per_cat,
             include_unlabeled=args.include_unlabeled,
         )
-        
+
         # Print final statistics
         print("📊 Export Statistics:")
         print(json.dumps(stats, indent=2))
-        
+
     except Exception as e:
         print(f"\n❌ Export failed: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

@@ -30,30 +30,30 @@ SETTINGS_AND_MAPPINGS = {
                 "applylens_synonyms": {
                     "type": "synonym",
                     "lenient": True,
-                    "synonyms": SYNONYMS
+                    "synonyms": SYNONYMS,
                 },
                 "applylens_shingle": {
                     "type": "shingle",
                     "min_shingle_size": 2,
-                    "max_shingle_size": 3
-                }
+                    "max_shingle_size": 3,
+                },
             },
             "analyzer": {
                 "applylens_text": {
                     "tokenizer": "standard",
-                    "filter": ["lowercase", "applylens_synonyms"]
+                    "filter": ["lowercase", "applylens_synonyms"],
                 },
                 "applylens_text_shingles": {
                     "tokenizer": "standard",
-                    "filter": ["lowercase", "applylens_synonyms", "applylens_shingle"]
+                    "filter": ["lowercase", "applylens_synonyms", "applylens_shingle"],
                 },
                 # Search analyzer with ATS synonyms for smart matching
                 "ats_search_analyzer": {
                     "type": "custom",
                     "tokenizer": "standard",
-                    "filter": ["lowercase", "applylens_synonyms"]
-                }
-            }
+                    "filter": ["lowercase", "applylens_synonyms"],
+                },
+            },
         }
     },
     "mappings": {
@@ -66,18 +66,18 @@ SETTINGS_AND_MAPPINGS = {
                 "type": "text",
                 "analyzer": "standard",
                 "search_analyzer": "ats_search_analyzer",
-                "fields": {"keyword": {"type": "keyword"}}
+                "fields": {"keyword": {"type": "keyword"}},
             },
             "recipient": {
                 "type": "text",
                 "analyzer": "standard",
                 "search_analyzer": "ats_search_analyzer",
-                "fields": {"keyword": {"type": "keyword"}}
+                "fields": {"keyword": {"type": "keyword"}},
             },
             "to": {  # Alias for recipient
                 "type": "text",
                 "analyzer": "standard",
-                "search_analyzer": "ats_search_analyzer"
+                "search_analyzer": "ats_search_analyzer",
             },
             "subject": {
                 "type": "text",
@@ -85,15 +85,15 @@ SETTINGS_AND_MAPPINGS = {
                 "search_analyzer": "ats_search_analyzer",
                 "fields": {
                     "raw": {"type": "keyword", "ignore_above": 256},
-                    "shingles": {"type": "text", "analyzer": "applylens_text_shingles"}
-                }
+                    "shingles": {"type": "text", "analyzer": "applylens_text_shingles"},
+                },
             },
             "subject_suggest": {
                 "type": "completion",
                 "analyzer": "simple",
                 "preserve_separators": True,
                 "preserve_position_increments": True,
-                "max_input_length": 100
+                "max_input_length": 100,
             },
             "body_text": {
                 "type": "text",
@@ -101,7 +101,7 @@ SETTINGS_AND_MAPPINGS = {
                 "search_analyzer": "ats_search_analyzer",
                 "fields": {
                     "shingles": {"type": "text", "analyzer": "applylens_text_shingles"}
-                }
+                },
             },
             "body_sayt": {"type": "search_as_you_type"},
             "label": {"type": "keyword"},
@@ -112,25 +112,26 @@ SETTINGS_AND_MAPPINGS = {
             "source": {"type": "keyword"},
             "source_confidence": {"type": "float"},
             "received_at": {"type": "date"},
-            "message_id": {"type": "keyword"}
+            "message_id": {"type": "keyword"},
         }
-    }
+    },
 }
 
 es = Elasticsearch(ES_URL) if ES_ENABLED else None
+
 
 def ensure_index():
     """Ensure Elasticsearch index exists with retry logic for startup."""
     if not ES_ENABLED or es is None:
         return
-    
+
     # Retry logic for ES connection during startup
     import time
     from elasticsearch.exceptions import ConnectionError
-    
+
     max_retries = 30
     retry_delay = 1
-    
+
     for attempt in range(max_retries):
         try:
             exists = es.indices.exists(index=INDEX)
@@ -143,9 +144,13 @@ def ensure_index():
             return
         except ConnectionError:
             if attempt < max_retries - 1:
-                print(f"⏳ Waiting for Elasticsearch (attempt {attempt + 1}/{max_retries})...")
+                print(
+                    f"⏳ Waiting for Elasticsearch (attempt {attempt + 1}/{max_retries})..."
+                )
                 time.sleep(retry_delay)
                 continue
             else:
-                print(f"✗ Failed to connect to Elasticsearch after {max_retries} attempts")
+                print(
+                    f"✗ Failed to connect to Elasticsearch after {max_retries} attempts"
+                )
                 raise

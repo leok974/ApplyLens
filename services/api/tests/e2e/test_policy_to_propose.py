@@ -7,6 +7,7 @@ Tests the complete flow:
 3. Submit to approvals tray (/approvals/propose)
 4. Verify actions appear in /approvals/proposed
 """
+
 import pytest
 import types
 from httpx import AsyncClient
@@ -20,7 +21,7 @@ import app.db as DB
 async def test_policy_run_then_propose(monkeypatch):
     """
     Test that policy engine proposals flow correctly into the approvals tray.
-    
+
     Scenario:
     - 2 promotional emails: 1 expired, 1 valid
     - Policy triggers on expired promotions
@@ -35,8 +36,8 @@ async def test_policy_run_then_propose(monkeypatch):
                 "id": "exp",
                 "category": "promotions",
                 "expires_at": "2025-10-01T00:00:00Z",  # Expired
-                "received_at": "2025-10-02T00:00:00Z"
-            }
+                "received_at": "2025-10-02T00:00:00Z",
+            },
         },
         {
             "_id": "ok",
@@ -44,32 +45,32 @@ async def test_policy_run_then_propose(monkeypatch):
                 "id": "ok",
                 "category": "promotions",
                 "expires_at": "2099-01-01T00:00:00Z",  # Valid
-                "received_at": "2025-10-02T00:00:00Z"
-            }
-        }
+                "received_at": "2025-10-02T00:00:00Z",
+            },
+        },
     ]
-    
+
     class FakeES:
         def search(self, index, body):
             return {"hits": {"hits": fake_hits}}
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES())
 
     # Mock DB approvals table with in-memory store
     store = {"rows": [], "id": 1}
-    
+
     class MConn:
         autocommit = True
-        
+
         def cursor(self):
             return self
-        
+
         def __enter__(self):
             return self
-        
+
         def __exit__(self, *a):
             pass
-        
+
         def execute(self, q, args=None):
             ql = " ".join(q.split()).lower()
             if "insert into approvals_proposed" in ql:
@@ -81,7 +82,7 @@ async def test_policy_run_then_propose(monkeypatch):
                     "confidence": args[3],
                     "rationale": args[4],
                     "params": args[5],
-                    "status": args[6]
+                    "status": args[6],
                 }
                 store["rows"].append(row)
                 store["id"] += 1
@@ -96,12 +97,12 @@ async def test_policy_run_then_propose(monkeypatch):
                         r["rationale"],
                         r["params"],
                         r["status"],
-                        "2025-10-10T00:00:00Z"
+                        "2025-10-10T00:00:00Z",
                     )
                     for r in store["rows"]
                     if r["status"] == "proposed"
                 ]
-        
+
         @property
         def description(self):
             return [
@@ -113,13 +114,15 @@ async def test_policy_run_then_propose(monkeypatch):
                 ("rationale",),
                 ("params",),
                 ("status",),
-                ("created_at",)
+                ("created_at",),
             ]
-        
+
         def fetchall(self):
             return getattr(self, "_result", [])
-    
-    monkeypatch.setattr(DB, "psycopg2", types.SimpleNamespace(connect=lambda d: MConn()))
+
+    monkeypatch.setattr(
+        DB, "psycopg2", types.SimpleNamespace(connect=lambda d: MConn())
+    )
 
     # No-op audit
     monkeypatch.setattr(AUD, "emit_audit", lambda doc: None)
@@ -134,28 +137,28 @@ async def test_policy_run_then_propose(monkeypatch):
                     "if": {
                         "all": [
                             {"field": "category", "op": "=", "value": "promotions"},
-                            {"field": "expires_at", "op": "<", "value": "now"}
+                            {"field": "expires_at", "op": "<", "value": "now"},
                         ]
                     },
                     "then": {
                         "action": "archive",
                         "confidence_min": 0.8,
-                        "rationale": "expired promotion"
-                    }
+                        "rationale": "expired promotion",
+                    },
                 }
-            ]
+            ],
         },
         "es_filter": {"term": {"category": "promotions"}},
-        "limit": 200
+        "limit": 200,
     }
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         # Step 1: Run policy engine
         r = await ac.post("/policies/run", json=payload_run)
         assert r.status_code == 200
-        
+
         actions = r.json()["proposed_actions"]
-        
+
         # Only expired email should be proposed
         ids = [a["email_id"] for a in actions]
         assert ids == ["exp"], f"Expected ['exp'], got {ids}"
@@ -168,7 +171,7 @@ async def test_policy_run_then_propose(monkeypatch):
         # Step 3: Verify action appears in /approvals/proposed
         r3 = await ac.get("/approvals/proposed")
         assert r3.status_code == 200
-        
+
         proposed = r3.json()["items"]
         assert len(proposed) == 1, f"Expected 1 proposed action, got {len(proposed)}"
         assert proposed[0]["email_id"] == "exp"
@@ -181,7 +184,7 @@ async def test_policy_run_then_propose(monkeypatch):
 async def test_multi_policy_proposals(monkeypatch):
     """
     Test multiple policies generating different actions for approval.
-    
+
     Scenario:
     - 3 emails: expired promo, newsletter, spam
     - 2 policies: archive expired, unsubscribe newsletters
@@ -194,8 +197,8 @@ async def test_multi_policy_proposals(monkeypatch):
                 "id": "promo",
                 "category": "promotions",
                 "expires_at": "2025-10-01T00:00:00Z",
-                "received_at": "2025-10-02T00:00:00Z"
-            }
+                "received_at": "2025-10-02T00:00:00Z",
+            },
         },
         {
             "_id": "news",
@@ -203,31 +206,31 @@ async def test_multi_policy_proposals(monkeypatch):
                 "id": "news",
                 "category": "updates",
                 "label_heuristics": ["newsletter_ads"],
-                "received_at": "2025-10-02T00:00:00Z"
-            }
-        }
+                "received_at": "2025-10-02T00:00:00Z",
+            },
+        },
     ]
-    
+
     class FakeES:
         def search(self, index, body):
             return {"hits": {"hits": fake_hits}}
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES())
 
     store = {"rows": [], "id": 1}
-    
+
     class MConn:
         autocommit = True
-        
+
         def cursor(self):
             return self
-        
+
         def __enter__(self):
             return self
-        
+
         def __exit__(self, *a):
             pass
-        
+
         def execute(self, q, args=None):
             ql = " ".join(q.split()).lower()
             if "insert into approvals_proposed" in ql:
@@ -239,7 +242,7 @@ async def test_multi_policy_proposals(monkeypatch):
                     "confidence": args[3],
                     "rationale": args[4],
                     "params": args[5],
-                    "status": args[6]
+                    "status": args[6],
                 }
                 store["rows"].append(row)
                 store["id"] += 1
@@ -254,12 +257,12 @@ async def test_multi_policy_proposals(monkeypatch):
                         r["rationale"],
                         r["params"],
                         r["status"],
-                        "2025-10-10T00:00:00Z"
+                        "2025-10-10T00:00:00Z",
                     )
                     for r in store["rows"]
                     if r["status"] == "proposed"
                 ]
-        
+
         @property
         def description(self):
             return [
@@ -271,13 +274,15 @@ async def test_multi_policy_proposals(monkeypatch):
                 ("rationale",),
                 ("params",),
                 ("status",),
-                ("created_at",)
+                ("created_at",),
             ]
-        
+
         def fetchall(self):
             return getattr(self, "_result", [])
-    
-    monkeypatch.setattr(DB, "psycopg2", types.SimpleNamespace(connect=lambda d: MConn()))
+
+    monkeypatch.setattr(
+        DB, "psycopg2", types.SimpleNamespace(connect=lambda d: MConn())
+    )
     monkeypatch.setattr(AUD, "emit_audit", lambda doc: None)
 
     payload_run = {
@@ -289,41 +294,45 @@ async def test_multi_policy_proposals(monkeypatch):
                     "if": {
                         "all": [
                             {"field": "category", "op": "=", "value": "promotions"},
-                            {"field": "expires_at", "op": "<", "value": "now"}
+                            {"field": "expires_at", "op": "<", "value": "now"},
                         ]
                     },
                     "then": {
                         "action": "archive",
                         "confidence_min": 0.8,
-                        "rationale": "expired promotion"
-                    }
+                        "rationale": "expired promotion",
+                    },
                 },
                 {
                     "id": "newsletter-unsubscribe",
                     "if": {
                         "any": [
-                            {"field": "label_heuristics", "op": "contains", "value": "newsletter_ads"}
+                            {
+                                "field": "label_heuristics",
+                                "op": "contains",
+                                "value": "newsletter_ads",
+                            }
                         ]
                     },
                     "then": {
                         "action": "unsubscribe",
                         "confidence_min": 0.7,
-                        "rationale": "newsletter detected"
-                    }
-                }
-            ]
+                        "rationale": "newsletter detected",
+                    },
+                },
+            ],
         },
         "es_filter": {"match_all": {}},
-        "limit": 200
+        "limit": 200,
     }
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         r = await ac.post("/policies/run", json=payload_run)
         assert r.status_code == 200
-        
+
         actions = r.json()["proposed_actions"]
         assert len(actions) == 2, f"Expected 2 actions, got {len(actions)}"
-        
+
         # Verify different actions for different emails
         action_map = {a["email_id"]: a["action"] for a in actions}
         assert action_map["promo"] == "archive"
@@ -337,7 +346,7 @@ async def test_multi_policy_proposals(monkeypatch):
         # Verify both in tray
         r3 = await ac.get("/approvals/proposed")
         assert r3.status_code == 200
-        
+
         proposed = r3.json()["items"]
         assert len(proposed) == 2
         email_ids = {p["email_id"] for p in proposed}

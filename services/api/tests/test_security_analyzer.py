@@ -2,7 +2,9 @@
 import os
 from app.security.analyzer import EmailRiskAnalyzer, BlocklistProvider, RiskAnalysis
 
-BL_PATH = os.path.join(os.path.dirname(__file__), "..", "app", "security", "blocklists.json")
+BL_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "app", "security", "blocklists.json"
+)
 
 
 def make_analyzer() -> EmailRiskAnalyzer:
@@ -61,7 +63,13 @@ def test_attachment_and_blocklisted_host():
         subject="Invoice",
         body_text="download invoice.exe",
         body_html=None,
-        attachments=[{"filename": "invoice.exe", "mime_type": "application/octet-stream", "sha256": ""}],
+        attachments=[
+            {
+                "filename": "invoice.exe",
+                "mime_type": "application/octet-stream",
+                "sha256": "",
+            }
+        ],
         urls_visible_text_pairs=[("download", "http://billing-check.top/i.exe")],
         domain_first_seen_days_ago=1,
     )
@@ -154,7 +162,9 @@ def test_html_attachment_flagged():
         subject="Document",
         body_text="Please review the attached document",
         body_html=None,
-        attachments=[{"filename": "document.html", "mime_type": "text/html", "sha256": ""}],
+        attachments=[
+            {"filename": "document.html", "mime_type": "text/html", "sha256": ""}
+        ],
         urls_visible_text_pairs=[],
         domain_first_seen_days_ago=None,
     )
@@ -208,11 +218,13 @@ def test_blocklisted_file_hash():
         subject="Update",
         body_text="Install this update",
         body_html=None,
-        attachments=[{
-            "filename": "update.exe",
-            "mime_type": "application/x-msdownload",
-            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        }],
+        attachments=[
+            {
+                "filename": "update.exe",
+                "mime_type": "application/x-msdownload",
+                "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            }
+        ],
         urls_visible_text_pairs=[],
         domain_first_seen_days_ago=None,
     )

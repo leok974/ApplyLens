@@ -91,7 +91,7 @@ class TestChatEndpoint:
         response = client.get("/api/chat/intents")
         assert response.status_code == 200
         data = response.json()
-        
+
         # Should have all 8 intents
         assert "summarize" in data
         assert "find" in data
@@ -101,7 +101,7 @@ class TestChatEndpoint:
         assert "follow-up" in data
         assert "calendar" in data
         assert "task" in data
-        
+
         # Each intent should have patterns and description
         for intent, info in data.items():
             assert "patterns" in info
@@ -128,15 +128,11 @@ class TestChatEndpoint:
         """Should handle basic chat query."""
         response = client.post(
             "/api/chat",
-            json={
-                "messages": [
-                    {"role": "user", "content": "Summarize recent emails"}
-                ]
-            },
+            json={"messages": [{"role": "user", "content": "Summarize recent emails"}]},
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         # Should have expected structure
         assert "intent" in data
         assert "intent_explanation" in data
@@ -144,10 +140,10 @@ class TestChatEndpoint:
         assert "actions" in data
         assert "citations" in data
         assert "search_stats" in data
-        
+
         # Intent should be summarize
         assert data["intent"] == "summarize"
-        
+
         # Should have search stats
         stats = data["search_stats"]
         assert "total_results" in stats
@@ -159,16 +155,14 @@ class TestChatEndpoint:
         response = client.post(
             "/api/chat",
             json={
-                "messages": [
-                    {"role": "user", "content": "Show me promotional emails"}
-                ],
+                "messages": [{"role": "user", "content": "Show me promotional emails"}],
                 "filters": {"category": "promotions"},
                 "max_results": 10,
             },
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         # Filters should be in search stats
         assert data["search_stats"]["filters"]["category"] == "promotions"
 
@@ -187,7 +181,7 @@ class TestChatEndpoint:
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["intent"] == "clean"
         # May have actions (depends on test data)
         assert isinstance(data["actions"], list)
@@ -207,7 +201,7 @@ class TestChatEndpoint:
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["intent"] == "calendar"
 
     def test_chat_flag_intent(self):
@@ -225,7 +219,7 @@ class TestChatEndpoint:
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["intent"] == "flag"
 
     def test_chat_conversation_history(self):
@@ -263,7 +257,7 @@ class TestChatEndpoint:
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         # If actions exist, they should have proper structure
         for action in data["actions"]:
             assert "action" in action
@@ -279,16 +273,14 @@ class TestChatEndpoint:
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         # If citations exist, they should have proper structure
         for citation in data["citations"]:
             assert "id" in citation
             assert "subject" in citation
             # Optional fields
             assert "sender" in citation or citation.get("sender") is None
-            assert (
-                "received_at" in citation or citation.get("received_at") is None
-            )
+            assert "received_at" in citation or citation.get("received_at") is None
 
 
 class TestMailTools:
@@ -298,7 +290,7 @@ class TestMailTools:
         """Clean tool should respect exceptions in user text."""
         from app.core.mail_tools import clean_promos
         from datetime import datetime, timedelta
-        
+
         # Mock RAG result with old promos
         week_ago = (datetime.utcnow() - timedelta(days=8)).isoformat()
         rag = {
@@ -319,10 +311,10 @@ class TestMailTools:
                 },
             ]
         }
-        
+
         user_text = "Clean up old promos unless they're from Best Buy"
         answer, actions = clean_promos(rag, user_text)
-        
+
         # Should only archive the non-Best Buy email
         assert len(actions) == 1
         assert actions[0]["email_id"] == "2"
@@ -331,7 +323,7 @@ class TestMailTools:
     def test_calendar_events_date_extraction(self):
         """Calendar tool should extract due dates from user text."""
         from app.core.mail_tools import create_calendar_events
-        
+
         rag = {
             "docs": [
                 {
@@ -341,10 +333,10 @@ class TestMailTools:
                 }
             ]
         }
-        
+
         user_text = "Bills due before Friday"
         answer, actions = create_calendar_events(rag, user_text)
-        
+
         # Should create calendar action
         assert len(actions) == 1
         assert actions[0]["action"] == "create_calendar_event"
@@ -354,10 +346,10 @@ class TestMailTools:
 def test_intent_explain_tokens():
     """Test that intent explanation returns matched regex tokens."""
     from app.core.intent import explain_intent_tokens
-    
+
     text = "Clean up promos before Friday unless they're from Best Buy"
     tokens = explain_intent_tokens(text)
-    
+
     # Should match clean, before, unless phrases
     assert len(tokens) > 0
     assert any("clean" in t.lower() for t in tokens)
@@ -368,20 +360,20 @@ def test_intent_explain_tokens():
 def test_extract_unless_brands():
     """Test extraction of brand names from 'unless' clauses."""
     from app.core.intent import extract_unless_brands
-    
+
     # Single brand
     text1 = "Clean promos unless they're from Best Buy"
     brands1 = extract_unless_brands(text1)
     assert len(brands1) == 1
     assert "best buy" in brands1[0].lower()
-    
+
     # Multiple brands
     text2 = "Archive old emails unless from Best Buy and Costco"
     brands2 = extract_unless_brands(text2)
     assert len(brands2) == 2
     assert any("best buy" in b.lower() for b in brands2)
     assert any("costco" in b.lower() for b in brands2)
-    
+
     # No unless clause
     text3 = "Just clean up old promos"
     brands3 = extract_unless_brands(text3)

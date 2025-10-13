@@ -1,6 +1,7 @@
 """
 Unit tests for basic health and search endpoint happy paths.
 """
+
 import pytest
 
 
@@ -19,7 +20,7 @@ async def test_search_min(async_client):
     r = await async_client.get("/search/", params={"q": "test", "size": 1})
     # Should return 200 (with results) or 204 (no content)
     assert r.status_code in (200, 204)
-    
+
     if r.status_code == 200:
         data = r.json()
         # Verify response structure (adjust to your actual API schema)

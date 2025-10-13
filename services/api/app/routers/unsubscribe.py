@@ -16,6 +16,7 @@ router = APIRouter(prefix="/unsubscribe", tags=["unsubscribe"])
 
 class UnsubRequest(BaseModel):
     """Request model for unsubscribe operations."""
+
     email_id: str
     headers: Dict[str, str]
 
@@ -24,16 +25,16 @@ class UnsubRequest(BaseModel):
 def preview_unsubscribe(req: UnsubRequest):
     """
     Preview an unsubscribe operation without executing it.
-    
+
     Parses List-Unsubscribe headers and shows what action would be taken,
     but does not actually perform any network operations.
-    
+
     Args:
         req: UnsubRequest with email_id and headers
-        
+
     Returns:
         Dictionary with email_id and result showing available targets
-        
+
     Example:
         POST /unsubscribe/preview
         {
@@ -42,7 +43,7 @@ def preview_unsubscribe(req: UnsubRequest):
                 "List-Unsubscribe": "<mailto:unsub@example.com>, <https://example.com/unsub?id=123>"
             }
         }
-        
+
         Response:
         {
             "email_id": "msg123",
@@ -56,15 +57,16 @@ def preview_unsubscribe(req: UnsubRequest):
     """
     # Parse headers but don't execute
     from app.logic.unsubscribe import parse_list_unsubscribe
+
     mailto, http = parse_list_unsubscribe(req.headers)
-    
+
     res = {
         "mailto": mailto,
         "http": http,
         "performed": None,  # Never perform in preview mode
-        "status": None
+        "status": None,
     }
-    
+
     return {"email_id": req.email_id, "result": res}
 
 
@@ -72,20 +74,20 @@ def preview_unsubscribe(req: UnsubRequest):
 def execute_unsubscribe(req: UnsubRequest):
     """
     Execute an unsubscribe operation.
-    
+
     Parses List-Unsubscribe headers and performs the unsubscribe action.
     Prefers HTTP unsubscribe (immediate), falls back to mailto (queued).
     All operations are logged to the audit trail.
-    
+
     Args:
         req: UnsubRequest with email_id and headers
-        
+
     Returns:
         Dictionary with email_id and result showing what was performed
-        
+
     Raises:
         HTTPException(400): If no List-Unsubscribe targets are found
-        
+
     Example:
         POST /unsubscribe/execute
         {
@@ -94,7 +96,7 @@ def execute_unsubscribe(req: UnsubRequest):
                 "List-Unsubscribe": "<https://example.com/unsub?id=123>"
             }
         }
-        
+
         Response:
         {
             "email_id": "msg123",
@@ -108,11 +110,11 @@ def execute_unsubscribe(req: UnsubRequest):
     """
     # Execute unsubscribe operation
     res = perform_unsubscribe(req.headers)
-    
+
     # Validate that we found unsubscribe targets
     if not res.get("mailto") and not res.get("http"):
         raise HTTPException(400, "No List-Unsubscribe targets found")
-    
+
     # Audit the action
     audit_action(
         email_id=req.email_id,
@@ -120,7 +122,7 @@ def execute_unsubscribe(req: UnsubRequest):
         payload=res,
         policy_id="unsubscribe-exec",
         confidence=0.95,
-        rationale="List-Unsubscribe header"
+        rationale="List-Unsubscribe header",
     )
-    
+
     return {"email_id": req.email_id, "result": res}

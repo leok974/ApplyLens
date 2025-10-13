@@ -10,6 +10,7 @@ Implements thin adapters for executing each ActionType:
 
 All executors return (success: bool, error: str | None)
 """
+
 from typing import Tuple, Optional, Dict, Any
 
 # Gmail API imports (will be injected/imported from services)
@@ -19,11 +20,11 @@ from typing import Tuple, Optional, Dict, Any
 def execute_action(proposed_action, user=None) -> Tuple[bool, Optional[str]]:
     """
     Execute a proposed action and return outcome.
-    
+
     Args:
         proposed_action: ProposedAction model instance
         user: Optional user context
-    
+
     Returns:
         (success: bool, error_msg: str | None)
     """
@@ -31,52 +32,53 @@ def execute_action(proposed_action, user=None) -> Tuple[bool, Optional[str]]:
         action_type = proposed_action.action.value
         email_id = proposed_action.email_id
         params = proposed_action.params or {}
-        
+
         if action_type == "archive_email":
             return gmail_archive(email_id), None
-        
+
         if action_type == "label_email":
             label = params.get("label")
             if not label:
                 return False, "Missing 'label' param"
             return gmail_label(email_id, label), None
-        
+
         if action_type == "move_to_folder":
             folder = params.get("folder")
             if not folder:
                 return False, "Missing 'folder' param"
             return gmail_move(email_id, folder), None
-        
+
         if action_type == "unsubscribe_via_header":
             return try_list_unsubscribe(email_id), None
-        
+
         if action_type == "create_calendar_event":
             return create_calendar_event(params), None
-        
+
         if action_type == "create_task":
             return create_task_item(params), None
-        
+
         if action_type == "block_sender":
             sender = params.get("sender")
             if not sender:
                 return False, "Missing 'sender' param"
             return block_sender(sender), None
-        
+
         if action_type == "quarantine_attachment":
             return quarantine_email(email_id), None
-        
+
         return False, f"Unknown action type: {action_type}"
-        
+
     except Exception as e:
         return False, str(e)
 
 
 # ===== Gmail Operations =====
 
+
 def gmail_archive(email_id: int) -> bool:
     """
     Archive an email (remove INBOX label, add ARCHIVED).
-    
+
     Implementation:
     1. Load Email from DB
     2. Call Gmail API modify() to remove INBOX, add ARCHIVED
@@ -96,7 +98,7 @@ def gmail_archive(email_id: int) -> bool:
 def gmail_label(email_id: int, label: str) -> bool:
     """
     Add a label to an email.
-    
+
     Implementation:
     1. Load Email from DB
     2. Call Gmail API modify() to add label
@@ -116,7 +118,7 @@ def gmail_label(email_id: int, label: str) -> bool:
 def gmail_move(email_id: int, folder: str) -> bool:
     """
     Move an email to a folder (label in Gmail).
-    
+
     Implementation:
     1. Load Email from DB
     2. Call Gmail API modify() to add folder label, remove INBOX
@@ -136,13 +138,13 @@ def gmail_move(email_id: int, folder: str) -> bool:
 def try_list_unsubscribe(email_id: int) -> bool:
     """
     Attempt to unsubscribe using List-Unsubscribe header.
-    
+
     Implementation:
     1. Load Email from DB with raw headers
     2. Parse List-Unsubscribe header
     3. Prefer mailto: with auto-composed draft
     4. Fall back to https: GET if safe
-    
+
     Returns:
         True if unsubscribe action was attempted
     """
@@ -151,21 +153,21 @@ def try_list_unsubscribe(email_id: int) -> bool:
         # email = db.get(Email, email_id)
         # headers = email.raw.get("payload", {}).get("headers", [])
         # unsub_header = next((h["value"] for h in headers if h["name"].lower() == "list-unsubscribe"), None)
-        
+
         # if not unsub_header:
         #     return False
-        
+
         # # Parse mailto: or https: links
         # mailto_match = re.search(r'<mailto:([^>]+)>', unsub_header)
         # if mailto_match:
         #     # Create draft email to unsubscribe
         #     return send_unsubscribe_email(mailto_match.group(1))
-        
+
         # https_match = re.search(r'<(https://[^>]+)>', unsub_header)
         # if https_match:
         #     # GET request to unsubscribe (if safe domain)
         #     return safe_unsubscribe_get(https_match.group(1))
-        
+
         print(f"[EXECUTOR] Unsubscribing email {email_id} via List-Unsubscribe")
         return True
     except Exception as e:
@@ -175,17 +177,18 @@ def try_list_unsubscribe(email_id: int) -> bool:
 
 # ===== Calendar Operations =====
 
+
 def create_calendar_event(params: Dict[str, Any]) -> bool:
     """
     Create a calendar event from email data.
-    
+
     Expected params:
     - title: str
     - start_time: ISO datetime
     - end_time: ISO datetime (optional, default +1hr)
     - location: str (optional)
     - description: str (optional)
-    
+
     Implementation:
     1. Parse datetime strings
     2. Call Google Calendar API to create event
@@ -198,7 +201,7 @@ def create_calendar_event(params: Dict[str, Any]) -> bool:
         # end = datetime.fromisoformat(params.get("end_time", (start + timedelta(hours=1)).isoformat()))
         # location = params.get("location")
         # description = params.get("description")
-        
+
         # calendar_service.create_event(title, start, end, location, description)
         print(f"[EXECUTOR] Creating calendar event: {params.get('title', 'Event')}")
         return True
@@ -209,15 +212,16 @@ def create_calendar_event(params: Dict[str, Any]) -> bool:
 
 # ===== Task Operations =====
 
+
 def create_task_item(params: Dict[str, Any]) -> bool:
     """
     Create a task from email data.
-    
+
     Expected params:
     - title: str
     - due_date: ISO datetime (optional)
     - notes: str (optional)
-    
+
     Implementation:
     1. Call Google Tasks API to create task
     2. Return success/fail
@@ -227,7 +231,7 @@ def create_task_item(params: Dict[str, Any]) -> bool:
         # title = params.get("title", "Email Task")
         # due_date = params.get("due_date")
         # notes = params.get("notes")
-        
+
         # tasks_service.create_task(title, due_date, notes)
         print(f"[EXECUTOR] Creating task: {params.get('title', 'Task')}")
         return True
@@ -238,10 +242,11 @@ def create_task_item(params: Dict[str, Any]) -> bool:
 
 # ===== Security Operations =====
 
+
 def block_sender(sender: str) -> bool:
     """
     Block a sender (add to block list filter).
-    
+
     Implementation:
     1. Extract email/domain from sender
     2. Create Gmail filter to auto-archive or trash
@@ -260,7 +265,7 @@ def block_sender(sender: str) -> bool:
 def quarantine_email(email_id: int) -> bool:
     """
     Quarantine an email and its attachments.
-    
+
     Implementation:
     1. Load Email from DB
     2. Set quarantined=True in DB
@@ -272,12 +277,12 @@ def quarantine_email(email_id: int) -> bool:
         # email = db.get(Email, email_id)
         # email.quarantined = True
         # db.commit()
-        
+
         # # Move attachments
         # for attachment in email.raw.get("payload", {}).get("parts", []):
         #     if attachment.get("filename"):
         #         move_attachment_to_quarantine(email_id, attachment)
-        
+
         # gmail_service.modify_labels(email.gmail_id, add_labels=["QUARANTINED"])
         print(f"[EXECUTOR] Quarantining email {email_id}")
         return True
@@ -287,6 +292,7 @@ def quarantine_email(email_id: int) -> bool:
 
 
 # ===== Helper Functions =====
+
 
 def send_unsubscribe_email(mailto_address: str) -> bool:
     """Send unsubscribe email via Gmail API."""
@@ -298,7 +304,7 @@ def send_unsubscribe_email(mailto_address: str) -> bool:
 def safe_unsubscribe_get(url: str) -> bool:
     """
     Safely perform GET request to unsubscribe URL.
-    
+
     Only allows known-safe domains to prevent CSRF.
     """
     # TODO: Implement with domain whitelist

@@ -9,8 +9,7 @@ import re
 from typing import Literal
 
 IntentType = Literal[
-    "summarize", "find", "clean", "unsubscribe", 
-    "flag", "follow-up", "calendar", "task"
+    "summarize", "find", "clean", "unsubscribe", "flag", "follow-up", "calendar", "task"
 ]
 
 # Intent patterns (order matters - more specific first)
@@ -73,27 +72,27 @@ INTENTS = {
 def detect_intent(text: str) -> IntentType:
     """
     Detect user intent from text using pattern matching.
-    
+
     Args:
         text: User input text
-        
+
     Returns:
         Detected intent (defaults to "summarize" if no match)
     """
     t = text.lower()
-    
+
     # Check each intent's patterns
     for intent, patterns in INTENTS.items():
         if any(re.search(pattern, t) for pattern in patterns):
             return intent  # type: ignore
-    
+
     # Fallback heuristics
     if "due" in t or "before" in t or "by" in t:
         return "calendar"
-    
+
     if "?" in text and any(w in t for w in ["who", "what", "when", "where"]):
         return "find"
-    
+
     # Default to summarize
     return "summarize"
 
@@ -132,7 +131,13 @@ def explain_intent_tokens(text: str) -> list[str]:
                 except Exception:
                     hits.add(p)
     # common phrases that users care about, even if not directly in INTENTS
-    for phrase in [r"\bbefore\s+\w+\b", r"\bafter\s+\w+\b", r"\bunless\s+[^.]+", r"\bdue\b", r"\bnew domains?\b"]:
+    for phrase in [
+        r"\bbefore\s+\w+\b",
+        r"\bafter\s+\w+\b",
+        r"\bunless\s+[^.]+",
+        r"\bdue\b",
+        r"\bnew domains?\b",
+    ]:
         m = re.search(phrase, t)
         if m:
             hits.add(m.group(0))
@@ -157,7 +162,9 @@ def extract_unless_brands(text: str) -> list[str]:
         if not s:
             continue
         # remove generic words
-        s = re.sub(r"\b(emails?|messages?|the|my|company|brand|newsletter[s]?)\b", "", s).strip()
+        s = re.sub(
+            r"\b(emails?|messages?|the|my|company|brand|newsletter[s]?)\b", "", s
+        ).strip()
         if s:
             brands.append(s)
     # de-dup

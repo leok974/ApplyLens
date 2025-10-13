@@ -3,6 +3,7 @@ Phase 51.2 — Analytics API Router
 
 Provides search and dashboard endpoints for analytics data.
 """
+
 from fastapi import APIRouter, Query, HTTPException
 from pathlib import Path
 
@@ -22,7 +23,7 @@ def latest():
 def search(q: str = Query(..., min_length=2), k: int = 6):
     """
     Search analytics vector store for relevant insights.
-    
+
     Args:
         q: Search query (min 2 chars)
         k: Number of results to return (default 6)
@@ -30,14 +31,14 @@ def search(q: str = Query(..., min_length=2), k: int = 6):
     vs_path = Path("analytics/rag/vector_store.sqlite")
     if not vs_path.exists():
         raise HTTPException(409, "Vector store not built yet; run analytics pipeline")
-    
+
     # Import locally to avoid hard dependency
     try:
         from analytics.rag.embedder_local import ensure_embedder
         from analytics.rag.query_engine import VectorStore
     except ImportError:
         raise HTTPException(500, "Analytics RAG modules not available")
-    
+
     embed = ensure_embedder()
     vs = VectorStore(vs_path)
     hits = vs.search(embed, q, k=k)
@@ -50,11 +51,11 @@ def dashboards_kpis_csv():
     csv_path = Path("analytics/outputs/dashboards/kpis.csv")
     if not csv_path.exists():
         raise HTTPException(404, "kpis.csv not found; run analytics pipeline")
-    
+
     lines = csv_path.read_text(encoding="utf-8").splitlines()
     return {
         "status": "ok",
         "path": str(csv_path),
         "preview": lines[:10],
-        "total_rows": len(lines) - 1  # excluding header
+        "total_rows": len(lines) - 1,  # excluding header
     }

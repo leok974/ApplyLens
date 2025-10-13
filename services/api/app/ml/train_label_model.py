@@ -5,6 +5,7 @@ This module trains a simple LogisticRegression model on TF-IDF features
 using weak labels from rule-based matching. The model learns to generalize
 beyond the explicit rules.
 """
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
@@ -30,31 +31,33 @@ MODELS_DIR = Path(__file__).parent.parent.parent / "models"
 def build_features(rows: List[Email]) -> Tuple[any, np.ndarray, List[str]]:
     """
     Build feature matrix from email rows.
-    
+
     Args:
         rows: List of Email ORM objects
-        
+
     Returns:
         Tuple of (X_features, y_labels, feature_names)
     """
     logger.info(f"Building features from {len(rows)} emails...")
-    
+
     # Extract text content
-    texts = [
-        (r.subject or "") + "\n" + (r.body_text or "")[:5000]
-        for r in rows
-    ]
-    
+    texts = [(r.subject or "") + "\n" + (r.body_text or "")[:5000] for r in rows]
+
     # Extract simple numeric features
     [(r.sender or "").split("@")[-1] for r in rows]
     url_counts = [(r.body_text or "").count("http") for r in rows]
     money_mentions = [1 if "$" in (r.body_text or "") else 0 for r in rows]
     has_unsubscribe = [
-        1 if r.raw and "list-unsubscribe" in str((r.raw.get("payload", {}) or {}).get("headers", [])).lower()
-        else 0
+        (
+            1
+            if r.raw
+            and "list-unsubscribe"
+            in str((r.raw.get("payload", {}) or {}).get("headers", [])).lower()
+            else 0
+        )
         for r in rows
     ]
-    
+
     # Generate weak labels from rules
     y_labels = []
     for r in rows:
@@ -63,64 +66,67 @@ def build_features(rows: List[Email]) -> Tuple[any, np.ndarray, List[str]]:
             if r.raw and isinstance(r.raw, dict):
                 headers_list = r.raw.get("payload", {}).get("headers", [])
                 if isinstance(headers_list, list):
-                    headers_dict = {h.get("name", ""): h.get("value", "") for h in headers_list}
-            
-            matches = match_rules({
-                "headers": headers_dict,
-                "sender_domain": (r.sender or "").split("@")[-1],
-                "body_text": r.body_text or "",
-                "subject": r.subject or "",
-            })
-            
+                    headers_dict = {
+                        h.get("name", ""): h.get("value", "") for h in headers_list
+                    }
+
+            matches = match_rules(
+                {
+                    "headers": headers_dict,
+                    "sender_domain": (r.sender or "").split("@")[-1],
+                    "body_text": r.body_text or "",
+                    "subject": r.subject or "",
+                }
+            )
+
             # Pick strongest match (priority order)
             label = "other"
             for category in ["ats", "bills", "banks", "events", "promotions"]:
                 if matches.get(category):
                     label = category
                     break
-            
+
             y_labels.append(label)
         except Exception as e:
             logger.warning(f"Error generating label for email {r.id}: {e}")
             y_labels.append("other")
-    
+
     # Build TF-IDF features
     logger.info("Vectorizing text with TF-IDF...")
     tfidf = TfidfVectorizer(
-        ngram_range=(1, 2),
-        min_df=3,
-        max_features=6000,
-        stop_words='english'
+        ngram_range=(1, 2), min_df=3, max_features=6000, stop_words="english"
     )
     X_text = tfidf.fit_transform(texts)
-    
+
     # Build numeric features
     X_numeric = np.vstack([url_counts, money_mentions, has_unsubscribe]).T.astype(float)
     scaler = StandardScaler()
     X_numeric = scaler.fit_transform(X_numeric)
-    
+
     # Combine features (convert to CSR for efficient slicing)
     X = hstack([X_text, X_numeric]).tocsr()
-    
+
     logger.info(f"Feature matrix shape: {X.shape}")
-    logger.info(f"Label distribution: {dict(zip(*np.unique(y_labels, return_counts=True)))}")
-    
+    logger.info(
+        f"Label distribution: {dict(zip(*np.unique(y_labels, return_counts=True)))}"
+    )
+
     return X, np.array(y_labels), tfidf, scaler
 
 
 def train_model(limit: int = 5000, test_split: float = 0.2) -> dict:
     """
     Train weak-label classification model.
-    
+
     Args:
         limit: Number of recent emails to use for training
         test_split: Fraction of data to use for testing
-        
+
     Returns:
         Dict with model metrics and info
     """
     logger.info(f"Starting training with limit={limit}, test_split={test_split}")
-    
+
     # Fetch recent emails
     db = SessionLocal()
     try:
@@ -133,42 +139,41 @@ def train_model(limit: int = 5000, test_split: float = 0.2) -> dict:
         )
     finally:
         db.close()
-    
+
     if len(rows) < 100:
-        raise ValueError(f"Not enough emails for training (found {len(rows)}, need at least 100)")
-    
+        raise ValueError(
+            f"Not enough emails for training (found {len(rows)}, need at least 100)"
+        )
+
     logger.info(f"Loaded {len(rows)} emails from database")
-    
+
     # Build features
     X, y, tfidf, scaler = build_features(rows)
-    
+
     # Split train/test
     n_samples = X.shape[0]
     split_idx = int(n_samples * (1 - test_split))
     X_train, X_test = X[:split_idx], X[split_idx:]
     y_train, y_test = y[:split_idx], y[split_idx:]
-    
+
     # Train logistic regression (one-vs-rest)
     logger.info("Training LogisticRegression model...")
     clf = LogisticRegression(
-        max_iter=1000,
-        n_jobs=-1,
-        class_weight='balanced',
-        random_state=42
+        max_iter=1000, n_jobs=-1, class_weight="balanced", random_state=42
     )
     clf.fit(X_train, y_train)
-    
+
     # Evaluate
     y_pred = clf.predict(X_test)
     report = classification_report(y_test, y_pred, output_dict=True)
-    
+
     logger.info("Classification Report:")
     logger.info(classification_report(y_test, y_pred))
-    
+
     # Save model
     MODELS_DIR.mkdir(exist_ok=True, parents=True)
     model_path = MODELS_DIR / "label_v1.joblib"
-    
+
     model_bundle = {
         "tfidf": tfidf,
         "scaler": scaler,
@@ -176,10 +181,10 @@ def train_model(limit: int = 5000, test_split: float = 0.2) -> dict:
         "categories": list(clf.classes_),
         "version": "1.0",
     }
-    
+
     dump(model_bundle, model_path)
     logger.info(f"Model saved to {model_path}")
-    
+
     return {
         "model_path": str(model_path),
         "train_size": X_train.shape[0],
