@@ -102,16 +102,16 @@ def test_parse_from_with_quotes():
 
 def test_looks_like_punycode_positive():
     """Test punycode detection - positive cases."""
-    assert looks_like_punycode("xn--pple-43d.com") == True
-    assert looks_like_punycode("example.xn--80akhbyknj4f.com") == True
-    assert looks_like_punycode("XN--TEST.COM") == True  # Case insensitive
+    assert looks_like_punycode("xn--pple-43d.com")
+    assert looks_like_punycode("example.xn--80akhbyknj4f.com")
+    assert looks_like_punycode("XN--TEST.COM")  # Case insensitive
 
 
 def test_looks_like_punycode_negative():
     """Test punycode detection - negative cases."""
-    assert looks_like_punycode("apple.com") == False
-    assert looks_like_punycode("example.com") == False
-    assert looks_like_punycode("sub.domain.org") == False
+    assert not looks_like_punycode("apple.com")
+    assert not looks_like_punycode("example.com")
+    assert not looks_like_punycode("sub.domain.org")
 
 
 def test_spoof_similarity_paypal():

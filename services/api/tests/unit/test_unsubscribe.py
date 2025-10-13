@@ -4,8 +4,7 @@ Unit Tests for Unsubscribe Logic
 Tests RFC-2369 List-Unsubscribe header parsing and HTTP execution.
 """
 
-import pytest
-from app.logic.unsubscribe import parse_list_unsubscribe, perform_unsubscribe, http_unsubscribe
+from app.logic.unsubscribe import parse_list_unsubscribe, perform_unsubscribe
 
 
 class TestUnsubscribeHeaderParsing:

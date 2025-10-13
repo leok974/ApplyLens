@@ -8,7 +8,6 @@ Tests the rule-based email categorization system:
 - Applications detection (ATS domains)
 - Risk scoring
 """
-import pytest
 from app.logic.classify import (
     weak_category,
     calculate_risk_score,

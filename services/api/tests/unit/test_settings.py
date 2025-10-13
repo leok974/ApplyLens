@@ -2,8 +2,6 @@
 Unit tests for settings and environment variable precedence.
 """
 import importlib
-import os
-import pytest
 
 
 def test_db_url_from_env(monkeypatch):

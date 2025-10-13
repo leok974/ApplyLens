@@ -3,8 +3,6 @@ Unit tests for confidence estimation with user weight learning.
 
 Tests that confidence scores are adjusted based on user's learned preferences.
 """
-import pytest
-from sqlalchemy.orm import Session
 
 from app.routers.actions import estimate_confidence
 from app.models import UserWeight, Policy, ActionType, Email

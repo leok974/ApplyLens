@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timedelta, timezone
 from elasticsearch import Elasticsearch
 import os
@@ -36,7 +35,7 @@ def test_label_boost_and_recency(client):
     assert r.status_code == 200
     data = r.json()["hits"]
     # Expect recent neutral to outrank rejection; offer/interview may not match query text
-    ids_by_label = [(h["labels"], h["score"]) for h in data]
+    [(h["labels"], h["score"]) for h in data]
     # sanity: rejection shouldn't beat the fresh neutral for same text
     scores = {tuple(h["labels"]): h["score"] for h in data}
     assert scores.get(("rejection",), -1) <= scores.get((), 0)

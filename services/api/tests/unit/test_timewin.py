@@ -8,13 +8,11 @@ Tests natural language date phrase parsing for:
 - Relative day counts (in 7 days)
 """
 import datetime as dt
-import pytest
 from app.logic.timewin import (
     parse_due_cutoff,
     next_weekday,
     parse_relative_days,
-    cutoff_from_relative_days,
-    USER_TZ
+    cutoff_from_relative_days
 )
 
 

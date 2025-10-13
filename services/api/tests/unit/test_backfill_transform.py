@@ -3,7 +3,6 @@ Unit tests for backfill_bill_dates.py transformer logic.
 
 Tests the transform() function that extracts due dates and updates expires_at.
 """
-import datetime as dt
 import sys
 import os
 
@@ -12,8 +11,7 @@ scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 if scripts_path not in sys.path:
     sys.path.insert(0, scripts_path)
 
-import backfill_bill_dates
-from backfill_bill_dates import transform, earliest
+from backfill_bill_dates import transform, earliest  # noqa: E402
 
 
 def _doc(body_text, subject="", received_at="2025-10-08T12:00:00Z", dates=None, expires_at=None):

@@ -5,7 +5,6 @@ Tests the robust Python-side due date parser that extracts dates from
 bill and payment email text.
 """
 import datetime as dt
-import pytest
 from app.ingest.due_dates import (
     extract_due_dates,
     extract_earliest_due_date,

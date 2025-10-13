@@ -4,7 +4,6 @@ Unit tests for Elasticsearch search helpers.
 These tests monkey-patch the ES client to avoid requiring a running cluster.
 """
 
-import pytest
 import asyncio
 from typing import Dict, Any, List
 import app.logic.search as S

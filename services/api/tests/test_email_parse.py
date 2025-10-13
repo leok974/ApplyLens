@@ -85,7 +85,7 @@ def test_full_extraction_pipeline():
     assert "Engineer" in role, f"Role: {role}"
     assert source == "Email", f"Source: {source}"
     
-    print(f"✅ Full pipeline extraction:")
+    print("✅ Full pipeline extraction:")
     print(f"   Company: {company}")
     print(f"   Role: {role}")
     print(f"   Source: {source}")

@@ -5,8 +5,7 @@ Tests the compute_risk_score function and its component functions
 to ensure accurate and deterministic risk calculation.
 """
 import pytest
-from typing import Dict, Any
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 # Import the functions we're testing

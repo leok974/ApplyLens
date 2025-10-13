@@ -6,7 +6,6 @@ without requiring database or external services.
 """
 
 import pytest
-from typing import Dict, Any
 
 
 # Import the risk calculation function

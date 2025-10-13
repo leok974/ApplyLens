@@ -7,8 +7,7 @@ workflow functions work correctly without needing a real database.
 
 import pytest
 import json
-from unittest.mock import Mock, MagicMock, patch
-from typing import List, Dict, Any
+from unittest.mock import Mock, patch
 
 
 class TestApprovalsBulkInsert:
@@ -174,7 +173,7 @@ class TestApprovalsGet:
         with patch("app.db.SessionLocal", mock_session_local):
             from app.db import approvals_get
             
-            results = approvals_get(status="proposed", limit=50)
+            approvals_get(status="proposed", limit=50)
             
             # Verify the execute call included the limit
             call_args = mock_db.execute.call_args

@@ -13,7 +13,7 @@ scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 if scripts_path not in sys.path:
     sys.path.insert(0, scripts_path)
 
-import backfill_bill_dates as job
+import backfill_bill_dates as job  # noqa: E402
 
 
 class FakeScan:

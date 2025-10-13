@@ -6,10 +6,8 @@ This ensures that Alembic migrations have properly created the required enum typ
 """
 
 import pytest
-import sqlalchemy as sa
 from sqlalchemy import text
 
-from app.settings import settings
 
 
 @pytest.mark.unit

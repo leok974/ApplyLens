@@ -6,7 +6,6 @@ and error handling. Requires a running API server.
 """
 import pytest
 import httpx
-from typing import Dict, Any
 
 
 # Base URL for API tests (configured via environment or fixture)

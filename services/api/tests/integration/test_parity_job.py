@@ -188,7 +188,7 @@ class TestParityExitCodes:
     def test_exit_code_one_when_exceeded(self, parity_script, temp_output):
         """Script should exit 1 when mismatches > allowed."""
         # First run to see if there are any mismatches
-        result1 = subprocess.run(
+        subprocess.run(
             [
                 "python", str(parity_script),
                 "--fields", "risk_score",
@@ -254,7 +254,7 @@ class TestParityParameters:
     
     def test_custom_sample_size(self, parity_script, temp_output):
         """Script should respect custom sample size."""
-        result = subprocess.run(
+        subprocess.run(
             [
                 "python", str(parity_script),
                 "--fields", "risk_score",
@@ -306,7 +306,7 @@ class TestParityComparison:
         """Float values should be compared with tolerance."""
         # This test is somewhat implicit - the script should not flag
         # tiny float differences as mismatches
-        result = subprocess.run(
+        subprocess.run(
             [
                 "python", str(parity_script),
                 "--fields", "risk_score",
