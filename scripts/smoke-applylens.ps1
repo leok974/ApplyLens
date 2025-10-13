@@ -476,6 +476,108 @@ try {
 }
 
 # ============================================================================
+# Test 11: OAuth Login Redirect (Google)
+# ============================================================================
+Write-TestHeader "Test 11: OAuth Login Redirect"
+
+try {
+    Write-TestInfo "Testing /auth/google/login redirect to Google OAuth"
+    
+    # Try to get redirect response (should be 302 to Google)
+    $response = $null
+    try {
+        # Using Invoke-WebRequest with MaximumRedirection=0 to capture the redirect
+        $response = Invoke-WebRequest `
+            -Uri "https://api.applylens.app/auth/google/login" `
+            -Method GET `
+            -MaximumRedirection 0 `
+            -SkipCertificateCheck `
+            -UseBasicParsing `
+            -ErrorAction SilentlyContinue
+    } catch {
+        # PowerShell throws on redirects, but we can extract the response from the exception
+        if ($_.Exception.Response) {
+            $response = $_.Exception.Response
+        }
+    }
+    
+    if ($response) {
+        $statusCode = if ($response.StatusCode) { $response.StatusCode.value__ } else { $response.StatusCode }
+        
+        if ($statusCode -in 301,302,303,307,308) {
+            $location = $response.Headers.Location
+            if ($location -match "accounts\.google\.com") {
+                Write-TestPass "OAuth login redirects to Google (HTTP $statusCode)"
+                Write-TestInfo "Redirect URL: $location"
+                
+                # Check for required OAuth parameters in redirect URL
+                if ($location -match "redirect_uri=") {
+                    Write-TestPass "Redirect URI parameter present in OAuth URL"
+                } else {
+                    Write-TestWarning "redirect_uri parameter not found in OAuth URL"
+                }
+                
+                if ($location -match "client_id=") {
+                    Write-TestPass "Client ID parameter present in OAuth URL"
+                } else {
+                    Write-TestWarning "client_id parameter not found in OAuth URL"
+                }
+                
+            } else {
+                Write-TestFail "OAuth login redirects but not to Google" "Location: $location"
+            }
+        } else {
+            Write-TestFail "OAuth login endpoint returned unexpected status" "Status: $statusCode (expected 302)"
+        }
+    } else {
+        Write-TestFail "OAuth login endpoint not responding" "No response received"
+    }
+} catch {
+    Write-TestFail "OAuth login test failed" $_.Exception.Message
+}
+
+# ============================================================================
+# Test 12: OAuth Callback Route Accessibility
+# ============================================================================
+Write-TestHeader "Test 12: OAuth Callback Route"
+
+try {
+    Write-TestInfo "Testing /auth/google/callback endpoint accessibility"
+    
+    # Test that callback route is accessible (will return 400 without valid code, but shouldn't 404)
+    $response = $null
+    try {
+        $response = Invoke-WebRequest `
+            -Uri "https://api.applylens.app/auth/google/callback?error=test" `
+            -Method GET `
+            -SkipCertificateCheck `
+            -UseBasicParsing `
+            -ErrorAction Stop
+    } catch {
+        $response = $_.Exception.Response
+    }
+    
+    if ($response) {
+        $statusCode = if ($response.StatusCode) { $response.StatusCode.value__ } else { $response.StatusCode }
+        
+        if ($statusCode -eq 404) {
+            Write-TestFail "OAuth callback route returns 404" "Route may not be properly configured in Nginx"
+        } elseif ($statusCode -in 400,401,403) {
+            Write-TestPass "OAuth callback route is accessible (HTTP $statusCode expected without valid code)"
+            Write-TestInfo "Callback endpoint exists and is routed correctly"
+        } elseif ($statusCode -eq 200) {
+            Write-TestPass "OAuth callback route responds with 200"
+        } else {
+            Write-TestWarning "OAuth callback returned unexpected status: $statusCode"
+        }
+    } else {
+        Write-TestFail "OAuth callback endpoint not responding" "No response received"
+    }
+} catch {
+    Write-TestFail "OAuth callback test failed" $_.Exception.Message
+}
+
+# ============================================================================
 # Final Summary
 # ============================================================================
 Write-Summary

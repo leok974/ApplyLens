@@ -140,6 +140,32 @@
         },
         "replied": {
           "type": "boolean"
+        },
+        "category": {
+          "type": "keyword"
+        },
+        "confidence": {
+          "type": "float"
+        },
+        "expires_at": {
+          "type": "date"
+        },
+        "event_time": {
+          "type": "date"
+        },
+        "features": {
+          "type": "object",
+          "enabled": true
+        },
+        "profile_signals": {
+          "type": "object",
+          "enabled": true
+        },
+        "auto_hide_candidate": {
+          "type": "boolean"
+        },
+        "digest_candidates": {
+          "type": "keyword"
         }
       }
     }

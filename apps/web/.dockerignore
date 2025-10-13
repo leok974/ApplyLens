@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+*.log
+.DS_Store
+playwright-report
+test-results
+tests
+*.spec.ts
+playwright.config.ts

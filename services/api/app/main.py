@@ -7,7 +7,7 @@ from starlette_exporter import PrometheusMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from .settings import settings
 from .db import Base, engine, SessionLocal
-from .routers import emails, search, suggest
+from .routers import emails, search, suggest, applications
 from . import auth_google, routes_gmail, oauth_google, routes_extract, health
 from .es import ensure_index
 from .metrics import DB_UP, ES_UP
@@ -60,13 +60,37 @@ def debug_500():
     raise HTTPException(status_code=500, detail="Debug error for alert testing")
 
 # Include routers
-app.include_router(emails.router)
-app.include_router(search.router)
-app.include_router(suggest.router)
+app.include_router(emails.router, prefix="/api")
+app.include_router(search.router, prefix="/api")
+app.include_router(suggest.router, prefix="/api")
+app.include_router(applications.router, prefix="/api")
 app.include_router(auth_google.router)
-app.include_router(routes_gmail.router)
+app.include_router(routes_gmail.router, prefix="/api")
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
+
+# Phase 2 - Category labeling and profile analytics
+from .routers import labels, profile, labeling
+app.include_router(labels.router)
+app.include_router(profile.router)
+app.include_router(labeling.router, prefix="/api")
+
+# Security analysis
+from .routers import security, policy
+app.include_router(security.router, prefix="/api")
+app.include_router(policy.router, prefix="/api")
+
+# Phase 4 - Agentic Actions & Approval Loop
+from .routers import actions
+app.include_router(actions.router, prefix="/api")
+
+# Phase 5 - Chat Assistant
+from .routers import chat
+app.include_router(chat.router, prefix="/api")
+
+# Phase 6 - Money Mode (Receipt tracking)
+from .routers import money
+app.include_router(money.router, prefix="/api")
 
 # Email automation system
 try:
