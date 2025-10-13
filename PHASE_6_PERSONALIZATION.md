@@ -710,5 +710,161 @@ cd apps/web
 pnpm test
 ```
 
+## Polish & Final Touches
+
+### Confidence Bump via User Weights
+
+**What**: Confidence scores are now personalized using learned user preferences.
+
+**Implementation**: The `estimate_confidence()` function applies a bump (±0.15 max) based on user weights:
+
+```python
+def estimate_confidence(policy, feats, aggs, neighbors, db=None, user=None, email=None) -> float:
+    base = policy.confidence_threshold  # Start with policy baseline (e.g., 0.7)
+    
+    # Simple heuristics
+    if feats.get("category") == "promo" and aggs.get("promo_ratio", 0) > 0.6:
+        base += 0.1
+    if feats.get("risk_score", 0) >= 80:
+        base = 0.95
+    
+    # User-personalized bump: +/- up to ~0.15
+    if db and user and email:
+        f = []
+        if email.category: f.append(f"category:{email.category}")
+        if email.sender_domain: f.append(f"sender_domain:{email.sender_domain}")
+        subj = (email.subject or "").lower()
+        for tok in ("invoice","receipt","meetup","interview","newsletter","offer"):
+            if tok in subj: f.append(f"contains:{tok}")
+        
+        bump = max(-0.15, min(0.15, 0.05 * score_ctx_with_user(db, user.email, f)))
+        base += bump
+    
+    return max(0.01, min(0.99, base))
+```
+
+**Effect**:
+- **Positive weights** (user has approved similar emails): Confidence increases (up to +0.15)
+- **Negative weights** (user has rejected similar emails): Confidence decreases (up to -0.15)
+- **High risk emails**: Override with 0.95 confidence regardless of weights
+
+**Test**: `services/api/tests/test_confidence_learning.py`
+
+### Prometheus Counters
+
+**Metrics Tracked** (in `services/api/app/telemetry/metrics.py`):
+
+```python
+policy_fired_total = Counter(
+    "policy_fired_total",
+    "Total times a policy fired (created proposal)",
+    ["policy_id", "user"]
+)
+
+policy_approved_total = Counter(
+    "policy_approved_total", 
+    "Total times a policy proposal was approved",
+    ["policy_id", "user"]
+)
+
+policy_rejected_total = Counter(
+    "policy_rejected_total",
+    "Total times a policy proposal was rejected", 
+    ["policy_id", "user"]
+)
+
+user_weight_updates = Counter(
+    "user_weight_updates_total",
+    "Total user weight updates from learning",
+    ["user", "sign"]  # sign = "plus" or "minus"
+)
+```
+
+**Wired In**:
+- `policy_fired_total`: Incremented in `/actions/propose` when proposal created
+- `policy_approved_total`: Incremented in `/actions/{id}/approve` after approval
+- `policy_rejected_total`: Incremented in `/actions/{id}/reject` after rejection
+- `user_weight_updates`: Incremented in approve/reject with sign="plus"/"minus"
+
+**View Metrics**: `http://localhost:8003/metrics`
+
+### Chat Mode Flags
+
+**Implementation**: Mode selector in chat interface with 3 options:
+
+1. **off** (default): Neutral retrieval, no context boosting
+2. **networking**: Boosts events, meetups, conferences in RAG results
+3. **money**: Boosts receipts, invoices, payments in RAG results
+
+**SSE URL Wiring**:
+```typescript
+const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
+  + (shouldPropose ? '&propose=1' : '')
+  + (shouldExplain ? '&explain=1' : '')
+  + (shouldRemember ? '&remember=1' : '')
+  + (mode ? `&mode=${encodeURIComponent(mode)}` : '')
+```
+
+**Test**: `apps/web/tests/chat.modes.spec.ts`
+
+### Money Panel Features
+
+**CSV Export Link**: When `mode=money` is selected, a link to download receipts appears:
+```html
+<a href="/api/money/receipts.csv" target="_blank">Export receipts (CSV)</a>
+```
+
+**Money Tools Panel**: Added to chat sidebar with two quick view buttons:
+
+1. **View duplicates**: Fetches `/api/money/duplicates` → Shows potential duplicate transactions
+2. **Spending summary**: Fetches `/api/money/summary` → Shows aggregated spending stats
+
+**UI Location**: Right sidebar, below Policy Accuracy Panel
+
+**Implementation**:
+```tsx
+const [dupes, setDupes] = useState<any[] | null>(null)
+const [summary, setSummary] = useState<any | null>(null)
+
+async function loadDupes() {
+  const r = await fetch('/api/money/duplicates')
+  setDupes(await r.json())
+}
+
+async function loadSummary() {
+  const r = await fetch('/api/money/summary')
+  setSummary(await r.json())
+}
+
+// Render JSON in collapsible pre blocks
+{dupes && <pre className="...">{JSON.stringify(dupes, null, 2)}</pre>}
+{summary && <pre className="...">{JSON.stringify(summary, null, 2)}</pre>}
+```
+
+### Quick Smoke Test
+
+**Test confidence bump effect**:
+```powershell
+# 1. Propose actions for meetup emails
+Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
+  -ContentType application/json -Body '{"query":"subject:meetup OR category:event","limit":10}'
+
+# 2. Approve first 2 proposals (builds positive weights)
+$tray = Invoke-RestMethod http://localhost:8003/actions/tray
+$ids = $tray | Select-Object -ExpandProperty id
+$ids | Select-Object -First 2 | ForEach-Object { 
+  Invoke-RestMethod "http://localhost:8003/actions/$($_)/approve" -Method POST `
+    -Body '{}' -ContentType application/json 
+}
+
+# 3. Propose again - confidence should be higher due to learned weights
+Invoke-RestMethod http://localhost:8003/actions/propose -Method POST `
+  -ContentType application/json -Body '{"query":"subject:meetup OR category:event","limit":10}'
+
+# Compare confidence values before/after approvals
+```
+
+**Expected**: Confidence scores for similar emails increase by ~0.05-0.15 after positive feedback.
+
 **Next**: Phase 7 - Multi-Model Ensemble & A/B Testing
 
