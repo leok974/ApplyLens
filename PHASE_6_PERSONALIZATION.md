@@ -617,10 +617,98 @@ Phase 6 delivers:
 ✅ **ATS Enrichment**: Warehouse integration for recruiter email intelligence  
 ✅ **RAG Boosting**: Prioritize urgent/high-risk recruiter emails  
 ✅ **Money Mode**: Receipt tracking, CSV export, duplicate detection  
+✅ **Web UI**: Policy Accuracy panel and assistant mode selector  
 
 **Status**: Production-ready  
 **Migration**: 0017_phase6_personalization  
 **API Endpoints**: 4 new endpoints (/policy/stats, /money/*)  
 **Background Jobs**: 1 (ATS enrichment, daily)  
 
+## Web UI Components
+
+### Policy Accuracy Panel
+
+**Location**: Chat page sidebar (right column)
+
+**What it shows**:
+- Per-user precision bars for top 5 most active policies
+- Fired, approved, rejected counters over 30-day window
+- Refresh button to reload stats
+
+**Uses**: `GET /api/policy/stats` endpoint
+
+**Features**:
+- Visual precision bars (0-100%)
+- Sorts by fired count (most active policies first)
+- Shows "No data yet" when no policies have fired
+- Real-time refresh capability
+
+**Implementation**:
+```tsx
+import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
+
+// In your page/component:
+<PolicyAccuracyPanel />
+```
+
+### Assistant Mode Selector
+
+**Location**: Chat input bar (after the checkboxes)
+
+**Mode Options**:
+- **off** – Neutral retrieval, no specialized boosting
+- **networking** – Boosts events, meetups, conferences, webinars in RAG results
+- **money** – Boosts receipts, invoices, payments, finance-related emails
+
+**Wire to SSE**:
+The mode parameter is automatically added to the `/api/chat/stream` URL:
+```
+/api/chat/stream?q=<query>&mode=networking
+/api/chat/stream?q=<query>&mode=money
+```
+
+**Money Mode Extras**:
+When `mode=money` is selected, an "Export receipts (CSV)" link appears that downloads receipts directly:
+```
+<a href="/api/money/receipts.csv">Export receipts (CSV)</a>
+```
+
+**Implementation**:
+```tsx
+const [mode, setMode] = useState<'' | 'networking' | 'money'>('')
+
+// In URL construction:
+const url = `/api/chat/stream?q=${encodeURIComponent(text)}`
+  + (mode ? `&mode=${encodeURIComponent(mode)}` : '')
+
+// UI:
+<select value={mode} onChange={(e) => setMode(e.target.value as any)}>
+  <option value="">off</option>
+  <option value="networking">networking</option>
+  <option value="money">money</option>
+</select>
+```
+
+### Tests
+
+**Policy Panel Tests** (`apps/web/tests/policy-panel.spec.ts`):
+- Loads and shows precision bars
+- Handles empty state
+- Refresh button functionality
+- Error handling
+
+**Chat Mode Tests** (`apps/web/tests/chat-modes.spec.ts`):
+- Mode selector wires to SSE URL
+- Money mode shows export link
+- Networking mode parameter added
+- Mode off doesn't add parameter
+- Mode persists across queries
+
+**Run tests**:
+```bash
+cd apps/web
+pnpm test
+```
+
 **Next**: Phase 7 - Multi-Model Ensemble & A/B Testing
+
