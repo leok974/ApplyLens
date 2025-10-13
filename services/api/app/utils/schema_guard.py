@@ -15,7 +15,9 @@ Usage:
 """
 
 from typing import Optional
-from sqlalchemy import text, inspect
+
+from sqlalchemy import inspect, text
+
 from app.db import engine
 
 

@@ -5,7 +5,8 @@ Tests the JSON-based policy evaluation system including operators,
 conditional logic (all/any), and action proposal generation.
 """
 
-from app.logic.policy_engine import apply_policies, _eval_clause, _eval_cond, _get
+from app.logic.policy_engine import (_eval_clause, _eval_cond, _get,
+                                     apply_policies)
 
 
 class TestPolicyEngineBasics:

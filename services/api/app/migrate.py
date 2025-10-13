@@ -1,7 +1,8 @@
 # app/migrate.py
-from .db import Base, engine
-from .models import OAuthToken, Email, Application  # noqa
 from sqlalchemy import text
+
+from .db import Base, engine
+from .models import Application, Email, OAuthToken  # noqa
 
 
 def run():

@@ -7,6 +7,7 @@ Tests the bulk quarantine, release, and rescan endpoints.
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+
 from app.models import Email
 
 

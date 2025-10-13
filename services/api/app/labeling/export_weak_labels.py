@@ -21,12 +21,13 @@ Usage:
 """
 
 from __future__ import annotations
-import os
-import sys
-import json
+
 import argparse
+import json
+import os
 import re
-from typing import Dict, Any, Iterable, Optional
+import sys
+from typing import Any, Dict, Iterable, Optional
 
 import requests
 

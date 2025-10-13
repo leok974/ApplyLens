@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta, timezone
-from elasticsearch import Elasticsearch
 import os
+from datetime import datetime, timedelta, timezone
+
+from elasticsearch import Elasticsearch
 
 ES_URL = os.getenv("ES_URL", "http://localhost:9200")
 INDEX = os.getenv("ES_ALIAS", "gmail_emails")

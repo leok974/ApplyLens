@@ -7,20 +7,11 @@ Models:
 - Policy: "Yardstick" JSON rules (enabled, priority, condition, action, confidence_threshold)
 """
 
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    JSON,
-    Boolean,
-    ForeignKey,
-    Float,
-    Enum,
-    Text,
-)
-from datetime import datetime
 import enum
+from datetime import datetime
+
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Enum, Float,
+                        ForeignKey, Integer, String, Text)
 
 from ..db import Base
 

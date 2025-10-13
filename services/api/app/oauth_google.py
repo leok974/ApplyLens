@@ -6,16 +6,17 @@ Endpoints:
 - GET /oauth/google/callback?code=xxx&state=xxx - Handle OAuth callback
 """
 
+import json
+import urllib.parse
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
-from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
-import urllib.parse
-import json
+from google_auth_oauthlib.flow import Flow
 
-from .settings import settings
 from .db import SessionLocal
 from .models import GmailToken
+from .settings import settings
 
 router = APIRouter(prefix="/oauth/google", tags=["oauth"])
 

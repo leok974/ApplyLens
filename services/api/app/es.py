@@ -1,4 +1,5 @@
 import os
+
 from elasticsearch import Elasticsearch
 
 ES_ENABLED = os.getenv("ES_ENABLED", "true").lower() == "true"
@@ -127,6 +128,7 @@ def ensure_index():
 
     # Retry logic for ES connection during startup
     import time
+
     from elasticsearch.exceptions import ConnectionError
 
     max_retries = 30

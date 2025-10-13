@@ -1,24 +1,13 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    Text,
-    JSON,
-    Index,
-    ForeignKey,
-    Enum,
-    Float,
-    BigInteger,
-    text,
-    Boolean,
-)
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from .db import Base
 import enum
 from datetime import datetime
+
+from sqlalchemy import (JSON, BigInteger, Boolean, Column, DateTime, Enum,
+                        Float, ForeignKey, Index, Integer, String, Text, text)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
+from .db import Base
 
 
 class OAuthToken(Base):

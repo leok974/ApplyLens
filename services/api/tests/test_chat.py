@@ -6,8 +6,9 @@ Tests intent detection, RAG search, and chat endpoint functionality.
 
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.core.intent import detect_intent, explain_intent
+from app.main import app
 
 client = TestClient(app)
 
@@ -288,8 +289,9 @@ class TestMailTools:
 
     def test_clean_promos_with_exceptions(self):
         """Clean tool should respect exceptions in user text."""
-        from app.core.mail_tools import clean_promos
         from datetime import datetime, timedelta
+
+        from app.core.mail_tools import clean_promos
 
         # Mock RAG result with old promos
         week_ago = (datetime.utcnow() - timedelta(days=8)).isoformat()

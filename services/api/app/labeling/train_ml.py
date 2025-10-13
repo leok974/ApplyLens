@@ -14,18 +14,19 @@ Expected JSONL format:
     {"subject": "...", "body_text": "...", "features": {...}, "weak_label": "newsletter"}
 """
 
-import os
 import json
+import os
 import sys
+
 import joblib
+import numpy as np
+from sklearn.compose import ColumnTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.compose import ColumnTransformer
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
-import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 # Target categories
 CATEGORIES = ["promo", "newsletter", "recruiting", "bill", "other"]

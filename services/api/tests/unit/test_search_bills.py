@@ -6,7 +6,9 @@ Uses monkeypatching to mock ES client responses.
 """
 
 import asyncio
+
 import pytest
+
 import app.logic.search as S
 
 

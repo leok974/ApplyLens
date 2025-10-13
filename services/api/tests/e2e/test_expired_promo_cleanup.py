@@ -9,8 +9,10 @@ Tests the full flow:
 5. Audit log records the action
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
+
 from app.logic.policy import create_default_engine
 
 

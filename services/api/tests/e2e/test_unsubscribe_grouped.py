@@ -3,6 +3,7 @@ E2E tests for grouped unsubscribe functionality.
 """
 
 import pytest
+
 import app.routers.unsubscribe as U
 
 

@@ -11,6 +11,7 @@ Tests the complete flow:
 
 import pytest
 from httpx import AsyncClient
+
 import app.logic.audit_es as AUD
 import app.logic.search as S
 from app.main import app

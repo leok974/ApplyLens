@@ -5,13 +5,12 @@ This test verifies that the schema guard correctly prevents scripts
 from running when the database schema is outdated.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from app.utils.schema_guard import (
-    require_min_migration,
-    require_columns,
-    check_column_exists,
-)
+
+from app.utils.schema_guard import (check_column_exists, require_columns,
+                                    require_min_migration)
 
 
 class TestSchemaGuard:

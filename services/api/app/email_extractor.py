@@ -10,7 +10,7 @@ Uses heuristics to parse email content and detect:
 
 import re
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 # Free email providers (not company emails)
 FREE_PROVIDERS = {"gmail", "outlook", "yahoo", "icloud", "hotmail", "protonmail", "aol"}

@@ -8,6 +8,7 @@ The ML model handles the remaining ambiguous cases.
 """
 
 import re
+
 from tldextract import extract as tldx
 
 # Known ATS (Applicant Tracking System) domains

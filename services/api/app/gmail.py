@@ -11,9 +11,10 @@ All variables must be set for Gmail integration to work. If missing, endpoints
 gracefully fall back to using request body content.
 """
 
-import os
 import base64
-from typing import Optional, Dict, List, Any
+import os
+from typing import Any, Dict, List, Optional
+
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError

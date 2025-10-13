@@ -5,7 +5,8 @@ Combines keyword (BM25) and semantic (vector) search for better email retrieval.
 Supports structured filters for category, risk score, sender domain, and date ranges.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from .text import embed_query
 
 

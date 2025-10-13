@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from ..db import get_db
+
 from .. import models
+from ..db import get_db
 from ..schemas import EmailOut
 
 router = APIRouter(prefix="/emails", tags=["emails"])

@@ -10,6 +10,7 @@ Tests monkey-patch the ES client so no running cluster is needed.
 """
 
 import pytest
+
 import app.logic.search as S
 
 

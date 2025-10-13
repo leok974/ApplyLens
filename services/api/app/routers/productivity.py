@@ -4,10 +4,11 @@ Productivity tools for email-based reminders and tasks.
 Creates calendar events and task reminders from email content.
 """
 
+import datetime as dt
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, List
-import datetime as dt
 
 router = APIRouter(prefix="/productivity", tags=["productivity"])
 

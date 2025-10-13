@@ -5,17 +5,14 @@ Exposes /metrics endpoint that Prometheus can scrape to monitor
 the health of bill backfill operations.
 """
 
-from fastapi import APIRouter, Response
-from prometheus_client import (
-    CollectorRegistry,
-    Gauge,
-    generate_latest,
-    CONTENT_TYPE_LATEST,
-)
 import os
-from datetime import datetime, timezone
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+
+from fastapi import APIRouter, Response
+from prometheus_client import (CONTENT_TYPE_LATEST, CollectorRegistry, Gauge,
+                               generate_latest)
 
 # Add scripts directory to path for imports
 scripts_dir = Path(__file__).parent.parent.parent / "scripts"

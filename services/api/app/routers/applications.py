@@ -1,12 +1,14 @@
 # services/api/app/routers/applications.py
 from __future__ import annotations
-from datetime import datetime
-from typing import List, Optional, Any, Dict
-from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
+
 import base64
 import json
 import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 router = APIRouter(tags=["applications"])
 
@@ -75,8 +77,9 @@ def _list_applications_bq(
 ) -> ApplicationListResponse:
     """Fetch applications from BigQuery with offset-based cursor pagination"""
     try:
-        from google.cloud import bigquery
         import tempfile
+
+        from google.cloud import bigquery
 
         project = os.getenv("BQ_PROJECT")
         dataset = os.getenv("BQ_DATASET", "applylens")

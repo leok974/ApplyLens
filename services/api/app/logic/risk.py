@@ -9,7 +9,7 @@ Detects:
 """
 
 import re
-from typing import Dict, Tuple, List
+from typing import Dict, List, Tuple
 
 # Suspicious TLDs commonly used in phishing
 SUS_TLDS = {

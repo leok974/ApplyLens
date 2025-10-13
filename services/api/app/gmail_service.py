@@ -1,27 +1,23 @@
-import os
-import re
 import base64
 import datetime as dt
+import os
+import re
 from typing import Dict, List, Optional
-from dateutil.relativedelta import relativedelta
-from bs4 import BeautifulSoup
+
 import bleach
-
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request as GRequest
-
-from sqlalchemy.orm import Session
-from .models import OAuthToken, Email, Application, AppStatus
-from .ingest.gmail_metrics import compute_thread_reply_metrics
-from .ingest.due_dates import (
-    extract_due_dates,
-    extract_earliest_due_date,
-    extract_money_amounts,
-)
-from .security.analyzer import EmailRiskAnalyzer, BlocklistProvider
-
+from bs4 import BeautifulSoup
+from dateutil.relativedelta import relativedelta
 from elasticsearch import Elasticsearch, helpers
+from google.auth.transport.requests import Request as GRequest
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from sqlalchemy.orm import Session
+
+from .ingest.due_dates import (extract_due_dates, extract_earliest_due_date,
+                               extract_money_amounts)
+from .ingest.gmail_metrics import compute_thread_reply_metrics
+from .models import Application, AppStatus, Email, OAuthToken
+from .security.analyzer import BlocklistProvider, EmailRiskAnalyzer
 
 ELASTICSEARCH_URL = os.getenv("ES_URL")
 ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")

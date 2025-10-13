@@ -5,14 +5,14 @@ This module provides deterministic pattern matching for email categories
 with very high precision. Rules are preferred over ML predictions when they match.
 """
 
-import re
 import fnmatch
-import yaml
-from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+import re
 from datetime import datetime
-from dateutil import parser as date_parser
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
+import yaml
+from dateutil import parser as date_parser
 
 # Regex patterns for extracting structured data
 RX_MONEY = re.compile(r"[$€£]\s?\d[\d,]*(\.\d{2})?")

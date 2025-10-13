@@ -7,6 +7,7 @@ by mocking the ES client and helpers.
 
 import os
 import sys
+
 import pytest
 
 # Add scripts to path

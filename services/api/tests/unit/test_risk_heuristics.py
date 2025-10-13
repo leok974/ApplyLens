@@ -2,14 +2,8 @@
 Unit tests for risk heuristics.
 """
 
-from app.logic.risk import (
-    risk_score,
-    parse_from,
-    looks_like_punycode,
-    spoof_similarity,
-    tld_risk,
-    analyze_email_risk,
-)
+from app.logic.risk import (analyze_email_risk, looks_like_punycode,
+                            parse_from, risk_score, spoof_similarity, tld_risk)
 
 
 def test_display_name_spoof():

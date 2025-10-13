@@ -8,12 +8,11 @@ Features:
 - Detect duplicate charges (same merchant + amount within 7 days)
 """
 
-import re
 import csv
 import io
-from typing import List, Dict, Any, Tuple
+import re
 from datetime import datetime
-
+from typing import Any, Dict, List, Tuple
 
 # Regex patterns for amount extraction
 AMT_RE = re.compile(r"(\$|USD\s*)\s?([0-9]+(?:\.[0-9]{2})?)")

@@ -5,11 +5,13 @@ Provides endpoints for previewing and executing email unsubscribe operations
 using RFC-2369 List-Unsubscribe headers.
 """
 
+from typing import Dict
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict
-from app.logic.unsubscribe import perform_unsubscribe
+
 from app.db import audit_action
+from app.logic.unsubscribe import perform_unsubscribe
 
 router = APIRouter(prefix="/unsubscribe", tags=["unsubscribe"])
 

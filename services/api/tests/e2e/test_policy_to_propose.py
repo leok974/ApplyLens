@@ -8,13 +8,15 @@ Tests the complete flow:
 4. Verify actions appear in /approvals/proposed
 """
 
-import pytest
 import types
+
+import pytest
 from httpx import AsyncClient
-from app.main import app
-import app.logic.search as S
-import app.logic.audit_es as AUD
+
 import app.db as DB
+import app.logic.audit_es as AUD
+import app.logic.search as S
+from app.main import app
 
 
 @pytest.mark.asyncio

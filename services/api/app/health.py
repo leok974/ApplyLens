@@ -7,9 +7,10 @@ These endpoints follow Kubernetes best practices:
 """
 
 import os
+
+from elasticsearch import Elasticsearch
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
-from elasticsearch import Elasticsearch
 
 from .db import SessionLocal
 from .metrics import DB_UP, ES_UP

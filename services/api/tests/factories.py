@@ -17,11 +17,12 @@ Usage:
     emails = EmailFactory.create_batch(5)
 """
 
-import factory
-from factory import fuzzy
 from datetime import datetime, timedelta
 
-from app.models import Email, Policy, ActionType
+import factory
+from factory import fuzzy
+
+from app.models import ActionType, Email, Policy
 from app.models.personalization import UserWeight
 
 

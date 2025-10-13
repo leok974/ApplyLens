@@ -9,12 +9,8 @@ Tests the rule-based email categorization system:
 - Risk scoring
 """
 
-from app.logic.classify import (
-    weak_category,
-    calculate_risk_score,
-    extract_profile_tags,
-    classify_email,
-)
+from app.logic.classify import (calculate_risk_score, classify_email,
+                                extract_profile_tags, weak_category)
 
 
 class TestPromotionsDetection:

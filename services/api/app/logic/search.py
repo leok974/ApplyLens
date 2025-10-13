@@ -1,7 +1,8 @@
 # ES-backed implementations for mailbox queries.
-import os
 import datetime as dt
-from typing import List, Dict, Any, Optional
+import os
+from typing import Any, Dict, List, Optional
+
 from elasticsearch import Elasticsearch
 
 ES_INDEX = os.getenv("ES_EMAIL_INDEX", "emails_v1")

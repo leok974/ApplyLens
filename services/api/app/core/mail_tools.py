@@ -7,9 +7,9 @@ Each tool takes RAG search results and user text, returns a tuple of:
 Actions can be integrated with Phase 4 approval system if needed.
 """
 
-from typing import Dict, Any, List, Tuple
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Tuple
 
 
 def _format_email(doc: Dict[str, Any]) -> str:

@@ -12,11 +12,12 @@ The labeling process:
     4. Write category, confidence, reason, and features back to ES
 """
 
-from fastapi import APIRouter, Body, HTTPException
-import httpx
 import os
-import joblib
 from typing import AsyncIterator
+
+import httpx
+import joblib
+from fastapi import APIRouter, Body, HTTPException
 
 from ..labeling.rules import rule_labels
 

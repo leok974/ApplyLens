@@ -3,7 +3,7 @@ Prometheus metrics for ApplyLens API.
 Centralized metrics definitions to avoid circular imports.
 """
 
-from prometheus_client import Counter, Gauge, Summary, Histogram
+from prometheus_client import Counter, Gauge, Histogram, Summary
 
 # --- Custom Prometheus Metrics ---
 

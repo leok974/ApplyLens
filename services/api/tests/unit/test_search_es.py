@@ -5,7 +5,8 @@ These tests monkey-patch the ES client to avoid requiring a running cluster.
 """
 
 import asyncio
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 import app.logic.search as S
 
 

@@ -6,19 +6,17 @@ Endpoints:
 - POST /applications/backfill-from-email - Extract and create/update application
 """
 
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
 
 from .db import SessionLocal
+from .email_extractor import ExtractInput
+from .email_extractor import extract_from_email as extract_service
+from .gmail_providers import GmailProvider, db_backed_provider, mock_provider
 from .models import Application, AppStatus, GmailToken
 from .settings import settings
-from .email_extractor import extract_from_email as extract_service, ExtractInput
-from .gmail_providers import (
-    db_backed_provider,
-    mock_provider,
-    GmailProvider,
-)
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 

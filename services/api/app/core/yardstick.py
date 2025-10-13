@@ -29,11 +29,10 @@ Context Schema:
 }
 """
 
-import re
 import operator
+import re
 from datetime import datetime
-from typing import Any, Dict, Callable
-
+from typing import Any, Callable, Dict
 
 # Operator mapping
 OPS: Dict[str, Callable] = {

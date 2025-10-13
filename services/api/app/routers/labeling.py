@@ -8,18 +8,18 @@ Provides:
 - GET /ml/stats - Get labeling statistics
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
-from typing import Optional
 import logging
 import os
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Email
 from app.ml.predict_label import score_email
 from app.ml.rules import extract_extras
-
+from app.models import Email
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ml", tags=["ml"])

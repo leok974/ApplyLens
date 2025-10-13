@@ -5,21 +5,18 @@ Endpoints for email automation scoring, analysis, and management.
 Includes risk score recomputation and summary statistics.
 """
 
-import subprocess
 import os
-from datetime import datetime, timezone, timedelta
+import subprocess
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy import select, func, and_
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.metrics import (risk_emails_scored_total, risk_recompute_duration,
+                         risk_recompute_requests)
 from app.models import Email
-from app.metrics import (
-    risk_recompute_requests,
-    risk_recompute_duration,
-    risk_emails_scored_total,
-)
 
 router = APIRouter(prefix="/automation", tags=["automation"])
 

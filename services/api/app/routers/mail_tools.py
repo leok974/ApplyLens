@@ -9,16 +9,17 @@ Provides endpoints for:
 All actions are logged for transparency and debugging.
 """
 
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
-from app.models import Email, ActionsAudit
 from app.logic.policy import create_default_engine
+from app.models import ActionsAudit, Email
 
 router = APIRouter(prefix="/mail", tags=["mail-tools"])
 

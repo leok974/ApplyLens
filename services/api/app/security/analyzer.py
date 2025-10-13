@@ -3,11 +3,11 @@ from __future__ import annotations
 
 import json
 import re
-import idna
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
-from pydantic import BaseModel
 
+import idna
+from pydantic import BaseModel
 
 # ---------- Public result types ----------
 

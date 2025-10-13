@@ -10,10 +10,11 @@ These endpoints power the Profile UI and help users understand
 their email composition and manage subscriptions.
 """
 
-from fastapi import APIRouter, Query, HTTPException
-import httpx
 import os
 from typing import Optional
+
+import httpx
+from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -349,22 +350,18 @@ async def time_series(
 # Phase 2: Database-backed Profile Analytics (ML labeling system)
 # ============================================================================
 
-from fastapi import Depends  # noqa: E402
-from sqlalchemy.orm import Session  # noqa: E402
-from sqlalchemy import desc, and_  # noqa: E402
-from datetime import datetime, timedelta  # noqa: E402
 import logging  # noqa: E402
 import re  # noqa: E402
 from collections import Counter  # noqa: E402
+from datetime import datetime, timedelta  # noqa: E402
+
+from fastapi import Depends  # noqa: E402
+from sqlalchemy import and_, desc  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import get_db  # noqa: E402
-from app.models import (  # noqa: E402
-    Email,
-    ProfileSenderStats,
-    ProfileCategoryStats,
-    ProfileInterests,
-)  # noqa: E402
-
+from app.models import (Email, ProfileCategoryStats,  # noqa: E402
+                        ProfileInterests, ProfileSenderStats)
 
 logger = logging.getLogger(__name__)
 

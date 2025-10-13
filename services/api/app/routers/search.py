@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
 import re
-from ..es import es, ES_ENABLED, INDEX
+from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
+from ..es import ES_ENABLED, INDEX, es
 
 # ---- Tunables for "demo pop"
 LABEL_WEIGHTS = {

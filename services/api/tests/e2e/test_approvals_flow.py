@@ -5,9 +5,10 @@ Tests the full flow: propose → list → approve/reject → execute
 with mocked database and executors.
 """
 
-import pytest
+from typing import Any, Dict, List
 from unittest.mock import patch
-from typing import Dict, Any, List
+
+import pytest
 
 
 @pytest.mark.asyncio

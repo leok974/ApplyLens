@@ -4,8 +4,8 @@ E2E tests for validate_backfill.py script with mocked Elasticsearch.
 Tests validation logic without requiring a real ES cluster.
 """
 
-import sys
 import json
+import sys
 from pathlib import Path
 
 # Add scripts directory to path for imports

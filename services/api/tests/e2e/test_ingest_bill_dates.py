@@ -7,12 +7,11 @@ due dates into the dates[] array and expires_at field.
 
 import base64
 import datetime as dt
+
 import pytest
-from app.ingest.due_dates import (
-    extract_due_dates,
-    extract_earliest_due_date,
-    extract_money_amounts,
-)
+
+from app.ingest.due_dates import (extract_due_dates, extract_earliest_due_date,
+                                  extract_money_amounts)
 
 
 def enc(s: str) -> str:

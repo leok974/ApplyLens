@@ -4,9 +4,10 @@ Analyzes thread messages to determine user reply activity.
 """
 
 from __future__ import annotations
+
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, Optional
-import re
 
 EMAIL_RE = re.compile(r"<([^>]+)>")
 

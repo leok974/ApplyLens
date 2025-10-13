@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
-from ..es import es, ES_ENABLED, INDEX
+
+from ..es import ES_ENABLED, INDEX, es
 
 router = APIRouter(prefix="/suggest", tags=["suggest"])
 

@@ -6,8 +6,8 @@ Supports conditional logic (all/any), multiple operators, and "now" placeholder 
 """
 
 import re
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 # Supported operators for policy conditions
 OPS = {

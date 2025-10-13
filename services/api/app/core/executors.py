@@ -11,7 +11,7 @@ Implements thin adapters for executing each ActionType:
 All executors return (success: bool, error: str | None)
 """
 
-from typing import Tuple, Optional, Dict, Any
+from typing import Any, Dict, Optional, Tuple
 
 # Gmail API imports (will be injected/imported from services)
 # from ..services.gmail_service import gmail_service

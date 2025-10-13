@@ -4,13 +4,13 @@ Unit tests for utility functions (email parsing, confidence calculation, etc.).
 Tests pure helper functions that don't require database or external services.
 """
 
-import pytest
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
+import pytest
 
 # Import utility functions
 try:
-    from app.routers.actions import extract_domain, estimate_confidence
+    from app.routers.actions import estimate_confidence, extract_domain
 except ImportError:
     extract_domain = None
     estimate_confidence = None

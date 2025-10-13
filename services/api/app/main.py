@@ -1,13 +1,15 @@
 import os
-from fastapi import FastAPI, Response, HTTPException
+
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette_exporter import PrometheusMiddleware
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from .settings import settings
+
+from . import auth_google, health, oauth_google, routes_extract, routes_gmail
 from .db import Base, engine
-from .routers import emails, search, suggest, applications
-from . import auth_google, routes_gmail, oauth_google, routes_extract, health
 from .es import ensure_index
+from .routers import applications, emails, search, suggest
+from .settings import settings
 from .tracing import init_tracing
 
 # CORS allowlist from environment (comma-separated)
@@ -82,14 +84,14 @@ app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
 # Phase 2 - Category labeling and profile analytics
-from .routers import labels, profile, labeling  # noqa: E402
+from .routers import labeling, labels, profile  # noqa: E402
 
 app.include_router(labels.router)
 app.include_router(profile.router)
 app.include_router(labeling.router, prefix="/api")
 
 # Security analysis
-from .routers import security, policy  # noqa: E402
+from .routers import policy, security  # noqa: E402
 
 app.include_router(security.router, prefix="/api")
 app.include_router(policy.router, prefix="/api")

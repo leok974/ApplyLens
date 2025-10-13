@@ -1,8 +1,10 @@
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+
 from app.db import get_db
-from app.models import SecurityPolicy, Policy, PolicyStats
+from app.models import Policy, PolicyStats, SecurityPolicy
 from app.schemas import SecurityPoliciesIn, SecurityPoliciesOut
 
 router = APIRouter(prefix="/policy", tags=["policy"])

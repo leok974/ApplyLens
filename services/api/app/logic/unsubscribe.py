@@ -6,8 +6,9 @@ via HTTP (GET/POST) or mailto protocol.
 """
 
 import re
-import requests
 from typing import Dict, Optional, Tuple
+
+import requests
 
 # User agent for HTTP requests
 UA = {"User-Agent": "AgenticMailbox/1.0 (+unsubscribe)"}

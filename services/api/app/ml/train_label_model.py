@@ -6,21 +6,21 @@ using weak labels from rule-based matching. The model learns to generalize
 beyond the explicit rules.
 """
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report
-from joblib import dump
-import numpy as np
-from scipy.sparse import hstack
+import logging
 from pathlib import Path
 from typing import List, Tuple
-import logging
 
-from app.ml.rules import match_rules
+import numpy as np
+from joblib import dump
+from scipy.sparse import hstack
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+from sklearn.preprocessing import StandardScaler
+
 from app.db import SessionLocal
+from app.ml.rules import match_rules
 from app.models import Email
-
 
 logger = logging.getLogger(__name__)
 

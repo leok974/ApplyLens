@@ -5,15 +5,15 @@ This module loads the trained model and scores emails, combining
 ML predictions with high-precision rule matches for best results.
 """
 
-from joblib import load
-import numpy as np
-from scipy.sparse import hstack
-from pathlib import Path
-from typing import Dict, Tuple, Optional
 import logging
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+
+import numpy as np
+from joblib import load
+from scipy.sparse import hstack
 
 from app.ml.rules import match_rules
-
 
 logger = logging.getLogger(__name__)
 

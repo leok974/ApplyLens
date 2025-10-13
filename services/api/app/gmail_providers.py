@@ -9,14 +9,16 @@ Supports:
 """
 
 from __future__ import annotations
+
 import base64
 import io
 import re
-from typing import Optional, Dict, Any, List, Protocol, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Protocol
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
 
 from .settings import settings
 
@@ -200,7 +202,8 @@ async def _maybe_parse_pdf_text(
 
             # Extract text using pdfminer.six
             try:
-                from pdfminer.high_level import extract_text as pdf_extract_text
+                from pdfminer.high_level import \
+                    extract_text as pdf_extract_text
 
                 pdf_text = pdf_extract_text(buf) or ""
                 pdf_text = pdf_text.strip()

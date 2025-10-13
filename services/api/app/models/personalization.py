@@ -2,8 +2,11 @@
 Phase 6: Personalization models for per-user learning and policy analytics.
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
 from datetime import datetime
+
+from sqlalchemy import (Column, DateTime, Float, Integer, String,
+                        UniqueConstraint)
+
 from ..db import Base
 
 

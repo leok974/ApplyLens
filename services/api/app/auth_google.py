@@ -3,15 +3,16 @@ import os
 # Allow HTTP for local development (MUST be set before importing oauthlib!)
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-import json
 import base64
-import secrets
 import datetime as dt
+import json
+import secrets
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from google_auth_oauthlib.flow import Flow
-from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
+from google_auth_oauthlib.flow import Flow
 
 from .db import SessionLocal
 from .models import OAuthToken

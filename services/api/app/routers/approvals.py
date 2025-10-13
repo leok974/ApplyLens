@@ -11,16 +11,14 @@ Workflow for policy-based email automation with human approval:
 All actions are mirrored to Elasticsearch (actions_audit_v1) for analytics.
 """
 
+import datetime as dt
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
-import datetime as dt
 
-from app.db import (
-    approvals_bulk_insert,
-    approvals_get,
-    approvals_update_status,
-)
+from app.db import (approvals_bulk_insert, approvals_get,
+                    approvals_update_status)
 from app.logic.audit_es import emit_audit
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])

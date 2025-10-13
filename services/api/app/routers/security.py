@@ -1,15 +1,17 @@
 # services/api/app/routers/security.py
-from fastapi import APIRouter, HTTPException, Depends, Request
+import asyncio
+import json
+import os
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-import json
-import asyncio
 
 from app.db import get_db
 from app.models import Email
-from app.security.analyzer import EmailRiskAnalyzer, BlocklistProvider, RiskAnalysis
+from app.security.analyzer import (BlocklistProvider, EmailRiskAnalyzer,
+                                   RiskAnalysis)
 from app.security.events import BUS
-import os
 
 router = APIRouter(prefix="/security", tags=["security"])
 

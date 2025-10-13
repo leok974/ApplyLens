@@ -14,19 +14,21 @@ Endpoints:
 - POST /actions/policies/{id}/test - Test policy against emails
 """
 
+import base64
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-import base64
-import os
 
-from ..db import get_db
-from ..models import Email, ProposedAction, AuditAction, Policy, ActionType, PolicyStats
-from ..core.yardstick import evaluate_policy, validate_condition
 from ..core.executors import execute_action
-from ..core.learner import update_user_weights, score_ctx_with_user
+from ..core.learner import score_ctx_with_user, update_user_weights
+from ..core.yardstick import evaluate_policy, validate_condition
+from ..db import get_db
+from ..models import (ActionType, AuditAction, Email, Policy, PolicyStats,
+                      ProposedAction)
 from ..telemetry.metrics import METRICS
 
 router = APIRouter(prefix="/actions", tags=["actions"])

@@ -16,8 +16,8 @@ Schedule: Daily at 2:15am (after ATS enrichment)
 Crontab: 15 02 * * * python services/api/app/cron/recompute_policy_stats.py
 """
 
-import sys
 import os
+import sys
 from datetime import datetime
 
 # Add parent directory to path for imports

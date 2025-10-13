@@ -10,8 +10,9 @@ Tests the security policy flow:
 """
 
 import pytest
-from app.logic.policy import create_default_engine
+
 from app.logic.classify import calculate_risk_score
+from app.logic.policy import create_default_engine
 
 
 @pytest.mark.asyncio

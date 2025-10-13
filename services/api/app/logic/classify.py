@@ -12,8 +12,8 @@ Future: Can be enhanced with ML models trained on user feedback
 """
 
 import re
-from typing import Dict, Any, Optional, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 # Category detection patterns
 PROMO_HINTS = re.compile(

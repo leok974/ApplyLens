@@ -5,13 +5,14 @@ Endpoint for running policy sets against email collections and generating
 proposed actions for approval. This creates the "approvals tray" workflow.
 """
 
+import datetime as dt
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
-import datetime as dt
 
+from app.logic.policy_engine import ProposedAction, apply_policies
 from app.logic.search import find_by_filter
-from app.logic.policy_engine import apply_policies, ProposedAction
 
 router = APIRouter(prefix="/policies", tags=["policies"])
 

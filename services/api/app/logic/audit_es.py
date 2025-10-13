@@ -6,7 +6,8 @@ and Kibana dashboards. Used by the approvals tray to track policy hits vs misses
 """
 
 import os
-from typing import Dict, Any
+from typing import Any, Dict
+
 from elasticsearch import Elasticsearch
 
 

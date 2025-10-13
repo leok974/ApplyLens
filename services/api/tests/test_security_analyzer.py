@@ -1,6 +1,8 @@
 # services/api/tests/test_security_analyzer.py
 import os
-from app.security.analyzer import EmailRiskAnalyzer, BlocklistProvider, RiskAnalysis
+
+from app.security.analyzer import (BlocklistProvider, EmailRiskAnalyzer,
+                                   RiskAnalysis)
 
 BL_PATH = os.path.join(
     os.path.dirname(__file__), "..", "app", "security", "blocklists.json"

@@ -1,13 +1,16 @@
 # app/routes_applications.py
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, List
 from sqlalchemy.orm import Session
+
 from .db import SessionLocal
-from .models import Application, AppStatus, Email
-from .gmail_service import upsert_application_for_email
 from .email_parsing import extract_company, extract_role, extract_source
-from .gmail import sync_fetch_thread_latest, is_configured as gmail_is_configured
+from .gmail import is_configured as gmail_is_configured
+from .gmail import sync_fetch_thread_latest
+from .gmail_service import upsert_application_for_email
+from .models import Application, AppStatus, Email
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 

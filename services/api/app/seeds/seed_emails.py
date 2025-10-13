@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
+
 from ..db import SessionLocal
+from ..es import ES_ENABLED, INDEX, ensure_index, es
 from ..models import Email
-from ..es import ensure_index, es, ES_ENABLED, INDEX
 
 
 def run():

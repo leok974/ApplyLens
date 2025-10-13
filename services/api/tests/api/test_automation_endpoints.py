@@ -5,9 +5,8 @@ Tests all automation endpoints for correct status codes, response schemas,
 and error handling. Requires a running API server.
 """
 
-import pytest
 import httpx
-
+import pytest
 
 # Base URL for API tests (configured via environment or fixture)
 BASE_URL = "http://localhost:8003"

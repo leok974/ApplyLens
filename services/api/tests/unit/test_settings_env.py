@@ -6,6 +6,7 @@ and that the settings object has required attributes.
 """
 
 import importlib
+
 import pytest
 
 

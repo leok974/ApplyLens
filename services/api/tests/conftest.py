@@ -8,18 +8,18 @@ This module provides:
 - Mock configurations for external services
 """
 
-import os
-import pytest
 import asyncio
+import os
 from typing import AsyncIterator, Generator
 
 import httpx
+import pytest
 from httpx import ASGITransport
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import Base
 from app.main import app  # FastAPI instance
+from app.models import Base
 
 
 @pytest.fixture(scope="session")

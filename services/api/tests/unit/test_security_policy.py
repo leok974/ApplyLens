@@ -7,7 +7,6 @@ without requiring database or external services.
 
 import pytest
 
-
 # Import the risk calculation function
 try:
     from app.logic.classify import calculate_risk_score

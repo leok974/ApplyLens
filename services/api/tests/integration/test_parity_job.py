@@ -5,12 +5,12 @@ Tests the check_parity.py script with controlled data scenarios
 to ensure it correctly detects drift.
 """
 
-import pytest
 import json
 import subprocess
 import tempfile
 from pathlib import Path
 
+import pytest
 
 # ============================================================================
 # FIXTURES

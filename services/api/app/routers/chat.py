@@ -8,33 +8,24 @@ Provides POST /chat endpoint that:
 4. Returns structured response with answer, actions, and citations
 """
 
+import logging
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from typing import List, Literal, Optional, Dict, Any
-from datetime import datetime
-import os
-import logging
-
-from ..core.rag import rag_search
-from ..core.mail_tools import (
-    summarize_emails,
-    clean_promos,
-    unsubscribe_inactive,
-    flag_suspicious,
-    create_calendar_events,
-    create_tasks,
-    find_emails,
-    follow_up,
-)
-from ..core.intent import (
-    detect_intent,
-    explain_intent,
-    explain_intent_tokens,
-    extract_unless_brands,
-)
-from ..models import ProposedAction, AuditAction, Policy, ActionType
-from ..db import SessionLocal
 from sqlalchemy.orm import Session
+
+from ..core.intent import (detect_intent, explain_intent,
+                           explain_intent_tokens, extract_unless_brands)
+from ..core.mail_tools import (clean_promos, create_calendar_events,
+                               create_tasks, find_emails, flag_suspicious,
+                               follow_up, summarize_emails,
+                               unsubscribe_inactive)
+from ..core.rag import rag_search
+from ..db import SessionLocal
+from ..models import ActionType, AuditAction, Policy, ProposedAction
 
 logger = logging.getLogger(__name__)
 
@@ -319,9 +310,10 @@ async def chat_stream(
     - done: {"ok": true}
     - error: {"error": "message"}
     """
-    from fastapi.responses import StreamingResponse
-    import json
     import asyncio
+    import json
+
+    from fastapi.responses import StreamingResponse
 
     async def generate():
         try:

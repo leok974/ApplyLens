@@ -4,9 +4,9 @@ Unit tests for confidence estimation with user weight learning.
 Tests that confidence scores are adjusted based on user's learned preferences.
 """
 
-from app.routers.actions import estimate_confidence
-from app.models import UserWeight, Policy, ActionType, Email
 from app.db import get_db
+from app.models import ActionType, Email, Policy, UserWeight
+from app.routers.actions import estimate_confidence
 
 
 def test_confidence_bump_from_user_weights():

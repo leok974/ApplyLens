@@ -4,16 +4,18 @@ E2E tests for Prometheus metrics endpoint (/metrics).
 Tests the backfill health metrics without requiring a real Elasticsearch cluster.
 """
 
-import pytest
-from httpx import AsyncClient
 import sys
 from pathlib import Path
+
+import pytest
+from httpx import AsyncClient
 
 # Add scripts directory to path for imports
 scripts_dir = Path(__file__).parent.parent.parent / "scripts"
 sys.path.insert(0, str(scripts_dir))
 
 import validate_backfill as V  # noqa: E402
+
 from app.main import app  # noqa: E402
 
 

@@ -1,13 +1,15 @@
 import os
 import time
-from fastapi import APIRouter, Query, HTTPException, Request
-from pydantic import BaseModel
 from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel
+from sqlalchemy import desc
+
 from .db import SessionLocal
 from .gmail_service import gmail_backfill
-from .models import OAuthToken, Email
-from sqlalchemy import desc
-from .metrics import BACKFILL_REQUESTS, BACKFILL_INSERTED, GMAIL_CONNECTED
+from .metrics import BACKFILL_INSERTED, BACKFILL_REQUESTS, GMAIL_CONNECTED
+from .models import Email, OAuthToken
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 

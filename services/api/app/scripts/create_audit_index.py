@@ -14,6 +14,7 @@ Or with Docker:
 
 import os
 import sys
+
 from elasticsearch import Elasticsearch
 
 

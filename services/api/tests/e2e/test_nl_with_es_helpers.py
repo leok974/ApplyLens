@@ -6,6 +6,7 @@ These tests verify that the NL agent correctly uses the real ES search helpers
 """
 
 import pytest
+
 import app.logic.search as S
 
 

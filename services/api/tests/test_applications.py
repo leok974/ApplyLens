@@ -1,7 +1,7 @@
 # tests/test_applications.py
-from app.models import Application, Email, AppStatus
-from app.gmail_service import upsert_application_for_email
 from app.db import SessionLocal
+from app.gmail_service import upsert_application_for_email
+from app.models import Application, AppStatus, Email
 
 
 def test_upsert_application_from_email():
@@ -166,8 +166,9 @@ def test_no_application_without_metadata():
 def test_from_email_endpoint_autofill():
     """Test /from-email endpoint with automatic company/role extraction"""
     from fastapi.testclient import TestClient
-    from app.main import app
+
     from app.db import SessionLocal
+    from app.main import app
 
     client = TestClient(app)
     db = SessionLocal()

@@ -5,9 +5,10 @@ These tests mock the database connection to verify the approval
 workflow functions work correctly without needing a real database.
 """
 
-import pytest
 import json
 from unittest.mock import Mock, patch
+
+import pytest
 
 
 class TestApprovalsBulkInsert:
