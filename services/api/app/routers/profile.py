@@ -360,9 +360,9 @@ from sqlalchemy import and_, desc  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import get_db  # noqa: E402
-from app.models import (
+from app.models import (  # noqa: E402
     Email,
-    ProfileCategoryStats,  # noqa: E402
+    ProfileCategoryStats,
     ProfileInterests,
     ProfileSenderStats,
 )
