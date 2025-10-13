@@ -9,7 +9,6 @@ Provides sensible default policies for common email automation scenarios:
 """
 from sqlalchemy.orm import Session
 from ..models import Policy, ActionType
-from datetime import datetime
 
 
 DEFAULT_POLICIES = [

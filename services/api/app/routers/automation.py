@@ -7,7 +7,6 @@ Includes risk score recomputation and summary statistics.
 
 import subprocess
 import os
-from typing import Dict, Any, List
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks

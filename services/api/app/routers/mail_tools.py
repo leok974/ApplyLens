@@ -8,16 +8,16 @@ Provides endpoints for:
 
 All actions are logged for transparency and debugging.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from sqlalchemy import select, insert
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models import Email, ActionsAudit
-from app.logic.policy import PolicyEngine, create_default_engine
+from app.logic.policy import create_default_engine
 
 router = APIRouter(prefix="/mail", tags=["mail-tools"])
 
@@ -220,7 +220,7 @@ async def execute_actions(
                 continue
             
             # Execute action (stubbed for now - implement actual Gmail API calls)
-            action_result = await _execute_single_action(action, email, db)
+            await _execute_single_action(action, email, db)
             
             # Log to audit table
             audit_entry = ActionsAudit(

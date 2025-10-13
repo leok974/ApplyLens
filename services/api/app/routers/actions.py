@@ -25,7 +25,7 @@ from ..db import get_db
 from ..models import Email, ProposedAction, AuditAction, Policy, ActionType, PolicyStats
 from ..core.yardstick import evaluate_policy, validate_condition
 from ..core.executors import execute_action
-from ..core.learner import update_user_weights, featureize, score_ctx_with_user
+from ..core.learner import update_user_weights, score_ctx_with_user
 from ..telemetry.metrics import METRICS
 
 router = APIRouter(prefix="/actions", tags=["actions"])
@@ -381,7 +381,7 @@ def propose_actions(
         emails = db.query(Email).order_by(Email.received_at.desc()).limit(req.limit).all()
     
     # Load enabled policies (priority order)
-    policies = db.query(Policy).filter(Policy.enabled == True).order_by(Policy.priority.asc()).all()
+    policies = db.query(Policy).filter(Policy.enabled).order_by(Policy.priority.asc()).all()
     
     if not policies:
         raise HTTPException(400, "No enabled policies found")
@@ -681,7 +681,7 @@ def list_policies(
     query = db.query(Policy)
     
     if enabled_only:
-        query = query.filter(Policy.enabled == True)
+        query = query.filter(Policy.enabled)
     
     policies = query.order_by(Policy.priority.asc()).all()
     

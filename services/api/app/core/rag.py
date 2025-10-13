@@ -6,7 +6,6 @@ Supports structured filters for category, risk score, sender domain, and date ra
 """
 
 from typing import Dict, Any, List, Optional
-from datetime import datetime
 from .text import embed_query
 
 

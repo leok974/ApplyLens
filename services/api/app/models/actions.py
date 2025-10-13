@@ -9,7 +9,6 @@ Models:
 from sqlalchemy import (
     Column, Integer, String, DateTime, JSON, Boolean, ForeignKey, Float, Enum, Text
 )
-from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
 

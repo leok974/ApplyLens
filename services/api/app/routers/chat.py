@@ -28,7 +28,7 @@ from ..core.mail_tools import (
 )
 from ..core.intent import detect_intent, explain_intent, explain_intent_tokens, extract_unless_brands
 from ..models import ProposedAction, AuditAction, Policy, ActionType
-from ..db import get_db, SessionLocal
+from ..db import SessionLocal
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)

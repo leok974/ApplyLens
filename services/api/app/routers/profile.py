@@ -414,7 +414,7 @@ async def time_series(
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, and_
+from sqlalchemy import desc, and_
 from datetime import datetime, timedelta
 import logging
 import re

@@ -5,7 +5,6 @@ Provides search and dashboard endpoints for analytics data.
 """
 from fastapi import APIRouter, Query, HTTPException
 from pathlib import Path
-from typing import Optional
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 

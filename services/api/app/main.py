@@ -1,16 +1,13 @@
 import os
 from fastapi import FastAPI, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from elasticsearch import Elasticsearch
-from sqlalchemy import text
 from starlette_exporter import PrometheusMiddleware
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from .settings import settings
-from .db import Base, engine, SessionLocal
+from .db import Base, engine
 from .routers import emails, search, suggest, applications
 from . import auth_google, routes_gmail, oauth_google, routes_extract, health
 from .es import ensure_index
-from .metrics import DB_UP, ES_UP
 from .tracing import init_tracing
 
 # CORS allowlist from environment (comma-separated)

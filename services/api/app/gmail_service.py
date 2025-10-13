@@ -1,7 +1,6 @@
 import os
 import re
 import base64
-import email
 import datetime as dt
 from typing import Dict, List, Optional
 from dateutil.relativedelta import relativedelta
@@ -312,7 +311,7 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
     """Backfill Gmail messages into database and Elasticsearch"""
     creds = _get_creds(db, user_email)
     svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
-    after_date = (dt.datetime.utcnow() - relativedelta(days=days)).strftime("%Y/%m/%d")
+    (dt.datetime.utcnow() - relativedelta(days=days)).strftime("%Y/%m/%d")
     q = f"newer_than:{days}d"
     # Or use after: yyyy/mm/dd -> f"after:{after_date}"
     

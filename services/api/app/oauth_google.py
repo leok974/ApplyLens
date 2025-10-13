@@ -6,14 +6,12 @@ Endpoints:
 - GET /oauth/google/callback?code=xxx&state=xxx - Handle OAuth callback
 """
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
-from sqlalchemy.orm import Session
 import urllib.parse
 import json
-import time
 
 from .settings import settings
 from .db import SessionLocal

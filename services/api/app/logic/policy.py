@@ -21,7 +21,7 @@ Example policy:
 }
 """
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import operator
 
 
@@ -92,7 +92,7 @@ class PolicyEngine:
         # Evaluate
         try:
             return op_func(actual_value, expected_value)
-        except Exception as e:
+        except Exception:
             # Comparison failed (e.g., None vs int)
             return False
     

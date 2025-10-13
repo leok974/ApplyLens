@@ -404,7 +404,7 @@ def follow_up(rag: Dict[str, Any], user_text: str) -> Tuple[str, List[dict]]:
     for doc in to_follow_up:
         sender = doc.get("sender", "?")
         subject = doc.get("subject", "(no subject)")
-        received = doc.get("received_at", "")
+        doc.get("received_at", "")
         
         # Generate simple draft suggestion
         draft = f"Hi,\n\nFollowing up on \"{subject[:40]}...\"\n\nBest regards"

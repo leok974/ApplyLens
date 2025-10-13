@@ -7,15 +7,13 @@ Endpoints:
 - GET /money/summary - Spending summary
 """
 from fastapi import APIRouter, Depends, Response, HTTPException
-from fastapi.responses import StreamingResponse
-from typing import List, Dict, Any
-from datetime import datetime, timedelta
-import io
+from typing import Dict, Any
+from datetime import datetime
 import os
 from elasticsearch import Elasticsearch
 
 from ..core.money import (
-    is_receipt, build_receipts_csv, detect_duplicates, summarize_spending
+    build_receipts_csv, detect_duplicates, summarize_spending
 )
 
 router = APIRouter(prefix="/money", tags=["money"])

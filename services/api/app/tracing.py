@@ -59,16 +59,16 @@ def init_tracing(app):
         
         # Instrument FastAPI
         FastAPIInstrumentor.instrument_app(app)
-        logger.info(f"✓ FastAPI instrumented for tracing")
+        logger.info("✓ FastAPI instrumented for tracing")
         
         # Instrument SQLAlchemy
         from app.db import engine
         SQLAlchemyInstrumentor().instrument(engine=engine)
-        logger.info(f"✓ SQLAlchemy instrumented for tracing")
+        logger.info("✓ SQLAlchemy instrumented for tracing")
         
         # Instrument HTTP requests
         RequestsInstrumentor().instrument()
-        logger.info(f"✓ Requests instrumented for tracing")
+        logger.info("✓ Requests instrumented for tracing")
         
         logger.info(f"✓ OpenTelemetry tracing initialized (service: {service_name}, endpoint: {otlp_endpoint})")
         

@@ -160,7 +160,6 @@ def get_migration_info() -> dict:
 
 if __name__ == "__main__":
     """Print current migration info when run as a script."""
-    import json
     
     print("Database Migration Info")
     print("=" * 60)

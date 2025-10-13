@@ -14,7 +14,7 @@ Supports commands like:
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import Dict, Any
 import re
 import datetime as dt
 

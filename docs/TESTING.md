@@ -1,53 +1,192 @@
-# Testing
+# Testing Guide
 
-## Confidence Learning Test Summary
+This document explains how to run tests locally and in CI.
 
-# Test Execution Summary - Phase 6 Confidence Learning
+## Prerequisites
 
-**Date**: 2025-01-24  
-**Branch**: phase-3  
-**Commit**: a15d8ae  
+- Python 3.11+
+- PostgreSQL 15+ (required - models use PG-specific ARRAY, JSONB, ENUM types)
+- Docker (recommended for local Postgres)
 
-## Test Results: ✅ **5/5 PASSING**
+## Quick Start - Local Testing
 
-### Backend Unit Tests (`test_confidence_learning.py`)
+### 1. Start PostgreSQL (like CI does)
 
-All confidence estimation tests now pass with database connectivity:
+```bash
+# Start Postgres container
+docker run --rm \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=applylens \
+  -p 5433:5432 \
+  -d \
+  --name applylens-pg \
+  postgres:15
 
-| Test | Status | Description |
-|------|--------|-------------|
-| `test_confidence_bump_from_user_weights` | ✅ PASS | Verifies positive user weights increase confidence (±0.15 cap) |
-| `test_confidence_without_user_weights` | ✅ PASS | Baseline confidence when no user history exists |
-| `test_confidence_negative_weights` | ✅ PASS | Negative weights decrease confidence for rejected patterns |
-| `test_confidence_high_risk_override` | ✅ PASS | High risk scores (≥80) override to 0.95 confidence |
-| `test_confidence_without_db_params` | ✅ PASS | Graceful fallback when database/user unavailable |
+# Verify it's running
+docker ps | grep applylens-pg
+```
 
-### Test Configuration
+### 2. Configure Environment
 
-**Environment**:
+```bash
+# Export required environment variables
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5433/applylens
+export ENV=test
+export CREATE_TABLES_ON_STARTUP=0  # Let Alembic manage schema
+```
 
-- Python 3.13.7 with pytest 8.4.2 and pytest-cov 7.0.0
-- PostgreSQL 16 on localhost:5433 (Docker container: infra-db-1)
-- Database: `applylens` with user `postgres`
-
-**Command**:
-
+**Windows PowerShell:**
 ```powershell
-$env:DATABASE_URL = "postgresql://postgres:[PASSWORD]@localhost:5433/applylens"
-pytest tests/test_confidence_learning.py -v
-```text
+$env:DATABASE_URL="postgresql://postgres:postgres@localhost:5433/applylens"
+$env:ENV="test"
+$env:CREATE_TABLES_ON_STARTUP="0"
+```
 
-### Issues Resolved
+### 3. Run Migrations
 
-1. **Database Connectivity** ✅
-   - **Problem**: Tests couldn't connect to database (host "db" not resolvable from Windows)
-   - **Solution**: Set `DATABASE_URL` environment variable to use `localhost:5433`
-   - **Root Cause**: Tests designed for Docker internal network, ran from host
+```bash
+cd services/api
+alembic upgrade head
+```
 
-2. **Email Model Schema Mismatch** ✅
-   - **Problem**: Tests used `sender_domain` field that doesn't exist in Email model
-   - **Solution**: Changed to use `sender` field with full email address
-   - **Files Modified**: `services/api/tests/test_confidence_learning.py` (lines 27-35, 91-99, 140-148, 191-199)
+### 4. Run Tests
+
+```bash
+# All tests
+pytest -q
+
+# Specific test markers
+pytest -m unit          # Fast unit tests only
+pytest -m api           # API contract tests
+pytest -m integration   # Integration tests (requires DB+ES)
+
+# With coverage
+pytest --cov=app --cov-report=term-missing
+
+# Specific test file
+pytest tests/unit/test_settings_env.py -v
+```
+
+### 5. Cleanup
+
+```bash
+# Stop and remove container
+docker stop applylens-pg
+```
+
+## Test Categories
+
+Tests are organized with pytest markers:
+
+- **`@pytest.mark.unit`**: Fast, isolated tests with no external dependencies
+- **`@pytest.mark.api`**: API endpoint tests requiring a database
+- **`@pytest.mark.integration`**: Full integration tests (DB + Elasticsearch + external services)
+- **`@pytest.mark.slow`**: Tests that take >1 second
+
+## CI Behavior
+
+GitHub Actions automatically:
+1. Spins up Postgres service container
+2. Runs `alembic upgrade head` to apply migrations
+3. Executes tests with coverage reporting
+4. Enforces 80% code coverage threshold
+
+See `.github/workflows/api-tests.yml` and `.github/workflows/automation-tests.yml` for CI configuration.
+
+## Common Issues
+
+### `DATABASE_URL not set`
+Tests will skip gracefully if `DATABASE_URL` is not configured. Set it as shown above.
+
+### `type 'actiontype' already exists`
+This means migrations were run multiple times. Drop the database and re-run `alembic upgrade head`.
+
+```bash
+docker exec -it applylens-pg psql -U postgres -c "DROP DATABASE applylens;"
+docker exec -it applylens-pg psql -U postgres -c "CREATE DATABASE applylens;"
+alembic upgrade head
+```
+
+### Tests hang or timeout
+Check that Postgres is running and accessible:
+```bash
+pg_isready -h localhost -p 5433 -U postgres
+```
+
+## Writing New Tests
+
+### Unit Tests
+
+Place in `tests/unit/` with clear naming:
+
+```python
+import pytest
+
+@pytest.mark.unit
+def test_my_function():
+    """Test that my_function returns expected value."""
+    from app.my_module import my_function
+    assert my_function(42) == 84
+```
+
+### API Tests
+
+Use the `async_client` fixture:
+
+```python
+import pytest
+
+@pytest.mark.api
+@pytest.mark.asyncio
+async def test_healthz_endpoint(async_client):
+    """Test that /healthz returns 200 OK."""
+    response = await async_client.get("/healthz")
+    assert response.status_code == 200
+```
+
+### Migration Tests
+
+When adding models, always create a migration:
+
+```bash
+alembic revision --autogenerate -m "add user_preferences table"
+```
+
+The `test_models_vs_migrations.py` test will fail if models change without migrations.
+
+## Troubleshooting
+
+### SQLite Not Supported
+The codebase uses PostgreSQL-specific features (ARRAY, JSONB, ENUM types). SQLite cannot be used as a test database.
+
+### Coverage Below 80%
+Add tests for uncovered code paths. Check the HTML coverage report:
+```bash
+pytest --cov=app --cov-report=html
+open htmlcov/index.html  # or start htmlcov/index.html on Windows
+```
+
+### Pre-commit Hooks
+Install pre-commit hooks to catch lint issues before commit:
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files  # Test all hooks
+```
+
+## Resources
+
+- **Pytest docs**: https://docs.pytest.org/
+- **Alembic docs**: https://alembic.sqlalchemy.org/
+- **Coverage.py docs**: https://coverage.readthedocs.io/
+
+---
+
+## Historical Test Results
+
+### Confidence Learning Test Summary (2025-01-24, phase-3 branch)
+
+All 5 confidence estimation tests passing with database connectivity. Tests verify user weight bumps, negative weights, high-risk overrides, and graceful fallbacks
 
 3. **Database Cleanup** ✅
    - **Problem**: Multiple UserWeight records caused "Multiple rows found" error
