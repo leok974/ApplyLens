@@ -80,7 +80,8 @@ def _parts_to_text(payload: dict) -> str:
             return base64.urlsafe_b64decode(p["body"]["data"]).decode(errors="replace")
         for sp in p.get("parts", []) or []:
             v = find_text_plain(sp)
-            if v: return v
+            if v:  # noqa: E701
+                return v
         return None
 
     def find_text_html(p):
@@ -89,7 +90,8 @@ def _parts_to_text(payload: dict) -> str:
             return _strip_html(html)
         for sp in p.get("parts", []) or []:
             v = find_text_html(sp)
-            if v: return v
+            if v:  # noqa: E701
+                return v
         return None
 
     text = find_text_plain(payload)
@@ -294,7 +296,8 @@ def ensure_es_index():
 
 def index_bulk_emails(docs: List[dict]):
     """Bulk index emails into Elasticsearch"""
-    if not docs: return
+    if not docs:  # noqa: E701
+        return
     es = es_client()
     ensure_es_index()
     actions = []

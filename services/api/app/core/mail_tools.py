@@ -29,7 +29,7 @@ def _format_email(doc: Dict[str, Any]) -> str:
         try:
             dt = datetime.fromisoformat(received_at.replace("Z", "+00:00"))
             date_str = dt.strftime("%b %d, %Y")
-        except:
+        except:  # noqa: E722
             pass
     
     return f"• [{subject}] — {sender} — {date_str} (#{email_id})"
