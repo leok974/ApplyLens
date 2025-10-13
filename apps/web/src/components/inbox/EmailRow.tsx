@@ -1,9 +1,9 @@
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SenderAvatar } from "./SenderAvatar";
+import { RiskBadge } from "@/components/security/RiskBadge";
 import { Archive, ShieldCheck, ShieldAlert, ExternalLink, ChevronRight } from "lucide-react";
 import { formatDistanceToNowStrict, format } from "date-fns";
 
@@ -27,6 +27,8 @@ type Props = {
   receivedAt: string;             // formatted
   reason?: keyof typeof reasonStyle;
   risk?: "low"|"med"|"high";
+  risk_score?: number;
+  quarantined?: boolean;
   
   // ML-powered fields (Phase 35)
   category?: string;
@@ -45,6 +47,7 @@ type Props = {
 export function EmailRow(props: Props) {
   const {
     active, checked, onCheckChange, subject, sender, preview, receivedAt, reason, risk, 
+    risk_score, quarantined,
     category, expiresAt, eventStartAt,
     density="comfortable",
     onOpen, onArchive, onSafe, onSus, onExplain,
@@ -85,6 +88,11 @@ export function EmailRow(props: Props) {
             )}>{reasonStyle[reason]?.label ?? reason}</span>
           )}
           {risk === "high" && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800 dark:bg-rose-900/40 dark:text-rose-200">High risk</span>}
+          
+          {/* Security Risk Badge */}
+          {risk_score !== undefined && (
+            <RiskBadge score={risk_score} quarantined={quarantined} />
+          )}
           
           {/* ML Category Badge (Phase 35) */}
           {category && (

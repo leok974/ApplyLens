@@ -1,0 +1,22 @@
+{
+  "hosts": [
+    "update-security-login.ru",
+    "billing-check.top",
+    "paynow.click",
+    "secure-account-verify.xyz",
+    "payment-urgent.link"
+  ],
+  "hashes": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  ],
+  "trusted_domains": [
+    "paypal.com",
+    "microsoft.com",
+    "google.com",
+    "amazon.com",
+    "apple.com",
+    "github.com",
+    "stackoverflow.com"
+  ]
+}

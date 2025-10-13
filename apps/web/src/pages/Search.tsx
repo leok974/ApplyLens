@@ -5,6 +5,7 @@ import SearchResultsHeader from '../components/SearchResultsHeader'
 import EmailLabels from '../components/EmailLabels'
 import { SearchFilters } from '../components/SearchFilters'
 import { SearchControls } from '../components/search/SearchControls'
+import { SecurityFilterControls } from '../components/search/SecurityFilterControls'
 import { SortKey } from '../components/SortControl'
 import { getRecencyScale } from '../state/searchPrefs'
 import { loadUiState, saveUiState, RepliedFilter } from '../state/searchUi'
@@ -31,6 +32,15 @@ export default function Search() {
     [searchParams]
   )
   const hideExpired = searchParams.get("hideExpired") !== "0"
+  
+  // Security filter params from URL
+  const [highRisk, setHighRisk] = useState(() => {
+    const riskMin = searchParams.get("risk_min")
+    return riskMin ? Number(riskMin) >= 80 : false
+  })
+  const [quarantinedOnly, setQuarantinedOnly] = useState(() => {
+    return searchParams.get("quarantined") === "true"
+  })
   
   // Initialize from localStorage (sticky)
   const init = useMemo(() => loadUiState(), [])
@@ -63,7 +73,10 @@ export default function Search() {
         repliedParam, 
         sort,
         categories,
-        hideExpired
+        hideExpired,
+        highRisk ? 80 : undefined,
+        undefined,
+        quarantinedOnly ? true : undefined
       )
       setHits(res)
       setTotal(res.length) // Note: API should return total count
@@ -89,10 +102,10 @@ export default function Search() {
 
   useEffect(() => { onSearch() }, [])
   
-  // Re-run search when filters change (including ML filters)
+  // Re-run search when filters change (including ML filters and security filters)
   useEffect(() => {
     if (q.trim()) onSearch()
-  }, [labels, dates, replied, sort, categories, hideExpired])
+  }, [labels, dates, replied, sort, categories, hideExpired, highRisk, quarantinedOnly])
 
   // Persist to localStorage whenever user changes filters/sort
   useEffect(() => {
@@ -116,9 +129,16 @@ export default function Search() {
     if (dates.to) params.set('date_to', dates.to)
     if (replied !== 'all') params.set('replied', replied)
     params.set('sort', sort)
+    // Security filters
+    if (highRisk) {
+      params.set('risk_min', '80')
+    }
+    if (quarantinedOnly) {
+      params.set('quarantined', 'true')
+    }
     const url = `/search?${params.toString()}`
     window.history.replaceState(null, '', url)
-  }, [q, labels, dates.from, dates.to, replied, sort])
+  }, [q, labels, dates.from, dates.to, replied, sort, highRisk, quarantinedOnly])
 
   return (
     <div>
@@ -175,6 +195,16 @@ export default function Search() {
       {/* ML-powered category filters & hide expired toggle */}
       <SearchControls />
 
+      {/* Security filters */}
+      <div className="mt-3">
+        <SecurityFilterControls
+          highRisk={highRisk}
+          onHighRiskChange={setHighRisk}
+          quarantinedOnly={quarantinedOnly}
+          onQuarantinedOnlyChange={setQuarantinedOnly}
+        />
+      </div>
+
       <SearchFilters
         labels={labels}
         onLabelsChange={setLabels}
@@ -194,7 +224,7 @@ export default function Search() {
         <SearchResultsHeader query={q} total={total} showHint />
       )}
 
-      <div>
+      <div data-testid="results">
         {hits.map((h: any, i: number) => {
           // Ensure unique key even when id is missing/null
           const rawId = h?.id ?? h?._id ?? h?._source?.id ?? null;
@@ -213,7 +243,7 @@ export default function Search() {
           return (
             <div 
               key={safeKey} 
-              data-testid="search-result-item"
+              data-testid={`result-${i}`}
               data-id={rawId || `fallback-${i}`}
               className="surface-card density-x density-y mb-3 transition-all hover:shadow-lg"
             >
