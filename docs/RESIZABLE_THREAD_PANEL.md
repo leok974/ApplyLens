@@ -18,20 +18,23 @@ The email details panel has been upgraded with powerful new features:
 ### 1. Resizable Panel
 
 **Interaction**:
+
 - Hover over the left edge of the panel to see the resize handle (grip icon)
 - Click and drag left/right to adjust width
 - Width constraints: 420px minimum, 1000px maximum
 - Width persists across sessions via `localStorage`
 
 **Implementation**:
+
 ```tsx
 const [width, setWidth] = React.useState<number>(() => {
   const saved = Number(localStorage.getItem("inbox:detailsPanelWidth"));
   return Number.isFinite(saved) && saved >= 420 && saved <= 1000 ? saved : 720;
 });
-```
+```text
 
 **Visual Indicator**:
+
 - Small grip icon (3 vertical dots) appears on hover
 - Cursor changes to `col-resize` when hovering resize area
 - Smooth transition during drag
@@ -39,17 +42,20 @@ const [width, setWidth] = React.useState<number>(() => {
 ### 2. Thread Navigation
 
 **UI Elements**:
+
 - **Previous/Next buttons** - ChevronLeft/ChevronRight icons in header
 - **Thread counter** - Shows "2 / 5" (current position / total messages)
 - **Thread list** - All messages displayed below email body
 - **Active message** - Highlighted with muted background
 
 **Keyboard Shortcuts**:
+
 - `[` - Navigate to previous message in thread
 - `]` - Navigate to next message in thread
 - `Esc` - Close panel
 
 **Thread List**:
+
 ```tsx
 {thread && thread.length > 1 && (
   <>
@@ -64,11 +70,12 @@ const [width, setWidth] = React.useState<number>(() => {
     </div>
   </>
 )}
-```
+```text
 
 ### 3. State Management
 
 **Panel State**:
+
 ```tsx
 const [selectedDetailId, setSelectedDetailId] = React.useState<string | null>(null);
 const [openPanel, setOpenPanel] = React.useState(false);
@@ -76,9 +83,10 @@ const [loadingDetail, setLoadingDetail] = React.useState(false);
 const [detail, setDetail] = React.useState<EmailDetails | null>(null);
 const [thread, setThread] = React.useState<any[] | null>(null);
 const [indexInThread, setIndexInThread] = React.useState<number | null>(null);
-```
+```text
 
 **Navigation Functions**:
+
 ```tsx
 function jumpThread(i: number) {
   if (!thread) return;
@@ -105,13 +113,14 @@ function nextInThread() {
   if (indexInThread == null || !thread) return;
   if (indexInThread < thread.length - 1) jumpThread(indexInThread + 1);
 }
-```
+```text
 
 ## API Integration
 
 ### New API Endpoints
 
 **Get Thread by Thread ID**:
+
 ```typescript
 export async function getThread(threadId: string) {
   const r = await fetch(`/api/threads/${encodeURIComponent(threadId)}?limit=20`);
@@ -119,9 +128,10 @@ export async function getThread(threadId: string) {
   return r.json(); 
   // Expected response: { messages: [{id, from, date, snippet, body_html, body_text}, ...] }
 }
-```
+```text
 
 **Expected Response Format**:
+
 ```json
 {
   "messages": [
@@ -143,11 +153,12 @@ export async function getThread(threadId: string) {
     }
   ]
 }
-```
+```text
 
 ### Production Implementation
 
 **In `openDetails` function**:
+
 ```tsx
 async function openDetails(id: string) {
   setSelectedDetailId(id);
@@ -197,7 +208,7 @@ async function openDetails(id: string) {
     setLoadingDetail(false);
   }
 }
-```
+```text
 
 ## Component Props
 
@@ -219,7 +230,7 @@ async function openDetails(id: string) {
   onMarkSus?: () => void;           // Mark suspicious action
   onExplain?: () => void;           // Explain action
 }
-```
+```text
 
 ### ThreadItem Type
 
@@ -232,7 +243,7 @@ type ThreadItem = {
   body_html?: string;  // HTML body (optional)
   body_text?: string;  // Plain text body (optional)
 };
-```
+```text
 
 ## Usage Example
 
@@ -264,7 +275,7 @@ type ThreadItem = {
     await explainEmail(selectedId); 
   }}
 />
-```
+```text
 
 ## Backend Requirements
 
@@ -273,9 +284,11 @@ type ThreadItem = {
 **Route**: `GET /api/threads/:threadId`
 
 **Query Parameters**:
+
 - `limit` (optional) - Maximum number of messages (default: 20)
 
 **Response**:
+
 ```json
 {
   "messages": [
@@ -291,9 +304,10 @@ type ThreadItem = {
     }
   ]
 }
-```
+```text
 
 **Implementation Notes**:
+
 - Query Elasticsearch by `thread_id` field
 - Sort by `received_at` ascending (oldest first)
 - Limit to 20 messages to prevent performance issues
@@ -304,6 +318,7 @@ type ThreadItem = {
 **Already Exists**: `GET /api/search/by_id/:id`
 
 **Ensure Response Includes**:
+
 - `thread_id` field
 - All email metadata
 - `body_html` and `body_text`
@@ -342,6 +357,7 @@ type ThreadItem = {
 | `]` | Next message | Has next message |
 
 **Implementation**:
+
 ```tsx
 React.useEffect(() => {
   if (!open) return;
@@ -353,7 +369,7 @@ React.useEffect(() => {
   window.addEventListener("keydown", h);
   return () => window.removeEventListener("keydown", h);
 }, [open, onClose, onPrev, onNext]);
-```
+```text
 
 ## Styling
 
@@ -372,7 +388,7 @@ React.useEffect(() => {
     <GripVertical className="h-3.5 w-3.5 text-slate-400" />
   </div>
 </div>
-```
+```text
 
 ### Thread List Item
 
@@ -386,7 +402,7 @@ React.useEffect(() => {
 >
   {/* Message preview */}
 </button>
-```
+```text
 
 ### Panel Container
 
@@ -397,7 +413,7 @@ React.useEffect(() => {
 >
   {/* Content */}
 </div>
-```
+```text
 
 ## Performance
 
@@ -466,4 +482,3 @@ React.useEffect(() => {
 **Backend Required**: ⚠️ Partial (thread endpoint needed)  
 **Testing**: ⏳ Pending  
 **Documentation**: ✅ Complete
-

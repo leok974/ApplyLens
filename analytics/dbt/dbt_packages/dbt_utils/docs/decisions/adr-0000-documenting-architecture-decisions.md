@@ -1,9 +1,11 @@
-Source: https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions
+Source: <https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions>
 
 # DOCUMENTING ARCHITECTURE DECISIONS
+
 Michael Nygard - November 15, 2011
 
 ## CONTEXT
+
 Architecture for agile projects has to be described and defined differently. Not all decisions will be made at once, nor will all of them be done when the project begins.
 
 Agile methods are not opposed to documentation, only to valueless documentation. Documents that assist the team itself can have value, but only if they are kept up to date. Large documents are never kept up to date. Small, modular documents have at least a chance at being updated.
@@ -21,6 +23,7 @@ Again, this may be OK if the decision needs to be reversed. On the other hand, c
 It's better to avoid either blind acceptance or blind reversal.
 
 ## DECISION
+
 We will keep a collection of records for "architecturally significant" decisions: those that affect the structure, non-functional characteristics, dependencies, interfaces, or construction techniques.
 
 An architecture decision record is a short text file in a format similar to an Alexandrian pattern. (Though the decisions themselves are not necessarily patterns, they share the characteristic balancing of forces.) Each record describes a set of forces and a single decision in response to those forces. Note that the decision is the central piece here, so specific forces may appear in multiple ADRs.
@@ -48,9 +51,11 @@ We will use a format with just a few parts, so each document is easy to digest. 
 The whole document should be one or two pages long. We will write each ADR as if it is a conversation with a future developer. This requires good writing style, with full sentences organized into paragraphs. Bullets are acceptable only for visual style, not as an excuse for writing sentence fragments. (Bullets kill people, even PowerPoint bullets.)
 
 ## STATUS
+
 Superseded by [ADR-0001](adr-0001-decision-record-format.md).
 
 ## CONSEQUENCES
+
 One ADR describes one significant decision for a specific project. It should be something that has an effect on how the rest of the project will run.
 
 The consequences of one ADR are very likely to become the context for subsequent ADRs. This is also similar to Alexander's idea of a pattern language: the large-scale responses create spaces for the smaller scale to fit into.

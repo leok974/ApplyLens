@@ -54,9 +54,10 @@ def create_from_email(
     source: Optional[str] = None,         # Manual override
     db: Session = Depends(get_db),
 ):
-```
+```text
 
 **Extraction Logic:**
+
 1. If `company` is provided → use it
 2. Else → call `extract_company(sender, body_text, subject)`
 3. If `role` is provided → use it
@@ -82,9 +83,10 @@ interface CreateFromEmailButtonProps {
   headers?: Record<string, string>;  // NEW: For ATS detection
   source?: string;       // Optional manual override
 }
-```
+```text
 
 **Flow:**
+
 1. User clicks "Create Application" button
 2. Component sends POST request to `/applications/from-email`
 3. Backend extracts company, role, source from email metadata
@@ -104,7 +106,7 @@ useEffect(() => {
     // Clean up URL and auto-hide after 3s
   }
 }, [searchParams, setSearchParams])
-```
+```text
 
 ## Test Coverage
 
@@ -132,14 +134,15 @@ useEffect(() => {
 4. ✅ `test_from_email_endpoint_autofill` - Validates auto-extraction in API
 
 **Test Results:**
-```
+
+```text
 Running application tests...
 ✅ Test passed: Application 1 created and linked to email
 ✅ Test passed: Both emails linked to same application
 ✅ Test passed: No application created for newsletter email
 ✅ Test passed: /from-email endpoint auto-extracted: company=Careers Team, role=Research Engineer, source=Email
 ✅ All tests passed!
-```
+```text
 
 ## Usage Examples
 
@@ -154,9 +157,10 @@ Running application tests...
   bodyText="Thank you for applying for the Research Engineer position at OpenAI!"
   headers={{ 'x-source': 'lever.co' }}
 />
-```
+```text
 
 **Result:**
+
 - Company: "Careers Team" or "openai" (extracted from sender)
 - Role: "Research Engineer" (extracted from subject)
 - Source: "Lever" (detected from headers)
@@ -171,9 +175,10 @@ Running application tests...
   subject="Interview availability"
   bodyText="We'd like to schedule an interview for the ML Engineer position"
 />
-```
+```text
 
 **Result:**
+
 - Company: "Anthropic" (manual override used)
 - Role: "ML Engineer" (extracted from body)
 - Source: "Email" (default)
@@ -189,9 +194,10 @@ curl -X POST http://localhost:8003/applications/from-email \
     "subject": "Application for Backend Engineer",
     "body_text": "Thank you for applying to Stripe"
   }'
-```
+```text
 
 **Response:**
+
 ```json
 {
   "id": 42,
@@ -202,7 +208,7 @@ curl -X POST http://localhost:8003/applications/from-email \
   "status": "applied",
   "created_at": "2025-10-09T12:00:00Z"
 }
-```
+```text
 
 ## ATS Detection
 
@@ -217,6 +223,7 @@ The system recognizes the following Applicant Tracking Systems:
 | **Indeed** | `indeed` |
 
 Detection is case-insensitive and searches across:
+
 - Email subject
 - Email body
 - Sender address

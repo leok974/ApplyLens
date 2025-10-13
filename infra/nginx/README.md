@@ -4,7 +4,7 @@ ApplyLens uses Nginx as a single entrypoint for path-based routing to all servic
 
 ## Architecture
 
-```
+```text
 Internet → Cloudflare Tunnel → Nginx (port 80) → Backend Services
                                     ↓
                     ┌───────────────┴────────────────┐
@@ -14,7 +14,7 @@ Internet → Cloudflare Tunnel → Nginx (port 80) → Backend Services
               Grafana:3000                     Kibana:5601
                     │                                │
               Prometheus:9090                   ES:9200
-```
+```text
 
 ## URL Routes
 
@@ -33,12 +33,12 @@ All services are accessible via **path-based routing** on `applylens.app`:
 
 ## Public URLs (via Cloudflare Tunnel)
 
-- **API**: https://applylens.app/
-- **API Docs**: https://applylens.app/docs/
-- **Web App**: https://applylens.app/web/
-- **Grafana**: https://applylens.app/grafana/
-- **Kibana**: https://applylens.app/kibana/
-- **Prometheus**: https://applylens.app/prometheus/
+- **API**: <https://applylens.app/>
+- **API Docs**: <https://applylens.app/docs/>
+- **Web App**: <https://applylens.app/web/>
+- **Grafana**: <https://applylens.app/grafana/>
+- **Kibana**: <https://applylens.app/kibana/>
+- **Prometheus**: <https://applylens.app/prometheus/>
 
 ## Local Testing
 
@@ -59,19 +59,22 @@ open http://localhost:8888/grafana/
 
 # Kibana
 open http://localhost:8888/kibana/
-```
+```text
 
 ## Configuration Files
 
 ### Main Nginx Config
+
 **Location**: `infra/nginx/conf.d/applylens.conf`
 
 Defines all upstream services and routing rules. Uses `map` directive for WebSocket upgrade support.
 
 ### Security Headers
+
 **Location**: `infra/nginx/snippets/security-headers.conf`
 
 Applies security headers to all responses:
+
 - `X-Frame-Options: SAMEORIGIN` - Prevent clickjacking
 - `X-Content-Type-Options: nosniff` - Prevent MIME sniffing
 - `Referrer-Policy: strict-origin-when-cross-origin` - Control referrer info
@@ -79,9 +82,11 @@ Applies security headers to all responses:
 **Note**: HSTS is commented out until HTTPS is confirmed working via Cloudflare.
 
 ### Gzip Compression
+
 **Location**: `infra/nginx/snippets/gzip.conf`
 
 Compresses responses for:
+
 - text/plain, text/css
 - application/json, application/javascript
 - application/xml, text/javascript
@@ -89,29 +94,33 @@ Compresses responses for:
 ## Service-Specific Configuration
 
 ### Grafana Subpath Configuration
+
 **File**: `infra/grafana/grafana.ini`
 
 ```ini
 [server]
 root_url = %(protocol)s://%(domain)s/grafana/
 serve_from_sub_path = true
-```
+```text
 
 This tells Grafana to:
+
 1. Serve all assets with `/grafana/` prefix
 2. Rewrite internal links to include the subpath
 3. Handle redirects correctly
 
 ### Kibana Subpath Configuration
+
 **File**: `infra/kibana/kibana.yml`
 
 ```yaml
 server.basePath: "/kibana"
 server.rewriteBasePath: true
 server.publicBaseUrl: "https://applylens.app/kibana"
-```
+```text
 
 This tells Kibana to:
+
 1. Serve on `/kibana` base path
 2. Rewrite all URLs to include the base path
 3. Use the public URL for external links
@@ -129,7 +138,7 @@ ingress:
   - hostname: www.applylens.app
     service: http://nginx:80
   - service: http_status:404  # Catch-all
-```
+```text
 
 ## Docker Compose
 
@@ -151,29 +160,35 @@ nginx:
   ports:
     - "8888:80"  # Local debug port
   restart: unless-stopped
-```
+```text
 
 ## Benefits
 
 ### 1. Single Hostname
+
 All services accessible via `applylens.app` without managing multiple subdomains or DNS records.
 
 ### 2. Clean URLs
+
 Path-based routing provides intuitive URLs:
+
 - `applylens.app/docs/` - obvious it's documentation
 - `applylens.app/grafana/` - obvious it's monitoring
 
 ### 3. Centralized Security
+
 - Security headers applied once at Nginx layer
 - Easy to add authentication middleware
 - Single SSL/TLS termination point at Cloudflare
 
 ### 4. Performance
+
 - Gzip compression reduces bandwidth
 - Nginx connection pooling to backends
 - Efficient static file serving
 
 ### 5. Flexibility
+
 Easy to add new services or change routing without touching DNS.
 
 ## Alternative: Subdomain Routing
@@ -189,14 +204,15 @@ ingress:
     service: http://grafana:3000
   - hostname: kibana.applylens.app
     service: http://kibana:5601
-```
+```text
 
 Then create DNS routes:
+
 ```bash
 cloudflared tunnel route dns applylens api.applylens.app
 cloudflared tunnel route dns applylens grafana.applylens.app
 cloudflared tunnel route dns applylens kibana.applylens.app
-```
+```text
 
 **Note**: With subdomains, you don't need the Grafana/Kibana subpath configuration.
 
@@ -207,6 +223,7 @@ cloudflared tunnel route dns applylens kibana.applylens.app
 **Cause**: Backend service is not running or not reachable.
 
 **Fix**:
+
 ```bash
 # Check which service is down
 docker compose ps
@@ -216,13 +233,14 @@ docker compose logs nginx --tail 50
 
 # Restart the specific service
 docker compose restart api
-```
+```text
 
 ### Grafana/Kibana Shows Broken Layout
 
 **Cause**: Subpath configuration not loaded.
 
 **Fix**:
+
 ```bash
 # Verify config files are mounted
 docker compose exec grafana cat /etc/grafana/grafana.ini
@@ -230,13 +248,14 @@ docker compose exec kibana cat /usr/share/kibana/config/kibana.yml
 
 # Restart services to reload config
 docker compose restart grafana kibana
-```
+```text
 
 ### 404 Not Found for All Routes
 
 **Cause**: Nginx config file not loaded or syntax error.
 
 **Fix**:
+
 ```bash
 # Test Nginx config syntax
 docker compose exec nginx nginx -t
@@ -246,13 +265,14 @@ docker compose exec nginx ls -la /etc/nginx/conf.d/
 
 # View Nginx error log
 docker compose logs nginx
-```
+```text
 
 ### Cannot Access via Cloudflare Tunnel
 
 **Cause**: Tunnel not connected or misconfigured.
 
 **Fix**:
+
 ```bash
 # Check tunnel status
 docker compose logs cloudflared --tail 50
@@ -263,7 +283,7 @@ cat infra/cloudflared/config.yml
 
 # Restart tunnel
 docker compose restart cloudflared
-```
+```text
 
 ## Maintenance
 
@@ -272,33 +292,37 @@ docker compose restart cloudflared
 ```bash
 # After editing nginx config files
 docker compose exec nginx nginx -s reload
-```
+```text
 
 ### View Real-Time Access Logs
 
 ```bash
 docker compose logs -f nginx
-```
+```text
 
 ### Add New Route
 
 1. Edit `infra/nginx/conf.d/applylens.conf`
 2. Add new location block:
+
    ```nginx
    location /newservice/ {
      proxy_pass http://newservice:8080/;
      proxy_set_header Host $host;
    }
    ```
+
 3. Reload: `docker compose exec nginx nginx -s reload`
 
 ### Enable HSTS (After HTTPS Confirmed)
 
 1. Edit `infra/nginx/snippets/security-headers.conf`
 2. Uncomment HSTS header:
+
    ```nginx
    add_header Strict-Transport-Security "max-age=86400; includeSubDomains; preload" always;
    ```
+
 3. Reload: `docker compose exec nginx nginx -s reload`
 
 ## Performance Tuning
@@ -311,7 +335,7 @@ For high traffic, increase Nginx workers in `docker-compose.yml`:
 nginx:
   environment:
     - NGINX_WORKER_PROCESSES=4  # Match CPU cores
-```
+```text
 
 ### Enable HTTP/2
 
@@ -327,7 +351,7 @@ location /web/static/ {
   proxy_cache_valid 200 1d;
   add_header Cache-Control "public, max-age=86400";
 }
-```
+```text
 
 ## Security Best Practices
 
@@ -339,7 +363,7 @@ location /prometheus/ {
   deny all;
   proxy_pass http://prometheus:9090/;
 }
-```
+```text
 
 ### 2. Add Basic Auth (For Services Without Built-in Auth)
 
@@ -347,16 +371,17 @@ location /prometheus/ {
 # Create password file
 docker compose exec nginx sh -c "echo -n 'admin:' > /etc/nginx/.htpasswd"
 docker compose exec nginx sh -c "openssl passwd -apr1 >> /etc/nginx/.htpasswd"
-```
+```text
 
 Then in nginx config:
+
 ```nginx
 location /prometheus/ {
   auth_basic "Restricted";
   auth_basic_user_file /etc/nginx/.htpasswd;
   proxy_pass http://prometheus:9090/;
 }
-```
+```text
 
 ### 3. Rate Limiting
 
@@ -369,7 +394,7 @@ http {
     proxy_pass http://api:8003/;
   }
 }
-```
+```text
 
 ## Monitoring Nginx
 
@@ -381,7 +406,7 @@ docker compose logs -f nginx | grep -v healthz
 
 # Count requests by path
 docker compose logs nginx | grep -oP '"\w+ \K[^ ]+' | sort | uniq -c | sort -rn
-```
+```text
 
 ### Nginx Metrics (Optional)
 
@@ -393,7 +418,7 @@ location /nginx_status {
   allow 127.0.0.1;  # Only accessible internally
   deny all;
 }
-```
+```bash
 
 Access: `curl http://localhost:8888/nginx_status`
 

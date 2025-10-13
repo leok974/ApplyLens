@@ -12,6 +12,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 ## Features Delivered
 
 ### 1. ✅ Per-User Learning (Online Gradient Descent)
+
 - **Model**: `UserWeight` table with user_id + feature + weight
 - **Algorithm**: w ← w + η \* y \* x (η=0.2)
 - **Features**: category, sender_domain, listid, contains:token
@@ -19,25 +20,29 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 - **Metrics**: `user_weight_updates_total{user, sign}`
 
 ### 2. ✅ Policy Performance Analytics
+
 - **Model**: `PolicyStats` table with precision/recall per policy/user
 - **API**: `GET /policy/stats` returns sorted list by fired count
-- **Metrics**: 
+- **Metrics**:
   - `policy_fired_total{policy_id, user}`
   - `policy_approved_total{policy_id, user}`
   - `policy_rejected_total{policy_id, user}`
 
 ### 3. ✅ ATS Enrichment (Fivetran Integration)
+
 - **ES Mapping**: `ats.{system, application_id, stage, last_stage_change, interview_date, company, ghosting_risk}`
 - **Job**: `analytics/enrich/ats_enrich_emails.py`
 - **Schedule**: Daily cron at 2am
 - **Metric**: `ats_enriched_total`
 
 ### 4. ✅ RAG Boosting for Urgent Recruiter Emails
+
 - **Boosts**: `ats.ghosting_risk >= 0.6` OR `ats.stage IN [Onsite, Offer]`
 - **Location**: `core/rag.py` (should clause)
 - **Result**: Urgent emails ranked higher in search/chat
 
 ### 5. ✅ Money Mode (Receipt Tracking)
+
 - **API Endpoints**:
   - `GET /money/receipts.csv` - Export all receipts
   - `GET /money/duplicates` - Find duplicate charges
@@ -46,6 +51,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 - **Amount Extraction**: Regex `$XX.XX` or `USD XX.XX`
 
 ### 6. ✅ Mode Parameter (Networking/Money)
+
 - **Chat API**: `GET /chat/stream?mode=networking|money`
 - **RAG Boosts**:
   - `mode=networking` → Boost event/meetup/conference
@@ -53,6 +59,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 - **Frontend**: Add mode chips to EventSource URL
 
 ### 7. ✅ Cron Jobs
+
 - **ATS Enrichment**: `analytics/enrich/ats_enrich_emails.py` (2am daily)
 - **Policy Stats**: `app/cron/recompute_policy_stats.py` (2:15am daily)
 
@@ -63,6 +70,7 @@ Phase 6 "Personalization & ATS Enrichment" is **fully implemented and ready for 
 ### New Files (13)
 
 **Backend (8)**:
+
 1. `services/api/app/models/personalization.py` - UserWeight, PolicyStats models
 2. `services/api/alembic/versions/0017_phase6_personalization.py` - Migration
 3. `services/api/app/core/learner.py` - Feature extraction, weight updates
@@ -116,7 +124,7 @@ CREATE TABLE policy_stats (
     updated_at TIMESTAMP,
     UNIQUE(policy_id, user_id)
 );
-```
+```text
 
 ---
 
@@ -143,7 +151,7 @@ policy_approved_total{policy_id, user}
 policy_rejected_total{policy_id, user}
 user_weight_updates_total{user, sign}  # sign = "plus" or "minus"
 ats_enriched_total
-```
+```text
 
 ---
 
@@ -154,12 +162,13 @@ ats_enriched_total
 ```bash
 cd services/api
 alembic upgrade head
-```
+```text
 
 **Expected Output**:
-```
+
+```text
 INFO  [alembic.runtime.migration] Running upgrade 0016_phase4_actions -> 0017_phase6_personalization
-```
+```text
 
 ### 2. Update Elasticsearch Mapping
 
@@ -167,12 +176,13 @@ INFO  [alembic.runtime.migration] Running upgrade 0016_phase4_actions -> 0017_ph
 curl -X PUT "http://localhost:9200/emails/_mapping" \
   -H "Content-Type: application/json" \
   -d @services/api/es/mappings/ats_fields.json
-```
+```text
 
 **Expected Output**:
+
 ```json
 {"acknowledged":true}
-```
+```text
 
 ### 3. Schedule Cron Jobs
 
@@ -183,13 +193,13 @@ crontab -e
 # Add these lines:
 0 2 * * * cd /app && python analytics/enrich/ats_enrich_emails.py >> /var/log/ats_enrich.log 2>&1
 15 2 * * * cd /app && python services/api/app/cron/recompute_policy_stats.py >> /var/log/policy_stats.log 2>&1
-```
+```text
 
 ### 4. Restart API Server
 
 ```bash
 docker-compose restart api
-```
+```text
 
 ---
 
@@ -200,10 +210,11 @@ docker-compose restart api
 ```powershell
 cd d:\ApplyLens
 pwsh ./scripts/test-phase6.ps1
-```
+```text
 
 **Expected Output**:
-```
+
+```text
 ============================================
 Phase 6 Smoke Tests - Personalization & ATS
 ============================================
@@ -228,11 +239,12 @@ Phase 6 Smoke Tests - Personalization & ATS
 
 [Test 10] Prometheus Metrics
 ✓ Found 5/5 Phase 6 metrics in /metrics endpoint
-```
+```text
 
 ### Manual Tests
 
 **Test Learning**:
+
 ```bash
 # Propose actions
 curl -X POST http://localhost:8003/actions/propose \
@@ -246,14 +258,16 @@ curl -X POST "http://localhost:8003/actions/$FIRST_ID/approve" \
 
 # Check user weights (DB)
 psql -c "SELECT * FROM user_weights ORDER BY ABS(weight) DESC LIMIT 5;"
-```
+```text
 
 **Test Policy Stats**:
+
 ```bash
 curl http://localhost:8003/policy/stats | jq '.'
-```
+```text
 
 **Test Money Mode**:
+
 ```bash
 # Export receipts
 curl -O http://localhost:8003/money/receipts.csv
@@ -263,9 +277,10 @@ curl http://localhost:8003/money/duplicates | jq '.duplicates | length'
 
 # Spending summary
 curl http://localhost:8003/money/summary | jq '.total_amount'
-```
+```text
 
 **Test ATS Enrichment**:
+
 ```bash
 # Run enrichment
 cd analytics/enrich
@@ -273,7 +288,7 @@ python ats_enrich_emails.py
 
 # Verify in ES
 curl "http://localhost:9200/emails/_search?q=ats.system:*&size=0" | jq '.hits.total.value'
-```
+```text
 
 ---
 
@@ -289,15 +304,16 @@ curl "http://localhost:9200/emails/_search?q=ats.system:*&size=0" | jq '.hits.to
 # - category:promo weight += 0.2
 # - Policy stats: approved++, precision recalculated
 # - Metrics: user_weight_updates_total{user="alice", sign="plus"}++
-```
+```text
 
 **Query Weights**:
+
 ```sql
 SELECT feature, weight
 FROM user_weights
 WHERE user_id = 'alice@example.com'
 ORDER BY weight DESC LIMIT 5;
-```
+```text
 
 ### Example 2: Policy Performance Tracking
 
@@ -305,7 +321,7 @@ ORDER BY weight DESC LIMIT 5;
 
 ```bash
 curl http://localhost:8003/policy/stats | jq '.'
-```
+```text
 
 ```json
 [
@@ -318,7 +334,7 @@ curl http://localhost:8003/policy/stats | jq '.'
     "fired": 130
   }
 ]
-```
+```text
 
 ### Example 3: Money Mode - Track Expenses
 
@@ -326,14 +342,15 @@ curl http://localhost:8003/policy/stats | jq '.'
 
 ```bash
 curl -O http://localhost:8003/money/receipts.csv
-```
+```text
 
 **CSV Output**:
+
 ```csv
 date,merchant,amount,email_id,subject,category
 2025-10-10,amazon.com,49.99,msg123,"Your Amazon order",commerce
 2025-10-12,uber.com,15.50,msg456,"Trip receipt",finance
-```
+```text
 
 ### Example 4: Find Duplicate Charges
 
@@ -341,7 +358,7 @@ date,merchant,amount,email_id,subject,category
 
 ```bash
 curl http://localhost:8003/money/duplicates?window_days=7 | jq '.duplicates[0]'
-```
+```text
 
 ```json
 {
@@ -351,7 +368,7 @@ curl http://localhost:8003/money/duplicates?window_days=7 | jq '.duplicates[0]'
   "later": {"id": "msg2", "date": "2025-10-12"},
   "days_apart": 2
 }
-```
+```text
 
 ---
 
@@ -399,39 +416,44 @@ curl http://localhost:8003/money/duplicates?window_days=7 | jq '.duplicates[0]'
 ### Issue: Weights not updating
 
 **Check**: Query user_weights table
+
 ```sql
 SELECT * FROM user_weights WHERE user_id = 'alice@example.com';
-```
+```text
 
 **Debug**: Enable logging in `core/learner.py`
 
 ### Issue: Policy stats empty
 
 **Check**: Verify actions are being proposed
+
 ```bash
 curl http://localhost:8003/actions/tray | jq 'length'
-```
+```text
 
 **Debug**: Check if policy_id is set on ProposedAction
 
 ### Issue: ATS enrichment not running
 
 **Check**: Verify cron is scheduled
+
 ```bash
 crontab -l | grep ats_enrich
-```
+```text
 
 **Manual Run**:
+
 ```bash
 python analytics/enrich/ats_enrich_emails.py
-```
+```text
 
 ### Issue: Money endpoints return 0 results
 
 **Check**: Verify receipts exist in ES
+
 ```bash
 curl "http://localhost:9200/emails/_search?q=category:finance&size=1"
-```
+```text
 
 ---
 
@@ -453,7 +475,7 @@ curl "http://localhost:9200/emails/_search?q=category:finance&size=1"
 
 ## Commit Message
 
-```
+```text
 feat: Phase 6 - Personalization & ATS Enrichment
 
 Complete implementation of per-user learning and recruiter intelligence:
@@ -496,7 +518,7 @@ Metrics:
 
 Files: 13 new, 5 modified
 Status: Production-ready ✅
-```
+```text
 
 ---
 

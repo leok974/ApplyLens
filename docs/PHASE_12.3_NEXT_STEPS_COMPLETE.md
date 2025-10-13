@@ -9,15 +9,18 @@
 ## 🎯 Objectives Achieved
 
 ✅ **Dependencies updated**
+
 - Added `python-json-logger` to core dependencies
 - Added OpenTelemetry packages to optional `[tracing]` group
 
 ✅ **Metrics enhanced**
+
 - Added histogram metrics for backfill and risk batch duration
 - Added outcome-based counter for risk requests
 - Proper bucket configuration for SLO tracking
 
 ✅ **Documentation expanded**
+
 - Updated README with comprehensive monitoring section
 - Created 450-line DEPLOYMENT.md with step-by-step checklist
 - All next steps from Phase 12.3 completed
@@ -29,14 +32,16 @@
 ### 1. Updated Dependencies (`pyproject.toml`)
 
 **Core Dependencies Added:**
+
 ```toml
 dependencies = [
   # ... existing deps ...
   "python-json-logger",  # For structured JSON logging
 ]
-```
+```text
 
 **Optional Tracing Group Added:**
+
 ```toml
 [project.optional-dependencies]
 tracing = [
@@ -46,9 +51,10 @@ tracing = [
   "opentelemetry-instrumentation-sqlalchemy>=0.41b0",
   "opentelemetry-instrumentation-requests>=0.41b0",
 ]
-```
+```text
 
 **Installation:**
+
 ```bash
 # Base + logging
 pip install -e .
@@ -61,7 +67,7 @@ pip install -e ".[test]"
 
 # All optional features
 pip install -e ".[test,tracing]"
-```
+```text
 
 ### 2. Enhanced Metrics (`app/metrics.py`)
 
@@ -73,9 +79,10 @@ backfill_duration_seconds = Histogram(
     "Duration of backfill jobs in seconds",
     buckets=[10, 30, 60, 120, 300, 600, 1800, 3600]  # 10s to 1h
 )
-```
+```text
 
 **Bucket Design:**
+
 - 10s: Quick updates
 - 30s, 60s: Normal operations
 - 120s (2m), 300s (5m): SLO threshold
@@ -87,9 +94,10 @@ risk_batch_duration_seconds = Histogram(
     "Duration of risk scoring batches in seconds",
     buckets=[1, 5, 10, 30, 60, 120, 300]  # 1s to 5m
 )
-```
+```text
 
 **Bucket Design:**
+
 - 1s, 5s, 10s: Optimal performance
 - 30s, 60s: Acceptable range
 - 120s (2m), 300s (5m): Approaching SLO violation
@@ -100,9 +108,10 @@ risk_requests_total = Counter(
     "Total risk computation requests by outcome",
     ["outcome"]  # success, failure
 )
-```
+```text
 
 **Usage in Alert Rules:**
+
 ```yaml
 # BackfillDurationSLO alert
 expr: histogram_quantile(0.95, 
@@ -111,11 +120,12 @@ expr: histogram_quantile(0.95,
 
 # RiskJobFailures alert
 expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
-```
+```text
 
 ### 3. README Monitoring Section
 
 **Added 60+ lines covering:**
+
 - Prometheus metrics overview
 - Health endpoint documentation
 - Grafana dashboard import steps
@@ -124,6 +134,7 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 - OpenTelemetry tracing setup
 
 **Key Highlights:**
+
 ```markdown
 ## 🔧 Monitoring & Observability
 
@@ -143,18 +154,20 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 - RiskJobFailures - Risk computation failures (runbook)
 - ParityDriftTooHigh - DB↔ES drift > 0.5% (runbook)
 - BackfillDurationSLO - p95 > 5min (runbook)
-```
+```text
 
 ### 4. Deployment Checklist (`DEPLOYMENT.md`)
 
 **450 lines covering:**
 
 **Pre-Deployment:**
+
 - Dependencies verification
 - Configuration file checklist
 - Code and environment setup
 
 **10 Deployment Steps:**
+
 1. Database migrations
 2. Load Prometheus alert rules
 3. Configure structured logging
@@ -167,6 +180,7 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 10. Test alert delivery
 
 **Post-Deployment:**
+
 - Health check matrix (5 endpoints)
 - Prometheus verification (4 checks)
 - Grafana verification (4 checks)
@@ -174,11 +188,13 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 - Logging verification (4 checks)
 
 **Security Checklist:**
+
 - Secrets management (4 items)
 - Access control (4 items)
 - Monitoring security (4 items)
 
 **Operations:**
+
 - Monitoring dashboard URLs (6 bookmarks)
 - Operational runbook links (4 guides)
 - Rollback procedure (7 steps)
@@ -192,21 +208,24 @@ expr: increase(applylens_risk_requests_total{outcome="failure"}[30m]) > 0
 cp infra/alerts/prometheus-rules.yml /path/to/prometheus/rules/
 curl -X POST http://localhost:9090/-/reload
 curl http://localhost:9090/api/v1/rules | jq
-```
+```text
 
 ### Step 7: Verify Health Endpoints
+
 ```bash
 curl http://localhost:8003/healthz
 curl http://localhost:8003/ready | jq .
-```
+```text
 
 ### Rollback Procedure
+
 ```bash
 git checkout <previous-commit>
 docker-compose up -d --build api
 curl http://localhost:8003/ready
-```
-```
+```text
+
+```text
 
 ---
 
@@ -264,9 +283,10 @@ pip install -e ".[tracing]"
 
 # Verify installation
 python -c "import opentelemetry; print('Tracing available')"
-```
+```text
 
 ### Use New Histogram Metrics
+
 ```python
 from app.metrics import backfill_duration_seconds, risk_requests_total
 import time
@@ -282,9 +302,10 @@ except Exception as e:
 finally:
     duration = time.time() - start
     backfill_duration_seconds.observe(duration)
-```
+```text
 
 ### Query Histogram Metrics
+
 ```promql
 # p95 backfill duration (for alert)
 histogram_quantile(0.95, 
@@ -297,16 +318,17 @@ sum(rate(applylens_risk_batch_duration_seconds_sum[5m]))
 
 # Risk failure rate
 rate(applylens_risk_requests_total{outcome="failure"}[5m])
-```
+```text
 
 ### Follow Deployment Checklist
+
 ```bash
 # Open DEPLOYMENT.md and follow step-by-step
 cat DEPLOYMENT.md
 
 # Or use as reference during deployment
 # Each step has commands ready to copy-paste
-```
+```text
 
 ---
 
@@ -329,7 +351,9 @@ cat DEPLOYMENT.md
 ## 🔮 Remaining Next Steps
 
 ### Short-term (This Week)
+
 1. **Update analyze_risk.py to use new metrics:**
+
    ```python
    from app.metrics import risk_batch_duration_seconds, risk_requests_total
    
@@ -344,6 +368,7 @@ cat DEPLOYMENT.md
    - Severity-based routing
 
 3. **Add API endpoint for single-email recompute:**
+
    ```python
    @router.post("/automation/recompute/{email_id}")
    async def recompute_single_email(email_id: str):
@@ -351,6 +376,7 @@ cat DEPLOYMENT.md
    ```
 
 ### Medium-term (This Month)
+
 1. **Deploy to staging environment:**
    - Follow DEPLOYMENT.md checklist
    - Verify all monitoring features
@@ -370,6 +396,7 @@ cat DEPLOYMENT.md
    - Error budget tracking
 
 ### Long-term (This Quarter)
+
 1. **On-call rotation:**
    - PagerDuty integration
    - Escalation policies
@@ -394,26 +421,31 @@ cat DEPLOYMENT.md
 ### Total Phase 12 Deliverables
 
 **Phase 12.1: Risk Scoring**
+
 - Files: 3 new, 3 modified
 - Lines: ~500
 - Features: Risk scores, category, expires_at
 
 **Phase 12.2: Testing & Consistency**
+
 - Files: 9 new, 2 modified
 - Lines: 2,578
 - Features: 105+ tests, parity checks, CI workflow
 
 **Phase 12.3: Monitoring & Observability**
+
 - Files: 12 new, 1 modified
 - Lines: 1,466
 - Features: Alerts, health, logging, tracing, dashboard, runbooks
 
 **Phase 12.3 Next Steps:**
+
 - Files: 1 new, 3 modified
 - Lines: 605
 - Features: Dependencies, metrics, deployment guide
 
 **Combined Total:**
+
 - **Files:** 25 new, 9 modified
 - **Lines:** 5,149
 - **Tests:** 105+ test cases
@@ -427,6 +459,7 @@ cat DEPLOYMENT.md
 ## 🏆 Achievement Unlocked
 
 **Production-Ready Monitoring Stack:**
+
 - ✅ Comprehensive metric collection
 - ✅ Automated alerting with runbooks
 - ✅ Real-time dashboards
@@ -437,6 +470,7 @@ cat DEPLOYMENT.md
 - ✅ Complete deployment documentation
 
 **Time Investment:**
+
 - Phase 12.1: ~4 hours
 - Phase 12.2: ~6 hours
 - Phase 12.3: ~4 hours
@@ -444,6 +478,7 @@ cat DEPLOYMENT.md
 - **Total: ~16 hours** for complete observability stack
 
 **Business Value:**
+
 - **MTTR Reduction:** Runbooks reduce incident response time by 60%
 - **Proactive Alerting:** Catch issues before users report them
 - **Data-Driven Decisions:** Metrics inform optimization priorities

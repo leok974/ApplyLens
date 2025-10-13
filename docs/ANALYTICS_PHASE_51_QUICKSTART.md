@@ -7,14 +7,15 @@
 ```bash
 # After you've run the original pipeline at least once
 python -m analytics.pipeline --window-days 7
-```
+```text
 
 **Expected Output:**
-```
+
+```text
 ✅ CSV dashboards exported:
    kpis_csv: analytics/outputs/dashboards/kpis.csv
    kpis_long_csv: analytics/outputs/dashboards/kpis_long.csv
-```
+```text
 
 ### 2. Check CSV Files
 
@@ -25,7 +26,7 @@ Get-Content analytics\outputs\dashboards\kpis.csv
 # Should show:
 # date,seo_coverage_pct,playwright_pass_pct,avg_p95_ms,autofix_delta_count
 # 2025-10-01,95.2,98.5,245,12
-```
+```text
 
 ### 3. Test Search API
 
@@ -39,7 +40,7 @@ curl "http://localhost:8003/analytics/search?q=seo+coverage+drop&k=5"
 #   "k": 5,
 #   "results": [...]
 # }
-```
+```text
 
 ### 4. View Latest Report
 
@@ -49,7 +50,7 @@ curl http://localhost:8003/analytics/latest
 
 # Open report in editor
 code analytics\outputs\insight-summary.md
-```
+```text
 
 ## Quick Commands
 
@@ -77,7 +78,7 @@ if rec:
 curl http://localhost:8003/analytics/latest
 curl http://localhost:8003/analytics/dashboards/kpis.csv
 curl "http://localhost:8003/analytics/search?q=test&k=3"
-```
+```text
 
 ## File Locations
 
@@ -100,18 +101,21 @@ curl "http://localhost:8003/analytics/search?q=test&k=3"
 ## Common Issues
 
 ### "Vector store not built yet"
+
 ```bash
 # Run pipeline to create vector store
 python -m analytics.pipeline --window-days 7
-```
+```text
 
 ### "kpis.csv not found"
+
 ```bash
 # Export CSVs
 python -m analytics.dashboards.exporter
-```
+```text
 
 ### "No recommendations"
+
 - Check if anomalies exist in your data
 - Verify `analytics/data/*.json` files have proper structure
 - Look for error suppression message in report

@@ -40,9 +40,10 @@
   <p className="text-slate-600 dark:text-slate-300 text-[13px] leading-relaxed">Preview text</p>
   <Archive className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" />
 </div>
-```
+```text
 
 **Key improvements:**
+
 - `rounded-2xl` → `rounded-xl` (less extreme)
 - `bg-white` → `bg-card` (semantic, theme-aware)
 - `text-[15px]` → `text-base leading-snug` (better readability)
@@ -63,9 +64,10 @@
   <span className="bg-[color:hsl(var(--color-accent))]" />
   Today
 </div>
-```
+```text
 
 **Key improvements:**
+
 - CSS variables replace hardcoded Tailwind classes
 - Automatic dark mode handling (no duplicate classes)
 - Consistent with design system
@@ -89,9 +91,10 @@
     <Search />
   </Button>
 </header>
-```
+```text
 
 **Key improvements:**
+
 - Semantic HTML (`<header>` instead of `<div>`)
 - Backdrop blur with 80% opacity (glassmorphism)
 - Accent color for branding
@@ -111,9 +114,10 @@
   <Button variant="outline">Archive</Button>
   <Button variant="outline">Mark safe</Button>
 </div>
-```
+```text
 
 **Key improvements:**
+
 - Muted background (semantic)
 - Outline buttons (less glare, better hierarchy)
 
@@ -134,9 +138,10 @@
 
 // AFTER: Soft default with gentle hover
 <Archive className="h-4 w-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" />
-```
+```text
 
 **Pattern:**
+
 - Default: `text-slate-400`
 - Light hover: `hover:text-slate-600`
 - Dark hover: `dark:hover:text-slate-200`
@@ -150,6 +155,7 @@
 | Tertiary | `ghost` | Inline/subtle actions | Close panel, dismiss |
 
 **Changed:**
+
 - Bulk actions: `secondary` → `outline`
 - Search button: `secondary` → `outline`
 - Reserve filled buttons for truly primary actions
@@ -171,13 +177,14 @@ className="border-border"
 // ✅ ALSO CORRECT (Semantic aliases defined in @theme)
 className="bg-card"         // Maps to --color-card
 className="text-foreground" // Maps to --color-foreground
-```
+```text
 
 ## Migration Pattern
 
 When updating components:
 
 1. **Find hardcoded colors:**
+
    ```bash
    grep -r "bg-white\|border-slate-200\|bg-slate-50" components/
    ```
@@ -224,7 +231,8 @@ After migration, verify:
 ---
 
 **Quick tip**: Use browser DevTools to toggle dark mode rapidly:
+
 ```javascript
 // In console:
 document.documentElement.classList.toggle('dark')
-```
+```text

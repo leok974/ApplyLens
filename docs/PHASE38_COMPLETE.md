@@ -32,21 +32,23 @@ Added a chip-style button that toggles the `hideExpired` state:
 >
   {hideExpired ? "Show expired" : "Hide expired"}
 </Button>
-```
+```text
 
 ### Features
+
 - Rounded pill-style button for modern look
 - Dynamic text: "Show expired" when hidden, "Hide expired" when shown
 - Color change: Secondary variant when expired emails are hidden, default when showing
 - Positioned next to the existing switch for easy access
 
 ### Testing
+
 ```bash
 # Navigate to http://localhost:5175/search
 # Click the "Show expired" chip
 # URL should update: ?hideExpired=0
 # Click again to hide: ?hideExpired removed from URL
-```
+```text
 
 ---
 
@@ -77,7 +79,7 @@ Added "Profile" to navigation menu:
     </NavigationMenuLink>
   </NavigationMenuItem>
 ))}
-```
+```text
 
 **B) Added Route**
 
@@ -89,9 +91,10 @@ Added route for Profile page:
 import { ProfileSummary } from './components/profile/ProfileSummary'
 
 <Route path="/profile" element={<ProfileSummary />} />
-```
+```text
 
 ### Testing
+
 ```bash
 # Navigate to http://localhost:5175
 # Click "Profile" in top navigation
@@ -100,7 +103,7 @@ import { ProfileSummary } from './components/profile/ProfileSummary'
 #   - Top senders list
 #   - Interests/keywords
 #   - Response time metrics
-```
+```text
 
 ---
 
@@ -127,7 +130,7 @@ body = {
         }
     }
 }
-```
+```text
 
 **NEW: Added Convenience Fields**
 
@@ -138,7 +141,7 @@ class SearchHit(BaseModel):
     # ... existing fields ...
     subject_highlight: Optional[str] = None
     body_highlight: Optional[str] = None
-```
+```text
 
 Updated response mapping:
 
@@ -148,7 +151,7 @@ hits.append(SearchHit(
     subject_highlight=highlight.get("subject", [None])[0] if "subject" in highlight else None,
     body_highlight=" ... ".join(highlight.get("body_text", [])) if "body_text" in highlight else None,
 ))
-```
+```text
 
 **B) Frontend: Highlight Utility**
 
@@ -175,9 +178,10 @@ export function toMarkedHTML(s?: string) {
   
   return { __html: restored }
 }
-```
+```text
 
-**Security:** 
+**Security:**
+
 - Escapes ALL HTML entities first
 - Only unescapes `<mark>` tags that Elasticsearch inserted
 - Prevents XSS attacks from malicious email content
@@ -193,7 +197,7 @@ Updated subject rendering:
   className="font-semibold leading-snug text-[color:hsl(var(--foreground))]"
   dangerouslySetInnerHTML={toMarkedHTML(h.subject_highlight ?? h.subject ?? '(no subject)')}
 />
-```
+```text
 
 Updated body snippet rendering:
 
@@ -204,7 +208,7 @@ Updated body snippet rendering:
     dangerouslySetInnerHTML={toMarkedHTML(h.body_highlight)}
   />
 )}
-```
+```text
 
 **D) API Type Definitions**
 
@@ -218,7 +222,7 @@ export type SearchHit = {
   subject_highlight?: string
   body_highlight?: string
 }
-```
+```text
 
 ---
 
@@ -230,9 +234,10 @@ export type SearchHit = {
 
 ```bash
 curl -s "http://localhost:8003/api/search/?q=application&size=2"
-```
+```text
 
 **Result:** ✅
+
 ```json
 [
   {
@@ -244,7 +249,7 @@ curl -s "http://localhost:8003/api/search/?q=application&size=2"
     "subject_highlight": "You have successfully submitted your IBM job <mark>application</mark>..."
   }
 ]
-```
+```text
 
 ### Test 2: Body Highlighting
 
@@ -252,15 +257,16 @@ curl -s "http://localhost:8003/api/search/?q=application&size=2"
 
 ```bash
 curl -s "http://localhost:8003/api/search/?q=interview&size=2"
-```
+```text
 
 **Result:** ✅
+
 ```json
 {
   "subject": "Thanks for applying to Safran Passenger Innovations",
   "body_highlight": "[\"Yes\"] Are you available to work 3 days/week <mark>onsite</mark> in our Brea, CA office?"
 }
-```
+```text
 
 ### Test 3: Category + Highlighting Combined
 
@@ -268,7 +274,7 @@ curl -s "http://localhost:8003/api/search/?q=interview&size=2"
 
 ```bash
 curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
-```
+```text
 
 **Result:** ✅ Returns promotions with highlighted search terms
 
@@ -279,14 +285,16 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 ### SearchControls Component
 
 **Before:**
+
 ```tsx
 <div className="ml-auto flex items-center gap-2">
   <Label htmlFor="hide-expired">Hide expired</Label>
   <Switch id="hide-expired" checked={hideExpired} onCheckedChange={setHideExpired} />
 </div>
-```
+```text
 
 **After:**
+
 ```tsx
 <div className="ml-auto flex items-center gap-2">
   <Label htmlFor="hide-expired">Hide expired</Label>
@@ -300,11 +308,12 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
     {hideExpired ? "Show expired" : "Hide expired"}
   </Button>
 </div>
-```
+```text
 
 ### Navigation Menu
 
 **Before:**
+
 - Inbox
 - Inbox (Actions)
 - Search
@@ -312,6 +321,7 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 - Settings
 
 **After:**
+
 - Inbox
 - Inbox (Actions)
 - Search
@@ -322,19 +332,21 @@ curl -s "http://localhost:8003/api/search/?q=email&categories=promotions&size=1"
 ### Search Results
 
 **Before:**
+
 ```tsx
 <h3 className="font-semibold">
   {h.subject || '(no subject)'}
 </h3>
-```
+```text
 
 **After:**
+
 ```tsx
 <h3 
   className="font-semibold"
   dangerouslySetInnerHTML={toMarkedHTML(h.subject_highlight ?? h.subject)}
 />
-```
+```text
 
 Result: Search terms are **highlighted in yellow** with `<mark>` tags
 
@@ -354,7 +366,7 @@ Added to Search.tsx:
     font-weight: 500;
   }
 `}</style>
-```
+```text
 
 - Yellow background (#ffeb3b) for high visibility
 - Rounded corners (3px)
@@ -379,9 +391,10 @@ Added to Search.tsx:
         }
     }
 }
-```
+```text
 
 **Features:**
+
 - `fragment_size: 150` - Each snippet is ~150 characters
 - `number_of_fragments: 3` - Up to 3 snippets per email
 - Multiple fragments joined with " ... "
@@ -389,12 +402,14 @@ Added to Search.tsx:
 ### Security Considerations
 
 **XSS Prevention:**
+
 1. Escape ALL HTML in email content
 2. Only unescape trusted `<mark>` tags from ES
 3. Use `dangerouslySetInnerHTML` only after sanitization
 4. No inline event handlers allowed
 
 **Why Safe:**
+
 - Email subject/body could contain malicious HTML
 - `toMarkedHTML()` escapes everything first
 - Only `<mark>` tags from Elasticsearch are restored
@@ -405,6 +420,7 @@ Added to Search.tsx:
 ## 📝 Files Modified
 
 ### Frontend
+
 - ✅ `apps/web/src/components/search/SearchControls.tsx` - Added "Show expired" chip
 - ✅ `apps/web/src/components/AppHeader.tsx` - Added Profile link
 - ✅ `apps/web/src/App.tsx` - Added Profile route
@@ -413,6 +429,7 @@ Added to Search.tsx:
 - ✅ `apps/web/src/lib/api.ts` - Added highlight fields to types
 
 ### Backend
+
 - ✅ `services/api/app/routers/search.py` - Added subject_highlight and body_highlight fields
 
 ---
@@ -442,6 +459,7 @@ Added to Search.tsx:
 ### Additional Polish Ideas
 
 1. **Loading Skeletons**
+
    ```tsx
    {loading && (
      <div className="space-y-3">
@@ -453,6 +471,7 @@ Added to Search.tsx:
    ```
 
 2. **Better Error Alerts**
+
    ```tsx
    {err && (
      <Alert variant="destructive">
@@ -472,6 +491,7 @@ Added to Search.tsx:
    - Add dark mode support to category badges
 
 4. **Empty State**
+
    ```tsx
    {!loading && hits.length === 0 && (
      <div className="text-center py-12">

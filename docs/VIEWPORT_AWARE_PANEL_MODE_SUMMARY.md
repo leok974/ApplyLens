@@ -12,7 +12,7 @@
 
 ```typescript
 const DESKTOP_BP = 1024; // 1024px breakpoint (lg)
-```
+```text
 
 **Purpose**: Define the viewport width threshold for desktop vs mobile behavior.
 
@@ -38,9 +38,10 @@ React.useEffect(() => {
     mq.removeEventListener?.("change", onMQ);
   };
 }, []);
-```
+```text
 
-**Purpose**: 
+**Purpose**:
+
 - Track whether viewport is desktop-sized (≥1024px)
 - Use both resize events and matchMedia for optimal performance
 - Clean up listeners on unmount
@@ -52,11 +53,12 @@ React.useEffect(() => {
 ```typescript
 // Effective mode: force overlay on small screens, keep saved preference for desktop
 const effectiveMode: PanelMode = isDesktop ? panelMode : "overlay";
-```
+```text
 
 **Purpose**: Calculate the actual mode to use based on viewport size and user preference.
 
 **Logic**:
+
 - Desktop: Use saved preference (`panelMode`)
 - Mobile: Force overlay mode (ignore saved preference)
 
@@ -69,7 +71,7 @@ const effectiveMode: PanelMode = isDesktop ? panelMode : "overlay";
 React.useEffect(() => {
   if (isDesktop && panelMode === "split") setOpenPanel(true);
 }, [isDesktop, panelMode]);
-```
+```text
 
 **Purpose**: When viewport becomes desktop-sized and user has split mode saved, auto-open the panel.
 
@@ -78,6 +80,7 @@ React.useEffect(() => {
 #### 5. Updated Toggle Button
 
 **Before**:
+
 ```typescript
 <Button variant="outline" size="sm" onClick={togglePanelMode}>
   {panelMode === "split" ? (
@@ -90,9 +93,10 @@ React.useEffect(() => {
     </>
   )}
 </Button>
-```
+```text
 
 **After**:
+
 ```typescript
 <Button 
   variant={!isDesktop ? "secondary" : "outline"} 
@@ -112,9 +116,10 @@ React.useEffect(() => {
     </>
   )}
 </Button>
-```
+```text
 
 **Changes**:
+
 - `variant` changes to `secondary` when disabled (visual hint)
 - `disabled={!isDesktop}` prevents toggling on mobile
 - `className="hidden md:inline-flex"` hides button on small screens
@@ -126,22 +131,24 @@ React.useEffect(() => {
 #### 6. Updated Layout Conditional
 
 **Before**:
+
 ```typescript
 {panelMode === "split" ? (
   // Split layout
 ) : (
   // Overlay layout
 )}
-```
+```text
 
 **After**:
+
 ```typescript
 {effectiveMode === "split" ? (
   // Split layout
 ) : (
   // Overlay layout
 )}
-```
+```text
 
 **Change**: Uses `effectiveMode` instead of `panelMode` to respect viewport-aware logic.
 
@@ -192,7 +199,7 @@ React.useEffect(() => {
 
 #### Scenario A: Mobile → Desktop with Split Saved
 
-```
+```text
 1. User on mobile (overlay forced)
 2. User rotates device / expands window
 3. Viewport becomes ≥1024px
@@ -200,11 +207,11 @@ React.useEffect(() => {
 5. Auto-open effect triggers: setOpenPanel(true)
 6. Panel appears in split layout
 7. Toggle button enabled
-```
+```text
 
 #### Scenario B: Desktop Split → Mobile
 
-```
+```text
 1. User on desktop in split mode
 2. User shrinks window
 3. Viewport becomes <1024px
@@ -212,18 +219,18 @@ React.useEffect(() => {
 5. Layout switches to full-width list
 6. Panel stays open but slides over
 7. Toggle button disabled
-```
+```text
 
 #### Scenario C: Desktop Overlay → Mobile
 
-```
+```text
 1. User on desktop in overlay mode
 2. User shrinks window
 3. Viewport becomes <1024px
 4. effectiveMode stays "overlay" (no change)
 5. No visual disruption
 6. Toggle button disabled
-```
+```text
 
 ## Visual Feedback
 
@@ -238,12 +245,14 @@ React.useEffect(() => {
 ### Button Visual Differences
 
 **Enabled (Desktop)**:
+
 - Outline border
 - Normal contrast
 - Pointer cursor
 - Clickable
 
 **Disabled (Mobile)**:
+
 - Secondary background (dimmed)
 - Reduced contrast
 - Not-allowed cursor
@@ -360,23 +369,24 @@ React.useEffect(() => {
 
 ```bash
 docker ps --filter "name=infra-web"
-```
+```text
 
 **Output**:
-```
+
+```text
 NAMES         STATUS        PORTS
 infra-web-1   Up 47 seconds 0.0.0.0:5175->5175/tcp
-```
+```text
 
 ### Access
 
-**URL**: http://localhost:5175/inbox-polished-demo
+**URL**: <http://localhost:5175/inbox-polished-demo>
 
 ## Next Steps
 
 ### For Testing
 
-1. Open http://localhost:5175/inbox-polished-demo
+1. Open <http://localhost:5175/inbox-polished-demo>
 2. Test on desktop (≥1024px viewport)
 3. Test toggle button functionality
 4. Resize window below 1024px
@@ -422,4 +432,3 @@ infra-web-1   Up 47 seconds 0.0.0.0:5175->5175/tcp
 **Total Build Time**: 10.8 seconds  
 **Status**: ✅ Ready for Testing  
 **Breaking Changes**: None
-

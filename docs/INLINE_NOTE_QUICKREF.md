@@ -24,7 +24,7 @@ import InlineNote from '../components/InlineNote'
     await refetch()
   }}
 />
-```
+```text
 
 ## User Workflow
 
@@ -36,7 +36,8 @@ import InlineNote from '../components/InlineNote'
 ## Snippet Chips
 
 **Default Snippets:** 7 common note phrases  
-**Behavior:** 
+**Behavior:**
+
 - Click chip to insert text
 - Empty note: sets snippet as value
 - Existing note: appends on new line
@@ -63,11 +64,12 @@ interface InlineNoteProps {
   testId?: string                         // E2E test ID prefix
   snippets?: string[]                     // Custom snippet chips (optional)
 }
-```
+```text
 
 ## Testing
 
-**E2E Tests:** 
+**E2E Tests:**
+
 - `apps/web/tests/e2e/tracker-notes.spec.ts`
 - `apps/web/tests/e2e/tracker-note-snippets.spec.ts`
 
@@ -75,9 +77,10 @@ interface InlineNoteProps {
 cd apps/web
 npx playwright test tests/e2e/tracker-notes.spec.ts
 npx playwright test tests/e2e/tracker-note-snippets.spec.ts
-```
+```text
 
 **Coverage:**
+
 - ✅ Save on blur with toast
 - ✅ Cmd+Enter save shortcut
 - ✅ Escape cancel shortcut
@@ -97,6 +100,7 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ## Status
 
 ✅ **Production Ready**
+
 - No TypeScript errors
 - E2E tests written (3 scenarios)
 - Snippet chips operational

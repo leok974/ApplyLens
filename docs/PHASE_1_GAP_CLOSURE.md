@@ -21,10 +21,12 @@ This document tracks the completion of Phase-1 gaps identified in `PHASE_1_AUDIT
 ## 📁 Files Created/Modified
 
 ### 1. Backend API - Search Router
+
 **File**: `services/api/app/routers/search.py`  
 **Status**: ✅ Enhanced existing file
 
 **Changes**:
+
 - Added `import re` for regex pattern matching
 - Added `/explain/{doc_id}` endpoint
 - Added `_heuristic_reason()` helper function
@@ -38,6 +40,7 @@ This document tracks the completion of Phase-1 gaps identified in `PHASE_1_AUDIT
 - Added `_record_audit()` helper for logging to `applylens_audit` index
 
 **Key Features**:
+
 - Dry-run mode: Actions recorded to audit log, no Gmail mutation
 - Heuristic reasoning: Analyzes labels, keywords, unsubscribe headers
 - Comprehensive evidence collection
@@ -45,10 +48,12 @@ This document tracks the completion of Phase-1 gaps identified in `PHASE_1_AUDIT
 ---
 
 ### 2. Elasticsearch Index Template
+
 **File**: `infra/elasticsearch/emails_v1.template.json`  
 **Status**: ✅ Created new file
 
 **Fields Added**:
+
 - `sender_domain` (keyword) - for domain-based filtering
 - `reason` (keyword) - for UI explain feature
 - Comprehensive field set including:
@@ -58,24 +63,28 @@ This document tracks the completion of Phase-1 gaps identified in `PHASE_1_AUDIT
   - Reply tracking: `first_user_reply_at`, `user_reply_count`, `replied`
 
 **Custom Analyzers**:
+
 - `applylens_text` - standard with snowball stemming
 - `applylens_text_shingles` - phrase matching with shingles
 - `ats_search_analyzer` - ATS platform synonyms (Lever, Workday, etc.)
 
 **To Apply**:
+
 ```bash
 curl -X PUT http://localhost:9200/_index_template/emails_v1 \
   -H 'Content-Type: application/json' \
   --data-binary @infra/elasticsearch/emails_v1.template.json
-```
+```text
 
 ---
 
 ### 3. Web UI - API Utilities
+
 **File**: `apps/web/src/lib/api.ts`  
 **Status**: ✅ Enhanced existing file
 
 **Functions Added**:
+
 - `explainEmail(id: string): Promise<ExplainResponse>`
 - `actions.archive(id, note?)`
 - `actions.markSafe(id, note?)`
@@ -83,16 +92,19 @@ curl -X PUT http://localhost:9200/_index_template/emails_v1 \
 - `actions.unsubscribeDry(id, note?)`
 
 **Types Added**:
+
 - `ExplainResponse` - reason + evidence structure
 - `ActionResponse` - status + message
 
 ---
 
 ### 4. Web UI - Inbox Component with Actions
+
 **File**: `apps/web/src/components/InboxWithActions.tsx`  
 **Status**: ✅ Created new file
 
 **Features**:
+
 - ✅ Search input with real-time query
 - ✅ Sender domain filter
 - ✅ Label filter
@@ -108,6 +120,7 @@ curl -X PUT http://localhost:9200/_index_template/emails_v1 \
 - ✅ Dry-run mode notice
 
 **UI/UX**:
+
 - Clean table layout with hover effects
 - Color-coded messages (green for success, red for errors)
 - Disabled state during action processing
@@ -116,10 +129,12 @@ curl -X PUT http://localhost:9200/_index_template/emails_v1 \
 ---
 
 ### 5. Kibana ESQL Saved Queries
+
 **File**: `infra/kibana/saved-queries.md`  
 **Status**: ✅ Created new file
 
 **Queries Documented** (10 total):
+
 1. **Top Senders by Category** - promo/newsletter/other breakdown
 2. **Promos in Last 7 Days** - recent promotional emails
 3. **Newsletter Volume by Sender** - subscription audit
@@ -132,6 +147,7 @@ curl -X PUT http://localhost:9200/_index_template/emails_v1 \
 10. **Expiring Promos** - placeholder for future enhancement
 
 **Documentation Includes**:
+
 - Purpose and usage for each query
 - Visualization recommendations
 - Export/import instructions
@@ -152,9 +168,10 @@ curl "http://localhost:8000/api/search/?q=test&size=1"
 
 # Then explain that document
 curl "http://localhost:8000/api/search/explain/<doc_id>"
-```
+```text
 
 **Expected Response**:
+
 ```json
 {
   "id": "abc123",
@@ -170,7 +187,7 @@ curl "http://localhost:8000/api/search/explain/<doc_id>"
     "sender_domain": "example.com"
   }
 }
-```
+```text
 
 #### 2. Test quick action endpoints
 
@@ -194,9 +211,10 @@ curl -X POST "http://localhost:8000/api/search/actions/mark_suspicious" \
 curl -X POST "http://localhost:8000/api/search/actions/unsubscribe_dryrun" \
   -H "Content-Type: application/json" \
   -d '{"doc_id": "abc123", "note": "Too many emails"}'
-```
+```text
 
 **Expected Response** (all actions):
+
 ```json
 {
   "status": "accepted",
@@ -204,14 +222,14 @@ curl -X POST "http://localhost:8000/api/search/actions/unsubscribe_dryrun" \
   "doc_id": "abc123",
   "message": "Dry-run: Archive action recorded to audit log"
 }
-```
+```text
 
 #### 3. Verify audit log entries
 
 ```bash
 # Check applylens_audit index
 curl "http://localhost:9200/applylens_audit/_search?pretty"
-```
+```text
 
 **Expected**: JSON documents with `action`, `doc_id`, `note`, `timestamp` fields
 
@@ -225,27 +243,29 @@ curl "http://localhost:9200/applylens_audit/_search?pretty"
 cd apps/web
 npm install  # if not already done
 npm run dev
-```
+```text
 
 #### 2. Access InboxWithActions component
 
 Option A: Add route in your router
+
 ```tsx
 // In your router file (e.g., main.tsx or App.tsx)
 import InboxWithActions from './components/InboxWithActions'
 
 // Add route
 <Route path="/inbox-actions" element={<InboxWithActions />} />
-```
+```text
 
 Option B: Replace existing Inbox temporarily
+
 ```tsx
 // In main.tsx or wherever Inbox is used
 import InboxWithActions from './components/InboxWithActions'
 
 // Use instead of <Inbox />
 <InboxWithActions />
-```
+```text
 
 #### 3. Test UI features
 
@@ -277,7 +297,7 @@ curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
 
 # Verify template was created
 curl "http://localhost:9200/_index_template/emails_v1?pretty"
-```
+```text
 
 #### 2. Test ESQL queries in Kibana
 
@@ -289,6 +309,7 @@ curl "http://localhost:9200/_index_template/emails_v1?pretty"
 6. Save query with name from documentation
 
 **Test Queries**:
+
 - [ ] Top Senders by Category
 - [ ] Promos in Last 7 Days
 - [ ] Newsletter Volume by Sender
@@ -309,7 +330,7 @@ curl "http://localhost:9200/_index_template/emails_v1?pretty"
 ```bash
 cd infra
 docker compose restart api
-```
+```text
 
 ### 2. Apply ES index template
 
@@ -317,14 +338,14 @@ docker compose restart api
 curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
   -H "Content-Type: application/json" \
   --data-binary @elasticsearch/emails_v1.template.json
-```
+```text
 
 ### 3. Rebuild web app (if needed)
 
 ```bash
 cd apps/web
 npm run build
-```
+```text
 
 ### 4. Verify endpoints
 
@@ -337,7 +358,7 @@ curl "http://localhost:8000/api/search/?q=test&size=5"
 
 # Explain (replace <id> with actual doc ID)
 curl "http://localhost:8000/api/search/explain/<id>"
-```
+```text
 
 ---
 
@@ -408,16 +429,19 @@ curl "http://localhost:8000/api/search/explain/<id>"
 ## 🐛 Known Issues & Limitations
 
 ### Dry-Run Mode
+
 - **Issue**: Actions don't modify Gmail (by design)
 - **Workaround**: This is intentional for Phase 1 testing
 - **Fix**: Implement Gmail API integration in Phase 2
 
 ### Missing Fields in Existing Data
+
 - **Issue**: Old emails won't have `sender_domain` or `reason`
 - **Workaround**: Use explain endpoint's heuristic fallback
 - **Fix**: Run backfill after updating ingest pipeline
 
 ### ESQL Requires ES 8.11+
+
 - **Issue**: ESQL queries won't work on older ES versions
 - **Workaround**: Use KQL equivalents or upgrade ES
 - **Fix**: Document KQL alternatives in `saved-queries.md`
@@ -429,6 +453,7 @@ curl "http://localhost:8000/api/search/explain/<id>"
 ### Files to Update
 
 1. **README.md** - Add section on new features:
+
    ```markdown
    ### Quick Actions (Dry-Run)
    - Archive emails
@@ -438,6 +463,7 @@ curl "http://localhost:8000/api/search/explain/<id>"
    ```
 
 2. **PHASE_1_AUDIT.md** - Update completion status:
+
    ```markdown
    ## Gap Closure Status
    - [x] Gap 1: EmailList Component - `InboxWithActions.tsx`
@@ -480,6 +506,7 @@ Mark each item as you complete it:
 ## 🎉 Success Criteria
 
 **Phase 1 is complete when**:
+
 - ✅ All API endpoints return 200 OK
 - ✅ UI renders without errors
 - ✅ "Explain why" reveals categorization reason

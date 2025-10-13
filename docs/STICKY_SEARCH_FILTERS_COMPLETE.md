@@ -29,7 +29,7 @@ export type UiState = {
   replied: RepliedFilter;
   sort: "relevance" | "received_desc" | "received_asc" | "ttr_asc" | "ttr_desc";
 };
-```
+```text
 
 #### localStorage Persistence
 
@@ -59,9 +59,10 @@ export function saveUiState(state: UiState) {
     window.localStorage.setItem(KEY, JSON.stringify(state));
   } catch {}
 }
-```
+```text
 
 **Key Features**:
+
 - SSR-safe (checks for `window`)
 - Error-tolerant (returns defaults on parse failure)
 - Merges with defaults to handle schema evolution
@@ -85,9 +86,10 @@ const [dates, setDates] = useState<{ from?: string; to?: string }>({
 })
 const [replied, setReplied] = useState<RepliedFilter>(init.replied)
 const [sort, setSort] = useState<SortKey>(init.sort as SortKey)
-```
+```text
 
 **Why useMemo?**
+
 - Loads from localStorage only once on mount
 - Prevents re-reading on every render
 - Ensures consistent initial state
@@ -105,9 +107,10 @@ useEffect(() => {
     sort,
   })
 }, [labels, dates.from, dates.to, replied, sort])
-```
+```text
 
 **Behavior**:
+
 - Runs whenever any filter/sort changes
 - Writes to localStorage immediately
 - State available on next page load
@@ -129,9 +132,10 @@ useEffect(() => {
   const url = `/search?${params.toString()}`
   window.history.replaceState(null, '', url)
 }, [q, labels, dates.from, dates.to, replied, sort])
-```
+```text
 
 **Features**:
+
 - Uses `replaceState` (no page reload, no history spam)
 - Only updates when query exists
 - Builds full query string with all filters
@@ -163,9 +167,10 @@ useEffect(() => {
     </button>
   </div>
 )}
-```
+```text
 
 **Smart Display**:
+
 - Only shows when filters/sort are active
 - Conditional rendering based on state
 - Resets all filters to defaults
@@ -194,9 +199,13 @@ useEffect(() => {
    - Labels: "interview"
    - Sort: "Newest"
 2. Copies URL from address bar:
+
    ```
+
    /search?q=senior+engineer&labels=interview&sort=received_desc&scale=7d
+
    ```
+
 3. Sends URL to colleague via Slack
 4. Colleague clicks link
 5. **Exact same search loads!** Same filters, same results
@@ -218,6 +227,7 @@ useEffect(() => {
 **Key**: `search.ui`
 
 **Value** (JSON):
+
 ```json
 {
   "labels": ["offer", "interview"],
@@ -226,16 +236,18 @@ useEffect(() => {
   "replied": "false",
   "sort": "ttr_desc"
 }
-```
+```text
 
 ### URL Query Parameters
 
 **Example**:
-```
+
+```text
 /search?q=interview&scale=7d&labels=offer&labels=interview&date_from=2025-10-01&replied=false&sort=ttr_desc
-```
+```text
 
 **Parameters**:
+
 - `q` - Search query (required)
 - `scale` - Recency scale (3d/7d/14d)
 - `labels` - Label filters (repeatable)
@@ -246,7 +258,7 @@ useEffect(() => {
 
 ### State Flow
 
-```
+```text
 User Action
     ↓
 React State Update (setLabels, setDates, etc.)
@@ -262,7 +274,7 @@ useMemo: Load from localStorage
 React State Initialized
     ↓
 useEffect: Initial search runs
-```
+```text
 
 ---
 
@@ -271,7 +283,8 @@ useEffect: Initial search runs
 ### Test 1: Sticky Filters
 
 **Steps**:
-1. Open http://localhost:5175/search
+
+1. Open <http://localhost:5175/search>
 2. Search for "interview"
 3. Set filters:
    - Labels: "offer"
@@ -280,6 +293,7 @@ useEffect: Initial search runs
 4. **Refresh page (F5)**
 
 **Expected**:
+
 - ✅ Labels still show "offer"
 - ✅ Replied still shows "Not replied"
 - ✅ Sort still shows "Newest"
@@ -288,6 +302,7 @@ useEffect: Initial search runs
 ### Test 2: URL Sharing
 
 **Steps**:
+
 1. Set up a specific search:
    - Query: "senior"
    - Labels: "interview"
@@ -297,6 +312,7 @@ useEffect: Initial search runs
 4. Paste URL and load
 
 **Expected**:
+
 - ✅ Query shows "senior"
 - ✅ Labels shows "interview"
 - ✅ Sort shows "Fastest response"
@@ -307,6 +323,7 @@ useEffect: Initial search runs
 ### Test 3: Clear All
 
 **Steps**:
+
 1. Set multiple filters:
    - Labels: "offer", "interview"
    - Date from: "2025-10-01"
@@ -316,6 +333,7 @@ useEffect: Initial search runs
 3. Click button
 
 **Expected**:
+
 - ✅ All labels cleared
 - ✅ Dates cleared
 - ✅ Replied reset to "all"
@@ -327,6 +345,7 @@ useEffect: Initial search runs
 ### Test 4: Cross-Browser
 
 **Steps**:
+
 1. Set filters in Chrome
 2. Check localStorage in DevTools (Application → Local Storage)
 3. Copy URL
@@ -334,6 +353,7 @@ useEffect: Initial search runs
 5. Paste URL
 
 **Expected**:
+
 - ✅ Filters don't persist (different browser, no shared localStorage)
 - ✅ But URL params restore the search state!
 - ✅ Demonstrates shareability works independently
@@ -354,9 +374,10 @@ useEffect: Initial search runs
   cursor: 'pointer',
   padding: 0,
 }
-```
+```text
 
 **Design Choices**:
+
 - Small, unobtrusive text
 - Muted color (doesn't distract)
 - Underlined (indicates clickable)
@@ -365,7 +386,7 @@ useEffect: Initial search runs
 
 ### Filter Panel Layout
 
-```
+```text
 ┌────────────────────────────────────────────┐
 │ Filter by label:                           │
 │ [Offer] [Interview] [Rejection]            │
@@ -381,7 +402,7 @@ useEffect: Initial search runs
 │                                            │
 │                      Clear all filters →   │
 └────────────────────────────────────────────┘
-```
+```text
 
 ---
 
@@ -392,10 +413,12 @@ useEffect: Initial search runs
 **Scenario**: User checks unreplied emails every morning
 
 **Setup once**:
+
 - Replied: "Not replied"
 - Sort: "Oldest"
 
 **Daily workflow**:
+
 - Open /search → Filters already set!
 - Review oldest unreplied emails
 - Reply to them
@@ -408,11 +431,13 @@ useEffect: Initial search runs
 **Scenario**: User reviews all interviews weekly
 
 **Setup once**:
+
 - Labels: "interview"
 - Date from: 7 days ago
 - Sort: "Newest"
 
 **Weekly workflow**:
+
 - Update date_from to current week
 - All other filters persist
 - Quick review of weekly interviews
@@ -424,6 +449,7 @@ useEffect: Initial search runs
 **Scenario**: User prepares search demo
 
 **Workflow**:
+
 1. Set up perfect demo search
 2. Copy URL
 3. Save in demo script
@@ -438,6 +464,7 @@ useEffect: Initial search runs
 **Scenario**: Team discusses specific email patterns
 
 **Workflow**:
+
 1. Member A finds interesting pattern
 2. Copies URL with exact filters
 3. Shares in team chat
@@ -455,11 +482,13 @@ useEffect: Initial search runs
 **Behavior**: URL params take precedence over localStorage
 
 **Example**:
+
 - localStorage has: `labels: ["offer"]`
 - User visits: `/search?q=test&labels=interview`
 - Result: Uses "interview" from URL, not "offer" from localStorage
 
 **Why?**:
+
 - Makes shared URLs authoritative
 - Allows overriding saved preferences
 - Enables bookmarking specific searches
@@ -472,14 +501,16 @@ useEffect: Initial search runs
 
 ```typescript
 return { ...DEFAULT, ...parsed };
-```
+```text
 
 **Benefits**:
+
 - Adding new fields? Old localStorage still works
 - Removing fields? Gracefully ignored
 - Renaming? Both old + new work during migration
 
 **Example**:
+
 ```javascript
 // v1 localStorage
 { "labels": ["offer"] }
@@ -489,11 +520,12 @@ return { ...DEFAULT, ...parsed };
 
 // v3 adds "sort" field
 { "labels": ["offer"], "replied": "all", "sort": "relevance" }  // Still works!
-```
+```text
 
 ### Error Tolerance
 
 **Parse failures**:
+
 ```typescript
 try {
   const parsed = JSON.parse(raw);
@@ -501,26 +533,30 @@ try {
 } catch {
   return DEFAULT;  // Silent fallback
 }
-```
+```text
 
 **Write failures** (privacy mode):
+
 ```typescript
 try {
   window.localStorage.setItem(KEY, JSON.stringify(state));
 } catch {}  // Silent fail, no error to user
-```
+```text
 
 ---
 
 ## 📝 Files Modified
 
 ### New Files
+
 1. **`apps/web/src/state/searchUi.ts`** - localStorage persistence module
 
 ### Modified Files
+
 2. **`apps/web/src/pages/Search.tsx`** - Integration + UI
 
 ### Summary
+
 - **Lines added**: ~100
 - **Components touched**: 1 (Search.tsx)
 - **New modules**: 1 (searchUi.ts)
@@ -532,23 +568,27 @@ try {
 ## ⚡ Performance
 
 ### localStorage Read
+
 - **When**: Once on mount (useMemo)
 - **Cost**: ~1ms (synchronous read)
 - **Impact**: Negligible
 
 ### localStorage Write
+
 - **When**: On every filter/sort change
 - **Cost**: ~1ms per write
 - **Throttling**: None needed (infrequent user actions)
 - **Impact**: Imperceptible
 
 ### URL Updates
+
 - **When**: On every filter/sort change
 - **Cost**: `replaceState` is fast (~0.1ms)
 - **History**: Doesn't create entries (no back button spam)
 - **Impact**: None
 
 ### Overall
+
 - **No performance degradation**
 - **No network requests**
 - **No render blocking**
@@ -561,15 +601,18 @@ try {
 ### localStorage Considerations
 
 **Data stored**:
+
 - Filter preferences (labels, dates, sort)
 - **No sensitive data**: No email content, no credentials
 - User-facing config only
 
 **Privacy modes**:
+
 - Private/Incognito: localStorage disabled → Uses defaults
 - Feature gracefully degrades (URL params still work)
 
 **Security**:
+
 - No XSS risk (JSON serialization, no eval)
 - No injection (TypeScript typed)
 - Same-origin policy enforced by browser
@@ -577,11 +620,13 @@ try {
 ### URL Parameters
 
 **Shareable data**:
+
 - Search queries
 - Filter selections
 - Sort preferences
 
 **NOT included**:
+
 - User identity
 - Email content
 - Authentication tokens
@@ -603,6 +648,7 @@ try {
 ### Verification Steps
 
 1. **Check localStorage**:
+
    ```javascript
    // In browser console
    localStorage.getItem('search.ui')
@@ -668,6 +714,7 @@ try {
 **Implementation Status**: ✅ **COMPLETE**
 
 **Features Delivered**:
+
 - ✅ Sticky filters via localStorage
 - ✅ Shareable URLs with query params
 - ✅ Clear all button with smart display
@@ -676,12 +723,14 @@ try {
 - ✅ Privacy-friendly
 
 **User Benefits**:
+
 - 🎯 Productivity: No repetitive filter setup
 - 🔗 Shareability: Send exact searches to colleagues
 - ⚡ Speed: Instant state restoration
 - 🧹 Flexibility: Quick reset when needed
 
 **Developer Benefits**:
+
 - 📦 Clean separation (searchUi module)
 - 🛡️ Type-safe (TypeScript)
 - 🧪 Testable (pure functions)

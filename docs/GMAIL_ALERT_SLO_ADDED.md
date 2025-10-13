@@ -12,6 +12,7 @@
 **File:** `infra/grafana/provisioning/alerting/rules-applylens.yaml`
 
 **Alert Details:**
+
 - **UID:** `applens_gmail_disconnected`
 - **Title:** Gmail disconnected (15m)
 - **Severity:** warning
@@ -20,12 +21,14 @@
 - **Description:** Alerts when `applylens_gmail_connected` has been 0 for the last 15 minutes
 
 **How It Works:**
+
 - Uses `max_over_time()` to check if Gmail was connected at any point in the last 15 minutes
 - If the max value is less than 1 (meaning always 0), the alert fires
 - Evaluates every 1 minute (interval: 1m)
 - Uses Grafana's reduce + threshold expression model
 
 **Query Chain:**
+
 1. **Query A:** `max_over_time(applylens_gmail_connected[15m])` - Get max value over 15m window
 2. **Expression B:** Reduce to last value
 3. **Expression C:** Threshold check if < 1
@@ -37,6 +40,7 @@
 **File:** `infra/grafana/provisioning/dashboards/json/applylens-overview.json`
 
 **Panel Details:**
+
 - **Type:** Gauge
 - **Title:** API Uptime (last 30d)
 - **Position:** Row 4, x=0, y=22, 8 units wide, 7 units tall
@@ -45,17 +49,20 @@
 - **Range:** 0-100%
 
 **Thresholds:**
+
 - 🔴 **Red:** < 95% (Poor uptime)
 - 🟠 **Orange:** 95% - 99.9% (Good uptime)
 - 🟢 **Green:** > 99.9% (Excellent uptime, 3 nines SLO)
 
 **How It Works:**
+
 - The `up` metric is 1 when Prometheus can successfully scrape the API
 - `avg_over_time()` calculates the average over 30 days
 - Multiply by 100 to get percentage
 - Example: 0.9995 * 100 = 99.95% uptime
 
 **SLO Interpretation:**
+
 - **99.9% (3 nines)** = ~43 minutes downtime per month
 - **99.95%** = ~21 minutes downtime per month
 - **99.99% (4 nines)** = ~4 minutes downtime per month
@@ -67,6 +74,7 @@
 ### Alert Rules (10 Total)
 
 **Grafana Rules (4):**
+
 1. ✅ ApplyLens API Down [critical] - API unreachable >1m
 2. ✅ High HTTP Error Rate [warning] - 5xx >5% for 5m
 3. ✅ Backfill errors detected [warning] - Errors in last 10m
@@ -101,7 +109,7 @@ If no users have connected Gmail yet, the alert will fire after 15 minutes:
 ```promql
 # Check current Gmail connected status
 applylens_gmail_connected
-```
+```text
 
 If no results or all values are 0, the alert will fire.
 
@@ -128,7 +136,7 @@ $gmailMetric.data.result | ForEach-Object {
 $alertQuery = "max_over_time(applylens_gmail_connected[15m])"
 $result = Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$alertQuery"
 Write-Host "Max Gmail connected over 15m: $($result.data.result[0].value[1])"
-```
+```text
 
 ---
 
@@ -141,16 +149,18 @@ Write-Host "Max Gmail connected over 15m: $($result.data.result[0].value[1])"
 $cred = New-Object PSCredential("admin",(ConvertTo-SecureString "admin" -AsPlainText -Force))
 $rules = Invoke-RestMethod -Uri http://localhost:3000/api/v1/provisioning/alert-rules -Credential $cred
 $rules | Where-Object { $_.uid -eq "applens_gmail_disconnected" } | Select-Object title, uid, folderUID
-```
+```text
 
 **Or via UI:**
-- http://localhost:3000/alerting/list
+
+- <http://localhost:3000/alerting/list>
 - Look for "Gmail disconnected (15m)" in the ApplyLens folder
 
 ### Check Dashboard Panel
 
 **Via UI:**
-- http://localhost:3000/d/applylens-overview
+
+- <http://localhost:3000/d/applylens-overview>
 - Scroll to bottom row
 - Look for "API Uptime (last 30d)" gauge panel
 - Should show ~100% if API has been running continuously
@@ -164,6 +174,7 @@ $rules | Where-Object { $_.uid -eq "applens_gmail_disconnected" } | Select-Objec
 ### Understanding Your SLO
 
 The 30-day uptime gauge helps you:
+
 - Track your availability SLO at a glance
 - Quickly identify if you're meeting SLA commitments
 - Spot trends in service reliability
@@ -185,7 +196,7 @@ Based on your SLO, you can calculate error budget:
 ```promql
 # Error budget remaining (if SLO is 99.9%)
 (avg_over_time(up{job="applylens-api"}[30d]) - 0.999) * 100
-```
+```text
 
 If this is positive, you're meeting your SLO.  
 If negative, you've exhausted your error budget.
@@ -212,6 +223,7 @@ If negative, you've exhausted your error budget.
    - Backfill success rate SLO
 
 2. **Create SLO alerts:**
+
    ```yaml
    - alert: SLOBreach
      expr: avg_over_time(up{job="applylens-api"}[30d]) < 0.999
@@ -241,7 +253,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=applylens_gmail_conn
 
 # Check alert evaluation
 docker logs infra-grafana 2>&1 | Select-String "applens_gmail_disconnected"
-```
+```text
 
 ### SLO Panel Showing No Data
 
@@ -251,7 +263,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=up{job=`"applylens-a
 
 # For shorter time range (if 30d is too long)
 # Edit dashboard panel query to: avg_over_time(up{job="applylens-api"}[7d]) * 100
-```
+```text
 
 ### Panel Not Appearing
 
@@ -265,6 +277,7 @@ Invoke-RestMethod "http://localhost:9090/api/v1/query?query=up{job=`"applylens-a
 **✅ All changes successfully applied and verified!**
 
 Your monitoring stack now includes:
+
 - 10 alert rules (4 Grafana + 6 Prometheus)
 - 7 dashboard panels (including new SLO gauge)
 - Comprehensive alerting for API health, errors, backfill, and Gmail connectivity

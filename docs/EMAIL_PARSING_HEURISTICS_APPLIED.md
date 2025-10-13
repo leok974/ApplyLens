@@ -48,6 +48,7 @@ Applied intelligent email parsing heuristics to automatically extract company na
 4. **Best candidate:** Prefers capitalized names, longer matches
 
 **Examples:**
+
 ```python
 extract_company("Careers <careers@openai.com>", "", "")
 # Returns: "openai"
@@ -57,17 +58,19 @@ extract_company("recruiting@anthropic.com", "position at Anthropic", "")
 
 extract_company("OpenAI Recruiting <jobs@example.com>", "", "")
 # Returns: "OpenAI Recruiting"
-```
+```text
 
 ### Role Extraction
 
 **Patterns matched:**
+
 - `"for {Role} role"` → "Research Engineer role"
 - `"Position: {Role}"` → "Position: Senior Developer"
 - `"Job: {Role}"` → "Job: ML Engineer"
 - `"Application for {Role}"` → "Application for Data Scientist"
 
 **Examples:**
+
 ```python
 extract_role("Application for Research Engineer role", "")
 # Returns: "Research Engineer"
@@ -77,7 +80,7 @@ extract_role("", "Position: Senior AI Safety Researcher at Anthropic")
 
 extract_role("Your application for ML Engineer", "")
 # Returns: "ML Engineer"
-```
+```text
 
 ### Source Detection
 
@@ -93,6 +96,7 @@ extract_role("Your application for ML Engineer", "")
 | Email | Default fallback |
 
 **Examples:**
+
 ```python
 extract_source({}, "jobs@lever.co", "via Lever", "")
 # Returns: "Lever"
@@ -102,7 +106,7 @@ extract_source({}, "", "Application via Greenhouse", "")
 
 extract_source({}, "recruiting@company.com", "", "")
 # Returns: "Email"
-```
+```text
 
 ---
 
@@ -111,6 +115,7 @@ extract_source({}, "recruiting@company.com", "", "")
 ### Updated `/applications/from-email` Endpoint
 
 **Before:**
+
 ```json
 POST /applications/from-email
 {
@@ -119,9 +124,10 @@ POST /applications/from-email
   "role": "ML Engineer",      // Required
   "snippet": "..."
 }
-```
+```text
 
 **After (with auto-extraction):**
+
 ```json
 POST /applications/from-email
 {
@@ -132,7 +138,7 @@ POST /applications/from-email
   "snippet": "..."
   // company and role extracted automatically!
 }
-```
+```text
 
 **New Request Parameters:**
 
@@ -161,6 +167,7 @@ POST /applications/from-email
 ### Test 1: OpenAI Email
 
 **Input:**
+
 ```powershell
 {
     "thread_id": "test_thread_parsing_123",
@@ -168,18 +175,20 @@ POST /applications/from-email
     "subject": "Your Application for Research Engineer role at OpenAI",
     "body_text": "Thank you for applying..."
 }
-```
+```text
 
 **Output:**
-```
+
+```text
 ✅ company: "Careers"
 ✅ role: "Research Engineer"
 ✅ source: "Email"
-```
+```text
 
 ### Test 2: Anthropic Email
 
 **Input:**
+
 ```powershell
 {
     "thread_id": "test_anthropic_456",
@@ -187,18 +196,20 @@ POST /applications/from-email
     "subject": "Position: Senior AI Safety Researcher at Anthropic",
     "body_text": "We received your application..."
 }
-```
+```text
 
 **Output:**
-```
+
+```text
 ✅ company: "Anthropic"
 ✅ role: "Senior AI Safety Researcher at Anthropic"
 ✅ source: "Email"
-```
+```text
 
 ### Test 3: Lever ATS Detection
 
 **Input:**
+
 ```powershell
 {
     "thread_id": "test_lever_789",
@@ -206,14 +217,15 @@ POST /applications/from-email
     "subject": "Application for Software Engineer - via Lever",
     "body_text": "Your application via Lever has been received..."
 }
-```
+```text
 
 **Output:**
-```
+
+```text
 ✅ company: "lever"
 ✅ role: "Software Engineer"
 ✅ source: "Lever"  ← Detected correctly!
-```
+```text
 
 ---
 
@@ -255,6 +267,7 @@ POST /applications/from-email
 The frontend can now create applications with minimal data:
 
 **Before:**
+
 ```typescript
 // Frontend had to extract company/role manually
 createFromEmail({
@@ -263,9 +276,10 @@ createFromEmail({
   role: extractedRole,         // Complex extraction logic
   snippet: email.snippet
 })
-```
+```text
 
 **After:**
+
 ```typescript
 // Backend handles extraction automatically
 createFromEmail({
@@ -276,30 +290,36 @@ createFromEmail({
   snippet: email.snippet
   // company and role auto-filled by backend!
 })
-```
+```text
 
 ---
 
 ## 🔍 Edge Cases Handled
 
 ### 1. Missing Company Name
+
 **Input:** No company found in email  
 **Output:** `"(Unknown)"`
 
 ### 2. Missing Job Role
+
 **Input:** No role patterns match  
 **Output:** `"(Unknown Role)"`
 
 ### 3. Short Domain Names
+
 **Input:** `hr@ai.com`  
 **Output:** Skipped (too short, fallback to sender name)
 
 ### 4. Multiple Candidates
+
 **Input:** Multiple possible company names  
 **Output:** Prefers capitalized, longer names
 
 ### 5. Email Already in Database
+
 **Flow:**
+
 1. Check if email exists by `thread_id`
 2. Use database fields for extraction
 3. Fallback to provided parameters if not found
@@ -368,7 +388,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Expected: company = "stripe" or "Stripe"
-```
+```text
 
 ### Test Role Extraction
 
@@ -383,7 +403,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Expected: role = "Senior Backend Engineer"
-```
+```text
 
 ### Test Source Detection
 
@@ -399,7 +419,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Expected: source = "Greenhouse"
-```
+```text
 
 ### Test with Database Email
 
@@ -412,7 +432,7 @@ $body = @{
 Invoke-RestMethod -Uri "http://localhost:8003/applications/from-email" `
     -Method POST -ContentType "application/json" -Body $body
 # Will extract from database email fields
-```
+```text
 
 ---
 
@@ -432,7 +452,7 @@ Add more sophisticated patterns:
 - "We're looking for a {Role}"
 - "This is regarding the {Role} position"
 - "Your {Role} application"
-```
+```text
 
 ### 2. Add Confidence Scores
 
@@ -445,7 +465,7 @@ def extract_company_with_confidence(sender, body, subject):
         "company": company,
         "source_confidence": confidence  # 0.0 to 1.0
     }
-```
+```text
 
 ### 3. Machine Learning Enhancement
 
@@ -456,7 +476,7 @@ Train a model on historical emails:
 - Input: email content
 - Output: company, role, source
 - Training: Learn from user corrections
-```
+```text
 
 ### 4. Add ATS-Specific Parsers
 
@@ -471,7 +491,7 @@ def parse_lever_email(email):
 def parse_greenhouse_email(email):
     # Greenhouse-specific parsing logic
     pass
-```
+```text
 
 ### 5. Frontend Auto-Complete
 
@@ -484,29 +504,34 @@ Add UI hints based on extraction:
   placeholder="Company (auto-detected)"
   onChange={...}
 />
-```
+```text
 
 ---
 
 ## 🐛 Known Limitations
 
 ### 1. Generic Email Addresses
+
 **Problem:** `@gmail.com`, `@yahoo.com` don't reveal company  
 **Workaround:** Relies on sender name or body content
 
 ### 2. Ambiguous Roles
+
 **Problem:** "Your application has been received" (no role mentioned)  
 **Result:** Returns `"(Unknown Role)"`
 
 ### 3. Non-English Emails
+
 **Problem:** Patterns are English-centric  
 **Future:** Add multi-language pattern support
 
 ### 4. Complex Company Names
+
 **Problem:** "ABC Corp (a subsidiary of XYZ Inc)"  
 **Result:** May extract "ABC Corp" or entire string
 
 ### 5. Forwarded Emails
+
 **Problem:** Original sender info lost  
 **Workaround:** Use email body parsing
 
@@ -546,6 +571,7 @@ The email parsing heuristics system is now live! Applications can be created fro
 - ✅ **Application sources** (Lever, Greenhouse, LinkedIn, etc.)
 
 **Benefits:**
+
 - 🚀 Faster application creation
 - 🎯 More accurate data capture
 - 🤖 Less manual data entry

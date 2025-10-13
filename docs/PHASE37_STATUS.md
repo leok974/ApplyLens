@@ -3,6 +3,7 @@
 ## ✅ What's Working
 
 ### 1. API Endpoints (All Live on port 8003)
+
 ```bash
 # ✅ Gmail Backfill
 curl -X POST "http://localhost:8003/api/gmail/backfill?days=7"
@@ -19,9 +20,10 @@ curl -X POST "http://localhost:8003/profile/rebuild?user_email=leoklemet.pa@gmai
 # ✅ Profile Summary
 curl "http://localhost:8003/profile/db-summary?user_email=leoklemet.pa@gmail.com"
 # Returns: Full profile with top senders, categories, interests
-```
+```text
 
 ### 2. Frontend Components
+
 - ✅ SearchControls component with category buttons
 - ✅ ML badges on EmailCard and EmailRow
 - ✅ ProfileSummary component
@@ -29,6 +31,7 @@ curl "http://localhost:8003/profile/db-summary?user_email=leoklemet.pa@gmail.com
 - ✅ Search page with URL param parsing
 
 ### 3. Backend Search Endpoint
+
 - ✅ Categories filter param added
 - ✅ Hide expired filter param added
 - ✅ SearchHit model updated with ML fields
@@ -39,18 +42,21 @@ curl "http://localhost:8003/profile/db-summary?user_email=leoklemet.pa@gmail.com
 ## ⚠️ Critical Issue: PostgreSQL → Elasticsearch Sync
 
 ### Problem
+
 The `/ml/label/rebuild` endpoint updates PostgreSQL but **NOT Elasticsearch**.
 
 **Result:** Search returns emails with `category: null`, `expires_at: null`, etc.
 
 ### Verification
+
 ```bash
 # Search shows null ML fields
 curl "http://localhost:8003/api/search/?q=interview&size=3"
 # Response shows: "category": null, "expires_at": null, "event_start_at": null
-```
+```text
 
 ### Root Cause
+
 ```python
 # services/api/app/routers/labeling.py line 88-95
 email_row.category = category
@@ -62,7 +68,7 @@ email_row.event_start_at = event_start_at
 
 # Commits to PostgreSQL only - no ES update!
 db.commit()
-```
+```text
 
 ---
 
@@ -111,7 +117,7 @@ def label_rebuild(limit: int = 2000, user_email: Optional[str] = None, db: Sessi
         logger.info(f"Synced {len(bulk_body)//2} emails to Elasticsearch")
     
     return {"updated": updated, "categories": category_counts, "errors": errors[:10] if errors else None}
-```
+```text
 
 ### Option 2: Create separate sync endpoint
 
@@ -121,7 +127,7 @@ def sync_to_es(limit: int = 2000, user_email: Optional[str] = None, db: Session 
     """Sync PostgreSQL ML fields to Elasticsearch."""
     # Read from PG, bulk update to ES
     pass
-```
+```text
 
 ### Option 3: Use existing backfill scripts
 
@@ -132,15 +138,17 @@ Check if `scripts/backfill_es_category.py` can be adapted or run directly.
 ## 📋 Quick Wins to Implement
 
 ### 1. Fix Empty Categories Filter
+
 ```typescript
 // apps/web/src/pages/Search.tsx
 const categories = useMemo(() => 
   (searchParams.get("cat") ?? "").split(",").filter(Boolean),  // ✅ Already done
   [searchParams]
 )
-```
+```text
 
 ### 2. Badge Color Improvements
+
 ```tsx
 // Use dark mode friendly colors
 {expires && (
@@ -154,9 +162,10 @@ const categories = useMemo(() =>
     📅 {format(new Date(event), "MMM d")}
   </Badge>
 )}
-```
+```text
 
 ### 3. Loading States
+
 ```tsx
 // apps/web/src/pages/Search.tsx
 {loading && (
@@ -166,18 +175,20 @@ const categories = useMemo(() =>
     ))}
   </div>
 )}
-```
+```text
 
 ### 4. Better Toast Messages
+
 ```typescript
 // apps/web/src/components/AppHeader.tsx
 toast({ 
   title: "✅ Sync complete!",
   description: `Labels + Profile updated. ${labelResult.updated} emails processed.`  // ✅ Already done
 })
-```
+```text
 
 ### 5. Error Handling
+
 ```tsx
 // apps/web/src/pages/Search.tsx
 {err && (
@@ -188,13 +199,14 @@ toast({
     </AlertDescription>
   </Alert>
 )}
-```
+```text
 
 ---
 
 ## 🧪 Testing Checklist
 
 ### Backend API
+
 - [x] ✅ POST /api/gmail/backfill?days=7 - Works
 - [x] ✅ POST /api/ml/label/rebuild?limit=2000 - Works (PG only)
 - [ ] ⏸️ Verify ES has ML fields after rebuild
@@ -203,6 +215,7 @@ toast({
 - [ ] ⏸️ GET /api/search/?categories=ats - Pending ES sync
 
 ### Frontend UI
+
 - [ ] ⏸️ Click category buttons - URL updates ✅, results filter ⏸️
 - [ ] ⏸️ Toggle "Hide expired" - URL updates ✅, results filter ⏸️
 - [ ] ⏸️ See ML badges on email cards - Pending data
@@ -210,6 +223,7 @@ toast({
 - [ ] ⏸️ View ProfileSummary - Need to add to profile page
 
 ### Edge Cases
+
 - [x] ✅ Empty categories filter: `filter(Boolean)` guards against `[""]`
 - [x] ✅ Multiple categories: `&categories=ats&categories=promotions`
 - [x] ✅ Hide expired logic: Uses `should` with `minimum_should_match`
@@ -224,12 +238,14 @@ toast({
    - Test: Run rebuild, verify search shows categories
 
 2. **Verify ES Mapping**
+
    ```bash
    curl "http://localhost:9200/emails_v1-000001/_mapping" | jq '.[] .mappings.properties | keys'
    # Should include: category, expires_at, event_start_at, amount_cents, ml_scores
    ```
 
 3. **Test Full Pipeline**
+
    ```bash
    # Step 1: Sync emails
    curl -X POST "http://localhost:8003/api/gmail/backfill?days=7"
@@ -260,11 +276,13 @@ toast({
 ## 📊 Current Data State
 
 ### PostgreSQL (Source of Truth)
+
 - ✅ 1,894 emails labeled
 - ✅ Categories: ats (15), promotions (263), bills (30), events (67), other (1519)
 - ✅ Profile data: 403 emails processed, 67 senders, 5 categories, 100 interests
 
 ### Elasticsearch (Search Index)
+
 - ⚠️ ML fields NOT synced
 - ⚠️ All searches return `category: null`
 - ⚠️ Category filters don't work (no data to filter)

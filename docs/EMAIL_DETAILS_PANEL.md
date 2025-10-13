@@ -17,11 +17,11 @@ The Email Details Panel is a right-sliding overlay that displays full email cont
 
 ### Component Structure
 
-```
+```text
 EmailDetailsPanel (sliding panel)
   └── EmailList (passes onOpen)
        └── EmailRow (calls onOpen on click)
-```
+```text
 
 ### Data Flow
 
@@ -36,6 +36,7 @@ EmailDetailsPanel (sliding panel)
 ### New Files
 
 **`apps/web/src/components/inbox/EmailDetailsPanel.tsx`**
+
 - Sliding panel component (720px max width)
 - Header with close button and actions
 - ScrollArea for long email bodies
@@ -46,11 +47,13 @@ EmailDetailsPanel (sliding panel)
 ### Updated Files
 
 **`apps/web/src/lib/api.ts`**
+
 - Added `EmailDetailResponse` type
 - Added `getEmailById(id)` function
 - Fetches from `/api/search/by_id/{id}` endpoint
 
 **`apps/web/src/pages/InboxPolishedDemo.tsx`**
+
 - Imported `EmailDetailsPanel` and `EmailDetails`
 - Added state: `selectedDetailId`, `openPanel`, `loadingDetail`, `detail`
 - Added `openDetails(id)` async function
@@ -68,7 +71,7 @@ className={cn(
   "dark:bg-slate-950",
   open ? "translate-x-0" : "translate-x-full"
 )}
-```
+```text
 
 ### Key Features
 
@@ -81,9 +84,9 @@ className={cn(
 
 ### Header Layout
 
-```
+```json
 [Close Button] [Sender Email]               [Actions] [Explain Button]
-```
+```text
 
 - Close (X icon)
 - Sender email (truncated)
@@ -93,6 +96,7 @@ className={cn(
 ### Body Content
 
 **Metadata Section:**
+
 - Subject (h1, semibold, tracking-tight)
 - From/To/Date in small text
 - Labels as outline badges
@@ -100,11 +104,13 @@ className={cn(
 - Risk badge (rose for high)
 
 **Email Body:**
+
 - HTML: Rendered with Tailwind prose classes
 - Plain text: Pre-formatted with monospace
 - Fallback: "(No body content)" message
 
 **Footer:**
+
 - Unsubscribe link (if detected)
 - External link icon
 
@@ -168,7 +174,7 @@ function InboxPage() {
     </>
   );
 }
-```
+```text
 
 ### API Integration
 
@@ -179,6 +185,7 @@ function InboxPage() {
 3. Include HTML sanitization on backend
 
 **Endpoint Response:**
+
 ```json
 {
   "id": "email_123",
@@ -194,7 +201,7 @@ function InboxPage() {
   "thread_id": "thread_abc",
   "unsubscribe_url": null
 }
-```
+```text
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -227,7 +234,7 @@ function InboxPage() {
   onMarkSus?: () => void;     // Mark suspicious action
   onExplain?: () => void;     // Explain action
 }
-```
+```text
 
 ### EmailDetails Type
 
@@ -246,7 +253,7 @@ function InboxPage() {
   thread_id?: string;
   unsubscribe_url?: string | null;
 }
-```
+```text
 
 ## 🎨 Styling Customization
 
@@ -261,7 +268,7 @@ className="max-w-[600px]"
 
 // Wider: 900px
 className="max-w-[900px]"
-```
+```text
 
 ### Animation Speed
 
@@ -274,19 +281,21 @@ className="transition-transform duration-150"
 
 // Slower: 300ms
 className="transition-transform duration-300"
-```
+```text
 
 ### Body Typography
 
 **HTML Rendering:**
+
 ```tsx
 className="prose prose-slate max-w-none dark:prose-invert prose-a:text-indigo-600"
-```
+```text
 
 **Plain Text:**
+
 ```tsx
 className="whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-sm"
-```
+```text
 
 ## 🔒 Security Considerations
 
@@ -305,9 +314,10 @@ import DOMPurify from 'dompurify';
     __html: DOMPurify.sanitize(email.body_html) 
   }}
 />
-```
+```text
 
 **Backend Sanitization** (preferred):
+
 ```python
 import bleach
 
@@ -320,7 +330,7 @@ clean_html = bleach.clean(
     attributes=allowed_attrs,
     strip=True
 )
-```
+```text
 
 ### External Links
 
@@ -333,6 +343,7 @@ clean_html = bleach.clean(
 ### Panel Not Opening
 
 **Check:**
+
 1. `open` prop is `true`
 2. `openDetails(id)` is called on row click
 3. `onOpen` prop passed to EmailList
@@ -341,6 +352,7 @@ clean_html = bleach.clean(
 ### Email Not Loading
 
 **Check:**
+
 1. API endpoint `/api/search/by_id/{id}` exists
 2. `getEmailById(id)` function implemented
 3. Response format matches `EmailDetailResponse` type
@@ -349,6 +361,7 @@ clean_html = bleach.clean(
 ### Styling Issues
 
 **Check:**
+
 1. Tailwind CSS classes compiled
 2. `z-index: 40` not conflicting with other elements
 3. Dark mode classes applied correctly
@@ -357,6 +370,7 @@ clean_html = bleach.clean(
 ### Escape Key Not Working
 
 **Check:**
+
 1. `useEffect` hook listening for keydown
 2. No input fields capturing event
 3. Panel has focus (tabindex or auto-focus)
@@ -390,7 +404,7 @@ async function openDetails(id: string) {
   setDetail(details);
   setOpenPanel(true);
 }
-```
+```text
 
 ## 🚀 Future Enhancements
 

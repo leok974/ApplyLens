@@ -5,12 +5,14 @@
 ### Infrastructure Changes
 
 **1. Updated `infra/docker-compose.yml`:**
+
 - Added `--web.enable-lifecycle` flag to Prometheus for hot reload
 - Added `GF_INSTALL_PLUGINS=grafana-piechart-panel` to Grafana
 - Added Grafana provisioning volume mount: `./grafana/provisioning:/etc/grafana/provisioning`
 
 **2. Created Grafana Auto-Provisioning Structure:**
-```
+
+```text
 infra/grafana/
 └── provisioning/
     ├── datasources/
@@ -19,9 +21,10 @@ infra/grafana/
         ├── applylens.yml               # Dashboard provider config
         └── json/
             └── applylens-overview.json # 6-panel dashboard
-```
+```text
 
 **3. Updated Prometheus Configuration:**
+
 - `prometheus.yml`: Standardized scrape interval to 15s (was 30s)
 - `alerts.yml`: Added 6th alert rule: **BackfillRateLimitedSpike** (info severity)
 
@@ -78,6 +81,7 @@ infra/grafana/
 ## 🚨 Alert Rules (6 Total)
 
 ### Critical (2)
+
 1. **ApplyLensApiDown**
    - Expression: `(1 - up{job="applylens-api"}) == 1`
    - Duration: 1 minute
@@ -88,6 +92,7 @@ infra/grafana/
    - Duration: 2 minutes
 
 ### Warning (3)
+
 3. **HighHttpErrorRate**
    - Expression: 5xx error rate > 5%
    - Duration: 5 minutes
@@ -101,6 +106,7 @@ infra/grafana/
    - Duration: 15 minutes
 
 ### Info (1)
+
 6. **BackfillRateLimitedSpike** (NEW)
    - Expression: `increase(applylens_backfill_requests_total{result="rate_limited"}[15m]) > 10`
    - Duration: 5 minutes
@@ -111,9 +117,11 @@ infra/grafana/
 ## 🔧 New Features
 
 ### 1. Hot Reload (Prometheus)
+
 No restart needed after config changes!
 
 **Usage:**
+
 ```powershell
 # Edit alerts or prometheus.yml
 notepad D:\ApplyLens\infra\prometheus\alerts.yml
@@ -123,26 +131,30 @@ docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # Hot reload (instant!)
 Invoke-WebRequest -Method POST http://localhost:9090/-/reload
-```
+```bash
 
 **Enabled by:** `--web.enable-lifecycle` flag in docker-compose.yml
 
 ### 2. Auto-Provisioned Datasource
+
 Grafana automatically connects to Prometheus on startup. No manual configuration needed!
 
 **Configuration:** `infra/grafana/provisioning/datasources/prom.yml`
+
 ```yaml
 datasources:
   - name: Prometheus
     type: prometheus
     url: http://prometheus:9090
     isDefault: true
-```
+```text
 
 ### 3. Auto-Provisioned Dashboard
+
 Dashboard loads automatically in "ApplyLens" folder on Grafana startup.
 
 **Configuration:** `infra/grafana/provisioning/dashboards/applylens.yml`
+
 ```yaml
 providers:
   - name: 'ApplyLens'
@@ -150,9 +162,10 @@ providers:
     type: file
     options:
       path: /etc/grafana/provisioning/dashboards/json
-```
+```text
 
 ### 4. Grafana Plugins
+
 Pre-installed plugin: `grafana-piechart-panel`
 
 **Enabled by:** `GF_INSTALL_PLUGINS=grafana-piechart-panel` in docker-compose.yml
@@ -162,46 +175,55 @@ Pre-installed plugin: `grafana-piechart-panel`
 ## 🚀 Quick Access
 
 ### Services
-- **Prometheus:** http://localhost:9090
-- **Grafana:** http://localhost:3000 (admin/admin)
-- **API Metrics:** http://localhost:8003/metrics
+
+- **Prometheus:** <http://localhost:9090>
+- **Grafana:** <http://localhost:3000> (admin/admin)
+- **API Metrics:** <http://localhost:8003/metrics>
 
 ### Direct Links
-- **Prometheus Alerts:** http://localhost:9090/alerts
-- **Prometheus Targets:** http://localhost:9090/targets
-- **Grafana Dashboard:** http://localhost:3000/d/applylens-overview
-- **Prometheus Graph (HTTP rate):** http://localhost:9090/graph?g0.expr=sum(rate(applylens_http_requests_total[5m]))&g0.tab=0
+
+- **Prometheus Alerts:** <http://localhost:9090/alerts>
+- **Prometheus Targets:** <http://localhost:9090/targets>
+- **Grafana Dashboard:** <http://localhost:3000/d/applylens-overview>
+- **Prometheus Graph (HTTP rate):** <http://localhost:9090/graph?g0.expr=sum(rate(applylens_http_requests_total[5m]))&g0.tab=0>
 
 ---
 
 ## 📈 Verification Commands
 
 ### Check Prometheus Target
+
 ```powershell
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/targets"
 $target = $response.data.activeTargets | Where-Object { $_.labels.job -eq "applylens-api" }
 $target | Select-Object scrapeUrl, health, lastError | Format-Table
-```
+```text
+
 **Expected:** `health: up`
 
 ### Check Alert Rules
+
 ```powershell
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/rules"
 $rules = $response.data.groups | Where-Object { $_.name -eq "applylens" }
 Write-Host "Found $($rules.rules.Count) alert rules"
 $rules.rules | ForEach-Object { "  • $($_.name) [$($_.labels.severity)]" }
-```
+```text
+
 **Expected:** 6 rules (2 critical, 3 warning, 1 info)
 
 ### Check Grafana Dashboard
+
 ```powershell
 $cred = New-Object PSCredential("admin", (ConvertTo-SecureString "admin" -AsPlainText -Force))
 $dashboards = Invoke-RestMethod -Uri "http://localhost:3000/api/search" -Credential $cred
 $dashboards | Where-Object { $_.title -match "ApplyLens" } | Select-Object title, folderTitle, uid
-```
+```text
+
 **Expected:** "ApplyLens API Overview" in "ApplyLens" folder
 
 ### Generate Test Traffic
+
 ```powershell
 # Generate 15 requests
 1..5 | ForEach-Object {
@@ -218,13 +240,13 @@ Start-Sleep -Seconds 20
 $query = "sum(rate(applylens_http_requests_total[5m]))"
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query"
 Write-Host "Request rate: $($response.data.result[0].value[1]) req/s"
-```
+```text
 
 ---
 
 ## 📁 File Structure
 
-```
+```text
 D:\ApplyLens\
 ├── infra/
 │   ├── docker-compose.yml                           ✅ Updated (lifecycle + plugins)
@@ -244,19 +266,21 @@ D:\ApplyLens\
     ├── MONITORING_SETUP.md                          ✅ Existing
     ├── PROMETHEUS_METRICS.md                        ✅ Existing
     └── PROMQL_RECIPES.md                            ✅ Existing
-```
+```text
 
 ---
 
 ## 🎯 Key Differences from Previous Setup
 
 ### Before (Manual Setup)
+
 - ❌ Manual datasource configuration in Grafana UI
 - ❌ Manual dashboard import via JSON upload
 - ❌ No hot reload (restart required for config changes)
 - ❌ 5 alert rules only
 
 ### After (Auto-Provisioned)
+
 - ✅ Datasource auto-wired on startup
 - ✅ Dashboard auto-loaded in "ApplyLens" folder
 - ✅ Hot reload enabled (`POST /-/reload`)
@@ -271,20 +295,23 @@ D:\ApplyLens\
 ### For Production Deployment
 
 **1. Change Grafana Credentials:**
+
 ```yaml
 # In docker-compose.yml
 grafana:
   environment:
     - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-```
+```text
 
 **2. Restrict /metrics Endpoint:**
+
 - Add IP allowlist at reverse proxy (nginx/Caddy)
 - Or add basic auth to FastAPI `/metrics` endpoint
 - Only Prometheus server should access metrics
 
 **3. Use Docker Networks:**
+
 ```yaml
 # In docker-compose.yml
 networks:
@@ -298,9 +325,10 @@ services:
     networks: [monitoring]
   api:
     networks: [monitoring, public]
-```
+```text
 
 **4. Enable TLS:**
+
 - Configure Grafana with TLS certificate
 - Use reverse proxy (Caddy auto-TLS, nginx with Let's Encrypt)
 
@@ -311,55 +339,62 @@ services:
 ### Dashboard Not Appearing in Grafana
 
 **Check provisioning logs:**
+
 ```powershell
 docker logs infra-grafana | Select-String "provisioning|dashboard"
-```
+```text
 
 **Expected output:**
-```
+
+```ini
 logger=provisioning.dashboard level=info msg="starting to provision dashboards"
 logger=provisioning.dashboard level=info msg="finished to provision dashboards"
-```
+```text
 
 **If dashboard missing:**
+
 ```powershell
 # Verify file exists
 Test-Path D:\ApplyLens\infra\grafana\provisioning\dashboards\json\applylens-overview.json
 
 # Restart Grafana
 docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
-```
+```text
 
 ### Hot Reload Not Working
 
 **Verify flag is set:**
+
 ```powershell
 docker inspect infra-prometheus | ConvertFrom-Json | 
     Select-Object -ExpandProperty Args | 
     Where-Object { $_ -match "lifecycle" }
-```
+```text
 
 **Expected:** `--web.enable-lifecycle`
 
 **Test hot reload:**
+
 ```powershell
 Invoke-WebRequest -Method POST http://localhost:9090/-/reload
 # Should return 200 OK
-```
+```text
 
 ### Alerts Not Evaluating
 
 **Check rule syntax:**
+
 ```powershell
 docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
-```
+```text
 
 **Expected:** `SUCCESS: 6 rules found`
 
 **View alert status:**
+
 ```powershell
 start http://localhost:9090/alerts
-```
+```text
 
 ---
 
@@ -382,13 +417,16 @@ start http://localhost:9090/alerts
 ## 🎓 Next Steps
 
 ### Immediate Actions
-1. **Open Grafana:** http://localhost:3000
+
+1. **Open Grafana:** <http://localhost:3000>
 2. **Login:** admin / admin
 3. **Navigate:** Dashboards → ApplyLens → ApplyLens API Overview
 4. **Explore:** Click on panels, adjust time ranges, see metrics update
 
 ### This Week
+
 1. **Test Hot Reload:**
+
    ```powershell
    # Add a test alert to alerts.yml
    notepad D:\ApplyLens\infra\prometheus\alerts.yml
@@ -407,6 +445,7 @@ start http://localhost:9090/alerts
    - Test alert delivery
 
 ### This Month
+
 1. Create custom dashboards for specific workflows
 2. Add recording rules for expensive queries
 3. Configure Prometheus retention period
@@ -439,7 +478,7 @@ start http://localhost:9090/alerts
 
 ---
 
-## 🎉 You're Ready!
+## 🎉 You're Ready
 
 Your monitoring stack is now **fully auto-provisioned** with:
 
@@ -449,6 +488,6 @@ Your monitoring stack is now **fully auto-provisioned** with:
 ✅ **Beautiful dashboards** - 6 panels showing key metrics  
 ✅ **Comprehensive docs** - 4 guides covering all aspects  
 
-**Access your dashboard now:** http://localhost:3000/d/applylens-overview
+**Access your dashboard now:** <http://localhost:3000/d/applylens-overview>
 
 **Happy monitoring!** 📊🚀

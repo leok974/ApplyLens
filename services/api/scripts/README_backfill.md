@@ -23,6 +23,7 @@ The script requires an Elasticsearch client version that matches your server ver
 - **ES Server 9.x** → Use `elasticsearch>=9.0.0`
 
 If you encounter version mismatch errors:
+
 ```bash
 # Check your ES server version
 curl http://localhost:9200
@@ -32,46 +33,52 @@ python -c "import elasticsearch; print(elasticsearch.__version__)"
 
 # Downgrade client if needed (for ES 8.x server)
 pip install "elasticsearch>=8.0.0,<9.0.0"
-```
+```text
 
 ## Quick Validation
 
 Use `validate_backfill.py` to check backfill results at any time:
 
 **Human-Readable Summary:**
+
 ```bash
 python scripts/validate_backfill.py --pretty
-```
+```text
 
 **Example Output:**
-```
+
+```text
 Index: gmail_emails_v2
 Missing dates[] (bills): 0
 Bills with dates[]:      1243
 Bills with expires_at:   1243
 Verdict: OK  @ 2025-10-10T14:22:31Z
-```
+```text
 
 **PowerShell:**
+
 ```powershell
 $env:ES_URL="http://localhost:9200"
 $env:ES_EMAIL_INDEX="gmail_emails_v2"
 python scripts/validate_backfill.py --pretty
-```
+```text
 
 **JSON Output (for automation):**
+
 ```bash
 python scripts/validate_backfill.py --json
 # {"index": "gmail_emails_v2", "missing_dates_count": 0, "bills_with_dates": 1243, ...}
-```
+```text
 
 **Makefile:**
+
 ```bash
 make validate-backfill           # Human-readable
 make validate-backfill-json      # JSON output
-```
+```text
 
 **Verdict Guide:**
+
 - ✅ **OK**: No missing dates, all counts consistent
 - ⚠️ **CHECK**: Missing dates found or data anomalies detected
 
@@ -91,7 +98,7 @@ make validate-backfill > after.txt
 
 # Compare
 diff before.txt after.txt
-```
+```text
 
 ## Usage
 
@@ -100,13 +107,15 @@ diff before.txt after.txt
 Before running the backfill, check how many bills are missing dates:
 
 **ES|QL Query (Kibana Dev Tools):**
+
 ```sql
 FROM gmail_emails_v2
 | WHERE category == "bills" AND NOT _exists_:dates
 | STATS missing=count()
-```
+```text
 
 **cURL:**
+
 ```bash
 curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
   -H 'Content-Type: application/json' \
@@ -122,12 +131,13 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
     "size": 0,
     "track_total_hits": true
   }'
-```
+```text
 
 **Makefile:**
+
 ```bash
 make check-bills-missing
-```
+```text
 
 ### 1. Dry Run (Recommended First)
 
@@ -143,9 +153,10 @@ export ES_EMAIL_INDEX="gmail_emails_v2"
 
 # Run script
 python scripts/backfill_bill_dates.py
-```
+```text
 
 **PowerShell (Windows):**
+
 ```powershell
 cd services/api
 
@@ -154,7 +165,7 @@ $env:ES_URL="http://localhost:9200"
 $env:ES_EMAIL_INDEX="gmail_emails_v2"
 
 python scripts/backfill_bill_dates.py
-```
+```text
 
 ### 2. Execute Updates
 
@@ -163,13 +174,14 @@ After reviewing dry run results, run for real:
 ```bash
 export DRY_RUN=0
 python scripts/backfill_bill_dates.py
-```
+```text
 
 **PowerShell:**
+
 ```powershell
 $env:DRY_RUN="0"
 python scripts/backfill_bill_dates.py
-```
+```text
 
 ### Post-Flight Verification
 
@@ -185,40 +197,45 @@ python scripts/validate_backfill.py --pretty
 
 # JSON output (for automation)
 python scripts/validate_backfill.py --json
-```
+```text
 
 **PowerShell:**
+
 ```powershell
 $env:ES_URL="http://localhost:9200"
 $env:ES_EMAIL_INDEX="gmail_emails_v2"
 python scripts/validate_backfill.py --pretty
-```
+```text
 
 **Makefile:**
+
 ```bash
 make validate-backfill           # Human-readable
 make validate-backfill-json      # JSON output
-```
+```text
 
 **Example Output:**
-```
+
+```text
 Index: gmail_emails_v2
 Missing dates[] (bills): 0
 Bills with dates[]:      1243
 Bills with expires_at:   1243
 Verdict: OK  @ 2025-10-10T14:22:31Z
-```
+```text
 
 **Manual ES|QL Query (Check bills with dates and expires_at):**
+
 ```sql
 FROM gmail_emails_v2
 | WHERE category == "bills" AND _exists_:dates
 | STATS with_expiry=count(_exists_:expires_at), total=count()
-```
+```text
 
 **Expected result:** Most/all bills should have both `dates` and `expires_at` populated.
 
 **cURL:**
+
 ```bash
 curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
   -H 'Content-Type: application/json' \
@@ -238,18 +255,20 @@ curl -X POST "http://localhost:9200/gmail_emails_v2/_search" \
       }
     }
   }'
-```
+```text
 
 **Makefile (legacy check):**
+
 ```bash
 make check-bills-with-dates
-```
+```text
 
 **Example output:**
-```
+
+```text
 Bills with dates: 523
 Bills with expires_at: 523
-```
+```text
 
 ### 3. Monitor Progress
 
@@ -272,6 +291,7 @@ Queries Elasticsearch for all documents where `category == "bills"`.
 ### 2. Extracts Dates
 
 For each bill:
+
 - Combines `subject` + `body_text`
 - Runs `extract_due_dates()` to find dates near "due" keywords
 - Supports formats: `10/15/2025`, `Oct 15, 2025`, `15 Oct 2025`, etc.
@@ -284,6 +304,7 @@ For each bill:
 ### 4. Smart Filtering
 
 Only updates documents where:
+
 - New dates were extracted, OR
 - `expires_at` needs correction (earlier date found)
 
@@ -292,7 +313,8 @@ No update if dates are identical and `expires_at` is already correct.
 ## Example Output
 
 **Dry Run:**
-```
+
+```text
 Starting backfill for index: gmail_emails_v2
 Mode: DRY RUN
 Batch size: 500
@@ -306,10 +328,11 @@ Backfill (DRY RUN) completed.
 Scanned: 523 bills
 Updated: 156 bills
 Unchanged: 367 bills
-```
+```text
 
 **Live Run:**
-```
+
+```text
 Starting backfill for index: gmail_emails_v2
 Mode: LIVE UPDATE
 Batch size: 500
@@ -320,7 +343,7 @@ Backfill completed.
 Scanned: 523 bills
 Updated: 156 bills
 Unchanged: 367 bills
-```
+```text
 
 ## Testing
 
@@ -329,9 +352,10 @@ Unit tests verify the transformation logic:
 ```bash
 cd services/api
 pytest tests/unit/test_backfill_transform.py -v
-```
+```text
 
 **Test Coverage:**
+
 - ✅ Date extraction from body text
 - ✅ Earliest date selection for expires_at
 - ✅ Respecting existing earlier expires_at
@@ -366,6 +390,7 @@ If the date extraction regex patterns are improved, rerun to catch previously mi
 - **Memory**: Minimal (streaming scan, batched updates)
 
 **Estimated time for 10,000 bills:**
+
 - Scan: ~5-10 seconds
 - Update (if all need updates): ~10-20 seconds
 - **Total**: < 30 seconds
@@ -393,14 +418,16 @@ Uses `BATCH` size to limit memory usage and allow progress tracking.
 ### No bills found
 
 **Check category field:**
+
 ```bash
 curl "http://localhost:9200/gmail_emails_v2/_search?pretty" -H "Content-Type: application/json" -d '{
   "query": {"term": {"category": "bills"}},
   "size": 1
 }'
-```
+```text
 
 **Possible causes:**
+
 - Index name incorrect (`ES_EMAIL_INDEX`)
 - Bills not classified yet (run classification first)
 - No bills in index
@@ -408,11 +435,13 @@ curl "http://localhost:9200/gmail_emails_v2/_search?pretty" -H "Content-Type: ap
 ### No updates detected
 
 **Possible causes:**
+
 - Dates already extracted by email ingestion
 - No "due" keywords in bill text
 - Date format not supported by regex
 
 **Verify:**
+
 ```bash
 # Check if dates field exists
 curl "http://localhost:9200/gmail_emails_v2/_search?pretty" -d '{
@@ -420,13 +449,14 @@ curl "http://localhost:9200/gmail_emails_v2/_search?pretty" -d '{
   "_source": ["dates", "expires_at"],
   "size": 5
 }'
-```
+```text
 
 ### Elasticsearch version mismatch
 
 **Error:** `Accept version must be either version 8 or 7, but found 9`
 
 **Solution:** Install matching ES client version:
+
 ```bash
 # For ES 8.x server
 pip install "elasticsearch>=8.0.0,<9.0.0"
@@ -434,20 +464,22 @@ pip install "elasticsearch>=8.0.0,<9.0.0"
 # Check versions
 curl http://localhost:9200  # Server version
 python -c "import elasticsearch; print(elasticsearch.__version__)"  # Client version
-```
+```text
 
 ### Connection refused
 
 **Check ES is running:**
+
 ```bash
 docker-compose ps es
 curl http://localhost:9200
-```
+```text
 
 **Check ES_URL:**
+
 ```bash
 echo $ES_URL  # Should match ES server address
-```
+```text
 
 ## Integration
 
@@ -461,6 +493,7 @@ echo $ES_URL  # Should match ES server address
 ### After Backfill
 
 1. **Verify updates:**
+
    ```bash
    curl "http://localhost:9200/gmail_emails_v2/_search?pretty" -d '{
      "query": {"exists": {"field": "dates"}},
@@ -473,7 +506,7 @@ echo $ES_URL  # Should match ES server address
    - "Bills due this week"
 
 3. **Check Kibana dashboard:**
-   - Open: http://localhost:5601
+   - Open: <http://localhost:5601>
    - View: "Bills due per day (next 7d)"
 
 ## Examples
@@ -490,7 +523,7 @@ DRY_RUN=1 python scripts/backfill_bill_dates.py
 DRY_RUN=0 python scripts/backfill_bill_dates.py
 
 # Output: Updated 234 bills
-```
+```text
 
 ### Example 2: Recompute expires_at Only
 
@@ -501,7 +534,7 @@ Some bills have dates but wrong `expires_at`:
 DRY_RUN=0 python scripts/backfill_bill_dates.py
 
 # Output: Updated 45 bills (dates unchanged, expires_at corrected)
-```
+```text
 
 ### Example 3: After Parser Improvement
 
@@ -512,7 +545,7 @@ You improved the regex to catch more date formats:
 DRY_RUN=0 python scripts/backfill_bill_dates.py
 
 # Output: Updated 89 bills (new dates extracted)
-```
+```text
 
 ## Code Structure
 
@@ -542,7 +575,7 @@ extract_due_dates(text, received_at)
     -> Parse into datetime
     -> Format as ISO 8601
     -> Deduplicate and sort
-```
+```text
 
 ## Future Enhancements
 

@@ -7,24 +7,28 @@ Successfully implemented a dark/light theme toggle system with localStorage pers
 ## Features
 
 ✅ **ThemeProvider with React Context**
+
 - Manages theme state globally across the application
 - Persists user preference to localStorage (key: "theme")
 - Supports three modes: "light", "dark", "system"
 - System mode respects OS preference via matchMedia
 
 ✅ **ModeToggle Component**
+
 - Sun/Moon icon button in header bar
 - Single-click toggle between light/dark
 - Dropdown menu for explicit theme selection (Light/Dark/System)
 - Accessible with ARIA labels
 
 ✅ **Tailwind Dark Mode Integration**
+
 - Class-based dark mode (`darkMode: ["class"]`)
 - CSS variables for all design tokens
 - Smooth transitions between themes
 - All shadcn/ui components support dark mode automatically
 
 ✅ **InboxPolished Integration**
+
 - Theme toggle in header bar (far right)
 - Dark mode classes on root container, header, and sidebar
 - All email cards, badges, and buttons adapt to theme
@@ -49,9 +53,10 @@ function applyTheme(theme: Theme) {
   const isDark = theme === "dark" || (theme === "system" && prefersDark);
   root.classList.toggle("dark", isDark);
 }
-```
+```text
 
 **Key Features:**
+
 - `applyTheme()`: Applies/removes "dark" class on `<html>` element
 - `toggle()`: Quick toggle between light and dark (skips system)
 - `setTheme()`: Explicit theme selection with localStorage persistence
@@ -78,9 +83,10 @@ export function ModeToggle() {
     </DropdownMenu>
   );
 }
-```
+```text
 
 **User Interactions:**
+
 1. **Single Click**: Button click toggles between light/dark
 2. **Dropdown**: Open menu to explicitly select Light/Dark/System
 3. **Icon**: Sun icon for light mode, Moon icon for dark mode
@@ -93,7 +99,7 @@ export function ModeToggle() {
     <App />
   </BrowserRouter>
 </ThemeProvider>
-```
+```text
 
 The ThemeProvider wraps the entire application, ensuring theme context is available everywhere.
 
@@ -103,23 +109,24 @@ The ThemeProvider wraps the entire application, ensuring theme context is availa
 
 ```typescript
 <div className="h-screen w-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-```
+```text
 
 ### Header Bar
 
 ```typescript
 <div className="flex items-center gap-3 px-4 py-3 border-b bg-white dark:bg-slate-900">
-```
+```text
 
 ### Sidebar
 
 ```typescript
 <div className="w-64 border-r bg-white dark:bg-slate-900 p-3 space-y-2">
-```
+```text
 
 ### Automatic Dark Mode (shadcn components)
 
 All shadcn/ui components automatically support dark mode via CSS variables:
+
 - Cards: `bg-card` (uses `--card` variable with dark variant)
 - Badges: `bg-secondary` (uses `--secondary` variable)
 - Buttons: `bg-primary` (uses `--primary` variable)
@@ -143,7 +150,7 @@ Defined in `apps/web/src/index.css`:
   --primary: 210 40% 98%;            /* Light indigo */
   /* ... more dark mode colors */
 }
-```
+```text
 
 Tailwind reads these variables:
 
@@ -162,7 +169,7 @@ theme: {
     }
   }
 }
-```
+```text
 
 ## Usage
 
@@ -182,7 +189,7 @@ function MyComponent() {
     </div>
   );
 }
-```
+```text
 
 ### Adding Dark Mode to New Components
 
@@ -192,7 +199,7 @@ function MyComponent() {
   <h1 className="text-indigo-600 dark:text-indigo-400">Title</h1>
   <p className="text-slate-600 dark:text-slate-400">Content</p>
 </div>
-```
+```text
 
 ### Using CSS Variables
 
@@ -202,7 +209,7 @@ function MyComponent() {
   <Button variant="default">Uses --primary</Button>
   <Card className="bg-card text-card-foreground">Uses --card</Card>
 </div>
-```
+```text
 
 ## Testing
 
@@ -299,14 +306,14 @@ function MyComponent() {
 
 ```javascript
 localStorage.getItem("theme") // Should be "light", "dark", or "system"
-```
+```text
 
 **Fix**: Clear localStorage and reload
 
 ```javascript
 localStorage.removeItem("theme");
 location.reload();
-```
+```text
 
 ### Dark mode not applying
 
@@ -314,7 +321,7 @@ location.reload();
 
 ```javascript
 document.documentElement.classList.contains("dark") // Should be true in dark mode
-```
+```text
 
 **Fix**: Verify ThemeProvider is wrapping the app in main.tsx
 
@@ -324,7 +331,7 @@ document.documentElement.classList.contains("dark") // Should be true in dark mo
 
 ```javascript
 window.matchMedia("(prefers-color-scheme: dark)").matches
-```
+```text
 
 **Fix**: Fall back to explicit light/dark mode if system detection fails
 
@@ -341,7 +348,7 @@ window.matchMedia("(prefers-color-scheme: dark)").matches
 
 // ✅ Good - uses CSS variables
 <div className="bg-background">
-```
+```text
 
 ## Performance Considerations
 
@@ -367,4 +374,4 @@ window.matchMedia("(prefers-color-scheme: dark)").matches
 ✅ InboxPolished page fully themed
 ✅ Clean, maintainable code structure
 
-**Next**: Test the theme toggle at http://localhost:5175/inbox-polished and verify all features work as expected.
+**Next**: Test the theme toggle at <http://localhost:5175/inbox-polished> and verify all features work as expected.

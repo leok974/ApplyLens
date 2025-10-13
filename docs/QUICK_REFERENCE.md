@@ -14,7 +14,7 @@ docker compose down
 
 # View status
 docker compose ps
-```
+```text
 
 ## 📧 Sync Gmail
 
@@ -30,7 +30,7 @@ Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=60" -Method PO
 
 # Check scheduled task
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync"
-```
+```text
 
 ## 🔐 OAuth Issues
 
@@ -40,7 +40,7 @@ start http://localhost:8003/auth/google/login
 
 # Remove old permissions
 start https://myaccount.google.com/permissions
-```
+```text
 
 ## 📊 Data Counts
 
@@ -53,7 +53,7 @@ curl http://localhost:8003/applications | ConvertFrom-Json | Measure-Object
 
 # Elasticsearch
 curl http://localhost:9200/gmail_emails/_count
-```
+```text
 
 ## 🔍 Search
 
@@ -64,13 +64,13 @@ curl "http://localhost:8003/search?q=interview"
 # Filter applications
 curl "http://localhost:8003/applications?status=interview"
 curl "http://localhost:8003/applications?company=Google"
-```
+```text
 
 ## 🎨 Web UI
 
-- Inbox: http://localhost:5175/inbox
-- Tracker: http://localhost:5175/tracker
-- Settings: http://localhost:5175/settings
+- Inbox: <http://localhost:5175/inbox>
+- Tracker: <http://localhost:5175/tracker>
+- Settings: <http://localhost:5175/settings>
 
 ## 📝 Logs
 
@@ -83,7 +83,7 @@ docker compose logs api --tail=50
 
 # Errors only
 docker compose logs api --tail=100 | Select-String -Pattern "error|exception"
-```
+```text
 
 ## 🛠️ Troubleshooting
 
@@ -99,7 +99,7 @@ docker compose exec db psql -U postgres -d applylens -c "SELECT 1;"
 
 # View scheduled task history
 Get-ScheduledTask -TaskName "ApplyLens-GmailSync" | Get-ScheduledTaskInfo
-```
+```text
 
 ## 💾 Backup
 
@@ -109,10 +109,10 @@ curl http://localhost:8003/applications | Out-File -FilePath "backup-$(Get-Date 
 
 # Database backup
 docker compose exec db pg_dump -U postgres applylens > "backup-db-$(Get-Date -Format 'yyyy-MM-dd').sql"
-```
+```text
 
 ---
 
 **Full Documentation:** See `PRODUCTION_SETUP.md`  
-**User:** leoklemet.pa@gmail.com  
+**User:** <leoklemet.pa@gmail.com>  
 **Status:** ✅ Operational

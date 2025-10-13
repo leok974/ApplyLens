@@ -9,6 +9,7 @@ This implementation adds **High-Risk** and **Quarantined** filter chips to the s
 ### 1. API Client Extension (`apps/web/src/lib/api.ts`)
 
 **New Types:**
+
 ```typescript
 export type SearchParams = {
   q: string
@@ -18,13 +19,15 @@ export type SearchParams = {
   risk_max?: number     // 0–100
   quarantined?: boolean // true / false
 }
-```
+```text
 
 **Enhanced Functions:**
+
 - `searchEmails()` - Extended with security filter parameters (`risk_min`, `risk_max`, `quarantined`)
 - `searchEmailsWithParams()` - New params-object-based search function for cleaner API
 
 **Backend Integration:**
+
 - Forwards security filters to `/api/search/` endpoint
 - Properly encodes all parameters as URL query strings
 - Maintains backward compatibility with existing search functionality
@@ -32,6 +35,7 @@ export type SearchParams = {
 ### 2. Security Filter Controls Component (`apps/web/src/components/search/SecurityFilterControls.tsx`)
 
 **Visual Design:**
+
 - **High-Risk Chip (≥80):**
   - Red theme (`bg-red-500/15`, `border-red-600/30`, `text-red-300`)
   - ShieldAlert icon from lucide-react
@@ -48,6 +52,7 @@ export type SearchParams = {
   - Subtle text link styling
 
 **Props Interface:**
+
 ```typescript
 type Props = {
   highRisk: boolean
@@ -55,11 +60,12 @@ type Props = {
   quarantinedOnly: boolean
   onQuarantinedOnlyChange: (v: boolean) => void
 }
-```
+```text
 
 ### 3. Search Page Integration (`apps/web/src/pages/Search.tsx`)
 
 **State Management:**
+
 ```typescript
 // Initialize from URL params
 const [highRisk, setHighRisk] = useState(() => {
@@ -70,21 +76,24 @@ const [highRisk, setHighRisk] = useState(() => {
 const [quarantinedOnly, setQuarantinedOnly] = useState(() => {
   return searchParams.get("quarantined") === "true"
 })
-```
+```text
 
 **URL Synchronization:**
+
 - Security filters are reflected in URL query params
 - Enables shareable search URLs with filters
 - Browser back/forward navigation preserves filter state
 - URL format: `/search?q=test&risk_min=80&quarantined=true`
 
 **Search Execution:**
+
 - Filters automatically trigger new search when toggled
 - Integrates with existing filter system (categories, labels, dates, etc.)
 - Passes security params to backend API
 
 **Component Hierarchy:**
-```
+
+```text
 Search Page
 ├── Search Input & Button
 ├── SearchControls (ML categories, hide expired)
@@ -92,7 +101,7 @@ Search Page
 ├── SearchFilters (labels, dates, replied, sort)
 └── Results
     └── Individual email cards
-```
+```text
 
 ### 4. Playwright E2E Tests (`apps/web/tests/security-search-filters.spec.ts`)
 
@@ -126,6 +135,7 @@ Search Page
    - Verifies state changes propagate correctly
 
 **Test Utilities:**
+
 - API route mocking with request URL inspection
 - Timeout handling for state updates
 - Proper async/await patterns
@@ -136,16 +146,19 @@ Search Page
 ### Filter Behavior
 
 **High-Risk (≥80) Filter:**
+
 - When **ON**: Shows only emails with `risk_score >= 80`
 - When **OFF**: No risk filtering applied
 - URL param: `risk_min=80`
 
 **Quarantined Only Filter:**
+
 - When **ON**: Shows only quarantined emails
 - When **OFF**: Shows all emails (quarantined + non-quarantined)
 - URL param: `quarantined=true`
 
 **Combined Filters:**
+
 - Both filters can be active simultaneously
 - Results must match ALL active filters (AND logic)
 - Example: High-Risk ON + Quarantined ON = emails with `risk_score >= 80` AND `quarantined = true`
@@ -153,18 +166,21 @@ Search Page
 ### Visual Feedback
 
 **Active State:**
+
 - Chip background changes to themed color
 - Border becomes more prominent
 - Text color changes to match theme
 - Switch toggle shows as "on"
 
 **Inactive State:**
+
 - Neutral gray background (`bg-muted/30`)
 - Subtle border
 - Default text color
 - Switch toggle shows as "off"
 
 **Hover Effects:**
+
 - Slight background color intensification
 - Smooth transition animations
 - Cursor changes to pointer
@@ -182,7 +198,7 @@ Search Page
 
 ### State Synchronization Flow
 
-```
+```text
 User clicks chip
   ↓
 setHighRisk(true) / setQuarantinedOnly(true)
@@ -196,7 +212,7 @@ onSearch() called with new filter values
 API request with risk_min=80 or quarantined=true
   ↓
 Results updated
-```
+```text
 
 ### Backward Compatibility
 
@@ -221,7 +237,7 @@ npm run test:e2e -- security-search-filters.spec.ts --headed
 
 # Run in debug mode
 npm run test:e2e -- security-search-filters.spec.ts --debug
-```
+```text
 
 ### Manual Testing Checklist
 
@@ -243,11 +259,13 @@ npm run test:e2e -- security-search-filters.spec.ts --debug
 **Endpoint:** `GET /api/search/`
 
 **Query Parameters:**
+
 - `risk_min` (int, 0-100): Minimum risk score
 - `risk_max` (int, 0-100): Maximum risk score
 - `quarantined` (bool): Filter by quarantine status
 
 **Example Requests:**
+
 ```bash
 # High-risk emails
 GET /api/search/?q=invoice&risk_min=80
@@ -260,9 +278,10 @@ GET /api/search/?q=security&risk_min=80&quarantined=true
 
 # Risk score range
 GET /api/search/?q=payment&risk_min=50&risk_max=90
-```
+```text
 
 **Expected Response:**
+
 ```json
 {
   "hits": [
@@ -278,7 +297,7 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
   ],
   "total": 1
 }
-```
+```text
 
 ## Future Enhancements
 
@@ -327,6 +346,7 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
 **Issue:** Clicking chips doesn't filter results
 
 **Solution:**
+
 1. Check browser console for errors
 2. Verify API endpoint returns security fields (`risk_score`, `quarantined`)
 3. Ensure backend migration 0015 is applied
@@ -337,6 +357,7 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
 **Issue:** URL doesn't reflect filter state
 
 **Solution:**
+
 1. Check `useEffect` dependency array includes `highRisk` and `quarantinedOnly`
 2. Verify `window.history.replaceState()` is being called
 3. Look for JavaScript errors in console
@@ -346,6 +367,7 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
 **Issue:** Results don't update when filters change
 
 **Solution:**
+
 1. Verify `useEffect` for search re-execution includes security filters
 2. Check that `onSearch()` passes security params to API
 3. Ensure React state is updating correctly (check with React DevTools)
@@ -355,6 +377,7 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
 **Issue:** Playwright tests fail intermittently
 
 **Solution:**
+
 1. Increase `waitForTimeout` values (network/state update delays)
 2. Add `page.waitForLoadState("networkidle")` before interactions
 3. Use `expect(...).toBeVisible({ timeout: 5000 })` for async checks
@@ -362,12 +385,14 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
 
 ## Files Modified/Created
 
-### Created:
+### Created
+
 - `apps/web/src/components/search/SecurityFilterControls.tsx` (65 lines)
 - `apps/web/tests/security-search-filters.spec.ts` (230 lines)
 - `docs/SECURITY_SEARCH_FILTERS.md` (this file)
 
-### Modified:
+### Modified
+
 - `apps/web/src/lib/api.ts` (+60 lines)
   - Added `SearchParams` type
   - Extended `searchEmails()` function
@@ -383,6 +408,7 @@ GET /api/search/?q=payment&risk_min=50&risk_max=90
 This implementation provides a production-ready security filtering system for the ApplyLens search interface. Users can quickly filter emails by risk score and quarantine status using intuitive toggle chips. The system is fully tested, URL-synchronized, and integrates seamlessly with existing search functionality.
 
 **Key Benefits:**
+
 - ✅ Quick access to high-risk emails
 - ✅ Easy quarantine management
 - ✅ Shareable filtered search URLs

@@ -6,7 +6,6 @@ with mocked database and executors.
 """
 
 import pytest
-from httpx import AsyncClient
 from unittest.mock import Mock, patch, AsyncMock
 from typing import Dict, Any, List
 

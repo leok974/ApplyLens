@@ -5,12 +5,14 @@ This checklist covers security hardening, performance optimization, and observab
 ## 🔒 SSL/TLS Security
 
 ### 1. Enable Full (Strict) Mode
+
 **Status:** ⏳ To Do  
 **Priority:** High  
 **Location:** Cloudflare Dashboard → SSL/TLS → Overview
 
 **Steps:**
-1. Go to: https://dash.cloudflare.com/ → Select `applylens.app`
+
+1. Go to: <https://dash.cloudflare.com/> → Select `applylens.app`
 2. Navigate to: **SSL/TLS** → **Overview**
 3. Change encryption mode from "Flexible" or "Full" to **"Full (strict)"**
 4. Verify: Your tunnel handles the origin certificate automatically
@@ -18,52 +20,62 @@ This checklist covers security hardening, performance optimization, and observab
 **Why:** Ensures end-to-end encryption. Your Cloudflare Tunnel already provides a secure connection from Cloudflare to your origin, so "Full (strict)" adds no complexity but maximum security.
 
 ### 2. Enable Always Use HTTPS
+
 **Status:** ⏳ To Do  
 **Priority:** High  
 **Location:** Cloudflare Dashboard → SSL/TLS → Edge Certificates
 
 **Steps:**
+
 1. Go to: **SSL/TLS** → **Edge Certificates**
 2. Toggle **"Always Use HTTPS"** to **ON**
 3. This forces HTTP → HTTPS redirects at the edge
 
 **Test:**
+
 ```powershell
 curl -I http://applylens.app/ | Select-String Location
 # Should see: Location: https://applylens.app/
-```
+```text
 
 ### 3. Enable HSTS (HTTP Strict Transport Security)
+
 **Status:** ⏳ To Do  
 **Priority:** Medium (do after HTTPS is working everywhere)  
 **Location:** Nginx configuration
 
 **Steps:**
+
 1. Edit `infra/nginx/snippets/security-headers.conf` (or create it)
 2. Add:
+
 ```nginx
 add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-```
+```text
 
 3. Restart nginx:
+
 ```bash
 docker compose restart nginx
-```
+```text
 
 **Test:**
+
 ```powershell
 curl -I https://applylens.app/ | Select-String Strict-Transport
 # Should see: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-```
+```text
 
 **⚠️ Warning:** Only enable after you're certain ALL subdomains support HTTPS. HSTS tells browsers to NEVER access your site over HTTP for 1 year (max-age=31536000).
 
 ### 4. Enable Minimum TLS Version 1.2
+
 **Status:** ⏳ To Do  
 **Priority:** Medium  
 **Location:** Cloudflare Dashboard → SSL/TLS → Edge Certificates
 
 **Steps:**
+
 1. Go to: **SSL/TLS** → **Edge Certificates**
 2. Set **Minimum TLS Version** to **TLS 1.2** or higher
 3. Disables insecure TLS 1.0 and 1.1
@@ -73,6 +85,7 @@ curl -I https://applylens.app/ | Select-String Strict-Transport
 ## 🚀 Performance & Caching
 
 ### 5. Configure Cache Rules
+
 **Status:** ⏳ To Do  
 **Priority:** Medium  
 **Location:** Cloudflare Dashboard → Caching → Cache Rules
@@ -80,6 +93,7 @@ curl -I https://applylens.app/ | Select-String Strict-Transport
 **Rules to Create:**
 
 #### Rule 1: Cache Static Assets
+
 - **Name:** Cache Web App Static Assets
 - **When incoming requests match:**
   - Hostname equals `applylens.app` OR `www.applylens.app`
@@ -90,6 +104,7 @@ curl -I https://applylens.app/ | Select-String Strict-Transport
   - Browser TTL: **1 hour** (3600 seconds)
 
 #### Rule 2: Bypass API Caching
+
 - **Name:** Bypass API and Services
 - **When incoming requests match:**
   - Hostname equals `applylens.app` OR `www.applylens.app`
@@ -98,6 +113,7 @@ curl -I https://applylens.app/ | Select-String Strict-Transport
   - Cache Level: **Bypass**
 
 #### Rule 3: Cache API Documentation
+
 - **Name:** Cache API Docs (optional)
 - **When incoming requests match:**
   - Hostname equals `api.applylens.app`
@@ -107,6 +123,7 @@ curl -I https://applylens.app/ | Select-String Strict-Transport
   - Edge TTL: **1 hour** (3600 seconds)
 
 **Test:**
+
 ```powershell
 # Check cache headers
 curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-status
@@ -114,14 +131,16 @@ curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-statu
 
 curl -I https://api.applylens.app/ready | Select-String cf-cache-status
 # Should see: cf-cache-status: DYNAMIC (not cached)
-```
+```text
 
 ### 6. Enable Brotli Compression
+
 **Status:** ⏳ To Do  
 **Priority:** Low  
 **Location:** Cloudflare Dashboard → Speed → Optimization
 
 **Steps:**
+
 1. Go to: **Speed** → **Optimization**
 2. Enable **Brotli** compression
 3. Automatically compresses text-based responses
@@ -131,19 +150,23 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
 ## 🛡️ Security & WAF
 
 ### 7. Enable Bot Fight Mode
+
 **Status:** ⏳ To Do  
 **Priority:** Medium  
 **Location:** Cloudflare Dashboard → Security → Bots
 
 **Steps:**
+
 1. Go to: **Security** → **Bots**
 2. Enable **Bot Fight Mode** (free tier)
 3. Automatically challenges suspicious bots
 
 **For Pro+ (optional):**
+
 - Enable **Super Bot Fight Mode** for more granular control
 
 ### 8. Create Rate Limiting Rules
+
 **Status:** ⏳ To Do  
 **Priority:** High  
 **Location:** Cloudflare Dashboard → Security → WAF → Rate limiting rules
@@ -151,6 +174,7 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
 **Rules to Create:**
 
 #### Rule 1: Protect API Endpoints
+
 - **Name:** API Rate Limit
 - **When incoming requests match:**
   - Hostname equals `api.applylens.app`
@@ -163,6 +187,7 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
   - HTTP Status Code: **429** (Too Many Requests)
 
 #### Rule 2: Protect Auth Endpoints (strict)
+
 - **Name:** Auth Rate Limit
 - **When incoming requests match:**
   - Hostname equals `api.applylens.app`
@@ -174,18 +199,21 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
   - Action: **Block** for **300 seconds** (5 minutes)
 
 **Test:**
+
 ```powershell
 # Spam the API to trigger rate limit
 1..250 | ForEach-Object { curl -s https://api.applylens.app/ready -o $null -w "%{http_code} " }
 # Should see mostly 200s, then 429s after ~200 requests
-```
+```text
 
 ### 9. Enable Security Level
+
 **Status:** ⏳ To Do  
 **Priority:** Low  
 **Location:** Cloudflare Dashboard → Security → Settings
 
 **Steps:**
+
 1. Go to: **Security** → **Settings**
 2. Set **Security Level** to **"Medium"** (default) or **"High"** if you're seeing attacks
 3. Challenges more visitors but blocks malicious traffic
@@ -195,11 +223,13 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
 ## 🔀 Redirects & URL Normalization
 
 ### 10. Configure WWW Redirect (Optional)
+
 **Status:** ⏳ To Do  
 **Priority:** Low (only if you prefer canonical root domain)  
 **Location:** Cloudflare Dashboard → Rules → Redirect Rules
 
 **Option A: WWW → Root (Recommended)**
+
 - **Name:** Redirect WWW to Root
 - **When incoming requests match:**
   - Hostname equals `www.applylens.app`
@@ -210,6 +240,7 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
   - Preserve query string: **Yes**
 
 **Option B: Root → WWW**
+
 - **Name:** Redirect Root to WWW
 - **When incoming requests match:**
   - Hostname equals `applylens.app`
@@ -219,29 +250,33 @@ curl -I https://api.applylens.app/ready | Select-String cf-cache-status
   - Status Code: **301** (Permanent)
 
 **Test:**
+
 ```powershell
 curl -I https://www.applylens.app/ | Select-String Location
 # Should see: Location: https://applylens.app/ (if redirecting www → root)
-```
+```text
 
 ---
 
 ## 🔧 Nginx Configuration Improvements
 
 ### 11. Add WebSocket Support
+
 **Status:** ⏳ To Do  
 **Priority:** Medium (needed for Grafana, Kibana live updates)  
 **File:** `infra/nginx/conf.d/default.conf`
 
 **Add at top of file:**
+
 ```nginx
 map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
 }
-```
+```text
 
 **Then in each proxied location block:**
+
 ```nginx
 location /grafana/ {
     proxy_pass http://grafana:3000/;
@@ -256,14 +291,16 @@ location /grafana/ {
     proxy_set_header X-Forwarded-Host  $host;
     proxy_set_header X-Forwarded-Prefix /grafana;
 }
-```
+```text
 
 ### 12. Add Security Headers
+
 **Status:** ⏳ To Do  
 **Priority:** Medium  
 **File:** `infra/nginx/snippets/security-headers.conf`
 
 **Create file:**
+
 ```nginx
 # Security Headers
 add_header X-Frame-Options "SAMEORIGIN" always;
@@ -276,22 +313,25 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsaf
 
 # Remove server version
 server_tokens off;
-```
+```text
 
 **Include in main config:**
+
 ```nginx
 http {
     include /etc/nginx/snippets/security-headers.conf;
     # ... rest of config
 }
-```
+```text
 
 ### 13. Enable Nginx Status Page (for monitoring)
+
 **Status:** ⏳ To Do  
 **Priority:** Low  
 **File:** `infra/nginx/conf.d/default.conf`
 
 **Add location block:**
+
 ```nginx
 location /nginx_status {
     stub_status on;
@@ -300,45 +340,53 @@ location /nginx_status {
     allow 172.24.0.0/16;  # Docker network
     deny all;
 }
-```
+```text
 
 **Test:**
+
 ```bash
 docker exec applylens-nginx curl http://localhost/nginx_status
-```
+```text
 
 ---
 
 ## 📊 Observability & Monitoring
 
 ### 14. Monitor Cloudflared Logs
+
 **Status:** ✅ Already Available  
 **Command:**
+
 ```bash
 docker compose -f infra/docker-compose.yml logs -f cloudflared
-```
+```text
 
 **Look for:**
+
 - `Registered tunnel connection` - Confirms tunnel is up
 - `Updated to new configuration` - Confirms config changes applied
 - `ERR` lines - Indicates problems
 
 ### 15. Set Up Cloudflare Analytics Alerts (Optional)
+
 **Status:** ⏳ To Do  
 **Priority:** Low  
 **Location:** Cloudflare Dashboard → Analytics
 
 **Create alerts for:**
+
 - Spike in 5xx errors (> 10 in 5 minutes)
 - Traffic spike (> 1000 requests/minute)
 - DDoS attack detected
 
 ### 16. Add Prometheus Nginx Exporter (Optional)
+
 **Status:** ⏳ To Do  
 **Priority:** Low  
 **File:** `infra/docker-compose.yml`
 
 **Add service:**
+
 ```yaml
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
@@ -348,15 +396,16 @@ docker compose -f infra/docker-compose.yml logs -f cloudflared
       - "9113:9113"
     depends_on:
       - nginx
-```
+```text
 
 **Then add to Prometheus scrape config:**
+
 ```yaml
 scrape_configs:
   - job_name: 'nginx'
     static_configs:
       - targets: ['nginx-exporter:9113']
-```
+```text
 
 ---
 
@@ -365,6 +414,7 @@ scrape_configs:
 After implementing the above, verify with these commands:
 
 ### SSL/TLS Verification
+
 ```powershell
 # Check HTTPS redirect
 curl -I http://applylens.app/ | Select-String Location
@@ -374,23 +424,26 @@ curl -I https://applylens.app/ | Select-String Strict-Transport
 
 # Check TLS version
 openssl s_client -connect applylens.app:443 -tls1_2 2>&1 | Select-String "Protocol"
-```
+```text
 
 ### Security Headers
+
 ```powershell
 curl -I https://applylens.app/ | Select-String "X-Frame-Options|X-Content-Type-Options|X-XSS-Protection"
-```
+```text
 
 ### Caching
+
 ```powershell
 # First request (MISS)
 curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-status
 
 # Second request (HIT)
 curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-status
-```
+```text
 
 ### Rate Limiting
+
 ```powershell
 # Spam API to trigger rate limit
 1..250 | ForEach-Object { 
@@ -398,19 +451,21 @@ curl -I https://applylens.app/web/assets/index.js | Select-String cf-cache-statu
     Write-Host "Request $_: $status"
 }
 # Should see 429 after ~200 requests
-```
+```text
 
 ### Bot Protection
+
 ```powershell
 # Check for CF bot challenge headers
 curl -I https://applylens.app/ -A "BadBot/1.0" | Select-String cf-mitigated
-```
+```text
 
 ---
 
 ## 📝 Implementation Priority Order
 
 **Phase 1: Security Essentials (Do First)**
+
 1. ✅ Enable Full (Strict) SSL mode
 2. ✅ Enable Always Use HTTPS
 3. ✅ Create API rate limiting rules
@@ -436,15 +491,18 @@ curl -I https://applylens.app/ -A "BadBot/1.0" | Select-String cf-mitigated
 ## 🔄 Maintenance
 
 **Weekly:**
+
 - Review Cloudflare Analytics for anomalies
 - Check cloudflared logs for errors: `docker logs --tail 100 infra-cloudflared`
 
 **Monthly:**
+
 - Review rate limiting effectiveness
 - Update Nginx and cloudflared images: `docker compose pull && docker compose up -d`
 - Review security headers best practices
 
 **Quarterly:**
+
 - Review and update CSP policy
 - Test disaster recovery (revert to previous tunnel config)
 - Review and update this checklist

@@ -3,6 +3,7 @@
 ## Summary
 
 This PR implements brand-correct configuration for the `applylens.app` domain, including:
+
 - Docker network aliases for internal service routing
 - Updated Cloudflare Tunnel configuration with proper hostnames
 - Production environment variable templates
@@ -12,18 +13,22 @@ This PR implements brand-correct configuration for the `applylens.app` domain, i
 ## Changes
 
 ### 1. Docker Network Aliases
+
 **File**: `infra/docker-compose.yml`
 
 Added internal DNS aliases for services to enable proper routing within the Docker network:
+
 - `nginx` → `applylens.int` (main UI/reverse proxy)
 - `api` → `applylens-api.int` (FastAPI backend)
 
 These aliases allow the Cloudflare Tunnel to reference services by internal hostnames rather than service names.
 
 ### 2. Cloudflare Tunnel Configuration
+
 **File**: `infra/cloudflared/config.yml`
 
 Updated with brand-correct hostname mapping:
+
 ```yaml
 ingress:
   - hostname: applylens.app
@@ -36,12 +41,14 @@ ingress:
     service: http://applylens-api.int:8003
   
   - service: http_status:404
-```
+```text
 
 ### 3. Production Environment Template
+
 **File**: `infra/.env.prod.example` *(new)*
 
 Added comprehensive production environment configuration:
+
 ```bash
 # Brand-correct URLs
 SITE_BASE_URL=https://applylens.app
@@ -54,12 +61,14 @@ CORS_ALLOW_ORIGINS=https://applylens.app,https://www.applylens.app
 COOKIE_DOMAIN=.applylens.app
 COOKIE_SECURE=1
 COOKIE_SAMESITE=lax
-```
+```text
 
 ### 4. Cloudflare Tunnel Runbook
+
 **File**: `infra/docs/CLOUDFLARE_TUNNEL_RUNBOOK.md` *(new)*
 
 Comprehensive guide including:
+
 - Step-by-step hostname configuration
 - Internal architecture diagrams
 - Validation procedures
@@ -67,9 +76,11 @@ Comprehensive guide including:
 - Security best practices
 
 ### 5. Smoke Test Script
+
 **File**: `scripts/smoke-applylens.ps1` *(new)*
 
 PowerShell smoke test script with 10 comprehensive tests:
+
 - DNS resolution for all subdomains
 - API health check (`/ready` endpoint)
 - CORS preflight validation
@@ -82,35 +93,40 @@ PowerShell smoke test script with 10 comprehensive tests:
 ## Deployment Checklist
 
 ### Pre-Deployment
+
 - [ ] Verify local environment with `docker compose up -d`
 - [ ] Ensure service account credentials are in `infra/secrets/`
 - [ ] Copy `.env.example` to `.env` and configure for local testing
 
 ### Cloudflare Dashboard Configuration
+
 The tunnel configuration file is updated, but hostnames **must be configured manually in the Cloudflare Dashboard**:
 
 1. **Login to Cloudflare Zero Trust**
-   - Navigate to: https://one.dash.cloudflare.com/
+   - Navigate to: <https://one.dash.cloudflare.com/>
 
 2. **Configure Public Hostnames**
    - Go to: **Networks** → **Tunnels** → **applylens** (ID: `08d5feee-f504-47a2-a1f2-b86564900991`)
    - Click **Configure** or **Edit** → **Public Hostnames** tab
 
 3. **Add/Update the following hostnames** (in order):
-   
-   #### a. Main Domain
+
+#### a. Main Domain
+
    - Subdomain: *(empty)*
    - Domain: `applylens.app`
    - Service: **HTTP** → `applylens.int` → Port `80`
    - Cloudflare Proxy: ✅ **ON**
-   
-   #### b. WWW Subdomain
+
+#### b. WWW Subdomain
+
    - Subdomain: `www`
    - Domain: `applylens.app`
    - Service: **HTTP** → `applylens.int` → Port `80`
    - Cloudflare Proxy: ✅ **ON**
-   
-   #### c. API Subdomain
+
+#### c. API Subdomain
+
    - Subdomain: `api`
    - Domain: `applylens.app`
    - Service: **HTTP** → `applylens-api.int` → Port `8003`
@@ -122,22 +138,26 @@ The tunnel configuration file is updated, but hostnames **must be configured man
 ### Post-Deployment Validation
 
 1. **Check Tunnel Status**
+
    ```bash
    docker logs infra-cloudflared
    ```
+
    Expected: 4 active connections to Cloudflare edge
 
 2. **Run Smoke Tests**
+
    ```powershell
    .\scripts\smoke-applylens.ps1
    ```
+
    Expected: All tests pass
 
 3. **Manual Checks**
-   - [ ] https://applylens.app/ loads correctly
-   - [ ] https://www.applylens.app/ redirects or loads
-   - [ ] https://api.applylens.app/ready returns 200
-   - [ ] https://api.applylens.app/docs loads API documentation
+   - [ ] <https://applylens.app/> loads correctly
+   - [ ] <https://www.applylens.app/> redirects or loads
+   - [ ] <https://api.applylens.app/ready> returns 200
+   - [ ] <https://api.applylens.app/docs> loads API documentation
    - [ ] CORS works from frontend to API
 
 4. **Verify DNS Records in Cloudflare Dashboard**
@@ -147,7 +167,7 @@ The tunnel configuration file is updated, but hostnames **must be configured man
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ Cloudflare Edge Network                                     │
 │  - applylens.app         → Tunnel → applylens.int:80        │
@@ -172,7 +192,7 @@ The tunnel configuration file is updated, but hostnames **must be configured man
 │         └─ /kibana/       → Kibana (proxy)                  │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## Security Considerations
 
@@ -185,6 +205,7 @@ The tunnel configuration file is updated, but hostnames **must be configured man
 ## Testing Instructions
 
 ### Local Testing (Before Merge)
+
 ```bash
 # 1. Pull the branch
 git checkout deploy/applylens-brand-correct
@@ -200,15 +221,16 @@ docker exec applylens-nginx ping -c 1 applylens-api.int
 
 # 4. Verify tunnel logs
 docker logs -f infra-cloudflared
-```
+```text
 
 ### Production Testing (After Merge & Deploy)
+
 ```powershell
 # Run comprehensive smoke tests
 .\scripts\smoke-applylens.ps1
 
 # Expected output: All tests pass
-```
+```text
 
 ## Breaking Changes
 
@@ -235,12 +257,14 @@ If issues occur after deployment:
    - Remove the hostname routes or revert to previous configuration
 
 2. **Revert Code Changes**:
+
    ```bash
    git revert HEAD
    git push origin main
    ```
 
 3. **Restart Services**:
+
    ```bash
    cd infra
    docker compose restart cloudflared nginx api
@@ -249,6 +273,7 @@ If issues occur after deployment:
 ## Reviewers
 
 Please verify:
+
 - [ ] Docker network aliases are correctly configured
 - [ ] Cloudflare tunnel config uses proper internal hostnames
 - [ ] Environment variables follow security best practices

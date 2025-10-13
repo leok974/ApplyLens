@@ -18,7 +18,7 @@ npm run test:e2e:smoke
 
 # Run with Playwright UI (interactive)
 npm run test:e2e:ui
-```
+```text
 
 ## Network Control
 
@@ -35,13 +35,14 @@ $env:PW_LOCK_NET='1'; npm run test:e2e; Remove-Item Env:\PW_LOCK_NET
 
 # Smoke tests with locked network
 npm run test:e2e:smoke:locked  # Unix/macOS/Linux only
-```
+```text
 
 **Note:** On Windows, the `test:e2e:smoke:locked` script won't work directly. Use the PowerShell syntax above or set the environment variable in your CI/CD pipeline.
 
 ### How It Works
 
 When `PW_LOCK_NET=1` is set, a global `beforeEach` hook enforces a deny-by-default network policy that:
+
 - Blocks all external network requests (returns HTTP 418)
 - Allows localhost requests (your dev server)
 - Allows WebSocket connections (for HMR)
@@ -76,9 +77,10 @@ await assertToast(page, {
   title: /Saved/i, 
   timeout: 10000 
 })
-```
+```text
 
 **Benefits:**
+
 - Type-safe assertions
 - Consistent error messages
 - Automatic visibility checks
@@ -110,7 +112,7 @@ await withMockedNet([
     body: patchResponse(row, { notes: 'Updated' }),
   },
 ])
-```
+```text
 
 **Factory Functions:**
 
@@ -119,6 +121,7 @@ await withMockedNet([
 - `patchResponse(prev, patch)` - Creates an updated row with new `updated_at`
 
 **Benefits:**
+
 - Less boilerplate in tests
 - Consistent test data structure
 - Easy to update defaults globally
@@ -135,9 +138,10 @@ npm run test:e2e:auth
 
 # Refresh authentication state
 npm run test:e2e:auth:refresh
-```
+```text
 
 Set these environment variables to configure login:
+
 - `RUN_LOGIN=1` - Enable login bootstrap test
 - `LOGIN_USER` - Username selector
 - `LOGIN_PASS` - Password selector
@@ -155,7 +159,7 @@ await mockApi([
   { url: '/api/applications', method: 'GET', body: [...] },
   { url: '/api/applications/123', method: 'PATCH', body: {...} },
 ])
-```
+```text
 
 ### enforceNetworkPolicy
 
@@ -163,7 +167,7 @@ Deny-by-default network policy (blocks external requests):
 
 ```typescript
 await enforceNetworkPolicy()
-```
+```text
 
 ### withMockedNet
 
@@ -173,7 +177,7 @@ Convenience fixture that installs mocks then enforces network policy:
 await withMockedNet([
   { url: '/api/applications', method: 'GET', body: [...] },
 ])
-```
+```text
 
 ## CI/CD Integration
 
@@ -186,7 +190,7 @@ await withMockedNet([
     PW_LOCK_NET: '1'
   run: |
     npm run test:e2e -- --reporter=list,junit,html
-```
+```text
 
 ### Sharding (Parallel Execution)
 
@@ -200,18 +204,18 @@ steps:
       PW_LOCK_NET: '1'
     run: |
       npx playwright test --shard=${{ matrix.shard }}/4
-```
+```text
 
 ## Project Structure
 
-```
+```text
 tests/e2e/
 ├── fixtures.ts          # Custom Playwright fixtures
 ├── utils.ts             # Test helper functions (assertToast)
 ├── factories.ts         # Test data factories
 ├── *.spec.ts            # Test files
 └── .auth/               # Authentication state storage
-```
+```text
 
 ## Best Practices
 
@@ -227,15 +231,17 @@ tests/e2e/
 ### Tests failing with network errors
 
 If you see "Blocked outbound network request" errors:
+
 - Add the URL to your mocks with `withMockedNet([...])`
 - Or temporarily allow network with `PW_ALLOW_NET=1`
 
 ### TypeScript errors with process.env
 
 Install `@types/node`:
+
 ```bash
 npm install --save-dev @types/node
-```
+```text
 
 ### Tests timing out
 

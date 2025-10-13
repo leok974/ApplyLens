@@ -16,6 +16,7 @@ This document summarizes the implementation of Phase 4 enhancements to the Apply
 #### 1. Time Window Parser (`app/logic/timewin.py`)
 
 **Features:**
+
 - Parse relative weekday references: "before Friday", "by Monday"
 - Parse explicit dates: "10/15", "10/15/2025", "1/1/26"
 - Parse named months: "before Oct 20, 2025", "by December 31"
@@ -24,14 +25,16 @@ This document summarizes the implementation of Phase 4 enhancements to the Apply
 - Returns ISO 8601 timestamps with "Z" suffix
 
 **Functions:**
+
 ```python
 parse_due_cutoff(text, now, tz) -> Optional[str]
 next_weekday(from_dt, weekday) -> datetime
 parse_relative_days(text) -> Optional[int]
 cutoff_from_relative_days(days, now, tz) -> str
-```
+```text
 
 **Test Coverage:**
+
 - ✅ 20 unit tests in `tests/unit/test_timewin.py`
 - ✅ All tests passing
 - Coverage: Weekday parsing, explicit dates, named months, relative days, edge cases, timezone conversion
@@ -39,11 +42,13 @@ cutoff_from_relative_days(days, now, tz) -> str
 #### 2. Bills Search (`app/logic/search.py`)
 
 **New Function:**
+
 ```python
 async def find_bills_due_before(cutoff_iso: str, limit: int = 200) -> List[Dict[str, Any]]
-```
+```text
 
 **Features:**
+
 - Query ES for `category: "bills"`
 - Range filter on `dates` array OR `expires_at` field
 - Sort by `received_at` descending
@@ -55,6 +60,7 @@ async def find_bills_due_before(cutoff_iso: str, limit: int = 200) -> List[Dict[
   - `sender_domain`, `received_at`
 
 **Elasticsearch Query Structure:**
+
 ```json
 {
   "query": {
@@ -74,9 +80,10 @@ async def find_bills_due_before(cutoff_iso: str, limit: int = 200) -> List[Dict[
     }
   }
 }
-```
+```text
 
 **Test Coverage:**
+
 - ✅ 7 unit tests in `tests/unit/test_search_bills.py`
 - ✅ All tests passing
 - Coverage: Basic search, empty results, limit parameter, query structure validation, mixed date fields, missing optional fields, async API
@@ -84,7 +91,8 @@ async def find_bills_due_before(cutoff_iso: str, limit: int = 200) -> List[Dict[
 #### 3. NL Agent Integration (`app/routers/nl_agent.py`)
 
 **Updated Flow:**
-```
+
+```text
 User: "bills due before Friday"
   ↓
 Parse cutoff: parse_due_cutoff("bills due before Friday") → "2025-10-10T04:00:00Z"
@@ -98,9 +106,10 @@ Create reminders: POST to /productivity/reminders/create
 Emit audit: Log to actions_audit_v1 index
   ↓
 Response: {intent, cutoff, created, reminders, count}
-```
+```text
 
 **Enhanced Response:**
+
 ```json
 {
   "intent": "summarize_bills",
@@ -122,16 +131,18 @@ Response: {intent, cutoff, created, reminders, count}
     }
   ]
 }
-```
+```text
 
 **New Imports:**
+
 ```python
 from app.logic.timewin import parse_due_cutoff
 from app.logic.search import find_bills_due_before
 from app.routers.productivity import CreateRemindersRequest, Reminder, create_reminders
-```
+```text
 
 **Test Coverage:**
+
 - ✅ 10 e2e tests in `tests/e2e/test_nl_bills_due_es.py`
 - Tests cover:
   - Basic "bills due before Friday" flow
@@ -150,6 +161,7 @@ from app.routers.productivity import CreateRemindersRequest, Reminder, create_re
 **Documentation:** `docs/APPROVALS_GROUPING_UI.md`
 
 **TypeScript Interfaces:**
+
 ```typescript
 export interface ApprovalItem {
   id?: number;
@@ -174,21 +186,24 @@ export interface ApprovalGroup {
   items: ApprovalItem[];
   actions: Array<"approve_all" | "reject_all" | "execute_all">;
 }
-```
+```text
 
 **React Component:**
+
 - `ApprovalsTray` component with props for bulk actions
 - Renders grouped items with count, average confidence
 - Bulk action buttons: Approve all, Reject all, Execute
 
 **Backend Grouping Logic:**
+
 ```python
 def group_approvals(approvals: List[dict]) -> List[dict]:
     """Group by policy_id and sender_domain."""
     # Returns ApprovalGroup structure
-```
+```text
 
 **ES|QL Dashboard Queries:**
+
 - Bills due in next 7 days by sender
 - Overdue bills by sender
 - Approval actions by policy
@@ -211,12 +226,13 @@ def group_approvals(approvals: List[dict]) -> List[dict]:
 
 ### Unit Tests: ✅ 27/27 Passing
 
-```
+```text
 tests/unit/test_timewin.py ................ 20 passed
 tests/unit/test_search_bills.py ........... 7 passed
-```
+```text
 
 **Time Window Parsing:**
+
 - ✅ Weekday calculations (next_weekday, same day)
 - ✅ Relative weekday parsing ("before Friday", "by Monday")
 - ✅ Explicit date formats (mm/dd, mm/dd/yy, mm/dd/yyyy)
@@ -227,6 +243,7 @@ tests/unit/test_search_bills.py ........... 7 passed
 - ✅ Timezone conversion
 
 **Bill Search:**
+
 - ✅ Basic search with monkeypatched ES
 - ✅ Empty results handling
 - ✅ Limit parameter
@@ -240,6 +257,7 @@ tests/unit/test_search_bills.py ........... 7 passed
 **Status:** Created but not run (requires Docker stack)
 
 **Tests Ready:**
+
 - ✅ Basic "bills due before Friday" flow
 - ✅ No results handling (fallback reminder)
 - ✅ Explicit date format parsing
@@ -250,6 +268,7 @@ tests/unit/test_search_bills.py ........... 7 passed
 - ✅ Multiple dates in array
 
 **To Run:**
+
 ```bash
 # Start Docker stack
 cd D:/ApplyLens/infra && docker-compose up -d
@@ -257,7 +276,7 @@ cd D:/ApplyLens/infra && docker-compose up -d
 # Run e2e tests
 cd D:/ApplyLens/services/api
 pytest tests/e2e/test_nl_bills_due_es.py -v
-```
+```text
 
 ## Usage Examples
 
@@ -283,7 +302,7 @@ from app.logic.timewin import parse_relative_days, cutoff_from_relative_days
 days = parse_relative_days("in 7 days")  # → 7
 cutoff = cutoff_from_relative_days(7)
 # → "2025-10-17T04:00:00Z"
-```
+```text
 
 ### 2. Bill Search
 
@@ -305,7 +324,7 @@ bills = await find_bills_due_before("2025-10-15T00:00:00Z")
     "received_at": "2025-10-01T10:00:00Z"
   }
 ]
-```
+```text
 
 ### 3. Natural Language Agent
 
@@ -313,9 +332,10 @@ bills = await find_bills_due_before("2025-10-15T00:00:00Z")
 curl -X POST http://localhost:8000/nl/run \
   -H "Content-Type: application/json" \
   -d '{"text": "show my bills due before Friday and create reminders"}'
-```
+```text
 
 **Response:**
+
 ```json
 {
   "intent": "summarize_bills",
@@ -331,7 +351,7 @@ curl -X POST http://localhost:8000/nl/run \
     }
   ]
 }
-```
+```text
 
 ### 4. Approvals Grouping (Backend)
 
@@ -356,7 +376,7 @@ groups = await get_grouped_approvals(status="proposed")
     }
   ]
 }
-```
+```text
 
 ### 5. Approvals Grouping (Frontend)
 
@@ -381,7 +401,7 @@ const { groups } = await response.json();
   onRejectAll={...}
   onExecuteAll={...}
 />
-```
+```text
 
 ## Next Steps
 
@@ -441,6 +461,7 @@ const { groups } = await response.json();
 ### Existing Systems
 
 **Works With:**
+
 - ✅ Productivity router (`/productivity/reminders/create`)
 - ✅ Audit logger (`app.logic.audit_es.emit_audit`)
 - ✅ Elasticsearch search (`app.logic.search`)
@@ -448,11 +469,13 @@ const { groups } = await response.json();
 - ✅ Approvals system (`app.routers.approvals`)
 
 **Database Schema:**
+
 - No new tables required
 - Uses existing `approvals_proposed` table
 - Writes to `actions_audit_v1` ES index
 
 **API Endpoints:**
+
 - ✅ `POST /nl/run` - Updated with bills integration
 - ⏸️ `GET /approvals/grouped` - To be implemented
 - ✅ `POST /productivity/reminders/create` - Used by NL agent
@@ -460,17 +483,20 @@ const { groups } = await response.json();
 ## Performance Notes
 
 ### Date Parsing
+
 - **Time Complexity:** O(1) - Simple regex patterns
 - **Memory:** Minimal - No caching needed
 - **Latency:** <1ms per parse
 
 ### Bill Search
+
 - **ES Query:** Uses indexed fields (`category`, `dates`, `expires_at`)
 - **Index:** Should have mappings for date range queries
 - **Typical Results:** 10-100 bills per query
 - **Latency:** 10-50ms (depends on ES cluster)
 
 ### NL Agent
+
 - **End-to-End Flow:** ~100-200ms
   - Date parsing: <1ms
   - ES query: 10-50ms
@@ -480,6 +506,7 @@ const { groups } = await response.json();
 - **Bottleneck:** Elasticsearch query (can be cached)
 
 ### Approvals Grouping
+
 - **Grouping Algorithm:** O(n) - Single pass through approvals
 - **Memory:** O(n) - One group per policy+domain combination
 - **Typical Groups:** 5-20 groups per user
@@ -527,7 +554,7 @@ const { groups } = await response.json();
 
 ## Commit Message
 
-```
+```text
 feat: Add date parsing and bill search for NL agent
 
 Phase 4 Enhancements:
@@ -565,4 +592,4 @@ Files:
 - tests/unit/test_search_bills.py (new)
 - tests/e2e/test_nl_bills_due_es.py (new)
 - docs/APPROVALS_GROUPING_UI.md (new)
-```
+```text

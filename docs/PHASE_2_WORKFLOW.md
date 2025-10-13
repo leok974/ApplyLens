@@ -3,6 +3,7 @@
 ## 🎯 Quick Reference
 
 ### Prerequisites
+
 ✅ Gmail backfill completed (`analytics/ingest/gmail_backfill_to_es_bq.py`)  
 ✅ Elasticsearch index `emails_v1-000001` exists and has data  
 ✅ API running on port 8003  
@@ -26,9 +27,10 @@ curl "http://localhost:8003/labels/stats" | jq
 
 # 3. View profile
 curl "http://localhost:8003/profile/summary?days=60" | jq
-```
+```text
 
 **Expected Results**:
+
 - High confidence (0.95) for rule matches
 - Low confidence (0.01) for "other" category
 - Fast processing (~100-200 emails/sec)
@@ -95,9 +97,10 @@ curl "http://localhost:8003/labels/stats" | jq
 
 # 6. View profile
 curl "http://localhost:8003/profile/summary?days=60" | jq
-```
+```text
 
 **Expected Results**:
+
 - High confidence (0.95) for rule matches
 - Probabilistic confidence (0.5-0.95) for ML predictions
 - Better coverage (fewer "other" labels)
@@ -108,57 +111,64 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
 ## 🔧 Export Options
 
 ### Balanced Export (Recommended)
+
 ```bash
 python export_weak_labels.py \
     --days 60 \
     --limit 40000 \
     --limit-per-cat 8000 \
     --out /tmp/weak_labels.jsonl
-```
+```text
 
 ### All Data (No Time Filter)
+
 ```bash
 python export_weak_labels.py \
     --days 0 \
     --out /tmp/all_labels.jsonl
-```
+```text
 
 ### Include Unlabeled (for "other" category)
+
 ```bash
 python export_weak_labels.py \
     --days 60 \
     --include-unlabeled \
     --out /tmp/with_other.jsonl
-```
+```text
 
 ### Small Test Export
+
 ```bash
 python export_weak_labels.py \
     --days 7 \
     --limit 5000 \
     --limit-per-cat 1000 \
     --out /tmp/test_labels.jsonl
-```
+```text
 
 ### Custom Elasticsearch Connection
+
 ```bash
 ES_URL=http://elasticsearch:9200 \
 ES_EMAIL_INDEX=emails_v1-000001 \
 python export_weak_labels.py \
     --days 60 \
     --out /tmp/weak_labels.jsonl
-```
+```text
 
 ---
 
 ## 📊 Profile Analytics Endpoints
 
 ### Summary (Category Breakdown)
+
 ```bash
 curl "http://localhost:8003/profile/summary?days=60" | jq
-```
+```text
 
 **Response**:
+
 ```json
 {
   "total": 1234,
@@ -175,9 +185,10 @@ curl "http://localhost:8003/profile/summary?days=60" | jq
     {"sender_domain": "example.com", "count": 42}
   ]
 }
-```
+```text
 
 ### Senders by Category
+
 ```bash
 # All senders
 curl "http://localhost:8003/profile/senders?days=60&size=20" | jq
@@ -187,14 +198,16 @@ curl "http://localhost:8003/profile/senders?category=newsletter&days=60" | jq
 
 # Promo senders only
 curl "http://localhost:8003/profile/senders?category=promo&days=60" | jq
-```
+```text
 
 ### Category Details
+
 ```bash
 curl "http://localhost:8003/profile/categories/newsletter?days=30" | jq
-```
+```text
 
 **Response**:
+
 ```json
 {
   "category": "newsletter",
@@ -212,9 +225,10 @@ curl "http://localhost:8003/profile/categories/newsletter?days=30" | jq
     }
   ]
 }
-```
+```text
 
 ### Time Series
+
 ```bash
 # Daily for last 30 days
 curl "http://localhost:8003/profile/time-series?days=30&interval=1d" | jq
@@ -224,13 +238,14 @@ curl "http://localhost:8003/profile/time-series?days=7&interval=1h" | jq
 
 # Weekly for last 90 days
 curl "http://localhost:8003/profile/time-series?days=90&interval=1w" | jq
-```
+```text
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### Export: "No documents found"
+
 ```bash
 # Check if index exists
 curl "http://localhost:9200/emails_v1-000001/_count"
@@ -238,18 +253,20 @@ curl "http://localhost:9200/emails_v1-000001/_count"
 # If 404, run Gmail backfill first
 cd analytics/ingest
 python gmail_backfill_to_es_bq.py
-```
+```text
 
 ### Training: "No valid training examples"
+
 ```bash
 # Check JSONL file
 head -n 5 /tmp/weak_labels.jsonl | jq
 
 # Verify weak_label field exists
 jq -r '.weak_label' /tmp/weak_labels.jsonl | sort | uniq -c
-```
+```text
 
 ### Labels: "Model not found"
+
 ```bash
 # Check if model file exists
 ls -lh services/api/app/labeling/label_model.joblib
@@ -257,9 +274,10 @@ ls -lh services/api/app/labeling/label_model.joblib
 # Set environment variable
 export LABEL_MODEL_PATH=/app/app/labeling/label_model.joblib
 docker compose restart api
-```
+```text
 
 ### API: "404 Not Found on ES"
+
 ```bash
 # Check Elasticsearch is running
 curl "http://localhost:9200/_cluster/health"
@@ -271,24 +289,27 @@ curl "http://localhost:9200/_cat/indices/emails*"
 curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
   -H 'Content-Type: application/json' \
   --data-binary @infra/elasticsearch/emails_v1.template.json
-```
+```text
 
 ---
 
 ## 📈 Performance Tips
 
 ### Faster Exports
+
 - Use `--limit` to cap total rows
 - Use `--limit-per-cat` for balanced classes
 - Use `--days` to filter recent emails only
 
 ### Better ML Model
+
 - Export 10k+ examples (aim for 2k+ per category)
 - Balance classes with `--limit-per-cat`
 - Retrain periodically as data grows
 - Tune hyperparameters in `train_ml.py`
 
 ### Faster Labeling
+
 - Use `batch_size=200` (default) for balanced speed
 - Rules-only mode is 2x faster than ML
 - Process in batches (filter by date range)
@@ -311,4 +332,4 @@ curl -X PUT "http://localhost:9200/_index_template/emails_v1" \
 - **Full Guide**: `PHASE_2_IMPLEMENTATION.md`
 - **Completion Summary**: `PHASE_2_COMPLETE.md`
 - **Test Script**: `scripts/test-phase2-endpoints.ps1`
-- **API Docs**: http://localhost:8003/docs
+- **API Docs**: <http://localhost:8003/docs>

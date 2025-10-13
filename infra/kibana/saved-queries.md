@@ -15,6 +15,7 @@ This document contains ESQL queries for analyzing email data in Kibana. These qu
 **Purpose**: Identify the most active senders broken down by email category (promo, newsletter, other)
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | EVAL category = CASE
@@ -24,14 +25,16 @@ FROM emails_v1-*
 | STATS count = COUNT(*) BY sender_domain, category
 | SORT count DESC
 | LIMIT 25
-```
+```text
 
 **Usage**:
+
 - Save this query in Kibana Discover as "Top Senders by Category"
 - Use for identifying spam/promo senders
 - Helps with building unsubscribe lists
 
-**Visualization**: 
+**Visualization**:
+
 - Best as a **Horizontal Bar Chart** or **Table**
 - X-axis: count
 - Y-axis: sender_domain
@@ -44,20 +47,23 @@ FROM emails_v1-*
 **Purpose**: Track promotional emails received in the past week
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | WHERE is_promo == true AND received_at >= NOW() - 7 DAY
 | STATS count = COUNT(*) BY sender_domain
 | SORT count DESC
 | LIMIT 25
-```
+```text
 
 **Usage**:
+
 - Save as "Recent Promos (7d)"
 - Monitor promo email volume
 - Identify aggressive marketing campaigns
 
 **Visualization**:
+
 - **Donut Chart** or **Vertical Bar Chart**
 - Single metric: Total promo emails
 
@@ -68,6 +74,7 @@ FROM emails_v1-*
 **Purpose**: Identify which newsletters you're subscribed to and their sending frequency
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | WHERE is_newsletter == true
@@ -78,9 +85,10 @@ FROM emails_v1-*
 | EVAL days_active = (last_seen - first_seen) / 86400000
 | SORT count DESC
 | LIMIT 50
-```
+```text
 
 **Usage**:
+
 - Discover all newsletter subscriptions
 - Calculate newsletter frequency
 - Prioritize unsubscribe actions
@@ -92,6 +100,7 @@ FROM emails_v1-*
 **Purpose**: Find emails with unsubscribe links that you might want to act on
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | WHERE has_unsubscribe == true
@@ -100,9 +109,10 @@ FROM emails_v1-*
   BY sender_domain, list_unsubscribe
 | SORT count DESC
 | LIMIT 100
-```
+```text
 
 **Usage**:
+
 - Generate bulk unsubscribe list
 - Export `list_unsubscribe` URLs for automation
 - Prioritize high-volume senders
@@ -114,6 +124,7 @@ FROM emails_v1-*
 **Purpose**: Check SPF/DKIM/DMARC results to identify potential phishing
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | WHERE spf_result IS NOT NULL OR dkim_result IS NOT NULL OR dmarc_result IS NOT NULL
@@ -125,9 +136,10 @@ FROM emails_v1-*
     ELSE "unknown" END
 | SORT count DESC
 | LIMIT 50
-```
+```text
 
 **Usage**:
+
 - Identify suspicious senders
 - Build allowlist of trusted domains
 - Flag potential phishing attempts
@@ -139,15 +151,17 @@ FROM emails_v1-*
 **Purpose**: Understand how Gmail automatically categorizes your emails
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | MV_EXPAND labels
 | STATS count = COUNT(*) BY labels
 | SORT count DESC
 | LIMIT 20
-```
+```text
 
 **Usage**:
+
 - Validate Gmail's categorization accuracy
 - Compare against your own label_heuristics
 - Find misclassified emails
@@ -159,6 +173,7 @@ FROM emails_v1-*
 **Purpose**: Analyze when promotional emails are most commonly sent
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | WHERE is_promo == true
@@ -166,14 +181,16 @@ FROM emails_v1-*
        day_of_week = DATE_EXTRACT("dow", received_at)
 | STATS count = COUNT(*) BY hour_of_day, day_of_week
 | SORT count DESC
-```
+```text
 
 **Usage**:
+
 - Identify peak promo sending times
 - Schedule email checking during low-volume periods
 - Build time-based filtering rules
 
 **Visualization**:
+
 - **Heatmap** with hour_of_day vs day_of_week
 - Color intensity = email count
 
@@ -184,6 +201,7 @@ FROM emails_v1-*
 **Purpose**: Validate the accuracy of custom label heuristics
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | WHERE label_heuristics IS NOT NULL
@@ -192,9 +210,10 @@ FROM emails_v1-*
         example_subjects = VALUES(subject, 5)
   BY label_heuristics
 | SORT count DESC
-```
+```text
 
 **Usage**:
+
 - Review classification accuracy
 - Find misclassified emails
 - Tune heuristic rules
@@ -206,6 +225,7 @@ FROM emails_v1-*
 **Purpose**: Analyze domains linked in emails (useful for tracking ATS platforms)
 
 **Query**:
+
 ```esql
 FROM emails_v1-*
 | WHERE urls IS NOT NULL
@@ -213,9 +233,10 @@ FROM emails_v1-*
 | STATS count = COUNT(*) BY urls
 | SORT count DESC
 | LIMIT 50
-```
+```text
 
 **Usage**:
+
 - Identify most common ATS platforms (lever.co, greenhouse.io, etc.)
 - Track job posting sources
 - Build domain reputation database
@@ -229,6 +250,7 @@ FROM emails_v1-*
 **Note**: This query requires adding an `expires_at` field to your mapping and extracting expiration dates during ingestion.
 
 **Query** (placeholder):
+
 ```esql
 FROM emails_v1-*
 | WHERE is_promo == true 
@@ -240,9 +262,10 @@ FROM emails_v1-*
   BY sender_domain, subject
 | SORT earliest_expiry ASC
 | LIMIT 25
-```
+```text
 
 **Implementation Steps**:
+
 1. Add `expires_at: { "type": "date" }` to ES mapping
 2. Parse expiration dates during ingestion (look for "expires", "valid until", "offer ends" patterns)
 3. Save this query once field is populated
@@ -252,8 +275,11 @@ FROM emails_v1-*
 ## How to Save Queries in Kibana
 
 1. **Navigate to Discover**
+
    ```
+
    Kibana → Analytics → Discover
+
    ```
 
 2. **Switch to ESQL Mode**
@@ -293,7 +319,7 @@ curl -X POST "http://localhost:5601/api/saved_objects/_export" \
     "type": "search",
     "includeReferencesDeep": true
   }' > infra/kibana/exports/saved_searches.ndjson
-```
+```text
 
 ### Import Saved Queries
 
@@ -303,7 +329,7 @@ To import on a new Kibana instance:
 curl -X POST "http://localhost:5601/api/saved_objects/_import" \
   -H "kbn-xsrf: true" \
   --form file=@infra/kibana/exports/saved_searches.ndjson
-```
+```text
 
 ---
 
@@ -312,6 +338,7 @@ curl -X POST "http://localhost:5601/api/saved_objects/_import" \
 ### Email Analytics Dashboard
 
 Create a dashboard with:
+
 1. **Top Senders by Category** (bar chart)
 2. **Promos in Last 7 Days** (metric + trend)
 3. **Newsletter Volume by Sender** (table)
@@ -321,6 +348,7 @@ Create a dashboard with:
 ### Unsubscribe Action Dashboard
 
 Create a focused dashboard for cleanup:
+
 1. **Unsubscribe Opportunities** (table with drill-down)
 2. **Newsletter Volume by Sender** (sortable table)
 3. **Recent Promos (7d)** (bar chart)
@@ -343,15 +371,18 @@ Create a focused dashboard for cleanup:
 ## Troubleshooting
 
 **Query fails with "Field not found"**:
+
 - Ensure your data view pattern is `emails_v1*`
 - Check that fields exist in your mapping (some queries use optional fields)
 - Verify data has been indexed from Gmail backfill
 
 **ESQL not available**:
+
 - ESQL requires Elasticsearch 8.11+
 - Upgrade your stack or use Kibana Query Language (KQL) equivalents
 
 **Performance issues**:
+
 - Add date range filters: `WHERE received_at >= NOW() - 30 DAY`
 - Reduce LIMIT values for large datasets
 - Consider index patterns with date suffixes (e.g., `emails_v1-2025.10*`)

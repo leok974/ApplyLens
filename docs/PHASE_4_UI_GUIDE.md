@@ -2,7 +2,7 @@
 
 ## Actions Button in Header
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │  Gmail Inbox    [Inbox] [Search] [Tracker] [Profile] [Settings] │
 │                                                                   │
@@ -10,13 +10,13 @@
 │                                    ↑                              │
 │                              Badge shows pending count            │
 └─────────────────────────────────────────────────────────────────┘
-```
+```text
 
 When clicked, tray slides in from right →
 
 ## ActionsTray Component
 
-```
+```text
                               ┌────────────────────────────────────┐
                               │ ✨ Proposed Actions           [↻] [×] │
                               │                                   3 │
@@ -75,11 +75,11 @@ When clicked, tray slides in from right →
                               └────────────────────────────────────┘
                                       420px width
                                       Fixed right position
-```
+```text
 
 ## Empty State
 
-```
+```text
                               ┌────────────────────────────────────┐
                               │ ✨ Proposed Actions           [↻] [×] │
                               ├────────────────────────────────────┤
@@ -95,11 +95,11 @@ When clicked, tray slides in from right →
                               │                                     │
                               │                                     │
                               └────────────────────────────────────┘
-```
+```text
 
 ## Action Type Badges
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────┐
 │                                                              │
 │  [Add Label]          Blue badge                            │
@@ -112,11 +112,11 @@ When clicked, tray slides in from right →
 │  [Quarantine]         Yellow badge                          │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## Confidence Progress Bars
 
-```
+```text
 High Confidence (>80%):
 ████████████████████░░ 85%    ← Green tint
 
@@ -125,19 +125,21 @@ Medium Confidence (50-80%):
 
 Low Confidence (<50%):
 ██████░░░░░░░░░░░░░░░░ 30%    ← Gray tint
-```
+```text
 
 ## Expandable Rationale
 
 **Collapsed:**
-```
+
+```text
 ┌─────────────────────────────────────────────┐
 │ ▶ Explain                                   │
 └─────────────────────────────────────────────┘
-```
+```text
 
 **Expanded:**
-```
+
+```text
 ┌─────────────────────────────────────────────┐
 │ ▼ Explain                                   │
 │                                             │
@@ -153,19 +155,19 @@ Low Confidence (<50%):
 │   • Policy confidence threshold met (70%)   │
 │                                             │
 └─────────────────────────────────────────────┘
-```
+```text
 
 ## Approve Flow
 
 ### 1. User clicks "Approve"
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │ [⏳ Processing...]    [Reject]              │
 │         ↑                                   │
 │   Button disabled during execution          │
 └─────────────────────────────────────────────┘
-```
+```text
 
 ### 2. Screenshot captured
 
@@ -177,16 +179,16 @@ const canvas = await html2canvas(document.body, {
 })
 const screenshotDataUrl = canvas.toDataURL("image/png")
 // → "data:image/png;base64,iVBORw0KGgoAAAA..."
-```
+```text
 
 ### 3. Toast notification
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │  ✅ Action approved                         │
 │  Archive executed successfully              │
 └─────────────────────────────────────────────┘
-```
+```text
 
 ### 4. Action removed from tray
 
@@ -196,22 +198,22 @@ The action card disappears from the list. Badge count decrements.
 
 ### 1. User clicks "Reject"
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │ [Approve]    [⏳ Processing...]             │
 │                      ↑                      │
 │                Button disabled              │
 └─────────────────────────────────────────────┘
-```
+```text
 
 ### 2. Toast notification
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │  🚫 Action rejected                         │
 │  Action has been dismissed                  │
 └─────────────────────────────────────────────┘
-```
+```text
 
 ### 3. Action removed from tray
 
@@ -220,18 +222,20 @@ The action card disappears. Audit trail records rejection as "noop".
 ## Responsive Behavior
 
 ### Desktop (>420px available)
+
 - Tray slides in from right
 - Backdrop covers remaining screen
 - Tray is 420px wide
 
 ### Mobile (<420px available)
+
 - Tray covers full screen
 - Still slides in from right
 - Close button in header
 
 ## Color Scheme (Dark Mode)
 
-```
+```text
 Background:       #171717 (neutral-900)
 Cards:            #262626 (neutral-800/50)
 Borders:          #404040 (neutral-700)
@@ -244,63 +248,70 @@ Reject button:    Outline with neutral-700
 
 Progress bar bg:  #404040 (neutral-700)
 Progress bar fg:  #3b82f6 (blue-500)
-```
+```text
 
 ## Interaction States
 
 ### Hover States
+
 - Buttons: Subtle background color change
 - Expand/collapse: Text color lightens
 - Action cards: No hover effect (not clickable)
 
 ### Loading States
+
 - Refresh button: Icon spins
 - Approve/Reject: Button text changes to "Processing..."
 - Entire tray: Skeleton loader (optional)
 
 ### Error States
+
 - Toast notification with red background
 - Action remains in tray
 - Error message in toast description
 
 ## Keyboard Shortcuts (Future)
 
-```
+```text
 Esc         → Close tray
 ↑/↓         → Navigate actions
 Enter       → Approve selected
 Delete      → Reject selected
 Space       → Toggle explanation
 R           → Refresh
-```
+```text
 
 ## Animations
 
 ### Tray Slide-In
+
 ```css
 transition: transform 300ms ease-out
 from: translateX(100%)
 to: translateX(0)
-```
+```text
 
 ### Backdrop Fade
+
 ```css
 transition: opacity 200ms ease-out
 from: opacity(0)
 to: opacity(0.5)
-```
+```text
 
 ### Action Card Remove
+
 ```css
 transition: opacity 200ms, height 200ms
 from: opacity(1) height(auto)
 to: opacity(0) height(0)
-```
+```text
 
 ### Progress Bar Fill
+
 ```css
 transition: width 500ms ease-out
-```
+```text
 
 ## Accessibility
 
@@ -351,24 +362,28 @@ transition: width 500ms ease-out
 ## Tips for Users
 
 **Getting Started:**
+
 1. Click "Actions" button to see pending actions
 2. Review each action's details and confidence
 3. Click "Explain" to understand why it was proposed
 4. Approve or reject based on your judgment
 
 **Best Practices:**
+
 - Review high-confidence actions (>80%) quickly
 - Scrutinize low-confidence actions (<50%)
 - Check rationale for unfamiliar actions
 - Approve in batches for efficiency
 
 **Keyboard Users:**
+
 - Tab through actions
 - Space to expand/collapse
 - Enter to approve
 - Esc to close tray
 
 **Understanding Confidence:**
+
 - 80-100%: Very likely correct
 - 50-80%: Likely correct, review recommended
 - <50%: Uncertain, careful review needed
@@ -376,21 +391,25 @@ transition: width 500ms ease-out
 ## Troubleshooting
 
 **Tray won't open:**
+
 - Check browser console for errors
 - Verify API endpoint is accessible
 - Check CORS configuration
 
 **Actions not loading:**
+
 - Check network tab for failed requests
 - Verify Docker services are running
 - Check API logs: `docker logs infra-api-1`
 
 **Screenshot capture fails:**
+
 - Check console for html2canvas errors
 - Verify html2canvas is installed
 - Screenshot failure is non-blocking (action still executes)
 
 **Badge count wrong:**
+
 - Wait 30s for next poll
 - Click refresh button in tray
 - Check `/api/actions/tray` endpoint
@@ -398,6 +417,7 @@ transition: width 500ms ease-out
 ## Future Enhancements
 
 **Planned:**
+
 - [ ] "Always do this" button (create policy from action)
 - [ ] Bulk approve/reject
 - [ ] Action history view
@@ -406,6 +426,7 @@ transition: width 500ms ease-out
 - [ ] Action scheduling (execute at specific time)
 
 **Nice to Have:**
+
 - [ ] Dark/light mode toggle
 - [ ] Compact view mode
 - [ ] Action undo (within 5 seconds)
@@ -416,6 +437,7 @@ transition: width 500ms ease-out
 ---
 
 **This UI is designed to be:**
+
 - **Fast** - Smooth animations, optimistic updates
 - **Clear** - Color-coded badges, confidence bars
 - **Trustworthy** - Detailed rationale, screenshot audit

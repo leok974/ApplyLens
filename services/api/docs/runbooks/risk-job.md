@@ -11,33 +11,38 @@
 ## Initial Response (5 minutes)
 
 ### 1. Check Risk Job Status
+
 ```bash
 # Check /automation/health endpoint
 curl http://localhost:8003/automation/health | jq .
 
 # Check metrics
 curl -s http://localhost:8003/metrics | grep applylens_risk
-```
+```text
 
 ### 2. Review Recent Failures
+
 ```bash
 # Check API logs for risk job errors
 docker-compose logs api | grep -i "risk" | grep -i "error" | tail -n 50
 
 # Check for specific error patterns
 docker-compose logs api | grep "analyze_risk\|compute_risk_score" | tail -n 100
-```
+```text
 
 ---
 
 ## Common Causes & Fixes
 
 ### 1. Missing Risk Score Column
+
 **Symptoms:**
+
 - Logs show "column emails.risk_score does not exist"
 - Migration version < 0010
 
 **Fix:**
+
 ```bash
 # Check migration status
 curl http://localhost:8003/ready | jq .migration
@@ -50,14 +55,17 @@ docker-compose exec db psql -U postgres -d applylens -c "
   SELECT column_name, data_type 
   FROM information_schema.columns 
   WHERE table_name = 'emails' AND column_name IN ('risk_score', 'expires_at', 'category');"
-```
+```text
 
 ### 2. Elasticsearch Sync Issues
+
 **Symptoms:**
+
 - Risk scores computed but not visible in UI
 - Parity check shows high mismatch ratio
 
 **Fix:**
+
 ```bash
 # Check ES connectivity
 curl http://localhost:9200/_cat/indices?v | grep emails
@@ -68,13 +76,16 @@ python scripts/analyze_risk.py --backfill --batch-size 50
 
 # Verify parity
 python scripts/check_parity.py --fields risk_score --sample 100
-```
+```text
 
 ### 3. Dry Run Test (Safe)
+
 **Symptoms:**
+
 - Unsure if job will work without breaking production
 
 **Fix:**
+
 ```bash
 # Run in dry-run mode (no DB writes)
 cd D:\ApplyLens\services\api
@@ -83,15 +94,18 @@ python scripts/analyze_risk.py --batch-size 10
 
 # Check output
 # Should show: "DRY RUN: would update X emails"
-```
+```text
 
 ### 4. Timeout/Performance Issues
+
 **Symptoms:**
+
 - Jobs start but don't complete
 - Logs show timeout errors
 - Backfill duration > 5 minutes (alert threshold)
 
 **Fix:**
+
 ```bash
 # Reduce batch size
 python scripts/analyze_risk.py --batch-size 25
@@ -104,14 +118,17 @@ docker-compose exec db psql -U postgres -c "
 
 # Optimize with smaller scope
 python scripts/analyze_risk.py --batch-size 10 --max-batches 5
-```
+```text
 
 ### 5. Configuration Issues
+
 **Symptoms:**
+
 - Risk scores all 0 or all 100
 - Logs show "weight sum != 1.0"
 
 **Fix:**
+
 ```python
 # Check risk weights (in scripts/analyze_risk.py)
 # Should sum to 1.0:
@@ -129,7 +146,7 @@ total = WEIGHT_DOMAIN + WEIGHT_KEYWORDS + WEIGHT_CONFIDENCE
 print(f'Weight sum: {total}')
 assert abs(total - 1.0) < 0.001, 'Weights must sum to 1.0'
 "
-```
+```text
 
 ---
 
@@ -149,7 +166,7 @@ python scripts/analyze_risk.py --backfill --batch-size 50
 
 # Check results
 curl http://localhost:8003/automation/health | jq .coverage_percentage
-```
+```text
 
 ---
 
@@ -172,13 +189,14 @@ curl -s http://localhost:8003/metrics | grep applylens_risk_requests_total
 # 4. Verify parity
 cd D:\ApplyLens\services\api
 python scripts/check_parity.py --fields risk_score --sample 100
-```
+```text
 
 ---
 
 ## Monitoring Queries
 
 ### Grafana (PromQL)
+
 ```promql
 # Failure rate
 rate(applylens_risk_requests_total{outcome="failure"}[30m])
@@ -194,9 +212,10 @@ sum(rate(applylens_risk_batch_duration_seconds_sum[5m]))
 histogram_quantile(0.95, 
   sum(rate(applylens_risk_batch_duration_seconds_bucket[15m])) by (le)
 )
-```
+```text
 
 ### Database Queries
+
 ```sql
 -- Check risk score distribution
 SELECT 
@@ -220,7 +239,7 @@ FROM emails
 WHERE risk_score IS NULL
 ORDER BY created_at DESC
 LIMIT 10;
-```
+```text
 
 ---
 
@@ -234,6 +253,7 @@ LIMIT 10;
 ---
 
 ## Related Links
+
 - [Risk Scoring Logic Tests](../../tests/unit/test_risk_scoring.py)
 - [Parity Check Script](../../scripts/check_parity.py)
 - [Automation Health Endpoint](http://localhost:8003/automation/health)

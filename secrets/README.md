@@ -2,7 +2,7 @@
 
 This directory contains OAuth credentials and other sensitive configuration files.
 
-## ⚠️ IMPORTANT: Do NOT commit actual secrets to git!
+## ⚠️ IMPORTANT: Do NOT commit actual secrets to git
 
 All files in this directory (except `.example` files) are ignored by git.
 
@@ -11,6 +11,7 @@ All files in this directory (except `.example` files) are ignored by git.
 ### 1. Google OAuth Credentials
 
 1. Copy `google.json.example` to `google.json`:
+
    ```bash
    cp google.json.example google.json
    ```
@@ -24,13 +25,13 @@ All files in this directory (except `.example` files) are ignored by git.
 
 ### 2. File Structure
 
-```
+```text
 secrets/
 ├── .gitkeep
 ├── README.md           # This file
 ├── google.json.example # Template for Google OAuth credentials
 └── google.json         # YOUR ACTUAL CREDENTIALS (gitignored)
-```
+```text
 
 ## Security Notes
 

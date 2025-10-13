@@ -32,7 +32,7 @@ bills_with_dates 1243.0
 # HELP bills_with_expires_at Bills with expires_at field set
 # TYPE bills_with_expires_at gauge
 bills_with_expires_at 1243.0
-```
+```text
 
 **Prometheus Scrape Configuration:**
 
@@ -45,7 +45,7 @@ scrape_configs:
     static_configs:
       - targets: ['api:8003']
     metrics_path: '/metrics'
-```
+```text
 
 ### 2. Elasticsearch Health Index (Kibana Trending)
 
@@ -69,7 +69,7 @@ PUT backfill_health_v1
     }
   }
 }
-```
+```text
 
 Or via cURL:
 
@@ -87,7 +87,7 @@ curl -X PUT "http://localhost:9200/backfill_health_v1" \
       }
     }
   }'
-```
+```text
 
 **Emit Health Data:**
 
@@ -102,11 +102,11 @@ python scripts/emit_backfill_health.py
 $env:ES_URL="http://localhost:9200"
 $env:ES_EMAIL_INDEX="gmail_emails_v2"
 python scripts/emit_backfill_health.py
-```
+```text
 
 **Sample Output:**
 
-```
+```text
 Emitted backfill health: {
   'index': 'gmail_emails_v2',
   'missing': 0,
@@ -114,7 +114,7 @@ Emitted backfill health: {
   'with_expires_at': 1243,
   'ts': '2025-10-10T14:22:31Z'
 }
-```
+```text
 
 ### 3. Kibana Dashboard
 
@@ -134,7 +134,7 @@ Invoke-WebRequest -Method POST `
 curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" \
   -H "kbn-xsrf: true" \
   -F "file=@kibana/backfill-health-missing.ndjson"
-```
+```text
 
 **Dashboard Features:**
 
@@ -163,7 +163,7 @@ FROM backfill_health_v1
   BY DATE_TRUNC(1 hour, ts)
 | EVAL coverage_pct = (with_exp / total) * 100
 | SORT DATE_TRUNC(1 hour, ts) ASC
-```
+```text
 
 ## Automation
 
@@ -177,7 +177,7 @@ FROM backfill_health_v1
 
 # Or use Makefile
 0 * * * * cd /path/to/applylens/services/api && make emit-backfill-health
-```
+```text
 
 **GitHub Actions:**
 
@@ -191,7 +191,7 @@ Add to your backfill workflow (`.github/workflows/backfill-bills.yml`):
     ES_API_KEY: ${{ secrets.ES_API_KEY }}
     ES_EMAIL_INDEX: gmail_emails_v2
   run: python scripts/emit_backfill_health.py
-```
+```text
 
 **Scheduled Task (Windows PowerShell):**
 
@@ -206,7 +206,7 @@ $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (Ne
 Register-ScheduledTask -TaskName "ApplyLens-BackfillHealth" `
   -Action $action -Trigger $trigger `
   -Description "Emit backfill health metrics to Elasticsearch"
-```
+```text
 
 ## Testing
 
@@ -217,7 +217,7 @@ Register-ScheduledTask -TaskName "ApplyLens-BackfillHealth" `
 python -m pytest tests/unit/test_emit_backfill_health.py -v
 
 # Expected: 4 tests pass
-```
+```text
 
 ### E2E Tests
 
@@ -226,7 +226,7 @@ python -m pytest tests/unit/test_emit_backfill_health.py -v
 python -m pytest tests/e2e/test_metrics_prom.py -v
 
 # Expected: 4 tests pass
-```
+```text
 
 ### Manual Testing
 
@@ -238,7 +238,7 @@ uvicorn app.main:app --reload
 
 # Query metrics
 curl http://localhost:8000/metrics
-```
+```text
 
 **2. Test Health Emission:**
 
@@ -248,7 +248,7 @@ python scripts/emit_backfill_health.py
 
 # Verify in ES
 curl http://localhost:9200/backfill_health_v1/_search?pretty
-```
+```text
 
 **3. Test Makefile:**
 
@@ -260,7 +260,7 @@ make emit-backfill-health
 
 # Check metrics endpoint
 curl http://localhost:8000/metrics | grep bills_
-```
+```text
 
 ## Monitoring Checklist
 
@@ -325,7 +325,7 @@ groups:
         annotations:
           summary: "Backfill metrics are stale"
           description: "Metrics haven't been refreshed in over 5 minutes"
-```
+```text
 
 ## Environment Variables
 
@@ -338,7 +338,7 @@ groups:
 
 ## Architecture
 
-```
+```text
 ┌─────────────────┐
 │   Prometheus    │◄───── Scrape /metrics every 30s
 │   (Time Series  │       (Real-time gauges)
@@ -380,25 +380,29 @@ groups:
 │   (Dashboards   │
 │   & Lens)       │
 └─────────────────┘
-```
+```text
 
 ## Troubleshooting
 
 **Metrics endpoint returns 404:**
+
 - Check that router is imported in `app/main.py`
 - Verify API is running: `curl http://localhost:8000/healthz`
 
 **Metrics show 0.0 for all values:**
+
 - Check ES connectivity: `curl http://localhost:9200`
 - Verify ES_EMAIL_INDEX exists: `curl http://localhost:9200/gmail_emails_v2`
 - Check ES_URL environment variable
 
 **Health emission fails:**
+
 - Verify backfill_health_v1 index exists
 - Check ES authentication (ES_API_KEY)
 - Test with: `python scripts/emit_backfill_health.py`
 
 **Kibana dashboard import fails:**
+
 - Check Kibana version (8.x required for ES|QL)
 - Verify index pattern creation
 - Try manual import via Kibana UI: Stack Management → Saved Objects

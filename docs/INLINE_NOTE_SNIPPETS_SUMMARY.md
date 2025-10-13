@@ -14,12 +14,14 @@ Extended the InlineNote component with **snippet chips** for one-click insertion
 ### 1. Snippet Chips Feature
 
 **Visual Design:**
+
 - Small pill-shaped buttons (`px-2 py-0.5 text-xs`)
 - Appear below textarea in editor mode
 - Horizontal flex layout with wrapping (`flex flex-wrap gap-2`)
 - Hover effect for interactivity
 
 **Functionality:**
+
 - Click to insert snippet text
 - Empty note: Sets snippet as value
 - Existing note: Appends snippet on new line
@@ -29,6 +31,7 @@ Extended the InlineNote component with **snippet chips** for one-click insertion
 ### 2. Default Snippets
 
 7 common job application note phrases:
+
 1. "Sent thank-you"
 2. "Follow-up scheduled"
 3. "Left voicemail"
@@ -40,17 +43,19 @@ Extended the InlineNote component with **snippet chips** for one-click insertion
 ### 3. Customization
 
 **Optional `snippets` Prop:**
+
 - Pass custom array to override defaults
 - Omit to use built-in snippets
 - Pass empty array to disable chips
 
 **Example:**
+
 ```tsx
 <InlineNote
   snippets={['Custom phrase 1', 'Custom phrase 2']}
   // ... other props
 />
-```
+```text
 
 ---
 
@@ -59,6 +64,7 @@ Extended the InlineNote component with **snippet chips** for one-click insertion
 ### Component Changes (`InlineNote.tsx`)
 
 **1. Added `snippets` Prop:**
+
 ```typescript
 snippets?: string[] = [
   'Sent thank-you',
@@ -69,9 +75,10 @@ snippets?: string[] = [
   'Referred by X',
   'Declined offer',
 ]
-```
+```text
 
 **2. Added `insertSnippet()` Function:**
+
 ```typescript
 function insertSnippet(snippet: string) {
   const current = (text ?? '').trim()
@@ -82,9 +89,10 @@ function insertSnippet(snippet: string) {
     taRef.current?.setSelectionRange(next.length, next.length)
   })
 }
-```
+```text
 
 **3. Added Snippet Chips Rendering:**
+
 ```tsx
 {snippets?.length ? (
   <div className="flex flex-wrap gap-2">
@@ -102,11 +110,12 @@ function insertSnippet(snippet: string) {
     ))}
   </div>
 ) : null}
-```
+```text
 
 ### Tracker Integration (`Tracker.tsx`)
 
 **Now Uses Centralized Config:**
+
 ```tsx
 import { NOTE_SNIPPETS } from '../config/tracker'
 
@@ -117,9 +126,10 @@ import { NOTE_SNIPPETS } from '../config/tracker'
   snippets={NOTE_SNIPPETS}  // ← From config file
   onSave={async (next) => { /* ... */ }}
 />
-```
+```text
 
 **Configuration File (`config/tracker.ts`):**
+
 ```typescript
 const ENV_SNIPPETS = (import.meta as any).env?.VITE_TRACKER_SNIPPETS as string | undefined
 
@@ -134,13 +144,14 @@ export const NOTE_SNIPPETS: string[] = ENV_SNIPPETS
       'Referred by X',
       'Declined offer',
     ]
-```
+```text
 
 **Environment Variable Override:**
+
 ```bash
 # .env.local or .env.production
 VITE_TRACKER_SNIPPETS="Custom 1|Custom 2|Custom 3"
-```
+```text
 
 See `TRACKER_CONFIG_SYSTEM.md` for full configuration documentation.
 
@@ -154,6 +165,7 @@ See `TRACKER_CONFIG_SYSTEM.md` for full configuration documentation.
 "click snippet chip inserts text, autosaves on blur, shows toast, persists preview"
 
 **Steps:**
+
 1. Mock API with empty notes initially
 2. Mock PATCH to save "Sent thank-you"
 3. Navigate to /tracker
@@ -165,22 +177,25 @@ See `TRACKER_CONFIG_SYSTEM.md` for full configuration documentation.
 9. Verify preview shows persisted text
 
 **Running:**
+
 ```bash
 cd apps/web
 npx playwright test tests/e2e/tracker-note-snippets.spec.ts
-```
+```text
 
 ---
 
 ## User Experience Impact
 
 ### Before (Manual Typing Only)
+
 1. Click preview to open editor
 2. Type common phrase manually
 3. Risk of typos, inconsistent phrasing
 4. Slower for repetitive notes
 
 ### After (With Snippet Chips)
+
 1. Click preview to open editor
 2. Click snippet chip (1 click)
 3. Text inserted instantly, perfectly formatted
@@ -195,22 +210,30 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ## Use Cases
 
 ### 1. **Thank-You Notes**
+
 *After interview*
+
 - Click "Sent thank-you" chip
 - Auto-inserted, ready to save
 
 ### 2. **Follow-Up Tracking**
+
 *Scheduling next steps*
+
 - Click "Follow-up scheduled"
 - Add details: "Follow-up scheduled\nMeeting on 10/15 with hiring manager"
 
 ### 3. **Communication Log**
+
 *Voicemail or recruiter screen*
+
 - Click "Left voicemail" or "Recruiter screen scheduled"
 - Timestamp automatically captured via auto-save
 
 ### 4. **Multi-Step Notes**
+
 *Complex interaction*
+
 - Click "Sent thank-you"
 - Type custom detail
 - Click "Follow-up scheduled"
@@ -221,19 +244,24 @@ npx playwright test tests/e2e/tracker-note-snippets.spec.ts
 ## Technical Decisions
 
 ### Why `onMouseDown` preventDefault?
+
 Prevents blur event when clicking chip, allowing smooth insertion without closing editor.
 
 ### Why `requestAnimationFrame`?
+
 Ensures DOM updates complete before focusing and setting cursor position.
 
 ### Why Append on New Line?
+
 Preserves existing content, creates chronological log, maintains readability.
 
 ### Why Test IDs with Slugified Names?
+
 ```typescript
 `${testId}-chip-${s.replace(/\s+/g, '-').toLowerCase()}`
 // "Sent thank-you" → "note-303-chip-sent-thank-you"
-```
+```text
+
 Enables E2E tests to target specific chips reliably.
 
 ---
@@ -241,6 +269,7 @@ Enables E2E tests to target specific chips reliably.
 ## Customization Examples
 
 ### Example 1: Domain-Specific Snippets
+
 ```tsx
 // For sales pipeline
 <InlineNote
@@ -251,9 +280,10 @@ Enables E2E tests to target specific chips reliably.
     'Payment received',
   ]}
 />
-```
+```text
 
 ### Example 2: Per-Status Snippets
+
 ```tsx
 const snippetsByStatus = {
   applied: ['Submitted application', 'Awaiting response'],
@@ -264,33 +294,38 @@ const snippetsByStatus = {
 <InlineNote
   snippets={snippetsByStatus[application.status]}
 />
-```
+```text
 
 ### Example 3: Disable Snippets
+
 ```tsx
 <InlineNote
   snippets={[]}  // No chips rendered
 />
-```
+```text
 
 ---
 
 ## Accessibility
 
 ### Keyboard Navigation
+
 - Tab to reach chip buttons
 - Enter/Space to activate chip
 - Focus returns to textarea after insertion
 
 ### Screen Readers
+
 ```html
 <button data-testid="note-303-chip-sent-thank-you">
   Sent thank-you
 </button>
-```
+```text
+
 Announces: "Button, Sent thank-you"
 
 ### Contrast
+
 - Border visible on gray background
 - Hover effect provides clear affordance
 
@@ -299,15 +334,18 @@ Announces: "Button, Sent thank-you"
 ## Performance
 
 ### Rendering
+
 - Conditional rendering: Only shows when editor open
 - No performance impact when collapsed (preview mode)
 
 ### Memory
+
 - Default snippets (7 strings): ~200 bytes
 - Custom snippets: Depends on array size
 - Negligible impact
 
 ### Updates
+
 - No re-renders unless snippets prop changes
 - Insertion is synchronous (instant feedback)
 
@@ -316,14 +354,17 @@ Announces: "Button, Sent thank-you"
 ## Migration Path
 
 ### Existing Users
+
 **No action required** - Default snippets work out of the box
 
 ### Custom Snippets
+
 1. Import InlineNote (already done)
 2. Add `snippets` prop with array
 3. Test chips appear in editor
 
 ### Disable Feature
+
 Pass `snippets={[]}` to hide chips entirely
 
 ---
@@ -391,6 +432,7 @@ Pass `snippets={[]}` to hide chips entirely
 ## Conclusion
 
 The snippet chips feature successfully enhances the InlineNote component by:
+
 - **Reducing typing time** by ~70% for common phrases
 - **Eliminating typos** in standard phrases
 - **Improving consistency** across users

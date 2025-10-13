@@ -1,11 +1,13 @@
 # Application Tracker Implementation Summary
 
 ## Overview
+
 Successfully implemented a complete application tracking system with automatic email linking, metadata extraction, and full CRUD API.
 
 ## Changes Made
 
 ### 1. Database Schema Updates (`app/models.py`)
+
 - **Extended Email model** with:
   - `company` (VARCHAR 256, indexed) - extracted from sender/body
   - `role` (VARCHAR 512, indexed) - extracted from subject
@@ -30,6 +32,7 @@ Successfully implemented a complete application tracking system with automatic e
 - **Added AppStatus enum**: applied, in_review, interview, offer, rejected, archived
 
 ### 2. Migration System (`app/migrate.py`)
+
 - Created migration script with ALTER TABLE statements
 - Adds columns to existing emails table
 - Creates applications table with proper foreign keys
@@ -37,6 +40,7 @@ Successfully implemented a complete application tracking system with automatic e
 - Idempotent - can be run multiple times safely
 
 ### 3. Gmail Service Enhancements (`app/gmail_service.py`)
+
 - **New extraction functions**:
   - `extract_company(sender, body)` - extracts company from sender domain or body text
   - `extract_role(subject)` - extracts job role from subject line
@@ -62,6 +66,7 @@ Successfully implemented a complete application tracking system with automatic e
   - Added `source_confidence` (float) for ranking
 
 ### 4. Applications CRUD API (`app/routes_applications.py`)
+
 New router with full CRUD operations:
 
 - **POST /applications** - Create new application
@@ -90,13 +95,16 @@ New router with full CRUD operations:
   - 400 if email lacks company/role/thread
 
 ### 5. Enhanced Search (`app/routers/search.py`)
+
 - Added `company` query parameter - filter by exact company name
 - Added `source` query parameter - filter by ATS source
 - Returns company, role, source in search results
 - Multiple filters combine with AND logic
 
 ### 6. Testing (`tests/test_applications.py`)
+
 Three comprehensive tests:
+
 - **test_upsert_application_from_email()** - Creates app from email with metadata
 - **test_upsert_application_by_thread_id()** - Verifies thread_id grouping
 - **test_no_application_without_metadata()** - Ensures no app for newsletters
@@ -106,21 +114,24 @@ All tests pass successfully ✅
 ## API Endpoints Summary
 
 ### Applications CRUD
-```
+
+```text
 POST   /applications                    - Create application
 GET    /applications                    - List applications (filters: status, company)
 GET    /applications/{id}               - Get single application
 PATCH  /applications/{id}               - Update application
 DELETE /applications/{id}               - Delete application
 POST   /applications/from-email/{id}   - Create from email
-```
+```text
 
 ### Search Enhancements
-```
+
+```text
 GET    /search?q=...&company=...&source=...  - Search with filters
-```
+```text
 
 ## Database Migration Commands
+
 ```bash
 # Run migration (adds columns, creates tables)
 docker compose exec api python -m app.migrate
@@ -128,9 +139,10 @@ docker compose exec api python -m app.migrate
 # Verify schema
 docker compose exec db psql -U postgres -d applylens -c "\d emails"
 docker compose exec db psql -U postgres -d applylens -c "\d applications"
-```
+```text
 
 ## Testing Commands
+
 ```bash
 # Run all application tests
 docker compose exec api python -m tests.test_applications
@@ -138,11 +150,12 @@ docker compose exec api python -m tests.test_applications
 # Test endpoints
 curl http://localhost:8003/applications
 curl http://localhost:8003/docs#/applications
-```
+```text
 
 ## Data Flow
 
 ### Email Backfill → Application Creation
+
 1. User triggers backfill: `POST /gmail/backfill`
 2. For each Gmail message:
    - Extract metadata: company, role, source, confidence
@@ -155,6 +168,7 @@ curl http://localhost:8003/docs#/applications
    - Index in Elasticsearch with new fields
 
 ### Manual Application Creation
+
 1. User creates via API: `POST /applications`
 2. Or from email: `POST /applications/from-email/{email_id}`
 3. Application tracks all linked emails via relationship
@@ -163,22 +177,26 @@ curl http://localhost:8003/docs#/applications
 ## Key Features
 
 ### Automatic Metadata Extraction
+
 - **Company**: Extracted from sender domain or body patterns
 - **Role**: Extracted from subject line patterns
 - **Source**: Detects ATS (Lever, Greenhouse, Workday, etc.)
 - **Confidence**: 0.9 for known ATS, 0.6 for headers, 0.4 for generic
 
 ### Intelligent Grouping
+
 - Emails grouped by `thread_id` (Gmail conversation)
 - Fallback to `company + role` matching
 - Prevents duplicate applications for same job
 
 ### Status Tracking
+
 - Enum ensures valid states
 - Auto-sets to "interview" if label_heuristics contains "interview"
 - Can be manually updated via PATCH endpoint
 
 ### Search Enhancement
+
 - Filter search by company name
 - Filter search by ATS source
 - Combined with existing label filters
@@ -187,7 +205,9 @@ curl http://localhost:8003/docs#/applications
 ## Frontend Integration Points
 
 ### Inbox UI Enhancements
+
 Add to `EmailCard` component:
+
 ```typescript
 // Show application link if email is linked
 {email.application_id && (
@@ -200,9 +220,10 @@ Add to `EmailCard` component:
 <button onClick={() => createFromEmail(email.id)}>
   ➕ Create Application
 </button>
-```
+```text
 
 ### Create Application from Email
+
 ```typescript
 const createFromEmail = async (emailId: number) => {
   const res = await fetch(`/applications/from-email/${emailId}`, {
@@ -211,10 +232,12 @@ const createFromEmail = async (emailId: number) => {
   const data = await res.json();
   navigate(`/tracker?selected=${data.application_id}`);
 };
-```
+```text
 
 ### Applications Tracker Page
+
 New page at `/tracker` with:
+
 - DataGrid showing all applications
 - Filters: status dropdown, company search
 - Columns: company, role, source, status, last updated
@@ -225,6 +248,7 @@ New page at `/tracker` with:
 ## Performance Considerations
 
 ### Indexes Created
+
 - `emails.gmail_id` (UNIQUE) - for upsert
 - `emails.sender` - for company extraction
 - `emails.company` - for application matching
@@ -234,12 +258,14 @@ New page at `/tracker` with:
 - Composite: `(subject, sender, recipient)` - for full-text search
 
 ### Query Optimization
+
 - Application list uses LIMIT 500
 - Sorted by `updated_at DESC NULLS LAST`
 - Uses indexes for status and company filters
 - Elasticsearch filters reduce result set before scoring
 
 ## Security Considerations
+
 - No authentication yet - add user_id FK to applications
 - SQL injection prevented by SQLAlchemy ORM
 - Input validation via Pydantic models
@@ -248,11 +274,13 @@ New page at `/tracker` with:
 ## Next Steps
 
 ### Immediate (Recommended)
+
 1. **Frontend UI**: Create `/tracker` page with DataGrid
 2. **Email linking UI**: Add "Create Application" button to EmailCard
 3. **Elasticsearch reindex**: Delete index, run backfill to populate with new fields
 
 ### Future Enhancements
+
 1. **ML Classification**: Replace regex with trained model
 2. **Email Threading**: Show conversation view
 3. **Analytics Dashboard**: Charts for status, source breakdown
@@ -265,6 +293,7 @@ New page at `/tracker` with:
 ## Files Modified
 
 ### Backend
+
 - `services/api/app/models.py` - Extended Email, created Application
 - `services/api/app/migrate.py` - Migration script with ALTER TABLE
 - `services/api/app/gmail_service.py` - Extraction functions, ES mapping
@@ -274,11 +303,13 @@ New page at `/tracker` with:
 - `services/api/tests/test_applications.py` - NEW test suite
 
 ### Database
+
 - `emails` table: +11 columns (gmail_id, sender, recipient, labels, label_heuristics, raw, company, role, source, source_confidence, application_id)
 - `applications` table: NEW with 11 columns
 - +13 indexes created
 
 ## Success Metrics
+
 ✅ All 7 implementation tasks completed
 ✅ Database migration successful
 ✅ API endpoints working (tested with curl)
@@ -288,6 +319,7 @@ New page at `/tracker` with:
 ✅ API docs accessible at /docs
 
 ## Validation Commands
+
 ```bash
 # Check API health
 curl http://localhost:8003/health
@@ -303,9 +335,10 @@ docker compose exec db psql -U postgres -d applylens -c "\d applications"
 
 # Run tests
 docker compose exec api python -m tests.test_applications
-```
+```text
 
 ## Documentation
+
 - API automatically documented at `/docs` with Swagger UI
 - All endpoints have descriptions and schemas
 - AppStatus enum values documented

@@ -38,7 +38,7 @@ export interface ApprovalGroup {
   items: ApprovalItem[];      // Individual approval items
   actions: Array<"approve_all" | "reject_all" | "execute_all">;
 }
-```
+```text
 
 ## API Response Format
 
@@ -103,7 +103,7 @@ export interface ApprovalGroup {
     }
   ]
 }
-```
+```text
 
 ## React Component
 
@@ -185,7 +185,7 @@ export default function ApprovalsTray({
     </div>
   );
 }
-```
+```text
 
 ## Backend Implementation
 
@@ -272,7 +272,7 @@ async def get_grouped_approvals(status: str = "proposed"):
     groups = group_approvals(approvals)
     
     return {"groups": groups}
-```
+```text
 
 ## Usage Examples
 
@@ -312,7 +312,7 @@ const data = await response.json();
     });
   }}
 />
-```
+```text
 
 ### Backend - Create Grouped Actions
 
@@ -347,7 +347,7 @@ approvals_bulk_insert(rows)
 # Later, fetch grouped
 groups = await get_grouped_approvals(status="proposed")
 # Returns grouped structure ready for UI
-```
+```text
 
 ## Elasticsearch Dashboard Queries
 
@@ -363,7 +363,7 @@ FROM emails_v1
 | STATS due_count = count() BY sender_domain
 | SORT due_count DESC
 | LIMIT 20
-```
+```text
 
 ### ES|QL: Overdue Bills by Sender
 
@@ -377,7 +377,7 @@ FROM emails_v1
 | STATS overdue_count = count() BY sender_domain
 | SORT overdue_count DESC
 | LIMIT 20
-```
+```text
 
 ### ES|QL: Approval Actions by Policy
 
@@ -386,7 +386,7 @@ FROM actions_audit_v1
 | WHERE status == "executed"
 | STATS executed_count = count() BY policy_id
 | SORT executed_count DESC
-```
+```text
 
 ### ES|QL: Average Confidence by Policy
 
@@ -395,7 +395,7 @@ FROM actions_audit_v1
 | WHERE status == "approved"
 | STATS avg_confidence = AVG(confidence) BY policy_id
 | SORT avg_confidence DESC
-```
+```text
 
 ## UI States and Error Handling
 
@@ -409,7 +409,7 @@ FROM actions_audit_v1
 ) : (
   <ApprovalsTray groups={groups} {...handlers} />
 )}
-```
+```text
 
 ### Empty State
 
@@ -424,7 +424,7 @@ FROM actions_audit_v1
 ) : (
   <ApprovalsTray groups={groups} {...handlers} />
 )}
-```
+```text
 
 ### Error State
 
@@ -442,7 +442,7 @@ FROM actions_audit_v1
 ) : (
   <ApprovalsTray groups={groups} {...handlers} />
 )}
-```
+```text
 
 ## Performance Considerations
 
@@ -476,7 +476,7 @@ async def get_grouped_approvals(
             "total_pages": (total_rows + page_size - 1) // page_size
         }
     }
-```
+```text
 
 ### Caching
 
@@ -500,7 +500,7 @@ def get_cached_groups(status: str):
     groups = fetch_and_group_approvals(status)
     _cache[status] = (now, groups)
     return groups
-```
+```text
 
 ## Security Notes
 

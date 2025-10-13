@@ -3,72 +3,85 @@
 ## 🚀 Deployment Steps (5 minutes)
 
 ### 1. Run Database Migration
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api alembic upgrade head
-```
+```text
+
 ✅ Adds `first_user_reply_at`, `last_user_reply_at`, `user_reply_count` columns to emails table
 
 ### 2. Update Elasticsearch Mapping  
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.es_reindex_with_ats
-```
+```text
+
 ✅ Creates new index with reply metric fields (`replied`, `first_user_reply_at`, `last_user_reply_at`, `user_reply_count`)
 
 ### 3. Backfill Existing Data
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api python -m services.api.scripts.backfill_reply_metrics
-```
+```text
+
 ✅ Computes reply metrics for all existing emails (~1807 emails, ~156 threads)
 
 ### 4. Restart API (optional)
+
 ```bash
 docker compose -f infra/docker-compose.yml restart api
-```
+```text
 
 ---
 
 ## 🧪 Quick Tests
 
 ### Test 1: Check Database
+
 ```bash
 docker compose -f infra/docker-compose.yml exec api psql "$DATABASE_URL" -c "
 SELECT COUNT(*) as total, COUNT(first_user_reply_at) as replied FROM emails;
 "
-```
+```text
 
 ### Test 2: Check Elasticsearch
+
 ```bash
 curl -s "http://localhost:9200/gmail_emails/_search?size=1&q=replied:true" | jq '.hits.hits[0]._source | {subject, replied, user_reply_count, first_user_reply_at}'
-```
+```text
 
 ### Test 3: Test Search API
+
 ```bash
 # Find unanswered threads
 curl "http://localhost:8003/search?q=interview&replied=false&size=5"
 
 # Find threads you replied to
 curl "http://localhost:8003/search?q=offer&replied=true&size=5"
-```
+```text
 
 ---
 
 ## 📊 Kibana Lens Setup (2 minutes)
 
 ### Create Runtime Field
+
 1. Open Kibana → Stack Management → Index Patterns → `gmail_emails`
 2. Click "Add field" → "Runtime field"
 3. Name: `time_to_response_hours`
 4. Type: **Number**
 5. Script:
+
 ```painless
 if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
   def start = doc['received_at'].value.toInstant().toEpochMilli();
   def end   = doc['first_user_reply_at'].value.toInstant().toEpochMilli();
   if (end >= start) emit((end - start) / 3600000.0);
 }
-```
+```text
 
 ### Create Visualization
+
 1. Open Lens
 2. **Metric**: Average of `time_to_response_hours`
 3. **X-axis**: `received_at` (Date histogram, daily)
@@ -94,9 +107,10 @@ if (!doc['first_user_reply_at'].empty && !doc['received_at'].empty) {
 **Migration fails**: Already applied? Check `alembic current`
 
 **Backfill error "GMAIL_PRIMARY_ADDRESS not set"**: Set in `.env`:
+
 ```bash
 GMAIL_PRIMARY_ADDRESS=leoklemet.pa@gmail.com
-```
+```text
 
 **No replied=true results**: Backfill script didn't run or user has no replies
 

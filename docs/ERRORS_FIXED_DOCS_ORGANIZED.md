@@ -7,11 +7,13 @@
 ### 1. TypeScript Errors in `applications-extract.ts`
 
 **Problems:**
+
 - Missing Express type imports
 - Parameters `req` and `res` had implicit `any` types
 - No type safety for Express Request/Response objects
 
 **Solution:**
+
 ```typescript
 // Added type imports
 import { Router, Request, Response } from 'express'
@@ -23,7 +25,7 @@ r.post('/backfill-from-email', async (req: Request, res: Response) => { ... })
 // Added @ts-ignore for environments without Express
 // NOTE: Install Express types if missing: npm install --save-dev @types/express
 // @ts-ignore - Express may not be installed in this workspace
-```
+```text
 
 **Status**: ✅ Fixed - Zero TypeScript errors
 
@@ -32,11 +34,13 @@ r.post('/backfill-from-email', async (req: Request, res: Response) => { ... })
 ### 2. TypeScript Errors in `emailExtractor.test.ts`
 
 **Problems:**
+
 - Missing test framework type definitions
 - `describe`, `it`, `expect` not recognized
 - No type definitions for Jest/Mocha
 
 **Solution:**
+
 ```typescript
 // Added global type declarations
 declare global {
@@ -48,7 +52,7 @@ declare global {
 // Added installation note
 // NOTE: Install test types if missing: npm install --save-dev @types/jest
 // @ts-ignore - Test framework may not be configured
-```
+```text
 
 **Status**: ✅ Fixed - Zero TypeScript errors
 
@@ -60,7 +64,7 @@ declare global {
 
 **Moved 70+ markdown files** from root to `docs/` folder for better organization:
 
-```
+```text
 ApplyLens/
 ├── README.md (main project README)
 ├── docs/
@@ -72,7 +76,7 @@ ApplyLens/
 │   ├── MONITORING_COMPLETE.md
 │   ├── ... (67+ more docs)
 │   └── [All documentation organized by topic]
-```
+```text
 
 ### Documentation Categories
 
@@ -108,6 +112,7 @@ ApplyLens/
 **File**: `docs/README.md` (350+ lines)
 
 **Features**:
+
 - Complete table of contents for all 70+ docs
 - Organized by topic and document type
 - Recommended reading order for different roles
@@ -115,6 +120,7 @@ ApplyLens/
 - Documentation statistics
 
 **Quick Navigation**:
+
 ```markdown
 ### By Feature
 - Need to filter emails? → ADVANCED_FILTERING_SUMMARY.md
@@ -125,7 +131,7 @@ ApplyLens/
 - New Users → 4 essential docs
 - Developers → 4 technical docs
 - DevOps/SRE → 4 deployment docs
-```
+```text
 
 ---
 
@@ -147,19 +153,21 @@ All documentation has been organized in the [`docs/`](./docs/) folder:
 - **[Testing](./docs/RUNNING_TESTS.md)**
 
 📖 **See the [Documentation Index](./docs/README.md) for the complete list.**
-```
+```text
 
 ---
 
 ## ✨ Benefits
 
 ### For TypeScript Files
+
 - ✅ Zero compilation errors
 - ✅ Type safety for API routes
 - ✅ Clear installation instructions for missing packages
 - ✅ Works with or without Express/Jest installed
 
 ### For Documentation
+
 - ✅ Clean project root (only README.md remains)
 - ✅ Easy to navigate 70+ documentation files
 - ✅ Organized by topic and document type
@@ -172,17 +180,20 @@ All documentation has been organized in the [`docs/`](./docs/) folder:
 ## 📊 Summary Statistics
 
 **TypeScript Fixes**:
+
 - 2 files fixed
 - 10 errors resolved
 - 0 errors remaining
 
 **Documentation Organization**:
+
 - 70+ files moved to `docs/`
 - 1 comprehensive index created (350+ lines)
 - 5 main categories established
 - 3 reading paths defined (users/devs/ops)
 
 **Total Impact**:
+
 - ✅ Cleaner codebase (zero errors)
 - ✅ Better project structure (organized docs)
 - ✅ Improved onboarding (clear navigation)
@@ -193,18 +204,22 @@ All documentation has been organized in the [`docs/`](./docs/) folder:
 ## 🎯 Next Steps (Optional)
 
 ### For TypeScript
+
 1. Install missing packages if needed:
+
    ```bash
    npm install --save-dev @types/express @types/jest
    ```
 
 2. Configure Jest properly:
+
    ```bash
    npm install --save-dev jest ts-jest @types/jest
    npx ts-jest config:init
    ```
 
 ### For Documentation
+
 1. Keep `docs/README.md` updated as new docs are added
 2. Follow naming conventions:
    - `*_COMPLETE.md` for detailed guides

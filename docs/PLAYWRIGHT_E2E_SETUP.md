@@ -14,6 +14,7 @@ ApplyLens now has a comprehensive Playwright E2E testing infrastructure optimize
 ### 1. Playwright Configuration (`playwright.config.ts`)
 
 **Key Features:**
+
 - **Environment Detection:** Automatically adapts for local dev vs CI
 - **Smart Defaults:** Fast locally (50% workers), aggressive in CI (100% workers)
 - **Retry Logic:** 0 retries locally, 2 retries in CI for flake resilience
@@ -46,9 +47,10 @@ export default defineConfig({
     reuseExistingServer: true,
   },
 })
-```
+```text
 
 **Projects:**
+
 1. `chromium` - Standard desktop Chrome
 2. `chromium-no-animations` - Dark mode + reduced motion (accessibility testing)
 
@@ -76,21 +78,24 @@ await mockApi([
     body: { id: 1, notes: 'Updated' },
   },
 ])
-```
+```text
 
 **Features:**
+
 - URL matching: String contains or RegExp
 - Method matching: Optional, defaults to all methods
 - Auto JSON serialization
 - Fallback to real network if no match
 
 **Tag Constants:**
+
 ```typescript
 export const SMOKE = '@smoke'  // Critical path tests
 export const E2E = '@e2e'      // Full flow tests
-```
+```text
 
 **Usage in Tests:**
+
 ```typescript
 import { test, expect, SMOKE } from './fixtures'
 
@@ -100,7 +105,7 @@ test.describe(`Feature ${SMOKE}`, () => {
     // test code
   })
 })
-```
+```text
 
 ---
 
@@ -109,11 +114,13 @@ test.describe(`Feature ${SMOKE}`, () => {
 **Purpose:** Fast sanity check that catches critical regressions
 
 **Test Coverage:**
+
 - Tracker page loads
 - Application data renders
 - Filter dropdown functional
 
 **Implementation:**
+
 ```typescript
 test.describe(`Tracker smoke ${SMOKE}`, () => {
   test('loads grid and filters', async ({ page, mockApi }) => {
@@ -132,9 +139,10 @@ test.describe(`Tracker smoke ${SMOKE}`, () => {
     await page.getByTestId('tracker-status-filter').selectOption('applied')
   })
 })
-```
+```text
 
 **Why Smoke Tests:**
+
 - Run in <5 seconds
 - Catch deployment issues immediately
 - Safe to run before every commit
@@ -170,13 +178,14 @@ npm run test:e2e
 
 # 4. Debug a failure
 npm run test:e2e:debug -- tests/e2e/tracker-smoke.spec.ts
-```
+```text
 
 ---
 
 ### 5. GitHub Actions Workflow (`.github/workflows/e2e.yml`)
 
 **Features:**
+
 - **Matrix Sharding:** 3-way parallel execution for speed
 - **Artifact Upload:** HTML reports + JUnit XML for each shard
 - **Build Verification:** Tests against production build (not dev server)
@@ -200,14 +209,16 @@ jobs:
       - Build app (npm run build)
       - Run tests (sharded)
       - Upload artifacts (always)
-```
+```text
 
 **Sharding Benefits:**
+
 - 3x faster CI runs (parallel execution)
 - Isolated failures (one shard fails ≠ all fail)
 - Artifact separation (easier debugging)
 
 **Artifact Collection:**
+
 - HTML reports: Visual test results with screenshots/videos
 - JUnit XML: Integration with CI dashboards, test analytics
 
@@ -218,41 +229,46 @@ jobs:
 ### Local Development
 
 **1. Quick Smoke Check:**
+
 ```bash
 npm run test:e2e:smoke
 # ✓ Runs in <10 seconds
 # ✓ Catches major breakage
-```
+```text
 
 **2. Full Test Suite:**
+
 ```bash
 npm run test:e2e
 # ✓ All tests, all browsers
 # ✓ Headless (fast)
-```
+```text
 
 **3. Visual Debugging:**
+
 ```bash
 npm run test:e2e:headed
 # ✓ See browser interactions
 # ✓ Verify UI behavior
-```
+```text
 
 **4. Interactive Development:**
+
 ```bash
 npm run test:e2e:ui
 # ✓ Time-travel debugging
 # ✓ Selector playground
 # ✓ Watch mode
-```
+```text
 
 **5. Step-by-Step Debugging:**
+
 ```bash
 npm run test:e2e:debug
 # ✓ Pauses at each step
 # ✓ Inspect page state
 # ✓ Console access
-```
+```text
 
 ---
 
@@ -288,7 +304,7 @@ test('user creates application', async ({ page, mockApi }) => {
   // Verify
   await expect(page.getByText('NewCo')).toBeVisible()
 })
-```
+```text
 
 **Add Test Tags:**
 
@@ -306,7 +322,7 @@ test.describe(`Full flows ${E2E}`, () => {
     // Runs with: npm run test:e2e
   })
 })
-```
+```text
 
 **Use Test IDs (Already Present):**
 
@@ -320,7 +336,7 @@ test.describe(`Full flows ${E2E}`, () => {
 // In tests
 await page.getByTestId('tracker-search-input').fill('Acme')
 await page.getByTestId('tracker-new-btn').click()
-```
+```text
 
 ---
 
@@ -329,6 +345,7 @@ await page.getByTestId('tracker-new-btn').click()
 ### GitHub Actions
 
 **Automatic Triggers:**
+
 - Every push to `main`
 - Every pull request
 - Manual workflow dispatch
@@ -357,7 +374,7 @@ await page.getByTestId('tracker-new-btn').click()
 <testsuite name="Tracker smoke" tests="1" failures="0">
   <testcase name="loads grid and filters" time="2.341" />
 </testsuite>
-```
+```text
 
 Use with CI dashboards (e.g., GitHub Checks, Jenkins, CircleCI)
 
@@ -368,28 +385,32 @@ Use with CI dashboards (e.g., GitHub Checks, Jenkins, CircleCI)
 ### Environment Variables
 
 **Control Parallelism:**
+
 ```bash
 PW_WORKERS=6 npm run test:e2e
 # Override default 50% (local) or 100% (CI)
-```
+```text
 
 **Custom Port:**
+
 ```bash
 PORT=3000 npm run test:e2e
 # Change dev server port
-```
+```text
 
 **Custom Base URL:**
+
 ```bash
 BASE_URL=https://staging.example.com npm run test:e2e
 # Test against deployed environment
-```
+```text
 
 **CI Mode:**
+
 ```bash
 CI=1 npm run test:e2e
 # Force CI behavior locally (2 retries, 100% workers, artifacts)
-```
+```text
 
 ---
 
@@ -405,7 +426,7 @@ projects: [
   { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   { name: 'mobile', use: { ...devices['iPhone 13'] } },
 ]
-```
+```text
 
 **Adjust Timeouts:**
 
@@ -414,7 +435,7 @@ export default defineConfig({
   timeout: 60_000,           // 60s for slow tests
   expect: { timeout: 10_000 }, // 10s for assertions
 })
-```
+```text
 
 **Change Sharding:**
 
@@ -423,7 +444,7 @@ export default defineConfig({
 matrix:
   shard: [1, 2, 3, 4, 5]  # 5-way shard
   shardsTotal: [5]
-```
+```text
 
 ---
 
@@ -432,14 +453,16 @@ matrix:
 ### 1. **Mock Aggressively**
 
 ✅ **Good:**
+
 ```typescript
 await mockApi([{ url: '/api/applications?', body: testData }])
-```
+```text
 
 ❌ **Avoid:**
+
 ```typescript
 // Relying on real API = flaky, slow, database pollution
-```
+```text
 
 **Why:** Deterministic tests, instant execution, no database cleanup
 
@@ -448,13 +471,14 @@ await mockApi([{ url: '/api/applications?', body: testData }])
 ### 2. **Tag Tests Appropriately**
 
 ✅ **Good:**
+
 ```typescript
 test.describe(`Login ${SMOKE}`, () => {
   test('user can login', async ({ page }) => {
     // Critical path
   })
 })
-```
+```text
 
 **Why:** Run smoke tests in <1 minute, full suite in <5 minutes
 
@@ -463,14 +487,16 @@ test.describe(`Login ${SMOKE}`, () => {
 ### 3. **Use Test IDs**
 
 ✅ **Good:**
+
 ```typescript
 await page.getByTestId('submit-button').click()
-```
+```text
 
 ❌ **Avoid:**
+
 ```typescript
 await page.getByRole('button').nth(3).click()
-```
+```text
 
 **Why:** Stable across UI changes, self-documenting
 
@@ -479,15 +505,17 @@ await page.getByRole('button').nth(3).click()
 ### 4. **Assert Meaningful State**
 
 ✅ **Good:**
+
 ```typescript
 await expect(page.getByText('Application created')).toBeVisible()
 await expect(page.getByTestId('status-chip-applied')).toBeVisible()
-```
+```text
 
 ❌ **Avoid:**
+
 ```typescript
 await page.waitForTimeout(2000) // Hope it worked?
-```
+```text
 
 **Why:** Explicit verification, clear failure messages
 
@@ -496,6 +524,7 @@ await page.waitForTimeout(2000) // Hope it worked?
 ### 5. **Keep Tests Isolated**
 
 ✅ **Good:**
+
 ```typescript
 test('test A', async ({ page, mockApi }) => {
   await mockApi([/* specific data */])
@@ -506,7 +535,7 @@ test('test B', async ({ page, mockApi }) => {
   await mockApi([/* different data */])
   // test code
 })
-```
+```text
 
 **Why:** Tests can run in any order, parallel execution safe
 
@@ -519,10 +548,13 @@ test('test B', async ({ page, mockApi }) => {
 **Symptoms:** "Element not found", "Timeout waiting for..."
 
 **Solutions:**
+
 1. Check for timing issues: Add explicit waits
+
    ```typescript
    await expect(page.getByText('Loaded')).toBeVisible()
    ```
+
 2. Verify mock completeness: All API calls mocked?
 3. Check viewport size: CI uses 1280x800
 4. Run with `--headed` to see what's happening
@@ -534,6 +566,7 @@ test('test B', async ({ page, mockApi }) => {
 **Symptoms:** Works on my machine™
 
 **Solutions:**
+
 1. Run with `CI=1` locally to simulate CI environment
 2. Check build vs dev differences: Test against `npm run build && npm run preview`
 3. Verify browser installation: `npx playwright install --with-deps`
@@ -546,18 +579,23 @@ test('test B', async ({ page, mockApi }) => {
 **Symptoms:** Intermittent failures, "Element is not stable"
 
 **Solutions:**
+
 1. Add explicit waits:
+
    ```typescript
    await page.waitForLoadState('networkidle')
    await expect(element).toBeVisible()
    ```
+
 2. Increase timeouts for slow operations:
+
    ```typescript
    test('slow test', async ({ page }) => {
      test.setTimeout(60_000) // 60s
      // ...
    })
    ```
+
 3. Mock more aggressively (eliminate network variability)
 4. Check for animations: `chromium-no-animations` project
 
@@ -568,20 +606,28 @@ test('test B', async ({ page, mockApi }) => {
 **Symptoms:** Test fails, no idea why
 
 **Solutions:**
+
 1. Run with UI mode:
+
    ```bash
    npm run test:e2e:ui
    ```
+
 2. Enable debug mode:
+
    ```bash
    npm run test:e2e:debug
    ```
+
 3. View traces:
+
    ```bash
    npm run test:e2e:report
    # Click on failed test → View trace
    ```
+
 4. Add console logs:
+
    ```typescript
    console.log('Current URL:', page.url())
    console.log('Element count:', await page.locator('.item').count())
@@ -594,16 +640,22 @@ test('test B', async ({ page, mockApi }) => {
 **Symptoms:** `Error: Cannot find module '@playwright/test'`
 
 **Solutions:**
+
 1. Install dependencies:
+
    ```bash
    cd apps/web
    npm install
    ```
+
 2. Install browsers:
+
    ```bash
    npx playwright install
    ```
+
 3. Verify installation:
+
    ```bash
    npx playwright --version
    ```
@@ -615,6 +667,7 @@ test('test B', async ({ page, mockApi }) => {
 ### Local Development
 
 **Fastest Workflow:**
+
 ```bash
 # 1. Run smoke tests only
 npm run test:e2e:smoke
@@ -623,34 +676,40 @@ npm run test:e2e:smoke
 # 2. If smoke passes, run full suite
 npm run test:e2e
 # ~30-60 seconds (50% workers)
-```
+```text
 
 **Parallel Execution:**
+
 ```bash
 # Use all cores
 PW_WORKERS=100% npm run test:e2e
 
 # Use specific count
 PW_WORKERS=6 npm run test:e2e
-```
+```text
 
 ---
 
 ### CI Optimization
 
 **Current Setup:**
+
 - 3-way sharding: ~15-20 minutes → ~5-7 minutes
 - 100% workers: Full parallelism
 - Build caching: Node modules cached
 
 **Further Optimization:**
+
 1. Increase shards for large test suites:
+
    ```yaml
    matrix:
      shard: [1, 2, 3, 4, 5]
    ```
+
 2. Use Docker layer caching for browsers
 3. Run smoke tests first, full suite conditionally:
+
    ```yaml
    jobs:
      smoke:
@@ -668,11 +727,13 @@ PW_WORKERS=6 npm run test:e2e
 ### Potential Additions
 
 1. **Visual Regression Testing:**
+
    ```typescript
    await expect(page).toHaveScreenshot('tracker-page.png')
    ```
 
 2. **Accessibility Testing:**
+
    ```typescript
    import { injectAxe, checkA11y } from 'axe-playwright'
    await injectAxe(page)
@@ -680,12 +741,14 @@ PW_WORKERS=6 npm run test:e2e
    ```
 
 3. **Performance Testing:**
+
    ```typescript
    const metrics = await page.metrics()
    expect(metrics.JSHeapUsedSize).toBeLessThan(50_000_000)
    ```
 
 4. **API Contract Testing:**
+
    ```typescript
    // Validate response schemas
    const response = await page.request.get('/api/applications')
@@ -694,6 +757,7 @@ PW_WORKERS=6 npm run test:e2e
    ```
 
 5. **Cross-Browser Matrix:**
+
    ```yaml
    matrix:
      browser: [chromium, firefox, webkit]
@@ -704,6 +768,7 @@ PW_WORKERS=6 npm run test:e2e
 ## Summary
 
 **What Was Built:**
+
 - ✅ Playwright config (122 lines) - CI/local optimization
 - ✅ Test fixtures (83 lines) - mockApi helper + tags
 - ✅ Smoke test (27 lines) - Basic sanity check
@@ -712,6 +777,7 @@ PW_WORKERS=6 npm run test:e2e
 - ✅ Comprehensive documentation
 
 **Production Readiness:**
+
 - ✅ Fast locally (50% workers, 0 retries)
 - ✅ Resilient in CI (100% workers, 2 retries)
 - ✅ Artifact collection (HTML reports, JUnit XML)
@@ -720,6 +786,7 @@ PW_WORKERS=6 npm run test:e2e
 - ✅ Sharded execution (3x speedup)
 
 **Next Steps:**
+
 1. Install Playwright browsers: `npx playwright install`
 2. Run smoke test: `npm run test:e2e:smoke`
 3. Open UI mode: `npm run test:e2e:ui`
@@ -732,8 +799,8 @@ PW_WORKERS=6 npm run test:e2e
 
 - **InlineNote Tests:** `tests/e2e/tracker-notes.spec.ts`, `tests/e2e/tracker-note-snippets.spec.ts`
 - **Tracker UI Tests:** `tests/e2e/tracker-status.spec.ts`
-- **Playwright Docs:** https://playwright.dev/docs/intro
-- **GitHub Actions:** https://docs.github.com/en/actions
+- **Playwright Docs:** <https://playwright.dev/docs/intro>
+- **GitHub Actions:** <https://docs.github.com/en/actions>
 
 ---
 

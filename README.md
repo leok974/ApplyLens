@@ -1,4 +1,9 @@
 # ApplyLens
+
+[![API Tests](https://github.com/leok974/ApplyLens/actions/workflows/api-tests.yml/badge.svg)](https://github.com/leok974/ApplyLens/actions/workflows/api-tests.yml)
+[![Docs Checks](https://github.com/leok974/ApplyLens/actions/workflows/docs-check.yml/badge.svg)](https://github.com/leok974/ApplyLens/actions/workflows/docs-check.yml)
+[![codecov](https://codecov.io/gh/leok974/ApplyLens/branch/polish/graph/badge.svg)](https://codecov.io/gh/leok974/ApplyLens)
+
 Agentic job-inbox MVP: classify job/search emails, extract key facts, and populate a tracker.
 
 ## 🎯 Features
@@ -21,18 +26,20 @@ ApplyLens now supports **Gmail OAuth authentication** with intelligent email cla
    - Save your `google.json` to `infra/secrets/`
 
 2. **Configure Environment:**
+
    ```bash
    cp infra/.env.example infra/.env
    # Edit infra/.env and set OAUTH_STATE_SECRET to a random string
    ```
 
 3. **Start Services:**
+
    ```bash
    docker compose -f infra/docker-compose.yml up -d
    ```
 
 4. **Connect Gmail:**
-   - Visit http://localhost:8003/auth/google/login
+   - Visit <http://localhost:8003/auth/google/login>
    - Grant permissions
    - You'll be redirected to the Inbox page
 
@@ -65,7 +72,7 @@ POST /gmail/backfill           # Sync emails from Gmail
 # Search with label filters
 GET  /search?q=interview&label_filter=interview
 GET  /suggest?q=interv         # Autocomplete suggestions
-```
+```text
 
 For complete documentation, see [`GMAIL_SETUP.md`](./GMAIL_SETUP.md).
 
@@ -92,7 +99,7 @@ npm install && npm run phase2:all
 
 # Windows → PowerShell
 .\scripts\phase2-all.ps1
-```
+```text
 
 ### What It Does
 
@@ -113,7 +120,7 @@ GET  /profile/summary           # Category distribution + top senders
 GET  /profile/senders           # Sender list (filterable by category)
 GET  /profile/categories/{cat}  # Category details
 GET  /profile/time-series       # Email volume trends
-```
+```text
 
 ### Documentation
 
@@ -134,12 +141,13 @@ docker compose -f infra/docker-compose.minimal.yml up -d
 docker compose -f infra/docker-compose.minimal.yml exec api python -m app.seeds.seed_emails
 
 # Check the ports in infra/.env (defaults: API=8002, Web=5174)
-```
+```text
 
 **Access:**
-- Web: http://localhost:5174 (check `.env` for actual port)
-- API: http://localhost:8002
-- API Docs: http://localhost:8002/docs
+
+- Web: <http://localhost:5174> (check `.env` for actual port)
+- API: <http://localhost:8002>
+- API Docs: <http://localhost:8002/docs>
 
 ## Full Setup (with Elasticsearch + Kibana)
 
@@ -155,28 +163,31 @@ docker compose -f infra/docker-compose.yml up --build
 
 # In another terminal, seed mock emails and index into Elasticsearch:
 docker compose -f infra/docker-compose.yml exec api python -m app.seeds.seed_emails
-```
+```text
 
 **Access:**
-- Web: http://localhost:5175
-- API: http://localhost:8003
-- Elasticsearch: http://localhost:9200
-- Kibana: http://localhost:5601
+
+- Web: <http://localhost:5175>
+- API: <http://localhost:8003>
+- Elasticsearch: <http://localhost:9200>
+- Kibana: <http://localhost:5601>
 
 ### Import Kibana Dashboard
 
 Once Kibana is running:
+
 ```bash
 curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" \
   -H "kbn-xsrf: true" \
   -F file=@infra/kibana/applylens_dashboard.ndjson
-```
+```text
 
 Or manually: **Kibana → Stack Management → Saved Objects → Import** and select `infra/kibana/applylens_dashboard.ndjson`
 
 ### Test the Search API & Synonyms
 
 Synonym examples that should match due to the analyzer:
+
 - Query **"talent partner"** should match emails containing **"recruiter"**
 - Query **"offer letter"** should match **"offer" / "acceptance"**
 - Query **"phone screen"** should match **"interview"** content
@@ -184,27 +195,29 @@ Synonym examples that should match due to the analyzer:
 ```bash
 curl "http://localhost:8000/search/?q=Interview"
 curl "http://localhost:8000/search/?q=talent%20partner"
-```
+```text
 
-Then visit **http://localhost:5173/search** and try queries like `Interview`, `talent partner`, or `Greenhouse`.
+Then visit **<http://localhost:5173/search>** and try queries like `Interview`, `talent partner`, or `Greenhouse`.
 
 ## Local dev (without Docker)
 
 Backend:
+
 ```bash
 cd services/api
 python -m venv .venv && source .venv/bin/activate
 pip install -U pip && pip install .
 export ES_ENABLED=false  # disable ES when not running locally
 uvicorn app.main:app --reload --port 8003
-```
+```text
 
 Frontend:
+
 ```bash
 cd apps/web
 npm install
 npm run dev
-```
+```text
 
 ## Architecture
 
@@ -215,6 +228,7 @@ npm run dev
 - **Email Processing**: Gmail API + BeautifulSoup + heuristic labeling
 
 ## Next steps
+
 - ✅ ~~Implement Gmail read-only OAuth and backfill endpoint~~ **DONE!**
 - Add Applications table UI + reminders
 - Elasticsearch relevance tuning (synonyms, boosts)
@@ -242,28 +256,34 @@ All documentation has been organized in the [`docs/`](./docs/) folder:
 ApplyLens includes production-ready monitoring infrastructure:
 
 ### Prometheus Metrics
+
 - **HTTP metrics:** Request rate, latency, error rate (via starlette-exporter)
 - **Risk scoring:** Batch duration, failure rate, email coverage
 - **Parity checks:** DB↔ES mismatch detection and ratio
 - **System health:** Database and Elasticsearch availability
 
-**Metrics endpoint:** http://localhost:8003/metrics
+**Metrics endpoint:** <http://localhost:8003/metrics>
 
 ### Health Endpoints
+
 - `/healthz` - Liveness probe (basic check)
 - `/live` - Liveness alias
 - `/ready` - Readiness probe (DB + ES + migration version)
 
 ### Grafana Dashboard
+
 Import the operational dashboard for real-time monitoring:
+
 ```bash
 # Import ops-overview.json into Grafana
 # Location: services/api/dashboards/ops-overview.json
 # Panels: Error rates, latency, parity, performance
-```
+```text
 
 ### Alerts & Runbooks
+
 Production-critical alerts with runbooks:
+
 - **APIHighErrorRateFast** - 5xx rate > 5% ([runbook](services/api/docs/runbooks/api-errors.md))
 - **RiskJobFailures** - Risk computation failures ([runbook](services/api/docs/runbooks/risk-job.md))
 - **ParityDriftTooHigh** - DB↔ES drift > 0.5% ([runbook](services/api/docs/runbooks/parity.md))
@@ -272,16 +292,20 @@ Production-critical alerts with runbooks:
 **Alert rules:** `infra/alerts/prometheus-rules.yml`
 
 ### Structured Logging
+
 Enable JSON logging for production:
+
 ```bash
 # Set environment variable
 UVICORN_LOG_CONFIG=services/api/app/logging.yaml
 
 # Logs include: timestamp, level, logger, message
-```
+```text
 
 ### Optional Tracing
+
 Enable OpenTelemetry distributed tracing:
+
 ```bash
 # Install tracing dependencies
 pip install -e ".[tracing]"
@@ -291,11 +315,11 @@ OTEL_ENABLED=1
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 
 # Instruments: FastAPI, SQLAlchemy, HTTP clients
-```
+```text
 
 **Documentation:**
+
 - [📚 Complete Documentation Index](docs/README.md) - All docs in one place
 - [Phase 6 Personalization](docs/PHASE_6_PERSONALIZATION.md) - Latest features (learning, metrics, money mode)
 - [Quick Start Guide](docs/QUICK_START_E2E.md) - End-to-end setup
 - [Run Full Stack](docs/RUN_FULL_STACK.md) - Local development
-

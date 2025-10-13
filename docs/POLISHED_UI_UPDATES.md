@@ -5,23 +5,27 @@ This document describes the premium UI enhancements applied to the inbox interfa
 ## ✨ New Features
 
 ### 1. Sender Avatars (`SenderAvatar.tsx`)
+
 - **Favicon Fallback**: Fetches company favicons from Google's favicon service
 - **Initials Fallback**: Shows colorful initials (gradient indigo) when no favicon available
 - **Smart Parsing**: Extracts domain from email addresses or URLs
 - **Responsive**: Supports different sizes (28px compact, 32px comfortable)
 
 **Usage:**
+
 ```tsx
 <SenderAvatar from="careers@techcorp.com" size={32} />
-```
+```text
 
 ### 2. Density Toggle (`Segmented.tsx`)
+
 - **Compact Mode**: Smaller text (13px/14px), tighter spacing, 28px avatars
 - **Comfortable Mode**: Larger text (14px/15px), generous spacing, 32px avatars
 - **Segmented Control**: iOS-style toggle in header
 - **Persistent**: Can be expanded to save to localStorage
 
 **Component:**
+
 ```tsx
 <Segmented
   value={density}
@@ -31,11 +35,12 @@ This document describes the premium UI enhancements applied to the inbox interfa
     { value: "compact", label: "Compact" },
   ]}
 />
-```
+```text
 
 ### 3. Modern Card Styling (`EmailRow.tsx`)
 
 **Visual Enhancements:**
+
 - **Rounded Corners**: `rounded-2xl` (16px radius)
 - **Soft Shadows**: `shadow-sm` on rest, `shadow-md` on hover
 - **Hover Lift**: Ring effect with `ring-black/5` transition
@@ -44,6 +49,7 @@ This document describes the premium UI enhancements applied to the inbox interfa
 - **Smooth Transitions**: All state changes animate with `transition-all`
 
 **Interactive States:**
+
 - **Hover**: Shadow lifts, ring appears, action buttons slide in
 - **Active**: Indigo ring (`ring-2 ring-indigo-500/30`) for keyboard focus
 - **Selected**: Rainbow gradient accent bar at top
@@ -51,6 +57,7 @@ This document describes the premium UI enhancements applied to the inbox interfa
 ### 4. Richer Badge System
 
 **Category Badges:**
+
 - **Promo**: Amber (`bg-amber-100 text-amber-800`)
 - **Bill**: Sky blue (`bg-sky-100 text-sky-800`)
 - **Application**: Violet (`bg-violet-100 text-violet-800`)
@@ -62,33 +69,38 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
 ### 5. Premium Section Headers
 
 **Design:**
+
 - **Pill Shape**: `rounded-full` with padding
 - **Floating Effect**: White background with `shadow-sm`
 - **Status Indicator**: Indigo dot (`h-1.5 w-1.5 rounded-full bg-indigo-500`)
 - **Sticky Positioning**: `top-[106px]` (below bulk bar)
 
 **Before:**
+
 ```tsx
 <div className="bg-slate-100 px-2 py-1">Today</div>
-```
+```text
 
 **After:**
+
 ```tsx
 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
   <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
   Today
 </div>
-```
+```text
 
 ### 6. Improved Loading Skeletons
 
 **Design:**
+
 - **Card Shape**: Matches real cards with `rounded-2xl`
 - **Avatar Circle**: 32px circle for profile image
 - **Progressive Widths**: Different widths for realistic layout
 - **Subtle Colors**: `bg-slate-200/70` for light, smooth appearance
 
 **Structure:**
+
 ```tsx
 <div className="rounded-2xl border p-4 shadow-sm">
   <div className="flex items-center gap-3">
@@ -98,16 +110,18 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
   <div className="mt-3 h-3 w-3/4 rounded bg-slate-200/70" />
   <div className="mt-2 h-3 w-2/3 rounded bg-slate-200/70" />
 </div>
-```
+```text
 
 ### 7. Tasteful Background Gradient
 
 **Page Background:**
+
 ```tsx
 <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100/70 dark:from-slate-950 dark:to-slate-950">
-```
+```text
 
 **Effect:**
+
 - Light mode: Very subtle gradient from white-ish to light gray
 - Dark mode: Pure black for OLED screens
 - Creates depth without distraction
@@ -115,23 +129,27 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
 ## 🎨 Design Principles
 
 ### Color Philosophy
+
 - **Primary**: Indigo (`indigo-500`, `indigo-600`) for actions and highlights
 - **Neutrals**: Slate palette for text and backgrounds
 - **Status Colors**: Semantic colors (amber, sky, emerald, rose)
 - **Dark Mode**: All components use `dark:` variants with proper contrast
 
 ### Spacing System
+
 - **Compact**: `gap-2`, `p-3`, smaller text sizes
 - **Comfortable**: `gap-3`, `p-4`, larger text sizes
 - **Consistent**: 8px base unit (Tailwind default)
 
 ### Typography
+
 - **Headers**: `font-semibold` with `tracking-tight`
 - **Body**: Base `font-medium` for subjects, regular for preview
 - **Badges**: `text-[11px] font-medium` for compact pills
 - **Sizes**: `text-xs` (11px), `text-sm` (14px), `text-[15px]` custom
 
 ### Shadows & Depth
+
 - **Rest**: `shadow-sm` - subtle baseline elevation
 - **Hover**: `shadow-md` - lifted on interaction
 - **Active**: Ring-based focus (`ring-2`) instead of outline
@@ -139,7 +157,7 @@ All badges support dark mode with `dark:bg-{color}-900/40` transparency.
 
 ## 📁 File Structure
 
-```
+```text
 apps/web/src/
 ├── components/
 │   ├── inbox/
@@ -152,11 +170,12 @@ apps/web/src/
 │       └── ...
 └── pages/
     └── InboxPolishedDemo.tsx      # UPDATED: Gradient bg + density state
-```
+```text
 
 ## 🚀 Usage Examples
 
 ### Full Integration
+
 ```tsx
 function InboxPage() {
   const [density, setDensity] = useState<"compact"|"comfortable">("comfortable");
@@ -178,9 +197,10 @@ function InboxPage() {
     </div>
   );
 }
-```
+```text
 
 ### Individual Components
+
 ```tsx
 // Sender avatar with fallback
 <SenderAvatar from="john@company.com" size={32} />
@@ -193,7 +213,7 @@ function InboxPage() {
   reason="ats"
   {...handlers}
 />
-```
+```text
 
 ## 🎯 Key Visual Improvements
 
@@ -211,6 +231,7 @@ function InboxPage() {
 ## 🌙 Dark Mode Support
 
 All components fully support dark mode:
+
 - **Cards**: `dark:bg-slate-900` with `dark:border-slate-800`
 - **Text**: `dark:text-slate-100` for headers, `dark:text-slate-400` for meta
 - **Badges**: `dark:bg-{color}-900/40` with transparency
@@ -227,28 +248,34 @@ All components fully support dark mode:
 ## 🔧 Customization
 
 ### Change Primary Color
+
 Replace `indigo` with your brand color in:
+
 - `SenderAvatar.tsx`: Gradient `from-indigo-500 to-indigo-600`
 - `EmailRow.tsx`: Selection gradient and ring
 - Section headers: Status dot color
 
 ### Adjust Density Values
+
 In `EmailRow.tsx`:
+
 ```tsx
 const isCompact = density === "compact";
 // Modify these values:
 size={isCompact ? 28 : 32}  // Avatar size
 text-[13px] : text-sm       // Font sizes
-```
+```text
 
 ### Custom Badge Colors
+
 Add to `reasonStyle` object in `EmailRow.tsx`:
+
 ```tsx
 myCategory: { 
   label: "My Label", 
   className: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200" 
 }
-```
+```text
 
 ## ✅ Browser Support
 
