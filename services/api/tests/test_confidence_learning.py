@@ -15,20 +15,22 @@ def test_confidence_bump_from_user_weights():
     """Test that positive user weights increase confidence scores."""
     db = next(get_db())
     
+    # Clean up any existing test data
+    db.query(UserWeight).filter(UserWeight.user_id == "test@example.com").delete()
+    db.commit()
+
     # Seed positive weights for meetup-related features
     # User has historically approved emails with "meetup" in subject
     uw1 = UserWeight(user_id="test@example.com", feature="contains:meetup", weight=3.0)
     uw2 = UserWeight(user_id="test@example.com", feature="category:promo", weight=2.0)
     db.add(uw1)
     db.add(uw2)
-    db.commit()
-    
-    # Create test email with meetup in subject
+    db.commit()    # Create test email with meetup in subject
     email = Email(
         id=999,
         subject="Local Meetup tonight",
         category="promo",
-        sender_domain="events.example.com",
+        sender="events@events.example.com",
         risk_score=10,
         quarantined=False
     )
@@ -92,7 +94,7 @@ def test_confidence_without_user_weights():
         id=1000,
         subject="Regular email",
         category="personal",
-        sender_domain="example.com",
+        sender="user@example.com",
         risk_score=20,
         quarantined=False
     )
@@ -132,6 +134,10 @@ def test_confidence_negative_weights():
     """Test that negative user weights decrease confidence scores."""
     db = next(get_db())
     
+    # Clean up any existing test data
+    db.query(UserWeight).filter(UserWeight.user_id == "test3@example.com").delete()
+    db.commit()
+
     # Seed negative weights (user has rejected similar emails)
     uw = UserWeight(user_id="test3@example.com", feature="contains:newsletter", weight=-4.0)
     db.add(uw)
@@ -141,7 +147,7 @@ def test_confidence_negative_weights():
         id=1001,
         subject="Weekly Newsletter Update",
         category="promo",
-        sender_domain="news.example.com",
+        sender="newsletter@news.example.com",
         risk_score=15,
         quarantined=False
     )
@@ -192,7 +198,7 @@ def test_confidence_high_risk_override():
         id=1002,
         subject="Suspicious attachment",
         category="unknown",
-        sender_domain="suspicious.com",
+        sender="phish@suspicious.com",
         risk_score=85,  # High risk
         quarantined=False
     )
