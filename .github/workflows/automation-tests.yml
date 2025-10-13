@@ -181,8 +181,9 @@ jobs:
         working-directory: services/api
         env:
           API_BASE_URL: http://localhost:8003
+          RUN_INTEGRATION: "0"
         run: |
-          pytest -m api \
+          pytest -q -k "contract or api" \
             --junit-xml=api-test-results.xml \
             -v
       

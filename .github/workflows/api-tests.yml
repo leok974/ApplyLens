@@ -88,7 +88,7 @@ jobs:
         working-directory: services/api
         run: |
           echo "Running test suite..."
-          pytest -v --cov=app --cov-report=term-missing --cov-report=xml --cov-report=html
+          pytest -v --cov=app --cov-report=term-missing --cov-report=xml --cov-report=html --cov-fail-under=50
 
       - name: Save coverage XML
         if: always()
