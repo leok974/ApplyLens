@@ -6,7 +6,7 @@ with mocked database and executors.
 """
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch
 from typing import Dict, Any, List
 
 @pytest.mark.asyncio
@@ -63,8 +63,6 @@ async def test_full_approvals_flow(async_client):
          patch("app.logic.audit_es.emit_audit", mock_emit_audit), \
          patch("app.routers.approvals.execute_actions_internal", mock_execute_actions_internal), \
          patch("app.logic.unsubscribe.perform_unsubscribe", mock_perform_unsubscribe):
-        
-        from app.main import app
         
         # Step 1: Propose actions
         propose_payload = {
@@ -163,8 +161,6 @@ async def test_propose_empty_items(async_client):
     with patch("app.db.approvals_bulk_insert"), \
          patch("app.logic.audit_es.emit_audit"):
         
-        from app.main import app
-        
         r = await async_client.post("/approvals/propose", json={"items": []})
         assert r.status_code == 400
 
@@ -173,8 +169,6 @@ async def test_approve_empty_ids(async_client):
     """Test that approving with empty IDs returns error."""
     with patch("app.db.approvals_update_status"), \
          patch("app.logic.audit_es.emit_audit"):
-        
-        from app.main import app
         
         r = await async_client.post("/approvals/approve", json={"ids": []})
         assert r.status_code == 400
@@ -185,8 +179,6 @@ async def test_reject_empty_ids(async_client):
     with patch("app.db.approvals_update_status"), \
          patch("app.logic.audit_es.emit_audit"):
         
-        from app.main import app
-        
         r = await async_client.post("/approvals/reject", json={"ids": []})
         assert r.status_code == 400
 
@@ -194,7 +186,6 @@ async def test_reject_empty_ids(async_client):
 async def test_execute_empty_items(async_client):
     """Test that executing with no items returns zero applied."""
     with patch("app.logic.audit_es.emit_audit"):
-        from app.main import app
         
         r = await async_client.post("/approvals/execute", json={"items": []})
         assert r.status_code == 200
@@ -220,7 +211,6 @@ async def test_list_proposed_with_limit(async_client):
         ]
     
     with patch("app.db.approvals_get", mock_get):
-        from app.main import app
         
         # Request with limit 50
         r = await async_client.get("/approvals/proposed?limit=50")
@@ -245,8 +235,6 @@ async def test_execute_splits_actions_by_type(async_client):
     with patch("app.logic.audit_es.emit_audit"), \
          patch("app.routers.approvals.execute_actions_internal", mock_execute_mail), \
          patch("app.logic.unsubscribe.perform_unsubscribe", mock_perform_unsub):
-        
-        from app.main import app
         
         exec_payload = {
             "items": [
@@ -297,8 +285,6 @@ async def test_propose_audit_to_elasticsearch(async_client):
     with patch("app.db.approvals_bulk_insert", mock_bulk_insert), \
          patch("app.logic.audit_es.emit_audit", mock_emit):
         
-        from app.main import app
-        
         r = await async_client.post("/approvals/propose", json={
             "items": [
                 {
@@ -336,8 +322,6 @@ async def test_approve_audit_to_elasticsearch(async_client):
     
     with patch("app.db.approvals_update_status", mock_update), \
          patch("app.logic.audit_es.emit_audit", mock_emit):
-        
-        from app.main import app
         
         r = await async_client.post("/approvals/approve", json={"ids": [1, 2, 3]})
             
