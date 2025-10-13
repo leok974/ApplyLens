@@ -29,6 +29,26 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: applylens
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d applylens"
+          --health-interval=3s
+          --health-timeout=3s
+          --health-retries=20
+    
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/applylens
+      ENV: test
+      CREATE_TABLES_ON_STARTUP: "0"
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,6 +63,11 @@ jobs:
         working-directory: services/api
         run: |
           pip install -e .[test]
+      
+      - name: Run Alembic migrations
+        working-directory: services/api
+        run: |
+          alembic upgrade head
       
       - name: Run unit tests
         working-directory: services/api
@@ -89,16 +114,16 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: applylens_test
+          POSTGRES_DB: applylens
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd="pg_isready -U postgres -d applylens"
+          --health-interval=3s
+          --health-timeout=3s
+          --health-retries=20
       
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
@@ -113,6 +138,13 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
+    
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/applylens
+      ELASTICSEARCH_URL: http://localhost:9200
+      ES_INDEX: test_emails
+      ENV: test
+      CREATE_TABLES_ON_STARTUP: "0"
     
     steps:
       - name: Checkout code
@@ -131,17 +163,11 @@ jobs:
       
       - name: Run database migrations
         working-directory: services/api
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens_test
         run: |
           alembic upgrade head
       
       - name: Start API server
         working-directory: services/api
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens_test
-          ELASTICSEARCH_URL: http://localhost:9200
-          ES_INDEX: test_emails
         run: |
           uvicorn app.main:app --host 0.0.0.0 --port 8003 &
           echo $! > api.pid
