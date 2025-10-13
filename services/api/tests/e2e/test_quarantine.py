@@ -9,14 +9,11 @@ Tests the security policy flow:
 5. Audit trail is created
 """
 import pytest
-from httpx import AsyncClient
-from app.main import app
 from app.logic.policy import create_default_engine
 from app.logic.classify import calculate_risk_score
 
-
 @pytest.mark.asyncio
-async def test_high_risk_triggers_quarantine_preview(monkeypatch):
+async def test_high_risk_triggers_quarantine_preview(monkeypatch, async_client):
     """
     Test that high-risk emails trigger quarantine recommendation
     
@@ -48,86 +45,80 @@ async def test_high_risk_triggers_quarantine_preview(monkeypatch):
     assert quarantine_action["notify"] is True, "Quarantine should trigger notification"
     
     # Test via API
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        preview_payload = {
-            "actions": [
-                {
-                    "email_id": "phish_1",
-                    "action": "quarantine",
-                    "policy_id": "risk-quarantine",
-                    "confidence": 0.95,
-                    "rationale": "High risk score (92/100) - likely phishing attempt"
-                }
-            ]
-        }
+    preview_payload = {
+        "actions": [
+            {
+                "email_id": "phish_1",
+                "action": "quarantine",
+                "policy_id": "risk-quarantine",
+                "confidence": 0.95,
+                "rationale": "High risk score (92/100) - likely phishing attempt"
+            }
+        ]
+    }
         
-        prev_response = await ac.post("/mail/actions/preview", json=preview_payload)
-        assert prev_response.status_code == 200
+    prev_response = await async_client.post("/mail/actions/preview", json=preview_payload)
+    assert prev_response.status_code == 200
         
-        prev_data = prev_response.json()
-        assert prev_data["results"][0]["allowed"] is True
-        assert len(prev_data["results"][0]["warnings"]) > 0  # Should have warnings for high-risk action
-
+    prev_data = prev_response.json()
+    assert prev_data["results"][0]["allowed"] is True
+    assert len(prev_data["results"][0]["warnings"]) > 0  # Should have warnings for high-risk action
 
 @pytest.mark.asyncio
-async def test_quarantine_requires_high_confidence():
+async def test_quarantine_requires_high_confidence(async_client):
     """
     Test that quarantine action requires high confidence (>= 0.8)
     
     This is a safety check to prevent false positives
     """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Quarantine with low confidence should be blocked
-        low_conf_payload = {
-            "actions": [
-                {
-                    "email_id": "maybe_phish_1",
-                    "action": "quarantine",
-                    "confidence": 0.6,  # Too low for quarantine
-                    "rationale": "Uncertain if this is phishing"
-                }
-            ]
-        }
+    # Quarantine with low confidence should be blocked
+    low_conf_payload = {
+        "actions": [
+            {
+                "email_id": "maybe_phish_1",
+                "action": "quarantine",
+                "confidence": 0.6,  # Too low for quarantine
+                "rationale": "Uncertain if this is phishing"
+            }
+        ]
+    }
         
-        prev_response = await ac.post("/mail/actions/preview", json=low_conf_payload)
-        assert prev_response.status_code == 200
+    prev_response = await async_client.post("/mail/actions/preview", json=low_conf_payload)
+    assert prev_response.status_code == 200
         
-        prev_data = prev_response.json()
-        assert prev_data["results"][0]["allowed"] is False
-        assert "confidence" in prev_data["results"][0]["explain"].lower()
-        assert "0.8" in prev_data["results"][0]["explain"]
-
+    prev_data = prev_response.json()
+    assert prev_data["results"][0]["allowed"] is False
+    assert "confidence" in prev_data["results"][0]["explain"].lower()
+    assert "0.8" in prev_data["results"][0]["explain"]
 
 @pytest.mark.asyncio
-async def test_quarantine_requires_rationale():
+async def test_quarantine_requires_rationale(async_client):
     """
     Test that quarantine action requires an explanation
     
     High-risk actions need human-readable rationale for transparency
     """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Quarantine without rationale should be blocked
-        no_rationale_payload = {
-            "actions": [
-                {
-                    "email_id": "phish_2",
-                    "action": "quarantine",
-                    "confidence": 0.9,
-                    # No rationale field
-                }
-            ]
-        }
+    # Quarantine without rationale should be blocked
+    no_rationale_payload = {
+        "actions": [
+            {
+                "email_id": "phish_2",
+                "action": "quarantine",
+                "confidence": 0.9,
+                # No rationale field
+            }
+        ]
+    }
         
-        prev_response = await ac.post("/mail/actions/preview", json=no_rationale_payload)
-        assert prev_response.status_code == 200
+    prev_response = await async_client.post("/mail/actions/preview", json=no_rationale_payload)
+    assert prev_response.status_code == 200
         
-        prev_data = prev_response.json()
-        assert prev_data["results"][0]["allowed"] is False
-        assert "rationale" in prev_data["results"][0]["explain"].lower()
-
+    prev_data = prev_response.json()
+    assert prev_data["results"][0]["allowed"] is False
+    assert "rationale" in prev_data["results"][0]["explain"].lower()
 
 @pytest.mark.asyncio
-async def test_risk_score_calculation():
+async def test_risk_score_calculation(async_client):
     """
     Test that risk score is calculated correctly for phishing indicators
     """
@@ -155,9 +146,8 @@ async def test_risk_score_calculation():
     quarantine_action = next((a for a in actions if a["action"] == "quarantine"), None)
     assert quarantine_action is not None, "High-risk email should trigger quarantine"
 
-
 @pytest.mark.asyncio
-async def test_legitimate_security_email_not_quarantined():
+async def test_legitimate_security_email_not_quarantined(async_client):
     """
     Test that legitimate security emails (low risk score) are NOT quarantined
     """
@@ -181,46 +171,43 @@ async def test_legitimate_security_email_not_quarantined():
     quarantine_action = next((a for a in actions if a["action"] == "quarantine"), None)
     assert quarantine_action is None, "Low-risk emails should not be quarantined"
 
-
 @pytest.mark.asyncio
-async def test_quarantine_execution_and_audit():
+async def test_quarantine_execution_and_audit(async_client):
     """
     Test full quarantine execution flow with audit logging
     """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Execute quarantine action
-        exec_payload = {
-            "actions": [
-                {
-                    "email_id": "phish_4",
-                    "action": "quarantine",
-                    "policy_id": "risk-quarantine",
-                    "confidence": 0.93,
-                    "rationale": "Phishing attempt: fake PayPal domain with urgent language"
-                }
-            ]
-        }
+    # Execute quarantine action
+    exec_payload = {
+        "actions": [
+            {
+                "email_id": "phish_4",
+                "action": "quarantine",
+                "policy_id": "risk-quarantine",
+                "confidence": 0.93,
+                "rationale": "Phishing attempt: fake PayPal domain with urgent language"
+            }
+        ]
+    }
         
-        exec_response = await ac.post("/mail/actions/execute", json=exec_payload)
-        assert exec_response.status_code == 200
+    exec_response = await async_client.post("/mail/actions/execute", json=exec_payload)
+    assert exec_response.status_code == 200
         
-        exec_data = exec_response.json()
-        assert exec_data["applied"] >= 1
+    exec_data = exec_response.json()
+    assert exec_data["applied"] >= 1
         
-        # Check audit log
-        history_response = await ac.get("/mail/actions/history/phish_4")
-        assert history_response.status_code == 200
+    # Check audit log
+    history_response = await async_client.get("/mail/actions/history/phish_4")
+    assert history_response.status_code == 200
         
-        history_data = history_response.json()
-        if len(history_data["actions"]) > 0:
-            audit_entry = history_data["actions"][0]
-            assert audit_entry["action"] == "quarantine"
-            assert audit_entry["policy_id"] == "risk-quarantine"
-            assert "phishing" in audit_entry["rationale"].lower()
-
+    history_data = history_response.json()
+    if len(history_data["actions"]) > 0:
+        audit_entry = history_data["actions"][0]
+        assert audit_entry["action"] == "quarantine"
+        assert audit_entry["policy_id"] == "risk-quarantine"
+        assert "phishing" in audit_entry["rationale"].lower()
 
 @pytest.mark.asyncio
-async def test_borderline_risk_score():
+async def test_borderline_risk_score(async_client):
     """
     Test emails right at the threshold (risk_score = 80)
     """
@@ -251,9 +238,8 @@ async def test_borderline_risk_score():
     quarantine_action = next((a for a in actions if a["action"] == "quarantine"), None)
     assert quarantine_action is None, "risk_score < 80 should NOT trigger quarantine"
 
-
 @pytest.mark.asyncio
-async def test_batch_quarantine():
+async def test_batch_quarantine(async_client):
     """
     Test quarantining multiple high-risk emails in batch
     """
@@ -272,31 +258,28 @@ async def test_batch_quarantine():
         quarantine_action = next((a for a in actions if a["action"] == "quarantine"), None)
         assert quarantine_action is not None, f"Email {email_id} should have quarantine action"
 
-
 @pytest.mark.asyncio
-async def test_suggest_actions_endpoint():
+async def test_suggest_actions_endpoint(async_client):
     """
     Test the /mail/suggest-actions endpoint for batch processing
     """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Request suggestions for multiple emails
-        suggest_payload = {
-            "email_ids": ["email_high_risk_1", "email_high_risk_2", "email_normal_1"]
-        }
+    # Request suggestions for multiple emails
+    suggest_payload = {
+        "email_ids": ["email_high_risk_1", "email_high_risk_2", "email_normal_1"]
+    }
         
-        response = await ac.post("/mail/suggest-actions", json=suggest_payload)
+    response = await async_client.post("/mail/suggest-actions", json=suggest_payload)
         
-        # Should return without error even if emails don't exist in DB
-        # (In production, this would fetch from DB and suggest actions)
-        assert response.status_code == 200
+    # Should return without error even if emails don't exist in DB
+    # (In production, this would fetch from DB and suggest actions)
+    assert response.status_code == 200
         
-        data = response.json()
-        assert "suggestions" in data
-        assert "count" in data
-
+    data = response.json()
+    assert "suggestions" in data
+    assert "count" in data
 
 @pytest.mark.asyncio
-async def test_very_high_risk_spam():
+async def test_very_high_risk_spam(async_client):
     """
     Test extremely high-risk spam/scam emails
     """
