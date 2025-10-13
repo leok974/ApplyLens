@@ -51,7 +51,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: 'pip'
-          cache-dependency-path: services/api/requirements.txt
+          cache-dependency-path: services/api/setup.py
 
       - name: Install system dependencies
         run: |
@@ -62,8 +62,7 @@ jobs:
         working-directory: services/api
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio pytest-env
+          pip install -e .[test]
 
       - name: Wait for PostgreSQL
         run: |

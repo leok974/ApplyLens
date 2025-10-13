@@ -412,16 +412,16 @@ async def time_series(
 # Phase 2: Database-backed Profile Analytics (ML labeling system)
 # ============================================================================
 
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
-from datetime import datetime, timedelta
-import logging
-import re
-from collections import Counter
+from fastapi import Depends  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
+from sqlalchemy import desc, and_  # noqa: E402
+from datetime import datetime, timedelta  # noqa: E402
+import logging  # noqa: E402
+import re  # noqa: E402
+from collections import Counter  # noqa: E402
 
-from app.db import get_db
-from app.models import Email, ProfileSenderStats, ProfileCategoryStats, ProfileInterests
+from app.db import get_db  # noqa: E402
+from app.models import Email, ProfileSenderStats, ProfileCategoryStats, ProfileInterests  # noqa: E402
 
 
 logger = logging.getLogger(__name__)

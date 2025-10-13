@@ -138,7 +138,7 @@ def approvals_get(status: str = "proposed", limit: int = 200) -> List[Dict[str, 
             if row_dict.get("params"):
                 try:
                     row_dict["params"] = json.loads(row_dict["params"]) if isinstance(row_dict["params"], str) else row_dict["params"]
-                except:
+                except:  # noqa: E722
                     pass
             rows.append(row_dict)
         

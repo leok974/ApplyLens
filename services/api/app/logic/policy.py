@@ -81,7 +81,7 @@ class PolicyEngine:
         if field in ["received_at", "expires_at", "created_at"] and isinstance(actual_value, str):
             try:
                 actual_value = datetime.fromisoformat(actual_value.replace("Z", "+00:00"))
-            except:
+            except:  # noqa: E722
                 pass
         
         # Get operator function

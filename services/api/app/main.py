@@ -75,26 +75,26 @@ app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
 # Phase 2 - Category labeling and profile analytics
-from .routers import labels, profile, labeling
+from .routers import labels, profile, labeling  # noqa: E402
 app.include_router(labels.router)
 app.include_router(profile.router)
 app.include_router(labeling.router, prefix="/api")
 
 # Security analysis
-from .routers import security, policy
+from .routers import security, policy  # noqa: E402
 app.include_router(security.router, prefix="/api")
 app.include_router(policy.router, prefix="/api")
 
 # Phase 4 - Agentic Actions & Approval Loop
-from .routers import actions
+from .routers import actions  # noqa: E402
 app.include_router(actions.router, prefix="/api")
 
 # Phase 5 - Chat Assistant
-from .routers import chat
+from .routers import chat  # noqa: E402
 app.include_router(chat.router, prefix="/api")
 
 # Phase 6 - Money Mode (Receipt tracking)
-from .routers import money
+from .routers import money  # noqa: E402
 app.include_router(money.router, prefix="/api")
 
 # Email automation system
