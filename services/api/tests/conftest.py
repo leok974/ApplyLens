@@ -176,3 +176,34 @@ try:
     pytest_plugins.append("pytest_asyncio")
 except ImportError:
     pass
+
+
+# ============================================================================
+# TEST DATA HELPERS
+# ============================================================================
+
+
+def seed_minimal(session: Session):
+    """
+    Seed minimal test data for contract/API tests.
+    
+    Creates one application and one email linked to it.
+    Useful for tests that need basic data without complex setup.
+    
+    Args:
+        session: SQLAlchemy session
+        
+    Returns:
+        Tuple of (application, email)
+    """
+    from app.models import Application, Email
+    
+    app = Application(title="SE I", company="Acme", status="applied")
+    session.add(app)
+    session.flush()
+    
+    em = Email(subject="hello", sender="hr@acme.com", application_id=app.id)
+    session.add(em)
+    session.commit()
+    
+    return app, em

@@ -7,7 +7,7 @@ and error handling. Uses async_client fixture with ASGITransport.
 
 import pytest
 
-from tests.factories import seed_minimal
+from conftest import seed_minimal
 
 
 # ============================================================================
