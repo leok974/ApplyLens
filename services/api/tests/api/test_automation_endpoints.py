@@ -7,7 +7,7 @@ and error handling. Uses async_client fixture with ASGITransport.
 
 import pytest
 
-from conftest import seed_minimal
+# seed_minimal is available from conftest.py (auto-loaded by pytest)
 
 
 # ============================================================================
@@ -20,14 +20,14 @@ class TestHealthEndpoint:
     """Tests for GET /automation/health endpoint."""
 
     @pytest.mark.anyio
-    async def test_health_returns_200(self, async_client, db_session):
+    async def test_health_returns_200(self, async_client, db_session, seed_minimal):
         """Health endpoint should return 200 OK."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/health")
         assert response.status_code == 200
 
     @pytest.mark.anyio
-    async def test_health_response_schema(self, async_client, db_session):
+    async def test_health_response_schema(self, async_client, db_session, seed_minimal):
         """Health endpoint should return expected schema."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/health")
@@ -52,7 +52,7 @@ class TestHealthEndpoint:
         assert isinstance(stats["coverage_percentage"], (int, float))
 
     @pytest.mark.anyio
-    async def test_health_coverage_percentage_valid(self, async_client, db_session):
+    async def test_health_coverage_percentage_valid(self, async_client, db_session, seed_minimal):
         """Coverage percentage should be between 0 and 100."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/health")
@@ -61,7 +61,7 @@ class TestHealthEndpoint:
         assert 0 <= coverage <= 100
 
     @pytest.mark.anyio
-    async def test_health_last_computed_format(self, async_client, db_session):
+    async def test_health_last_computed_format(self, async_client, db_session, seed_minimal):
         """Last computed should be ISO timestamp if present."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/health")
@@ -85,14 +85,14 @@ class TestRiskSummaryEndpoint:
     """Tests for GET /automation/risk-summary endpoint."""
 
     @pytest.mark.anyio
-    async def test_risk_summary_returns_200(self, async_client, db_session):
+    async def test_risk_summary_returns_200(self, async_client, db_session, seed_minimal):
         """Risk summary should return 200 OK."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/risk-summary")
         assert response.status_code == 200
 
     @pytest.mark.anyio
-    async def test_risk_summary_default_days(self, async_client, db_session):
+    async def test_risk_summary_default_days(self, async_client, db_session, seed_minimal):
         """Risk summary should accept default days parameter."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/risk-summary")
@@ -102,7 +102,7 @@ class TestRiskSummaryEndpoint:
         assert data["period"]["days"] == 7  # Default
 
     @pytest.mark.anyio
-    async def test_risk_summary_custom_days(self, async_client, db_session):
+    async def test_risk_summary_custom_days(self, async_client, db_session, seed_minimal):
         """Risk summary should accept custom days parameter."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/risk-summary", params={"days": 30})
@@ -111,7 +111,7 @@ class TestRiskSummaryEndpoint:
         assert data["period"]["days"] == 30
 
     @pytest.mark.anyio
-    async def test_risk_summary_response_schema(self, async_client, db_session):
+    async def test_risk_summary_response_schema(self, async_client, db_session, seed_minimal):
         """Risk summary should return expected schema."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/risk-summary", params={"days": 365})
@@ -140,7 +140,7 @@ class TestRiskSummaryEndpoint:
         assert isinstance(data["top_risky_emails"], list)
 
     @pytest.mark.anyio
-    async def test_risk_summary_distribution_sum(self, async_client, db_session):
+    async def test_risk_summary_distribution_sum(self, async_client, db_session, seed_minimal):
         """Distribution buckets should sum to approximately total emails."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/risk-summary", params={"days": 365})
@@ -156,7 +156,7 @@ class TestRiskSummaryEndpoint:
             assert 0.8 <= ratio <= 1.2
 
     @pytest.mark.anyio
-    async def test_risk_summary_top_emails_schema(self, async_client, db_session):
+    async def test_risk_summary_top_emails_schema(self, async_client, db_session, seed_minimal):
         """Top risky emails should have expected fields."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/risk-summary", params={"days": 365})
@@ -172,7 +172,7 @@ class TestRiskSummaryEndpoint:
             assert "category" in email or email.get("category") is None
 
     @pytest.mark.anyio
-    async def test_risk_summary_with_category_filter(self, async_client, db_session):
+    async def test_risk_summary_with_category_filter(self, async_client, db_session, seed_minimal):
         """Risk summary should accept category filter."""
         seed_minimal(db_session)
         response = await async_client.get("/automation/risk-summary", params={"category": "recruiter", "days": 90})
