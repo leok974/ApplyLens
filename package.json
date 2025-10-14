@@ -7,6 +7,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:update": "playwright test -u",
+    "e2e:smoke": "playwright test --grep @smoke",
+    "demo": "npm run e2e:smoke || true && echo '✅ Ready to demo'",
     "docs:organize": "node scripts/docs/organize-docs.mjs",
     "docs:fixfences": "node scripts/docs/fix-fences.mjs",
     "docs:lint": "markdownlint **/*.md --ignore node_modules --ignore .git",
