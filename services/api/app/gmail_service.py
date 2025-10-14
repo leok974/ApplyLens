@@ -1,27 +1,26 @@
-import os
-import re
 import base64
 import datetime as dt
+import os
+import re
 from typing import Dict, List, Optional
-from dateutil.relativedelta import relativedelta
-from bs4 import BeautifulSoup
+
 import bleach
-
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
+from bs4 import BeautifulSoup
+from dateutil.relativedelta import relativedelta
+from elasticsearch import Elasticsearch, helpers
 from google.auth.transport.requests import Request as GRequest
-
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 from sqlalchemy.orm import Session
-from .models import OAuthToken, Email, Application, AppStatus
-from .ingest.gmail_metrics import compute_thread_reply_metrics
+
 from .ingest.due_dates import (
     extract_due_dates,
     extract_earliest_due_date,
     extract_money_amounts,
 )
-from .security.analyzer import EmailRiskAnalyzer, BlocklistProvider
-
-from elasticsearch import Elasticsearch, helpers
+from .ingest.gmail_metrics import compute_thread_reply_metrics
+from .models import Application, AppStatus, Email, OAuthToken
+from .security.analyzer import BlocklistProvider, EmailRiskAnalyzer
 
 ELASTICSEARCH_URL = os.getenv("ES_URL")
 ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")
@@ -30,14 +29,18 @@ ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")
 _BLOCKLIST_PROVIDER = None
 _SECURITY_ANALYZER = None
 
+
 def get_security_analyzer() -> EmailRiskAnalyzer:
     """Get or create security analyzer instance (singleton pattern)."""
     global _BLOCKLIST_PROVIDER, _SECURITY_ANALYZER
     if _SECURITY_ANALYZER is None:
-        blocklist_path = os.path.join(os.path.dirname(__file__), "security", "blocklists.json")
+        blocklist_path = os.path.join(
+            os.path.dirname(__file__), "security", "blocklists.json"
+        )
         _BLOCKLIST_PROVIDER = BlocklistProvider(blocklist_path)
         _SECURITY_ANALYZER = EmailRiskAnalyzer(blocklists=_BLOCKLIST_PROVIDER)
     return _SECURITY_ANALYZER
+
 
 LABEL_MAP_BOOSTS = {
     "interview": 3.0,
@@ -47,8 +50,11 @@ LABEL_MAP_BOOSTS = {
 
 ATS_SYNONYMS = ["lever", "workday", "smartrecruiters", "greenhouse"]
 
+
 def _get_creds(db: Session, user_email: str) -> Credentials:
-    tok: OAuthToken = db.query(OAuthToken).filter_by(provider="google", user_email=user_email).first()
+    tok: OAuthToken = (
+        db.query(OAuthToken).filter_by(provider="google", user_email=user_email).first()
+    )
     if not tok:
         raise ValueError("No OAuth token for user")
     creds = Credentials(
@@ -57,7 +63,7 @@ def _get_creds(db: Session, user_email: str) -> Credentials:
         token_uri=tok.token_uri,
         client_id=tok.client_id,
         client_secret=tok.client_secret,
-        scopes=tok.scopes.split()
+        scopes=tok.scopes.split(),
     )
     if not creds.valid and creds.refresh_token:
         creds.refresh(GRequest())
@@ -67,11 +73,13 @@ def _get_creds(db: Session, user_email: str) -> Credentials:
         db.commit()
     return creds
 
+
 def _strip_html(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(" ", strip=True)
     # light sanitize
     return bleach.clean(text, tags=[], strip=True)
+
 
 def _parts_to_text(payload: dict) -> str:
     # Prefer text/plain
@@ -110,21 +118,30 @@ def _parts_to_text(payload: dict) -> str:
             return raw
     return ""
 
+
 def _header(headers: List[Dict], name: str) -> Optional[str]:
     for h in headers:
         if h.get("name", "").lower() == name.lower():
             return h.get("value")
     return None
 
+
 INTERVIEW_REGEX = re.compile(r"(?i)\binterview|phone screen|onsite\b")
-REJECT_REGEX = re.compile(r"(?i)\b(not selected|unfortunately|regret to inform|rejection)\b")
+REJECT_REGEX = re.compile(
+    r"(?i)\b(not selected|unfortunately|regret to inform|rejection)\b"
+)
 OFFER_REGEX = re.compile(r"(?i)\boffer\b")
 RECEIPT_REGEX = re.compile(r"(?i)\bapplication (received|submitted|confirmation)\b")
 NEWSLETTER_HINT = re.compile(r"(?i)\bunsubscribe\b")
 
 # NEW: Company and role extraction patterns
-COMPANY_REGEX = re.compile(r"(?i)(?:from|at|with|@)\s+([A-Z][A-Za-z0-9\s&.,'-]{2,40}?)(?:\s+(?:team|recruiting|talent|hr|careers)|\s*<|\s*\(|$)")
-ROLE_REGEX = re.compile(r"(?i)(?:for|position:|role:|as)\s+([A-Za-z0-9\s/+-]{3,60}?)(?:\s+at|\s+position|\s*-|\s*\||$)")
+COMPANY_REGEX = re.compile(
+    r"(?i)(?:from|at|with|@)\s+([A-Z][A-Za-z0-9\s&.,'-]{2,40}?)(?:\s+(?:team|recruiting|talent|hr|careers)|\s*<|\s*\(|$)"
+)
+ROLE_REGEX = re.compile(
+    r"(?i)(?:for|position:|role:|as)\s+([A-Za-z0-9\s/+-]{3,60}?)(?:\s+at|\s+position|\s*-|\s*\||$)"
+)
+
 
 def extract_company(sender: str, body: str) -> Optional[str]:
     """Extract company name from sender or body text"""
@@ -137,13 +154,14 @@ def extract_company(sender: str, body: str) -> Optional[str]:
             company = parts[-2].capitalize()
             if company.lower() not in ["gmail", "yahoo", "outlook", "hotmail", "mail"]:
                 return company
-    
+
     # Try body text pattern matching
     match = COMPANY_REGEX.search(body[:500] if body else "")
     if match:
         return match.group(1).strip()
-    
+
     return None
+
 
 def extract_role(subject: str) -> Optional[str]:
     """Extract job role from subject line"""
@@ -154,16 +172,24 @@ def extract_role(subject: str) -> Optional[str]:
         return match.group(1).strip()
     return None
 
-def extract_source(headers: List[Dict], sender: str, subject: str, body: str) -> Optional[str]:
+
+def extract_source(
+    headers: List[Dict], sender: str, subject: str, body: str
+) -> Optional[str]:
     """Extract ATS/source from headers or content"""
     hnames = {h["name"].lower(): h["value"] for h in headers}
     for k in ["list-unsubscribe", "x-mailer", "x-sendgrid-sender"]:
-        if k in hnames: 
+        if k in hnames:
             return k
     for k in ATS_SYNONYMS:
-        if k in (sender or "").lower() or k in (subject or "").lower() or k in (body or "").lower():
+        if (
+            k in (sender or "").lower()
+            or k in (subject or "").lower()
+            or k in (body or "").lower()
+        ):
             return k
     return None
+
 
 def estimate_source_confidence(src: Optional[str]) -> float:
     """Estimate confidence of source detection"""
@@ -175,7 +201,10 @@ def estimate_source_confidence(src: Optional[str]) -> float:
         return 0.6
     return 0.4
 
-def upsert_application_for_email(db: Session, email_obj: Email) -> Optional[Application]:
+
+def upsert_application_for_email(
+    db: Session, email_obj: Email
+) -> Optional[Application]:
     """
     Find or create an Application using (thread_id) or (company+role) as key.
     Links the email to the application.
@@ -192,10 +221,10 @@ def upsert_application_for_email(db: Session, email_obj: Email) -> Optional[Appl
     if not app and email_obj.company:
         app = (
             db.query(Application)
-              .filter(Application.company == email_obj.company)
-              .filter(Application.role == email_obj.role)
-              .order_by(Application.id.desc())
-              .first()
+            .filter(Application.company == email_obj.company)
+            .filter(Application.role == email_obj.role)
+            .order_by(Application.id.desc())
+            .first()
         )
 
     # Create new application if not found
@@ -206,7 +235,11 @@ def upsert_application_for_email(db: Session, email_obj: Email) -> Optional[Appl
             source=email_obj.source,
             source_confidence=email_obj.source_confidence,
             thread_id=email_obj.thread_id,
-            status=AppStatus.interview if "interview" in (email_obj.label_heuristics or []) else AppStatus.applied,
+            status=(
+                AppStatus.interview
+                if "interview" in (email_obj.label_heuristics or [])
+                else AppStatus.applied
+            ),
             last_email_id=email_obj.id,
         )
         db.add(app)
@@ -215,9 +248,11 @@ def upsert_application_for_email(db: Session, email_obj: Email) -> Optional[Appl
     # Update thread_id if missing
     if not app.thread_id and email_obj.thread_id:
         app.thread_id = email_obj.thread_id
-    
+
     # Update source if we have better confidence
-    if email_obj.source and (not app.source or app.source_confidence < email_obj.source_confidence):
+    if email_obj.source and (
+        not app.source or app.source_confidence < email_obj.source_confidence
+    ):
         app.source = email_obj.source
         app.source_confidence = email_obj.source_confidence
 
@@ -227,6 +262,7 @@ def upsert_application_for_email(db: Session, email_obj: Email) -> Optional[Appl
     # Link email -> application
     email_obj.application_id = app.id
     return app
+
 
 def derive_labels(sender: str, subject: str, body: str) -> List[str]:
     """Heuristically derive email labels based on content"""
@@ -243,12 +279,18 @@ def derive_labels(sender: str, subject: str, body: str) -> List[str]:
         labels.append("rejection")
     if RECEIPT_REGEX.search(text):
         labels.append("application_receipt")
-    if NEWSLETTER_HINT.search(text) or any(k in s for k in ["news", "newsletter", "noreply"]) or "list-unsubscribe" in text.lower():
+    if (
+        NEWSLETTER_HINT.search(text)
+        or any(k in s for k in ["news", "newsletter", "noreply"])
+        or "list-unsubscribe" in text.lower()
+    ):
         labels.append("newsletter_ads")
     return list(set(labels))
 
+
 def es_client():
     return Elasticsearch(ELASTICSEARCH_URL)
+
 
 def ensure_es_index():
     """Ensure the Elasticsearch index exists with proper mappings"""
@@ -262,37 +304,38 @@ def ensure_es_index():
                 "filter": {
                     "ats_synonyms": {
                         "type": "synonym",
-                        "synonyms": [", ".join(ATS_SYNONYMS)]
+                        "synonyms": [", ".join(ATS_SYNONYMS)],
                     }
                 },
                 "analyzer": {
                     "ats_analyzer": {
                         "tokenizer": "standard",
-                        "filter": ["lowercase","ats_synonyms"]
+                        "filter": ["lowercase", "ats_synonyms"],
                     }
-                }
+                },
             }
         },
         mappings={
             "properties": {
-                "gmail_id": {"type":"keyword"},
-                "thread_id": {"type":"keyword"},
-                "subject": {"type":"text","analyzer":"ats_analyzer"},
-                "body_text": {"type":"text","analyzer":"ats_analyzer"},
-                "sender": {"type":"keyword"},
-                "recipient": {"type":"keyword"},
-                "received_at": {"type":"date"},
-                "labels": {"type":"keyword"},
-                "label_heuristics": {"type":"keyword"},
-                "subject_suggest": {"type":"completion"},
+                "gmail_id": {"type": "keyword"},
+                "thread_id": {"type": "keyword"},
+                "subject": {"type": "text", "analyzer": "ats_analyzer"},
+                "body_text": {"type": "text", "analyzer": "ats_analyzer"},
+                "sender": {"type": "keyword"},
+                "recipient": {"type": "keyword"},
+                "received_at": {"type": "date"},
+                "labels": {"type": "keyword"},
+                "label_heuristics": {"type": "keyword"},
+                "subject_suggest": {"type": "completion"},
                 # NEW: quick hooks for filtering
-                "company": {"type":"keyword"},
-                "role": {"type":"text","analyzer":"ats_analyzer"},
-                "source": {"type":"keyword"},
-                "source_confidence": {"type":"float"}
+                "company": {"type": "keyword"},
+                "role": {"type": "text", "analyzer": "ats_analyzer"},
+                "source": {"type": "keyword"},
+                "source_confidence": {"type": "float"},
             }
-        }
+        },
     )
+
 
 def index_bulk_emails(docs: List[dict]):
     """Bulk index emails into Elasticsearch"""
@@ -302,13 +345,11 @@ def index_bulk_emails(docs: List[dict]):
     ensure_es_index()
     actions = []
     for d in docs:
-        actions.append({
-            "_index": ES_INDEX,
-            "_id": d["gmail_id"],
-            "_op_type": "index",
-            **d
-        })
+        actions.append(
+            {"_index": ES_INDEX, "_id": d["gmail_id"], "_op_type": "index", **d}
+        )
     helpers.bulk(es, actions)
+
 
 def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
     """Backfill Gmail messages into database and Elasticsearch"""
@@ -317,12 +358,17 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
     (dt.datetime.utcnow() - relativedelta(days=days)).strftime("%Y/%m/%d")
     q = f"newer_than:{days}d"
     # Or use after: yyyy/mm/dd -> f"after:{after_date}"
-    
+
     # First, get all threads (not individual messages)
     threads = []
     page_token = None
     while True:
-        resp = svc.users().threads().list(userId="me", q=q, pageToken=page_token, maxResults=500).execute()
+        resp = (
+            svc.users()
+            .threads()
+            .list(userId="me", q=q, pageToken=page_token, maxResults=500)
+            .execute()
+        )
         threads.extend(resp.get("threads", []))
         page_token = resp.get("nextPageToken")
         if not page_token:
@@ -330,18 +376,23 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
 
     es_docs = []
     inserted = 0
-    
+
     # Process each thread
     for thread_meta in threads:
         thread_id = thread_meta["id"]
-        
+
         # Get full thread with all messages
-        thread = svc.users().threads().get(userId="me", id=thread_id, format="full").execute()
+        thread = (
+            svc.users()
+            .threads()
+            .get(userId="me", id=thread_id, format="full")
+            .execute()
+        )
         messages = thread.get("messages", [])
-        
+
         # Compute reply metrics once per thread
         metrics = compute_thread_reply_metrics(messages, user_email.lower())
-        
+
         # Process each message in the thread
         for meta in messages:
             payload = meta.get("payload", {})
@@ -360,7 +411,7 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
             role = extract_role(subject)
             source = extract_source(headers, sender, subject, body_text)
             source_conf = estimate_source_confidence(source)
-            
+
             # NEW: Extract due dates and money amounts for bills
             combined_text = f"{subject} {body_text}"
             due_dates = extract_due_dates(combined_text, received_at)
@@ -388,24 +439,28 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
             existing.role = role
             existing.source = source
             existing.source_confidence = source_conf
-            
+
             # NEW: Save reply metrics (denormalized per message)
             if metrics["first_user_reply_at"]:
-                existing.first_user_reply_at = dt.datetime.fromisoformat(metrics["first_user_reply_at"])
+                existing.first_user_reply_at = dt.datetime.fromisoformat(
+                    metrics["first_user_reply_at"]
+                )
             if metrics["last_user_reply_at"]:
-                existing.last_user_reply_at = dt.datetime.fromisoformat(metrics["last_user_reply_at"])
+                existing.last_user_reply_at = dt.datetime.fromisoformat(
+                    metrics["last_user_reply_at"]
+                )
             existing.user_reply_count = metrics["user_reply_count"]
 
             # Security analysis: Run analyzer on each email
             try:
                 analyzer = get_security_analyzer()
                 headers_dict = {h["name"]: h["value"] for h in headers}
-                
+
                 # Parse from_name and from_email
                 from_match = re.match(r'^"?([^"<]+)"?\s*<?([^>]+)>?$', sender)
                 from_name = from_match.group(1).strip() if from_match else ""
                 from_email = from_match.group(2).strip() if from_match else sender
-                
+
                 # Run security analysis
                 risk_result = analyzer.analyze(
                     headers=headers_dict,
@@ -416,14 +471,14 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
                     body_html=None,  # Could extract HTML from parts if needed
                     urls_visible_text_pairs=None,  # Auto-extract from body
                     attachments=[],  # Could parse from payload parts if needed
-                    domain_first_seen_days_ago=None  # Could compute from whois or tracking
+                    domain_first_seen_days_ago=None,  # Could compute from whois or tracking
                 )
-                
+
                 # Store security analysis results
                 existing.risk_score = float(risk_result.risk_score)
                 existing.flags = [f.dict() for f in risk_result.flags]
                 existing.quarantined = risk_result.quarantined
-                
+
             except Exception as e:
                 # Log error but don't fail the entire backfill
                 print(f"Warning: Security analysis failed for {meta['id']}: {e}")
@@ -437,36 +492,44 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
             inserted += 1
 
             # Prepare ES doc
-            es_docs.append({
-                "gmail_id": existing.gmail_id,
-                "thread_id": existing.thread_id,
-                "subject": subject,
-                "body_text": body_text,
-                "sender": sender,
-                "recipient": recipient,
-                "received_at": received_at.isoformat(),
-                "labels": existing.labels or [],
-                "label_heuristics": label_heur,
-                "subject_suggest": {"input": [subject] if subject else []},
-                # NEW: Index quick hooks for filtering
-                "company": company,
-                "role": role,
-                "source": source,
-                "source_confidence": source_conf,
-                # NEW: Index reply metrics
-                "first_user_reply_at": metrics["first_user_reply_at"],
-                "last_user_reply_at": metrics["last_user_reply_at"],
-                "user_reply_count": metrics["user_reply_count"],
-                "replied": metrics["replied"],
-                # NEW: Index due dates and money amounts for bills
-                "dates": due_dates,
-                "money_amounts": money_amounts,
-                "expires_at": earliest_due,
-                # Security analysis fields (if analyzed)
-                "risk_score": int(existing.risk_score) if existing.risk_score else 0,
-                "quarantined": existing.quarantined if hasattr(existing, 'quarantined') else False,
-                "flags": existing.flags if existing.flags else [],
-            })
+            es_docs.append(
+                {
+                    "gmail_id": existing.gmail_id,
+                    "thread_id": existing.thread_id,
+                    "subject": subject,
+                    "body_text": body_text,
+                    "sender": sender,
+                    "recipient": recipient,
+                    "received_at": received_at.isoformat(),
+                    "labels": existing.labels or [],
+                    "label_heuristics": label_heur,
+                    "subject_suggest": {"input": [subject] if subject else []},
+                    # NEW: Index quick hooks for filtering
+                    "company": company,
+                    "role": role,
+                    "source": source,
+                    "source_confidence": source_conf,
+                    # NEW: Index reply metrics
+                    "first_user_reply_at": metrics["first_user_reply_at"],
+                    "last_user_reply_at": metrics["last_user_reply_at"],
+                    "user_reply_count": metrics["user_reply_count"],
+                    "replied": metrics["replied"],
+                    # NEW: Index due dates and money amounts for bills
+                    "dates": due_dates,
+                    "money_amounts": money_amounts,
+                    "expires_at": earliest_due,
+                    # Security analysis fields (if analyzed)
+                    "risk_score": (
+                        int(existing.risk_score) if existing.risk_score else 0
+                    ),
+                    "quarantined": (
+                        existing.quarantined
+                        if hasattr(existing, "quarantined")
+                        else False
+                    ),
+                    "flags": existing.flags if existing.flags else [],
+                }
+            )
 
     db.commit()
     index_bulk_emails(es_docs)

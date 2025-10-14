@@ -1,7 +1,8 @@
 # ES-backed implementations for mailbox queries.
-import os
 import datetime as dt
-from typing import List, Dict, Any, Optional
+import os
+from typing import Any, Dict, List, Optional
+
 from elasticsearch import Elasticsearch
 
 ES_INDEX = os.getenv("ES_EMAIL_INDEX", "emails_v1")
@@ -36,11 +37,11 @@ def _hit_to_email(hit: Dict[str, Any]) -> Dict[str, Any]:
 async def find_expired_promos(days: int = 7, limit: int = 200) -> List[Dict[str, Any]]:
     """
     Promotions that already expired; restricted to items received within N days to keep it relevant.
-    
+
     Args:
         days: Look back this many days for expired promos
         limit: Maximum number of results to return
-        
+
     Returns:
         List of email dictionaries with at least: id, category, expires_at, received_at
     """
@@ -72,14 +73,16 @@ async def find_expired_promos(days: int = 7, limit: int = 200) -> List[Dict[str,
     return [_hit_to_email(h) for h in res["hits"]["hits"]]
 
 
-async def find_high_risk(limit: int = 50, min_risk: float = 80.0) -> List[Dict[str, Any]]:
+async def find_high_risk(
+    limit: int = 50, min_risk: float = 80.0
+) -> List[Dict[str, Any]]:
     """
     Find emails with high risk scores (potential phishing/spam).
-    
+
     Args:
         limit: Maximum number of results to return
         min_risk: Minimum risk score threshold (default 80.0)
-        
+
     Returns:
         List of email dictionaries with at least: id, risk_score, category, sender_domain
     """
@@ -107,11 +110,11 @@ async def find_unsubscribe_candidates(
     """
     Simple heuristic: newsletters (has_unsubscribe) older than N days (implies low recency/interest).
     If you track opens, refine with open_rate==0 or unopened_count>=K.
-    
+
     Args:
         days: Look for emails older than this many days
         limit: Maximum number of results to return
-        
+
     Returns:
         List of email dictionaries with at least: id, has_unsubscribe, sender_domain, received_at
     """
@@ -149,12 +152,12 @@ async def find_by_filter(
 ) -> List[Dict[str, Any]]:
     """
     Generic finder used by policy execution route. Pass a valid Elasticsearch bool/range/term query.
-    
+
     Args:
         filter_query: Valid ES DSL query (e.g., {"bool":{"filter":[...]}})
         limit: Maximum number of results
         fields: Fields to return (None = default set)
-        
+
     Returns:
         List of email dictionaries
     """
@@ -184,15 +187,15 @@ async def find_bills_due_before(
     """
     Find bills whose 'dates' array or 'expires_at' is before cutoff.
     Prefer 'dates' if present; otherwise fall back to 'expires_at'.
-    
+
     Args:
         cutoff_iso: ISO datetime string (exclusive upper bound)
         limit: Maximum number of results to return
-        
+
     Returns:
         List of bill email dictionaries with fields: id, category, subject,
         money_amounts, dates, expires_at, sender_domain, received_at
-        
+
     Example:
         >>> bills = await find_bills_due_before("2025-10-15T00:00:00Z")
         >>> [b["subject"] for b in bills]
@@ -230,7 +233,7 @@ async def find_bills_due_before(
         ],
     }
     res = client.search(index=ES_INDEX, body=body)
-    
+
     # Enrich results with dates/money_amounts (not in _hit_to_email)
     results = []
     for h in res["hits"]["hits"]:
@@ -239,7 +242,7 @@ async def find_bills_due_before(
         email["money_amounts"] = src.get("money_amounts", [])
         email["dates"] = src.get("dates", [])
         results.append(email)
-    
+
     return results
 
 
@@ -254,7 +257,7 @@ async def search_emails(
 ) -> List[Dict[str, Any]]:
     """
     General-purpose email search with multiple filters.
-    
+
     Args:
         category: Filter by email category
         sender_domain: Filter by sender domain
@@ -263,7 +266,7 @@ async def search_emails(
         received_after: ISO datetime string
         received_before: ISO datetime string
         limit: Maximum results
-        
+
     Returns:
         List of email dictionaries
     """

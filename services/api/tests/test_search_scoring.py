@@ -1,11 +1,15 @@
-from datetime import datetime, timedelta, timezone
-from elasticsearch import Elasticsearch
 import os
+from datetime import datetime, timedelta, timezone
+
+from elasticsearch import Elasticsearch
 
 ES_URL = os.getenv("ES_URL", "http://localhost:9200")
 INDEX = os.getenv("ES_ALIAS", "gmail_emails")
 
-def seed_doc(es, subject, labels=None, days_ago=0, body="Body", sender="hr@company.com"):
+
+def seed_doc(
+    es, subject, labels=None, days_ago=0, body="Body", sender="hr@company.com"
+):
     ts = (datetime.now(timezone.utc) - timedelta(days=days_ago)).isoformat()
     return es.index(
         index=INDEX,
@@ -21,6 +25,7 @@ def seed_doc(es, subject, labels=None, days_ago=0, body="Body", sender="hr@compa
         },
         refresh=True,
     )
+
 
 def test_label_boost_and_recency(client):
     es = Elasticsearch(ES_URL)

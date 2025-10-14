@@ -6,19 +6,17 @@ Endpoints:
 - POST /applications/backfill-from-email - Extract and create/update application
 """
 
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
 
 from .db import SessionLocal
+from .email_extractor import ExtractInput
+from .email_extractor import extract_from_email as extract_service
+from .gmail_providers import GmailProvider, db_backed_provider, mock_provider
 from .models import Application, AppStatus, GmailToken
 from .settings import settings
-from .email_extractor import extract_from_email as extract_service, ExtractInput
-from .gmail_providers import (
-    db_backed_provider,
-    mock_provider,
-    GmailProvider,
-)
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 
@@ -26,7 +24,7 @@ router = APIRouter(prefix="/applications", tags=["applications"])
 def _get_gmail_provider() -> Optional[GmailProvider]:
     """
     Get Gmail provider based on configuration.
-    
+
     Priority:
     1. Mock provider (if USE_MOCK_GMAIL=True)
     2. DB-backed provider (if CLIENT_ID+SECRET set)
@@ -36,13 +34,15 @@ def _get_gmail_provider() -> Optional[GmailProvider]:
     if settings.USE_MOCK_GMAIL:
         # Return mock provider with empty seed
         return mock_provider({})
-    
+
     if settings.GMAIL_CLIENT_ID and settings.GMAIL_CLIENT_SECRET:
         # DB-backed provider for multi-user
         async def get_token_by_email(email: str) -> Optional[Dict[str, Any]]:
             db = SessionLocal()
             try:
-                token = db.query(GmailToken).filter(GmailToken.user_email == email).first()
+                token = (
+                    db.query(GmailToken).filter(GmailToken.user_email == email).first()
+                )
                 if not token:
                     return None
                 return {
@@ -53,17 +53,19 @@ def _get_gmail_provider() -> Optional[GmailProvider]:
                 }
             finally:
                 db.close()
-        
+
         return db_backed_provider(get_token_by_email)
-    
+
     # No Gmail support
     return None
 
 
 # ---- Request/Response Models ----
 
+
 class ExtractPayload(BaseModel):
     """Request payload for /extract endpoint."""
+
     gmail_thread_id: Optional[str] = None
     user_email: Optional[str] = None
     subject: Optional[str] = None
@@ -76,6 +78,7 @@ class ExtractPayload(BaseModel):
 
 class ExtractResponse(BaseModel):
     """Response from /extract endpoint."""
+
     company: Optional[str] = None
     role: Optional[str] = None
     source: Optional[str] = None
@@ -85,6 +88,7 @@ class ExtractResponse(BaseModel):
 
 class BackfillPayload(ExtractPayload):
     """Request payload for /backfill-from-email endpoint."""
+
     defaults: Optional[Dict[str, Any]] = None
     company: Optional[str] = None
     role: Optional[str] = None
@@ -93,6 +97,7 @@ class BackfillPayload(ExtractPayload):
 
 class ApplicationResponse(BaseModel):
     """Application model for responses."""
+
     id: int
     company: str
     role: Optional[str] = None
@@ -108,12 +113,14 @@ class ApplicationResponse(BaseModel):
 
 class BackfillResponse(BaseModel):
     """Response from /backfill-from-email endpoint."""
+
     saved: ApplicationResponse
     extracted: ExtractResponse
     updated: bool = False
 
 
 # ---- Endpoints ----
+
 
 @router.post("/extract", response_model=ExtractResponse)
 async def extract_endpoint(
@@ -122,27 +129,29 @@ async def extract_endpoint(
 ):
     """
     Extract company, role, and source from email content.
-    
+
     If gmail_thread_id is provided, attempts to fetch email from Gmail.
     Otherwise, uses provided email fields (subject, from, text, etc.).
-    
+
     Supports multi-user OAuth via X-User-Email header or user_email in body.
     """
     # Get Gmail provider
     gmail_provider = _get_gmail_provider()
-    
+
     # Start with body fields
     email_data = body.model_dump()
-    
+
     # Try to fetch from Gmail if thread_id provided
     if body.gmail_thread_id and gmail_provider:
         user_email = body.user_email or x_user_email
-        pulled = await gmail_provider.fetch_thread_latest(body.gmail_thread_id, user_email)
-        
+        pulled = await gmail_provider.fetch_thread_latest(
+            body.gmail_thread_id, user_email
+        )
+
         if pulled:
             # Merge Gmail content with body (body wins for non-empty fields)
             email_data = {**pulled, **email_data}
-    
+
     # Extract using service
     result = extract_service(
         ExtractInput(
@@ -155,11 +164,11 @@ async def extract_endpoint(
             pdf_text=email_data.get("_pdfText"),  # From PDF parsing
         )
     )
-    
+
     # Add debug info
     result.debug["used_gmail"] = bool(body.gmail_thread_id and gmail_provider)
     result.debug["user_email"] = body.user_email or x_user_email
-    
+
     return ExtractResponse(
         company=result.company,
         role=result.role,
@@ -176,10 +185,10 @@ async def backfill_endpoint(
 ):
     """
     Extract fields from email and create/update application.
-    
+
     If gmail_thread_id is provided, fetches from Gmail.
     Otherwise, uses provided email fields.
-    
+
     Logic:
     1. Fetch email content (Gmail or body)
     2. Extract company/role/source
@@ -188,18 +197,20 @@ async def backfill_endpoint(
     """
     # Get Gmail provider
     gmail_provider = _get_gmail_provider()
-    
+
     # Start with body fields
     email_data = body.model_dump()
-    
+
     # Try to fetch from Gmail
     if body.gmail_thread_id and gmail_provider:
         user_email = body.user_email or x_user_email
-        pulled = await gmail_provider.fetch_thread_latest(body.gmail_thread_id, user_email)
-        
+        pulled = await gmail_provider.fetch_thread_latest(
+            body.gmail_thread_id, user_email
+        )
+
         if pulled:
             email_data = {**pulled, **email_data}
-    
+
     # Extract
     result = extract_service(
         ExtractInput(
@@ -212,27 +223,29 @@ async def backfill_endpoint(
             pdf_text=email_data.get("_pdfText"),
         )
     )
-    
+
     # Use extracted values or explicit overrides
     company = body.company or result.company or ""
     role = body.role or result.role or ""
-    source = (body.defaults or {}).get("source") or body.source or result.source or "Email"
+    source = (
+        (body.defaults or {}).get("source") or body.source or result.source or "Email"
+    )
     source_conf = result.source_confidence
     thread_id = body.gmail_thread_id
-    
+
     # Validation
     if not (company.strip() or role.strip()):
         raise HTTPException(
             status_code=422,
             detail="insufficient_fields: provide at least company or role",
         )
-    
+
     # Database operations
     db = SessionLocal()
     try:
         existing = None
         updated = False
-        
+
         # Try to find by thread_id
         if thread_id:
             existing = (
@@ -243,7 +256,7 @@ async def backfill_endpoint(
                 )
                 .first()
             )
-        
+
         # Try to find by company+role
         if not existing and company and role:
             existing = (
@@ -252,7 +265,7 @@ async def backfill_endpoint(
                 .order_by(Application.id.desc())
                 .first()
             )
-        
+
         if existing:
             # Update existing application
             if company:
@@ -266,7 +279,7 @@ async def backfill_endpoint(
             if not existing.source or existing.source_confidence < source_conf:
                 existing.source = source
                 existing.source_confidence = source_conf
-            
+
             db.commit()
             db.refresh(existing)
             updated = True
@@ -285,7 +298,7 @@ async def backfill_endpoint(
             db.add(app)
             db.commit()
             db.refresh(app)
-        
+
         return BackfillResponse(
             saved=ApplicationResponse(
                 id=app.id,
@@ -309,7 +322,7 @@ async def backfill_endpoint(
             ),
             updated=updated,
         )
-    
+
     except HTTPException:
         raise
     except Exception as e:

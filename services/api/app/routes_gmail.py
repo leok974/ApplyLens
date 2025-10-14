@@ -1,23 +1,27 @@
 import os
 import time
-from fastapi import APIRouter, Query, HTTPException, Request
-from pydantic import BaseModel
 from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel
+from sqlalchemy import desc
+
 from .db import SessionLocal
 from .gmail_service import gmail_backfill
-from .models import OAuthToken, Email
-from sqlalchemy import desc
-from .metrics import BACKFILL_REQUESTS, BACKFILL_INSERTED, GMAIL_CONNECTED
+from .metrics import BACKFILL_INSERTED, BACKFILL_REQUESTS, GMAIL_CONNECTED
+from .models import Email, OAuthToken
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
 # Simple rate limiter for backfill
 _LAST_BACKFILL_TS = 0
 
+
 class BackfillResp(BaseModel):
     inserted: int
     days: int
     user_email: str
+
 
 class ConnectionStatus(BaseModel):
     connected: bool
@@ -25,7 +29,8 @@ class ConnectionStatus(BaseModel):
     provider: str = "google"
     has_refresh_token: bool = False
     total: Optional[int] = None  # Total emails in DB
-    
+
+
 class EmailItem(BaseModel):
     id: int
     gmail_id: Optional[str]
@@ -42,72 +47,89 @@ class EmailItem(BaseModel):
     source: Optional[str] = None
     application_id: Optional[int] = None
 
+
 class InboxResponse(BaseModel):
     emails: List[EmailItem]
     total: int
     page: int
     limit: int
 
+
 # For now, use the email that owns the OAuth token (single-user)
 # If you manage multi-user, pass user_email in header or session.
 DEFAULT_USER_EMAIL_ENV = os.getenv("DEFAULT_USER_EMAIL", "user@example.com")
+
 
 @router.get("/status", response_model=ConnectionStatus)
 def get_connection_status(user_email: str = Query(DEFAULT_USER_EMAIL_ENV)):
     """Check if user has connected their Gmail account"""
     db = SessionLocal()
     try:
-        token = db.query(OAuthToken).filter_by(provider="google", user_email=user_email).first()
+        token = (
+            db.query(OAuthToken)
+            .filter_by(provider="google", user_email=user_email)
+            .first()
+        )
         if not token:
             # Set gauge: disconnected
             GMAIL_CONNECTED.labels(user_email=user_email).set(0)
             return ConnectionStatus(connected=False)
-        
+
         # Count total emails for this user
         total = db.query(Email).filter(Email.gmail_id.isnot(None)).count()
-        
+
         # Set gauge: connected
         GMAIL_CONNECTED.labels(user_email=token.user_email).set(1)
-        
+
         return ConnectionStatus(
             connected=True,
             user_email=token.user_email,
             provider=token.provider,
             has_refresh_token=bool(token.refresh_token),
-            total=total
+            total=total,
         )
     finally:
         db.close()
+
 
 @router.get("/inbox", response_model=InboxResponse)
 def get_inbox(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
     label_filter: Optional[str] = Query(None, description="Filter by label_heuristics"),
-    user_email: str = Query(DEFAULT_USER_EMAIL_ENV)
+    user_email: str = Query(DEFAULT_USER_EMAIL_ENV),
 ):
     """Get paginated list of Gmail emails from database"""
     db = SessionLocal()
     try:
         # Check if user is connected
-        token = db.query(OAuthToken).filter_by(provider="google", user_email=user_email).first()
+        token = (
+            db.query(OAuthToken)
+            .filter_by(provider="google", user_email=user_email)
+            .first()
+        )
         if not token:
-            raise HTTPException(status_code=401, detail="Gmail not connected. Please authenticate first.")
-        
+            raise HTTPException(
+                status_code=401,
+                detail="Gmail not connected. Please authenticate first.",
+            )
+
         # Build query
         query = db.query(Email).filter(Email.gmail_id.isnot(None))
-        
+
         # Apply label filter if provided
         if label_filter:
             query = query.filter(Email.label_heuristics.contains([label_filter]))
-        
+
         # Get total count
         total = query.count()
-        
+
         # Apply pagination
         offset = (page - 1) * limit
-        emails = query.order_by(desc(Email.received_at)).offset(offset).limit(limit).all()
-        
+        emails = (
+            query.order_by(desc(Email.received_at)).offset(offset).limit(limit).all()
+        )
+
         # Convert to response
         email_items = [
             EmailItem(
@@ -115,49 +137,58 @@ def get_inbox(
                 gmail_id=email.gmail_id,
                 thread_id=email.thread_id,
                 subject=email.subject,
-                body_preview=email.body_text[:250] if email.body_text else None,  # Server-side truncation
+                body_preview=(
+                    email.body_text[:250] if email.body_text else None
+                ),  # Server-side truncation
                 sender=email.sender,
                 recipient=email.recipient,
                 labels=email.labels,
                 label_heuristics=email.label_heuristics,
-                received_at=email.received_at.isoformat() if email.received_at else None,
+                received_at=(
+                    email.received_at.isoformat() if email.received_at else None
+                ),
                 company=email.company,
                 role=email.role,
                 source=email.source,
-                application_id=email.application_id
+                application_id=email.application_id,
             )
             for email in emails
         ]
-        
+
         return InboxResponse(emails=email_items, total=total, page=page, limit=limit)
     finally:
         db.close()
 
+
 @router.post("/backfill", response_model=BackfillResp)
-def backfill(request: Request, days: int = Query(60, ge=1, le=365), user_email: str | None = None):
+def backfill(
+    request: Request, days: int = Query(60, ge=1, le=365), user_email: str | None = None
+):
     """Backfill Gmail messages from the last N days"""
     global _LAST_BACKFILL_TS
     now = time.time()
-    
+
     # Simple 60-second rate limit
     if now - _LAST_BACKFILL_TS < 60:
         BACKFILL_REQUESTS.labels(result="rate_limited").inc()
-        raise HTTPException(status_code=429, detail="Backfill too frequent; try again in a minute.")
+        raise HTTPException(
+            status_code=429, detail="Backfill too frequent; try again in a minute."
+        )
     _LAST_BACKFILL_TS = now
-    
+
     db = SessionLocal()
     try:
         email = user_email or os.getenv("DEFAULT_USER_EMAIL")
         if not email:
             BACKFILL_REQUESTS.labels(result="bad_request").inc()
             raise HTTPException(400, "user_email required (or set DEFAULT_USER_EMAIL)")
-        
+
         count = gmail_backfill(db, user_email=email, days=days)
-        
+
         # Success metrics
         BACKFILL_REQUESTS.labels(result="ok").inc()
         BACKFILL_INSERTED.inc(count)
-        
+
         return BackfillResp(inserted=count, days=days, user_email=email)
     except HTTPException:
         raise

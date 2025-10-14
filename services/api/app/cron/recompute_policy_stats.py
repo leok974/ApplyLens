@@ -15,8 +15,9 @@ Future enhancements:
 Schedule: Daily at 2:15am (after ATS enrichment)
 Crontab: 15 02 * * * python services/api/app/cron/recompute_policy_stats.py
 """
-import sys
+
 import os
+import sys
 from datetime import datetime
 
 # Add parent directory to path for imports
@@ -29,16 +30,16 @@ from app.models.personalization import PolicyStats
 def recompute_stats():
     """
     Recompute precision for all policy stats.
-    
+
     Precision = approved / fired
     """
     db = SessionLocal()
-    
+
     try:
         stats = db.query(PolicyStats).all()
-        
+
         print(f"Recomputing stats for {len(stats)} policy-user combinations...")
-        
+
         updated = 0
         for ps in stats:
             # Recompute precision
@@ -46,17 +47,17 @@ def recompute_stats():
             ps.precision = ps.approved / denom
             ps.updated_at = datetime.utcnow()
             updated += 1
-        
+
         db.commit()
-        
+
         print(f"✓ Updated {updated} policy stats")
         return updated
-    
+
     except Exception as e:
         print(f"✗ Error recomputing stats: {e}")
         db.rollback()
         return 0
-    
+
     finally:
         db.close()
 
@@ -67,14 +68,14 @@ def main():
     print("Recompute Policy Stats - Phase 6")
     print(f"Started: {datetime.utcnow().isoformat()}")
     print("=" * 60)
-    
+
     updated = recompute_stats()
-    
+
     print("=" * 60)
     print(f"Completed: {datetime.utcnow().isoformat()}")
     print(f"Updated {updated} policy stats")
     print("=" * 60)
-    
+
     return 0 if updated >= 0 else 1
 
 
@@ -84,5 +85,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Fatal error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

@@ -10,16 +10,19 @@ Tests monkey-patch the ES client so no running cluster is needed.
 """
 
 import pytest
+
 import app.logic.search as S
+
 
 class FakeES:
     """Mock Elasticsearch client."""
-    
+
     def __init__(self, hits):
         self._hits = hits
-    
+
     def search(self, index, body):
         return {"hits": {"hits": self._hits}}
+
 
 @pytest.mark.asyncio
 async def test_policy_exec_generates_proposals(monkeypatch, async_client):
@@ -45,9 +48,9 @@ async def test_policy_exec_generates_proposals(monkeypatch, async_client):
             },
         },
     ]
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES(fake_hits))
-    
+
     payload = {
         "policy_set": {
             "id": "cleanup-promos",
@@ -71,27 +74,28 @@ async def test_policy_exec_generates_proposals(monkeypatch, async_client):
         "es_filter": {"term": {"category": "promotions"}},
         "limit": 200,
     }
-    
+
     r = await async_client.post("/policies/run", json=payload)
-        
+
     assert r.status_code == 200
     data = r.json()
-        
+
     # Verify response structure
     assert data["policy_set_id"] == "cleanup-promos"
     assert data["evaluated"] == 2
-        
+
     # Only the expired one should produce an action
     ids = [a["email_id"] for a in data["proposed_actions"]]
     assert "p_exp" in ids
     assert "p_ok" not in ids
-        
+
     # Verify action details
     action = data["proposed_actions"][0]
     assert action["action"] == "archive"
     assert action["policy_id"] == "promo-expired-archive"
     assert action["confidence"] >= 0.8
     assert action["rationale"] == "expired promotion"
+
 
 @pytest.mark.asyncio
 async def test_policy_exec_multiple_policies(monkeypatch, async_client):
@@ -114,9 +118,9 @@ async def test_policy_exec_multiple_policies(monkeypatch, async_client):
             },
         },
     ]
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES(fake_hits))
-    
+
     payload = {
         "policy_set": {
             "id": "security-policies",
@@ -149,18 +153,19 @@ async def test_policy_exec_multiple_policies(monkeypatch, async_client):
         "es_filter": {"term": {"category": "security"}},
         "limit": 100,
     }
-    
+
     r = await async_client.post("/policies/run", json=payload)
-        
+
     assert r.status_code == 200
     data = r.json()
-        
+
     assert data["evaluated"] == 2
     assert len(data["proposed_actions"]) == 1  # Only high_risk matches
-        
+
     action = data["proposed_actions"][0]
     assert action["email_id"] == "high_risk"
     assert action["action"] == "quarantine"
+
 
 @pytest.mark.asyncio
 async def test_policy_exec_no_matches(monkeypatch, async_client):
@@ -175,9 +180,9 @@ async def test_policy_exec_no_matches(monkeypatch, async_client):
             },
         }
     ]
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES(fake_hits))
-    
+
     payload = {
         "policy_set": {
             "id": "test-policies",
@@ -192,22 +197,23 @@ async def test_policy_exec_no_matches(monkeypatch, async_client):
         "es_filter": {"match_all": {}},
         "limit": 100,
     }
-    
+
     r = await async_client.post("/policies/run", json=payload)
-        
+
     assert r.status_code == 200
     data = r.json()
-        
+
     assert data["evaluated"] == 1
     assert len(data["proposed_actions"]) == 0  # No matches
+
 
 @pytest.mark.asyncio
 async def test_policy_exec_empty_results(monkeypatch, async_client):
     """Test policy execution when ES returns no results."""
     fake_hits = []
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES(fake_hits))
-    
+
     payload = {
         "policy_set": {
             "id": "test-policies",
@@ -222,14 +228,15 @@ async def test_policy_exec_empty_results(monkeypatch, async_client):
         "es_filter": {"term": {"category": "nonexistent"}},
         "limit": 100,
     }
-    
+
     r = await async_client.post("/policies/run", json=payload)
-        
+
     assert r.status_code == 200
     data = r.json()
-        
+
     assert data["evaluated"] == 0
     assert len(data["proposed_actions"]) == 0
+
 
 @pytest.mark.asyncio
 async def test_policy_exec_complex_filters(monkeypatch, async_client):
@@ -245,9 +252,9 @@ async def test_policy_exec_complex_filters(monkeypatch, async_client):
             },
         }
     ]
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES(fake_hits))
-    
+
     payload = {
         "policy_set": {
             "id": "cleanup-old-newsletters",
@@ -279,18 +286,19 @@ async def test_policy_exec_complex_filters(monkeypatch, async_client):
         },
         "limit": 200,
     }
-    
+
     r = await async_client.post("/policies/run", json=payload)
-        
+
     assert r.status_code == 200
     data = r.json()
-        
+
     assert data["evaluated"] == 1
     assert len(data["proposed_actions"]) == 1
-        
+
     action = data["proposed_actions"][0]
     assert action["email_id"] == "promo1"
     assert action["action"] == "archive"
+
 
 @pytest.mark.asyncio
 async def test_policy_exec_with_limit(monkeypatch, async_client):
@@ -307,9 +315,9 @@ async def test_policy_exec_with_limit(monkeypatch, async_client):
         }
         for i in range(500)
     ]
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES(fake_hits))
-    
+
     payload = {
         "policy_set": {
             "id": "test-limit",
@@ -324,15 +332,16 @@ async def test_policy_exec_with_limit(monkeypatch, async_client):
         "es_filter": {"term": {"category": "promotions"}},
         "limit": 100,
     }
-    
+
     r = await async_client.post("/policies/run", json=payload)
-        
+
     assert r.status_code == 200
     data = r.json()
-        
+
     # Note: In our mock, we still return all 500, but in real ES the limit would apply
     # This test verifies the parameter is passed correctly
     assert data["evaluated"] == 500  # Mock returns all
+
 
 @pytest.mark.asyncio
 async def test_policy_exec_conditional_logic(monkeypatch, async_client):
@@ -357,9 +366,9 @@ async def test_policy_exec_conditional_logic(monkeypatch, async_client):
             },
         },
     ]
-    
+
     monkeypatch.setattr(S, "es_client", lambda: FakeES(fake_hits))
-    
+
     payload = {
         "policy_set": {
             "id": "complex-logic",
@@ -383,12 +392,12 @@ async def test_policy_exec_conditional_logic(monkeypatch, async_client):
         "es_filter": {"term": {"category": "promotions"}},
         "limit": 100,
     }
-    
+
     r = await async_client.post("/policies/run", json=payload)
-        
+
     assert r.status_code == 200
     data = r.json()
-        
+
     assert data["evaluated"] == 2
     # Both should match: e1 has high risk, both have expired dates
     # (assuming "now" is after 2025-09-01)
