@@ -198,6 +198,8 @@ def seed_minimal():
     
     Returns:
         Function that takes a session and returns tuple of (application, email)
+    
+    Note: Does NOT commit - relies on db_session fixture's automatic rollback.
     """
     def _seed(session: Session):
         from app.models import Application, Email
@@ -208,7 +210,7 @@ def seed_minimal():
         
         em = Email(subject="hello", sender="hr@acme.com", application_id=app.id)
         session.add(em)
-        session.commit()
+        session.flush()  # Flush but don't commit - db_session handles rollback
         
         return app, em
     
