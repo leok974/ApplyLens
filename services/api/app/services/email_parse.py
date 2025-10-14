@@ -4,6 +4,7 @@ Email parsing heuristics for Application auto-fill.
 This module provides functions to infer company, role, and source
 from Gmail message metadata using pattern matching and heuristics.
 """
+
 import re
 from email.utils import parseaddr
 from typing import Dict
@@ -12,32 +13,32 @@ from typing import Dict
 def extract_company(sender: str, body_text: str = "", subject: str = "") -> str:
     """
     Infer company from sender or email body.
-    
+
     Args:
         sender: Email sender string (e.g., "Careers <careers@openai.com>")
         body_text: Email body text
         subject: Email subject line
-        
+
     Returns:
         Extracted company name or "(Unknown)"
     """
     if not sender:
         return "(Unknown)"
-    
+
     name, addr = parseaddr(sender)
     # e.g., careers@openai.com → openai
     domain_part = addr.split("@")[-1].split(".")[0] if "@" in addr else ""
     candidates = [name, domain_part]
-    
+
     # fallback: look for 'at X' in body
     m = re.search(r"at ([A-Z][A-Za-z0-9&\-]+)", body_text)
     if m:
         candidates.append(m.group(1))
-    
+
     candidates = [c for c in candidates if c and len(c) > 2]
     if not candidates:
         return "(Unknown)"
-    
+
     # heuristic: prefer proper name (not all lowercase), prefer longer names
     best = sorted(candidates, key=lambda x: (x.islower(), -len(x)))[0]
     return best.strip()
@@ -46,11 +47,11 @@ def extract_company(sender: str, body_text: str = "", subject: str = "") -> str:
 def extract_role(subject: str = "", body_text: str = "") -> str:
     """
     Infer job role from subject line or message body.
-    
+
     Args:
         subject: Email subject line
         body_text: Email body text
-        
+
     Returns:
         Extracted job role or "(Unknown Role)"
     """
@@ -59,36 +60,36 @@ def extract_role(subject: str = "", body_text: str = "") -> str:
         r"Position: ([A-Z][A-Za-z0-9 /&\-]+)",
         r"Job: ([A-Z][A-Za-z0-9 /&\-]+)",
     ]
-    
+
     for pat in patterns:
         for text in (subject, body_text):
             m = re.search(pat, text, flags=re.I)
             if m:
                 return m.group(1).strip()
-    
+
     # fallback: extract phrase after 'Application for'
     m = re.search(r"Application for ([A-Z][A-Za-z0-9 /&\-]+)", subject, flags=re.I)
     if m:
         return m.group(1).strip()
-    
+
     return "(Unknown Role)"
 
 
 def extract_source(headers: Dict, sender: str, subject: str, body_text: str) -> str:
     """
     Guess where the email originated from (LinkedIn, Lever, Greenhouse, etc).
-    
+
     Args:
         headers: Email headers dict
         sender: Email sender string
         subject: Email subject line
         body_text: Email body text
-        
+
     Returns:
         Source name (Lever, Greenhouse, LinkedIn, Workday, Indeed, or Email)
     """
     joined = f"{subject} {body_text} {sender}".lower()
-    
+
     if any(k in joined for k in ["lever.co", "via lever"]):
         return "Lever"
     if any(k in joined for k in ["greenhouse.io", "via greenhouse"]):
@@ -99,5 +100,5 @@ def extract_source(headers: Dict, sender: str, subject: str, body_text: str) -> 
         return "Workday"
     if "indeed" in joined:
         return "Indeed"
-    
+
     return "Email"

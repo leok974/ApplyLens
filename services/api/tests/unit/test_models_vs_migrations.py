@@ -17,23 +17,23 @@ import pytest
 def test_models_have_no_unapplied_migrations():
     """
     Verify that all SQLAlchemy model changes have corresponding Alembic migrations.
-    
+
     Runs `alembic revision --autogenerate` and checks that no new migration
     file is generated, indicating models and migrations are in sync.
-    
+
     If this test fails, it means model changes were made without creating
     a migration. Run: alembic revision --autogenerate -m "describe change"
     """
     # Change to API directory where alembic.ini exists
     api_dir = Path(__file__).parent.parent.parent
-    
+
     result = subprocess.run(
         ["alembic", "revision", "--autogenerate", "-m", "_check_drift"],
         capture_output=True,
         text=True,
-        cwd=api_dir
+        cwd=api_dir,
     )
-    
+
     generated_file = None
     try:
         # Check if autogenerate found any changes
@@ -42,12 +42,13 @@ def test_models_have_no_unapplied_migrations():
             f"Create a migration with: alembic revision --autogenerate -m 'describe your changes'\n\n"
             f"Output:\n{result.stdout}\n{result.stderr}"
         )
-        
+
         # Also check for "No changes" message which indicates models match migrations
         if result.returncode == 0:
-            assert "No changes in schema detected" in result.stdout or "Generating" not in result.stdout, (
-                f"Unexpected alembic output:\n{result.stdout}\n{result.stderr}"
-            )
+            assert (
+                "No changes in schema detected" in result.stdout
+                or "Generating" not in result.stdout
+            ), f"Unexpected alembic output:\n{result.stdout}\n{result.stderr}"
     finally:
         # Clean up any accidentally generated migration file
         for line in result.stdout.splitlines():
@@ -60,7 +61,7 @@ def test_models_have_no_unapplied_migrations():
                     subprocess.run(
                         ["git", "checkout", "--", str(file_path)],
                         cwd=api_dir,
-                        capture_output=True
+                        capture_output=True,
                     )
                     # If not in git, just delete it
                     if file_path.exists():

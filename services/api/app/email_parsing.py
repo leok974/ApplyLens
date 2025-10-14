@@ -69,8 +69,14 @@ if __name__ == "__main__":
         "body": "Thank you for applying for the Research Engineer position at OpenAI!",
         "headers": {},
     }
-    print({
-        "company": extract_company(sample["sender"], sample["body"], sample["subject"]),
-        "role": extract_role(sample["subject"], sample["body"]),
-        "source": extract_source(sample["headers"], sample["sender"], sample["subject"], sample["body"]),
-    })
+    print(
+        {
+            "company": extract_company(
+                sample["sender"], sample["body"], sample["subject"]
+            ),
+            "role": extract_role(sample["subject"], sample["body"]),
+            "source": extract_source(
+                sample["headers"], sample["sender"], sample["subject"], sample["body"]
+            ),
+        }
+    )

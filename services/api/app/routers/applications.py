@@ -1,16 +1,19 @@
 # services/api/app/routers/applications.py
 from __future__ import annotations
-from datetime import datetime
-from typing import List, Optional, Any, Dict
-from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
+
 import base64
 import json
 import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 router = APIRouter(tags=["applications"])
 
 # ---------- Pydantic Models ----------
+
 
 class Application(BaseModel):
     id: str
@@ -21,12 +24,14 @@ class Application(BaseModel):
     updated_at: Optional[datetime] = None
     source: Optional[str] = None
 
+
 class ApplicationListResponse(BaseModel):
     items: List[Application]
-    next_cursor: Optional[str] = None          # opaque token for next page
+    next_cursor: Optional[str] = None  # opaque token for next page
     sort: str
     order: str
-    total: Optional[int] = None                # ES returns fast; BQ optional
+    total: Optional[int] = None  # ES returns fast; BQ optional
+
 
 # ---------- Constants ----------
 
@@ -36,9 +41,11 @@ DEFAULT_ORDER = "desc"
 
 # ---------- Cursor Helpers ----------
 
+
 def _encode_cursor(payload: Dict[str, Any]) -> str:
     """Encode cursor data to opaque base64 token"""
     return base64.urlsafe_b64encode(json.dumps(payload, default=str).encode()).decode()
+
 
 def _decode_cursor(token: str) -> Dict[str, Any]:
     """Decode cursor token; raises HTTPException 400 if invalid"""
@@ -47,15 +54,19 @@ def _decode_cursor(token: str) -> Dict[str, Any]:
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid cursor")
 
+
 def _has_bigquery() -> bool:
     return bool(os.getenv("BQ_PROJECT")) and (
         os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or os.getenv("BQ_SA_JSON")
     )
 
+
 def _has_es() -> bool:
     return bool(os.getenv("ELASTICSEARCH_URL") or os.getenv("ES_HOST"))
 
+
 # ---------- BigQuery Implementation ----------
+
 
 def _list_applications_bq(
     limit: int,
@@ -66,12 +77,13 @@ def _list_applications_bq(
 ) -> ApplicationListResponse:
     """Fetch applications from BigQuery with offset-based cursor pagination"""
     try:
-        from google.cloud import bigquery
         import tempfile
+
+        from google.cloud import bigquery
 
         project = os.getenv("BQ_PROJECT")
         dataset = os.getenv("BQ_DATASET", "applylens")
-        table   = os.getenv("BQ_TABLE",   "public_applications")
+        table = os.getenv("BQ_TABLE", "public_applications")
 
         # Inline SA support
         if os.getenv("BQ_SA_JSON") and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
@@ -105,7 +117,9 @@ def _list_applications_bq(
 
         # Total count (optional; skip if you want cheaper queries)
         count_sql = f"SELECT COUNT(1) AS c FROM `{project}.{dataset}.{table}` {where}"
-        count_job = client.query(count_sql, bigquery.QueryJobConfig(query_parameters=params))
+        count_job = client.query(
+            count_sql, bigquery.QueryJobConfig(query_parameters=params)
+        )
         total = list(count_job.result())[0].c
 
         # Main query with pagination
@@ -121,7 +135,7 @@ def _list_applications_bq(
         ORDER BY {sort_col} {order_sql} NULLS LAST, id ASC
         LIMIT @limit OFFSET @offset
         """
-        
+
         job_config = bigquery.QueryJobConfig(
             query_parameters=[
                 bigquery.ScalarQueryParameter("limit", "INT64", limit),
@@ -130,7 +144,7 @@ def _list_applications_bq(
             ]
         )
         rows = list(client.query(sql, job_config=job_config).result())
-        
+
         items = [
             Application(
                 id=str(getattr(r, "id", "")),
@@ -150,16 +164,14 @@ def _list_applications_bq(
             next_cursor = _encode_cursor({"offset": offset + limit})
 
         return ApplicationListResponse(
-            items=items,
-            next_cursor=next_cursor,
-            sort=sort,
-            order=order,
-            total=total
+            items=items, next_cursor=next_cursor, sort=sort, order=order, total=total
         )
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"BigQuery error: {e}")
 
+
 # ---------- Elasticsearch Implementation ----------
+
 
 def _list_applications_es(
     limit: int,
@@ -172,12 +184,17 @@ def _list_applications_es(
     try:
         from elasticsearch import Elasticsearch
 
-        url  = os.getenv("ELASTICSEARCH_URL") or f"http://{os.getenv('ES_HOST','localhost')}:{os.getenv('ES_PORT','9200')}"
+        url = (
+            os.getenv("ELASTICSEARCH_URL")
+            or f"http://{os.getenv('ES_HOST','localhost')}:{os.getenv('ES_PORT','9200')}"
+        )
         user = os.getenv("ES_USER")
-        pwd  = os.getenv("ES_PASS")
+        pwd = os.getenv("ES_PASS")
         index = os.getenv("ES_APPS_INDEX", "applications_v1")
 
-        es = Elasticsearch(url, basic_auth=(user, pwd) if user and pwd else None, verify_certs=False)
+        es = Elasticsearch(
+            url, basic_auth=(user, pwd) if user and pwd else None, verify_certs=False
+        )
 
         # Map sort to fields (keyword for text)
         sort_field = {
@@ -202,17 +219,27 @@ def _list_applications_es(
             "size": limit,
             "query": query,
             "sort": [
-                {sort_field: {"order": sort_dir, "unmapped_type": "keyword"}},  # primary
-                {"id.keyword": {"order": "asc"}},                                # tiebreaker
+                {
+                    sort_field: {"order": sort_dir, "unmapped_type": "keyword"}
+                },  # primary
+                {"id.keyword": {"order": "asc"}},  # tiebreaker
             ],
-            "_source": ["id", "company", "role", "status", "applied_at", "updated_at", "source"],
+            "_source": [
+                "id",
+                "company",
+                "role",
+                "status",
+                "applied_at",
+                "updated_at",
+                "source",
+            ],
         }
         if search_after:
             body["search_after"] = search_after
 
         res = es.search(index=index, **body)
         hits = res.get("hits", {}).get("hits", [])
-        
+
         items: List[Application] = []
         for h in hits:
             s = h.get("_source", {})
@@ -237,34 +264,34 @@ def _list_applications_es(
         total = res.get("hits", {}).get("total", {}).get("value")
 
         return ApplicationListResponse(
-            items=items,
-            next_cursor=next_cursor,
-            sort=sort,
-            order=order,
-            total=total
+            items=items, next_cursor=next_cursor, sort=sort, order=order, total=total
         )
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Elasticsearch error: {e}")
 
+
 # ---------- Router Endpoint ----------
+
 
 @router.get("/applications", response_model=ApplicationListResponse)
 def list_applications(
     limit: int = Query(25, ge=1, le=200),
     status: Optional[str] = Query(None, description="Filter by status"),
-    sort: str = Query(DEFAULT_SORT, description=f"One of: {', '.join(sorted(ALLOWED_SORT))}"),
+    sort: str = Query(
+        DEFAULT_SORT, description=f"One of: {', '.join(sorted(ALLOWED_SORT))}"
+    ),
     order: str = Query(DEFAULT_ORDER, description="asc|desc"),
     cursor: Optional[str] = Query(None, description="Opaque cursor from previous page"),
 ):
     """
     List applications with cursor-based pagination and sorting.
-    
+
     - **limit**: Max items per page (1-200, default 25)
     - **status**: Filter by status (applied, interview, offer, rejected, etc.)
     - **sort**: Sort field (updated_at, applied_at, company, status)
     - **order**: Sort order (asc or desc)
     - **cursor**: Opaque token from previous page's next_cursor
-    
+
     Returns items with next_cursor for subsequent pages.
     """
     # Sanitize sort and order
@@ -315,29 +342,41 @@ def list_applications(
             source="Indeed",
         ),
     ]
-    
+
     # Apply status filter
     filtered = demo
     if status:
         filtered = [r for r in demo if r.status == status]
-    
+
     # Simple sort for demo (just by updated_at desc for now)
     if sort == "updated_at":
-        filtered = sorted(filtered, key=lambda x: x.updated_at or datetime.min, reverse=(order == "desc"))
+        filtered = sorted(
+            filtered,
+            key=lambda x: x.updated_at or datetime.min,
+            reverse=(order == "desc"),
+        )
     elif sort == "applied_at":
-        filtered = sorted(filtered, key=lambda x: x.applied_at or datetime.min, reverse=(order == "desc"))
+        filtered = sorted(
+            filtered,
+            key=lambda x: x.applied_at or datetime.min,
+            reverse=(order == "desc"),
+        )
     elif sort == "company":
-        filtered = sorted(filtered, key=lambda x: x.company or "", reverse=(order == "desc"))
+        filtered = sorted(
+            filtered, key=lambda x: x.company or "", reverse=(order == "desc")
+        )
     elif sort == "status":
-        filtered = sorted(filtered, key=lambda x: x.status or "", reverse=(order == "desc"))
-    
+        filtered = sorted(
+            filtered, key=lambda x: x.status or "", reverse=(order == "desc")
+        )
+
     # Apply limit
     items = filtered[:limit]
-    
+
     return ApplicationListResponse(
         items=items,
         next_cursor=None,  # No pagination for demo
         sort=sort,
         order=order,
-        total=len(filtered)
+        total=len(filtered),
     )

@@ -6,27 +6,36 @@ Supports conditional logic (all/any), multiple operators, and "now" placeholder 
 """
 
 import re
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 # Supported operators for policy conditions
 OPS = {
-    "=":  lambda a, b: a == b,
+    "=": lambda a, b: a == b,
     "!=": lambda a, b: a != b,
-    ">":  lambda a, b: (a is not None and b is not None and a > b),
+    ">": lambda a, b: (a is not None and b is not None and a > b),
     ">=": lambda a, b: (a is not None and b is not None and a >= b),
-    "<":  lambda a, b: (a is not None and b is not None and a < b),
+    "<": lambda a, b: (a is not None and b is not None and a < b),
     "<=": lambda a, b: (a is not None and b is not None and a <= b),
-    "contains": lambda a, b: (a is not None and b is not None and (b in a if hasattr(a, "__contains__") else False)),
-    "in":       lambda a, b: (
-        a is not None and b is not None and (
+    "contains": lambda a, b: (
+        a is not None
+        and b is not None
+        and (b in a if hasattr(a, "__contains__") else False)
+    ),
+    "in": lambda a, b: (
+        a is not None
+        and b is not None
+        and (
             # If a is a list, check if any element is in b
-            any(item in b for item in a) if isinstance(a, list) 
+            any(item in b for item in a)
+            if isinstance(a, list)
             # Otherwise check if a is in b
             else a in b
         )
     ),
-    "regex":    lambda a, b: (a is not None and b is not None and re.search(str(b), str(a), re.I) is not None),
+    "regex": lambda a, b: (
+        a is not None and b is not None and re.search(str(b), str(a), re.I) is not None
+    ),
 }
 
 
@@ -46,14 +55,14 @@ def _get(field: str, obj: Dict[str, Any]) -> Any:
 def _eval_clause(cl: Dict[str, Any], obj: Dict[str, Any]) -> bool:
     """
     Evaluate a single condition clause against an object.
-    
+
     Args:
         cl: Condition clause with "field", "op", and "value" keys
         obj: Object to evaluate against
-        
+
     Returns:
         True if condition matches, False otherwise
-        
+
     Raises:
         ValueError: If operator is not supported
     """
@@ -69,22 +78,22 @@ def _eval_clause(cl: Dict[str, Any], obj: Dict[str, Any]) -> bool:
 def _eval_cond(cond: Dict[str, Any], obj: Dict[str, Any]) -> bool:
     """
     Recursively evaluate a condition (which may contain nested all/any logic).
-    
+
     Args:
         cond: Condition dictionary with "all", "any", or leaf clause
         obj: Object to evaluate against
-        
+
     Returns:
         True if condition matches, False otherwise
     """
     if "all" in cond:
         return all(
-            _eval_clause(c, obj) if "field" in c else _eval_cond(c, obj) 
+            _eval_clause(c, obj) if "field" in c else _eval_cond(c, obj)
             for c in cond["all"]
         )
     if "any" in cond:
         return any(
-            _eval_clause(c, obj) if "field" in c else _eval_cond(c, obj) 
+            _eval_clause(c, obj) if "field" in c else _eval_cond(c, obj)
             for c in cond["any"]
         )
     # single leaf clause
@@ -94,6 +103,7 @@ def _eval_cond(cond: Dict[str, Any], obj: Dict[str, Any]) -> bool:
 @dataclass
 class ProposedAction:
     """Represents an action proposed by a policy evaluation."""
+
     email_id: str
     action: str
     policy_id: str
@@ -103,21 +113,19 @@ class ProposedAction:
 
 
 def apply_policies(
-    email: Dict[str, Any], 
-    policies: List[Dict[str, Any]], 
-    now_iso: Optional[str] = None
+    email: Dict[str, Any], policies: List[Dict[str, Any]], now_iso: Optional[str] = None
 ) -> List[ProposedAction]:
     """
     Apply all policies to a single email and return proposed actions.
-    
+
     Args:
         email: Email object with id, category, risk_score, expires_at, etc.
         policies: List of policy dictionaries with "if" and "then" clauses
         now_iso: Current timestamp in ISO format for "now" placeholder resolution
-        
+
     Returns:
         List of ProposedAction objects for policies that matched
-        
+
     Example policy:
         {
             "id": "promo-expired-archive",
@@ -134,6 +142,7 @@ def apply_policies(
             }
         }
     """
+
     # Helper to resolve "now" literals in policy values
     def resolve_value(v):
         if isinstance(v, str) and v.lower() == "now" and now_iso:
@@ -153,26 +162,28 @@ def apply_policies(
 
     normalized = email.copy()
     out: List[ProposedAction] = []
-    
+
     for p in policies:
         cond = p.get("if", {})
         # Resolve any 'value':'now' in conditions
         cond = resolve_cond(cond)
-        
+
         # Evaluate condition against email
         if _eval_cond(cond, normalized):
             then = p.get("then", {})
             action = then.get("action")
             conf_min = then.get("confidence_min", 0.5)
             rationale = then.get("rationale", p.get("id", "policy"))
-            
-            out.append(ProposedAction(
-                email_id=email["id"],
-                action=action,
-                policy_id=p.get("id", "policy"),
-                confidence=max(conf_min, 0.5),
-                rationale=rationale,
-                params=then.get("params", {})
-            ))
-    
+
+            out.append(
+                ProposedAction(
+                    email_id=email["id"],
+                    action=action,
+                    policy_id=p.get("id", "policy"),
+                    confidence=max(conf_min, 0.5),
+                    rationale=rationale,
+                    params=then.get("params", {}),
+                )
+            )
+
     return out

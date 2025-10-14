@@ -18,15 +18,12 @@ EMAILS_V1_MAPPING_UPDATE = {
                     "type": "custom",
                     "tokenizer": "standard",
                     "char_filter": ["html_strip"],
-                    "filter": ["lowercase"]
+                    "filter": ["lowercase"],
                 }
             },
             "normalizer": {
-                "lowercase_norm": {
-                    "type": "custom",
-                    "filter": ["lowercase"]
-                }
-            }
+                "lowercase_norm": {"type": "custom", "filter": ["lowercase"]}
+            },
         }
     },
     "mappings": {
@@ -43,85 +40,66 @@ EMAILS_V1_MAPPING_UPDATE = {
             "labels": {"type": "keyword"},
             "urls": {"type": "keyword"},
             "has_unsubscribe": {"type": "boolean"},
-            
             # NEW: Due dates and money amounts for bills
             "dates": {
                 "type": "date",
-                "format": "strict_date_optional_time||epoch_millis"
+                "format": "strict_date_optional_time||epoch_millis",
             },
             "money_amounts": {
                 "type": "nested",
                 "properties": {
                     "amount": {"type": "float"},
-                    "currency": {"type": "keyword"}
-                }
+                    "currency": {"type": "keyword"},
+                },
             },
-            
             # NEW: Classification & Automation fields
-            "category": {
-                "type": "keyword",
-                "fields": {
-                    "text": {"type": "text"}
-                }
-            },
-            "risk_score": {
-                "type": "float",
-                "index": True
-            },
-            "expires_at": {
-                "type": "date",
-                "index": True,
-                "null_value": None
-            },
-            "profile_tags": {
-                "type": "keyword"
-            },
-            "features_json": {
-                "type": "flattened",
-                "doc_values": True
-            },
-            
+            "category": {"type": "keyword", "fields": {"text": {"type": "text"}}},
+            "risk_score": {"type": "float", "index": True},
+            "expires_at": {"type": "date", "index": True, "null_value": None},
+            "profile_tags": {"type": "keyword"},
+            "features_json": {"type": "flattened", "doc_values": True},
             # NEW: Vector embeddings for semantic search
             "subject_vector": {
                 "type": "dense_vector",
                 "dims": 768,
                 "index": True,
-                "similarity": "cosine"
+                "similarity": "cosine",
             },
             "body_vector": {
                 "type": "dense_vector",
                 "dims": 768,
                 "index": True,
-                "similarity": "cosine"
+                "similarity": "cosine",
             },
-            
             # Reply metrics (from previous migration)
             "first_user_reply_at": {"type": "date"},
             "last_user_reply_at": {"type": "date"},
             "user_reply_count": {"type": "integer"},
-            "replied": {"type": "boolean"}
+            "replied": {"type": "boolean"},
         }
-    }
+    },
 }
 
 
 def create_emails_v1_index(es_client):
     """
     Create the emails_v1 index with full mapping.
-    
+
     Usage:
         from app.es import get_es_client
         from app.scripts.update_es_mapping import create_emails_v1_index
-        
+
         es = get_es_client()
         create_emails_v1_index(es)
     """
     index_name = "emails_v1"
-    
+
     if es_client.indices.exists(index=index_name):
-        print(f"⚠️  Index '{index_name}' already exists. Use reindex_with_new_fields() instead.")
+        print(
+            f"⚠️  Index '{index_name}' already exists. Use reindex_with_new_fields() instead."
+        )
         return False
-    
+
     es_client.indices.create(index=index_name, body=EMAILS_V1_MAPPING_UPDATE)
     print(f"✅ Created index '{index_name}' with automation fields")
     return True
@@ -130,11 +108,11 @@ def create_emails_v1_index(es_client):
 def update_existing_index_mapping(es_client, index_name="emails_v1"):
     """
     Update mapping on existing index (only adds new fields, doesn't modify existing).
-    
+
     Note: Some field type changes require reindexing.
     """
     new_properties = EMAILS_V1_MAPPING_UPDATE["mappings"]["properties"]
-    
+
     # Extract only the new fields (automation-related)
     new_fields = {
         "dates": new_properties["dates"],
@@ -147,12 +125,9 @@ def update_existing_index_mapping(es_client, index_name="emails_v1"):
         "subject_vector": new_properties["subject_vector"],
         "body_vector": new_properties["body_vector"],
     }
-    
+
     try:
-        es_client.indices.put_mapping(
-            index=index_name,
-            body={"properties": new_fields}
-        )
+        es_client.indices.put_mapping(index=index_name, body={"properties": new_fields})
         print(f"✅ Updated mapping for '{index_name}' with new fields:")
         for field in new_fields:
             print(f"   - {field}")
@@ -163,10 +138,12 @@ def update_existing_index_mapping(es_client, index_name="emails_v1"):
         return False
 
 
-def reindex_with_new_fields(es_client, source_index="emails_v1", dest_index="emails_v2"):
+def reindex_with_new_fields(
+    es_client, source_index="emails_v1", dest_index="emails_v2"
+):
     """
     Reindex data from source to destination with new mapping.
-    
+
     Workflow:
     1. Create new index with updated mapping
     2. Reindex all data from source to dest
@@ -177,44 +154,42 @@ def reindex_with_new_fields(es_client, source_index="emails_v1", dest_index="ema
     if es_client.indices.exists(index=dest_index):
         print(f"❌ Destination index '{dest_index}' already exists!")
         return False
-    
+
     es_client.indices.create(index=dest_index, body=EMAILS_V1_MAPPING_UPDATE)
     print(f"✅ Created new index: {dest_index}")
-    
+
     # Reindex
     print(f"🔄 Reindexing from {source_index} to {dest_index}...")
     result = es_client.reindex(
-        body={
-            "source": {"index": source_index},
-            "dest": {"index": dest_index}
-        },
-        wait_for_completion=False
+        body={"source": {"index": source_index}, "dest": {"index": dest_index}},
+        wait_for_completion=False,
     )
-    
-    task_id = result['task']
+
+    task_id = result["task"]
     print(f"📋 Reindex task started: {task_id}")
     print(f"💡 Check status: GET _tasks/{task_id}")
-    
+
     return task_id
 
 
 if __name__ == "__main__":
     """
     Run directly to update your local Elasticsearch:
-    
+
         python -m app.scripts.update_es_mapping
     """
     import sys
+
     sys.path.insert(0, ".")
-    
+
     from app.es import get_es_client
-    
+
     es = get_es_client()
-    
+
     # Try to update existing index first
     print("🚀 Updating Elasticsearch mapping for email automation...")
     success = update_existing_index_mapping(es)
-    
+
     if not success:
         print("\n💡 Consider creating a new index and reindexing:")
         print("   reindex_with_new_fields(es, 'emails_v1', 'emails_v2')")

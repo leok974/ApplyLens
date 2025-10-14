@@ -91,8 +91,7 @@ async def test_search_with_large_size(async_client):
 async def test_cors_preflight(async_client):
     """Test CORS preflight request handling."""
     r = await async_client.options(
-        "/search/",
-        headers={"Origin": "http://localhost:5175"}
+        "/search/", headers={"Origin": "http://localhost:5175"}
     )
     # OPTIONS request for CORS preflight
     # May return 200 or 204 with CORS headers

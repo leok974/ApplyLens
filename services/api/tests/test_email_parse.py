@@ -1,6 +1,7 @@
 """
 Tests for email parsing heuristics module.
 """
+
 from app.services.email_parse import extract_company, extract_role, extract_source
 
 
@@ -76,15 +77,17 @@ def test_full_extraction_pipeline():
         "body": "Thank you for applying to Stripe for the Backend Engineer position.",
         "headers": {},
     }
-    
+
     company = extract_company(sample["sender"], sample["body"], sample["subject"])
     role = extract_role(sample["subject"], sample["body"])
-    source = extract_source(sample["headers"], sample["sender"], sample["subject"], sample["body"])
-    
+    source = extract_source(
+        sample["headers"], sample["sender"], sample["subject"], sample["body"]
+    )
+
     assert company.lower() in ["stripe", "stripe careers"], f"Company: {company}"
     assert "Engineer" in role, f"Role: {role}"
     assert source == "Email", f"Source: {source}"
-    
+
     print("✅ Full pipeline extraction:")
     print(f"   Company: {company}")
     print(f"   Role: {role}")

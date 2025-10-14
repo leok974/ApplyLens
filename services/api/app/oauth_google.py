@@ -6,16 +6,17 @@ Endpoints:
 - GET /oauth/google/callback?code=xxx&state=xxx - Handle OAuth callback
 """
 
+import json
+import urllib.parse
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
-from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
-import urllib.parse
-import json
+from google_auth_oauthlib.flow import Flow
 
-from .settings import settings
 from .db import SessionLocal
 from .models import GmailToken
+from .settings import settings
 
 router = APIRouter(prefix="/oauth/google", tags=["oauth"])
 
@@ -35,9 +36,10 @@ def _create_flow():
         and settings.OAUTH_REDIRECT_URI
     ):
         raise HTTPException(
-            status_code=400, detail="oauth_not_configured: missing client credentials or redirect URI"
+            status_code=400,
+            detail="oauth_not_configured: missing client credentials or redirect URI",
         )
-    
+
     return Flow.from_client_config(
         {
             "web": {
@@ -53,23 +55,25 @@ def _create_flow():
 
 
 @router.get("/init")
-def init_oauth(user_email: str = Query(..., description="User email address for OAuth")):
+def init_oauth(
+    user_email: str = Query(..., description="User email address for OAuth")
+):
     """
     Initialize OAuth flow for a user.
-    
+
     Returns:
         {"authUrl": "https://accounts.google.com/o/oauth2/auth?..."}
-    
+
     Frontend should redirect user to authUrl.
     """
     try:
         flow = _create_flow()
         flow.redirect_uri = settings.OAUTH_REDIRECT_URI
-        
+
         # Encode user_email in state parameter
         state_data = {"user_email": user_email}
         state = urllib.parse.quote(json.dumps(state_data))
-        
+
         # Generate authorization URL
         auth_url, _ = flow.authorization_url(
             access_type="offline",  # Get refresh token
@@ -77,11 +81,13 @@ def init_oauth(user_email: str = Query(..., description="User email address for 
             include_granted_scopes="true",
             state=state,
         )
-        
+
         return {"authUrl": auth_url}
-    
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to initialize OAuth: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to initialize OAuth: {str(e)}"
+        )
 
 
 @router.get("/callback")
@@ -91,9 +97,9 @@ def oauth_callback(
 ):
     """
     Handle OAuth callback from Google.
-    
+
     Exchanges authorization code for tokens and stores in database.
-    
+
     Returns:
         HTML page with success message
     """
@@ -104,28 +110,30 @@ def oauth_callback(
             user_email = decoded_state.get("user_email")
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid state parameter")
-        
+
         if not user_email:
             raise HTTPException(status_code=400, detail="missing_user_email in state")
-        
+
         # Exchange code for tokens
         flow = _create_flow()
         flow.redirect_uri = settings.OAUTH_REDIRECT_URI
         flow.fetch_token(code=code)
-        
+
         creds: Credentials = flow.credentials
-        
+
         # Calculate expiry_date in milliseconds
         expiry_ms = None
         if hasattr(creds, "expiry") and creds.expiry:
             expiry_ms = int(creds.expiry.timestamp() * 1000)
-        
+
         # Store or update token in database
         db = SessionLocal()
         try:
             # Check if token exists
-            existing = db.query(GmailToken).filter(GmailToken.user_email == user_email).first()
-            
+            existing = (
+                db.query(GmailToken).filter(GmailToken.user_email == user_email).first()
+            )
+
             if existing:
                 # Update existing token
                 existing.access_token = creds.token
@@ -144,11 +152,11 @@ def oauth_callback(
                     scope=" ".join(SCOPES),
                 )
                 db.add(new_token)
-            
+
             db.commit()
         finally:
             db.close()
-        
+
         # Return success page
         html_content = """
         <!DOCTYPE html>
@@ -230,10 +238,12 @@ def oauth_callback(
             </script>
         </body>
         </html>
-        """.replace("{{USER_EMAIL}}", user_email)
-        
+        """.replace(
+            "{{USER_EMAIL}}", user_email
+        )
+
         return HTMLResponse(content=html_content)
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -244,17 +254,17 @@ def oauth_callback(
 def check_oauth_status(user_email: str = Query(..., description="User email to check")):
     """
     Check if user has connected their Gmail account.
-    
+
     Returns:
         {"connected": bool, "user_email": str, "expires_at": int|null}
     """
     db = SessionLocal()
     try:
         token = db.query(GmailToken).filter(GmailToken.user_email == user_email).first()
-        
+
         if not token:
             return {"connected": False, "user_email": user_email, "expires_at": None}
-        
+
         return {
             "connected": True,
             "user_email": user_email,
@@ -266,17 +276,19 @@ def check_oauth_status(user_email: str = Query(..., description="User email to c
 
 
 @router.delete("/disconnect")
-def disconnect_gmail(user_email: str = Query(..., description="User email to disconnect")):
+def disconnect_gmail(
+    user_email: str = Query(..., description="User email to disconnect")
+):
     """
     Disconnect user's Gmail account (delete stored tokens).
-    
+
     Returns:
         {"success": bool}
     """
     db = SessionLocal()
     try:
         token = db.query(GmailToken).filter(GmailToken.user_email == user_email).first()
-        
+
         if token:
             db.delete(token)
             db.commit()
