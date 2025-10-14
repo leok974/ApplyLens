@@ -2,33 +2,12 @@
 API contract tests for /automation/* endpoints.
 
 Tests all automation endpoints for correct status codes, response schemas,
-and error handling. Requires a running API server.
+and error handling. Uses async_client fixture with ASGITransport.
 """
 
-import httpx
 import pytest
 
-# Base URL for API tests (configured via environment or fixture)
-BASE_URL = "http://localhost:8003"
-
-
-# ============================================================================
-# FIXTURES
-# ============================================================================
-
-
-@pytest.fixture
-def api_client():
-    """HTTP client for API testing."""
-    with httpx.Client(base_url=BASE_URL, timeout=30.0) as client:
-        yield client
-
-
-@pytest.fixture
-async def async_api_client():
-    """Async HTTP client for API testing."""
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=30.0) as client:
-        yield client
+from tests.factories import seed_minimal
 
 
 # ============================================================================
@@ -40,14 +19,18 @@ async def async_api_client():
 class TestHealthEndpoint:
     """Tests for GET /automation/health endpoint."""
 
-    def test_health_returns_200(self, api_client):
+    @pytest.mark.anyio
+    async def test_health_returns_200(self, async_client, db_session):
         """Health endpoint should return 200 OK."""
-        response = api_client.get("/automation/health")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/health")
         assert response.status_code == 200
 
-    def test_health_response_schema(self, api_client):
+    @pytest.mark.anyio
+    async def test_health_response_schema(self, async_client, db_session):
         """Health endpoint should return expected schema."""
-        response = api_client.get("/automation/health")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/health")
         data = response.json()
 
         # Required fields
@@ -68,16 +51,20 @@ class TestHealthEndpoint:
         assert isinstance(stats["emails_with_risk_scores"], int)
         assert isinstance(stats["coverage_percentage"], (int, float))
 
-    def test_health_coverage_percentage_valid(self, api_client):
+    @pytest.mark.anyio
+    async def test_health_coverage_percentage_valid(self, async_client, db_session):
         """Coverage percentage should be between 0 and 100."""
-        response = api_client.get("/automation/health")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/health")
         data = response.json()
         coverage = data["statistics"]["coverage_percentage"]
         assert 0 <= coverage <= 100
 
-    def test_health_last_computed_format(self, api_client):
+    @pytest.mark.anyio
+    async def test_health_last_computed_format(self, async_client, db_session):
         """Last computed should be ISO timestamp if present."""
-        response = api_client.get("/automation/health")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/health")
         data = response.json()
 
         if "last_computed" in data:
@@ -97,26 +84,113 @@ class TestHealthEndpoint:
 class TestRiskSummaryEndpoint:
     """Tests for GET /automation/risk-summary endpoint."""
 
-    def test_risk_summary_returns_200(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_summary_returns_200(self, async_client, db_session):
         """Risk summary should return 200 OK."""
-        response = api_client.get("/automation/risk-summary")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-summary")
         assert response.status_code == 200
 
-    def test_risk_summary_default_days(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_summary_default_days(self, async_client, db_session):
         """Risk summary should accept default days parameter."""
-        response = api_client.get("/automation/risk-summary")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-summary")
         data = response.json()
 
         assert "period" in data
         assert data["period"]["days"] == 7  # Default
 
-    def test_risk_summary_custom_days(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_summary_custom_days(self, async_client, db_session):
         """Risk summary should accept custom days parameter."""
-        response = api_client.get("/automation/risk-summary?days=30")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-summary", params={"days": 30})
         data = response.json()
 
         assert data["period"]["days"] == 30
 
+    @pytest.mark.anyio
+    async def test_risk_summary_response_schema(self, async_client, db_session):
+        """Risk summary should return expected schema."""
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-summary", params={"days": 365})
+        data = response.json()
+
+        # Required top-level fields
+        assert "period" in data
+        assert "statistics" in data
+        assert "distribution" in data
+        assert "top_risky_emails" in data
+
+        # Statistics fields
+        stats = data["statistics"]
+        assert "total_emails" in stats
+        assert "average_risk_score" in stats
+        assert "min_risk_score" in stats
+        assert "max_risk_score" in stats
+
+        # Distribution fields
+        dist = data["distribution"]
+        assert "low" in dist
+        assert "medium" in dist
+        assert "high" in dist
+
+        # Top risky emails should be a list
+        assert isinstance(data["top_risky_emails"], list)
+
+    @pytest.mark.anyio
+    async def test_risk_summary_distribution_sum(self, async_client, db_session):
+        """Distribution buckets should sum to approximately total emails."""
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-summary", params={"days": 365})
+        data = response.json()
+
+        total = data["statistics"]["total_emails"]
+        dist = data["distribution"]
+        dist_sum = dist["low"] + dist["medium"] + dist["high"]
+
+        # Should be close (within 10% due to filtering)
+        if total > 0:
+            ratio = dist_sum / total
+            assert 0.8 <= ratio <= 1.2
+
+    @pytest.mark.anyio
+    async def test_risk_summary_top_emails_schema(self, async_client, db_session):
+        """Top risky emails should have expected fields."""
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-summary", params={"days": 365})
+        data = response.json()
+
+        top_emails = data["top_risky_emails"]
+        if len(top_emails) > 0:
+            email = top_emails[0]
+            assert "id" in email
+            assert "sender" in email
+            assert "subject" in email
+            assert "risk_score" in email
+            assert "category" in email or email.get("category") is None
+
+    @pytest.mark.anyio
+    async def test_risk_summary_with_category_filter(self, async_client, db_session):
+        """Risk summary should accept category filter."""
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-summary", params={"category": "recruiter", "days": 90})
+        assert response.status_code == 200
+        data = response.json()
+        assert "filter" in data
+        assert data["filter"]["category"] == "recruiter"
+
+    @pytest.mark.anyio
+    async def test_risk_summary_negative_days_error(self, async_client):
+        """Negative days should return error."""
+        response = await async_client.get("/automation/risk-summary", params={"days": -1})
+        assert response.status_code == 422  # Validation error
+
+    @pytest.mark.anyio
+    async def test_risk_summary_zero_days(self, async_client):
+        """Zero days should either error or return empty results."""
+        response = await async_client.get("/automation/risk-summary", params={"days": 0})
     def test_risk_summary_response_schema(self, api_client):
         """Risk summary should return expected schema."""
         response = api_client.get("/automation/risk-summary?days=365")

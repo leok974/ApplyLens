@@ -229,3 +229,29 @@ def create_policy_with_emails(
     emails = EmailFactory.create_batch(n_emails)
 
     return policy, emails
+
+
+def seed_minimal(session):
+    """
+    Seed minimal test data for contract/API tests.
+    
+    Creates one application and one email linked to it.
+    Useful for tests that need basic data without complex setup.
+    
+    Args:
+        session: SQLAlchemy session
+        
+    Returns:
+        Tuple of (application, email)
+    """
+    from app.models import Application, Email
+    
+    app = Application(title="SE I", company="Acme", status="applied")
+    session.add(app)
+    session.flush()
+    
+    em = Email(subject="hello", sender="hr@acme.com", application_id=app.id)
+    session.add(em)
+    session.commit()
+    
+    return app, em
