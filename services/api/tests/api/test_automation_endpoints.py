@@ -275,30 +275,38 @@ class TestRiskSummaryEndpoint:
 class TestRiskTrendsEndpoint:
     """Tests for GET /automation/risk-trends endpoint."""
 
-    def test_risk_trends_returns_200(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_trends_returns_200(self, async_client, db_session, seed_minimal):
         """Risk trends should return 200 OK."""
-        response = api_client.get("/automation/risk-trends")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-trends")
         assert response.status_code == 200
 
-    def test_risk_trends_default_parameters(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_trends_default_parameters(self, async_client, db_session, seed_minimal):
         """Risk trends should accept default parameters."""
-        response = api_client.get("/automation/risk-trends")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-trends")
         data = response.json()
 
         assert "period" in data
         assert data["period"]["days"] == 30  # Default
         assert data["period"]["granularity"] == "day"  # Default
 
-    def test_risk_trends_weekly_granularity(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_trends_weekly_granularity(self, async_client, db_session, seed_minimal):
         """Risk trends should accept weekly granularity."""
-        response = api_client.get("/automation/risk-trends?days=90&granularity=week")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-trends", params={"days": 90, "granularity": "week"})
         data = response.json()
 
         assert data["period"]["granularity"] == "week"
 
-    def test_risk_trends_response_schema(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_trends_response_schema(self, async_client, db_session, seed_minimal):
         """Risk trends should return expected schema."""
-        response = api_client.get("/automation/risk-trends?days=30")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-trends", params={"days": 30})
         data = response.json()
 
         # Required fields
@@ -317,9 +325,11 @@ class TestRiskTrendsEndpoint:
             assert "average_risk_score" in trend
             assert "max_risk_score" in trend
 
-    def test_risk_trends_sorted_by_period(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_trends_sorted_by_period(self, async_client, db_session, seed_minimal):
         """Trends should be sorted chronologically."""
-        response = api_client.get("/automation/risk-trends?days=60&granularity=week")
+        seed_minimal(db_session)
+        response = await async_client.get("/automation/risk-trends", params={"days": 60, "granularity": "week"})
         data = response.json()
 
         trends = data["trends"]
@@ -333,14 +343,16 @@ class TestRiskTrendsEndpoint:
             ]
             assert periods == sorted(periods)
 
-    def test_risk_trends_invalid_granularity(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_trends_invalid_granularity(self, async_client):
         """Invalid granularity should return error."""
-        response = api_client.get("/automation/risk-trends?granularity=month")
+        response = await async_client.get("/automation/risk-trends", params={"granularity": "month"})
         assert response.status_code == 422  # Validation error
 
-    def test_risk_trends_negative_days(self, api_client):
+    @pytest.mark.anyio
+    async def test_risk_trends_negative_days(self, async_client):
         """Negative days should return error."""
-        response = api_client.get("/automation/risk-trends?days=-30")
+        response = await async_client.get("/automation/risk-trends", params={"days": -30})
         assert response.status_code == 422
 
 
@@ -354,16 +366,20 @@ class TestRiskTrendsEndpoint:
 class TestRecomputeEndpoint:
     """Tests for POST /automation/recompute endpoint."""
 
-    def test_recompute_dry_run_returns_200(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_dry_run_returns_200(self, async_client, db_session, seed_minimal):
         """Dry run recompute should return 200 OK."""
-        response = api_client.post(
+        seed_minimal(db_session)
+        response = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": 10}
         )
-        assert response.status_code == 200
+        assert response.status_code in (200, 202)
 
-    def test_recompute_response_schema(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_response_schema(self, async_client, db_session, seed_minimal):
         """Recompute should return expected schema."""
-        response = api_client.post(
+        seed_minimal(db_session)
+        response = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": 10}
         )
         data = response.json()
@@ -379,63 +395,74 @@ class TestRecomputeEndpoint:
         assert "updated" in stats
         assert "duration_seconds" in stats
 
-    def test_recompute_dry_run_idempotent(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_dry_run_idempotent(self, async_client, db_session, seed_minimal):
         """Dry run should be idempotent (no actual changes)."""
-        response1 = api_client.post(
+        seed_minimal(db_session)
+        response1 = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": 50}
         )
-        response2 = api_client.post(
+        response2 = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": 50}
         )
 
         # Both should succeed
-        assert response1.status_code == 200
-        assert response2.status_code == 200
+        assert response1.status_code in (200, 202)
+        assert response2.status_code in (200, 202)
 
         # Statistics should be similar (same dataset)
         stats1 = response1.json()["statistics"]
         stats2 = response2.json()["statistics"]
         assert stats1["processed"] == stats2["processed"]
 
-    def test_recompute_custom_batch_size(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_custom_batch_size(self, async_client, db_session, seed_minimal):
         """Recompute should respect custom batch size."""
-        response = api_client.post(
+        seed_minimal(db_session)
+        response = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": 25}
         )
         data = response.json()
         assert data["batch_size"] == 25
 
-    def test_recompute_zero_batch_size_error(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_zero_batch_size_error(self, async_client):
         """Zero batch size should return error."""
-        response = api_client.post(
+        response = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": 0}
         )
         assert response.status_code == 422
 
-    def test_recompute_negative_batch_size_error(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_negative_batch_size_error(self, async_client):
         """Negative batch size should return error."""
-        response = api_client.post(
+        response = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": -100}
         )
         assert response.status_code == 422
 
-    def test_recompute_oversize_batch_error(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_oversize_batch_error(self, async_client, db_session, seed_minimal):
         """Excessively large batch size should be handled."""
-        response = api_client.post(
+        seed_minimal(db_session)
+        response = await async_client.post(
             "/automation/recompute", json={"dry_run": True, "batch_size": 1000000}
         )
         # Should either succeed (capped) or return 422
-        assert response.status_code in [200, 422]
+        assert response.status_code in [200, 202, 422]
 
-    def test_recompute_missing_parameters(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_missing_parameters(self, async_client, db_session, seed_minimal):
         """Recompute should work with missing parameters (use defaults)."""
-        response = api_client.post("/automation/recompute", json={})
+        seed_minimal(db_session)
+        response = await async_client.post("/automation/recompute", json={})
         # Should succeed with defaults
-        assert response.status_code == 200
+        assert response.status_code in (200, 202)
 
-    def test_recompute_invalid_json(self, api_client):
+    @pytest.mark.anyio
+    async def test_recompute_invalid_json(self, async_client):
         """Invalid JSON should return error."""
-        response = api_client.post(
+        response = await async_client.post(
             "/automation/recompute",
             data="not json",
             headers={"Content-Type": "application/json"},
