@@ -183,27 +183,33 @@ except ImportError:
 # ============================================================================
 
 
-def seed_minimal(session: Session):
+@pytest.fixture
+def seed_minimal():
     """
-    Seed minimal test data for contract/API tests.
+    Fixture that returns a function to seed minimal test data.
     
     Creates one application and one email linked to it.
     Useful for tests that need basic data without complex setup.
     
-    Args:
-        session: SQLAlchemy session
-        
+    Usage:
+        def test_something(db_session, seed_minimal):
+            app, email = seed_minimal(db_session)
+            ...
+    
     Returns:
-        Tuple of (application, email)
+        Function that takes a session and returns tuple of (application, email)
     """
-    from app.models import Application, Email
+    def _seed(session: Session):
+        from app.models import Application, Email
+        
+        app = Application(title="SE I", company="Acme", status="applied")
+        session.add(app)
+        session.flush()
+        
+        em = Email(subject="hello", sender="hr@acme.com", application_id=app.id)
+        session.add(em)
+        session.commit()
+        
+        return app, em
     
-    app = Application(title="SE I", company="Acme", status="applied")
-    session.add(app)
-    session.flush()
-    
-    em = Email(subject="hello", sender="hr@acme.com", application_id=app.id)
-    session.add(em)
-    session.commit()
-    
-    return app, em
+    return _seed
