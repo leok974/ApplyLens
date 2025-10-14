@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files
-COPY pyproject.toml setup.py setup.cfg README.md ./
+COPY pyproject.toml README.md ./
 COPY app/__init__.py ./app/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -e .[prod]
+    pip install --no-cache-dir -e .
 
 # =============================================================================
 # Production stage
