@@ -204,7 +204,8 @@ def seed_minimal():
     def _seed(session: Session):
         from app.models import Application, Email
         
-        app = Application(title="SE I", company="Acme", status="applied")
+        # Application model has 'company' and 'role', not 'title'
+        app = Application(company="Acme", role="Software Engineer I", status="applied")
         session.add(app)
         session.flush()
         
