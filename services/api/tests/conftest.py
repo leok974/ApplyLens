@@ -15,7 +15,7 @@ from typing import AsyncIterator, Generator
 import httpx
 import pytest
 from httpx import ASGITransport
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.main import app  # FastAPI instance
@@ -59,13 +59,18 @@ def engine():
         future=True,
     )
 
-    # Create all tables
-    Base.metadata.create_all(test_engine)
+    # Create all tables with deferrable constraint handling for circular FKs
+    # Use checkfirst to avoid errors if tables exist
+    with test_engine.begin() as conn:
+        # Set constraints to deferred for circular FK handling
+        conn.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+        Base.metadata.create_all(conn, checkfirst=True)
 
     yield test_engine
 
     # Drop all tables after tests complete
-    Base.metadata.drop_all(test_engine)
+    with test_engine.begin() as conn:
+        Base.metadata.drop_all(conn)
     test_engine.dispose()
 
 
