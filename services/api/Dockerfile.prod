@@ -1,0 +1,64 @@
+# Multi-stage build for production API
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files
+COPY pyproject.toml setup.py setup.cfg README.md ./
+COPY app/__init__.py ./app/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -e .[prod]
+
+# =============================================================================
+# Production stage
+# =============================================================================
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app && \
+    mkdir -p /var/log/applylens && \
+    chown -R appuser:appuser /var/log/applylens
+
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8003/healthz || exit 1
+
+# Expose port
+EXPOSE 8003
+
+# Run with gunicorn for production (better performance than uvicorn alone)
+CMD ["gunicorn", "app.main:app", \
+     "--workers", "4", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8003", \
+     "--access-logfile", "/var/log/applylens/access.log", \
+     "--error-logfile", "/var/log/applylens/error.log", \
+     "--log-level", "info", \
+     "--timeout", "120", \
+     "--keep-alive", "5"]
