@@ -3,7 +3,7 @@
 CLI script for running quality gates in CI.
 
 Usage:
-    python -m app.eval.run_gates [--agent AGENT] [--fail-on-warning]
+    python -m app.eval.run_gates [--agent AGENT] [--fail-on-warning] [--create-incidents]
 
 Examples:
     # Check all agents
@@ -14,6 +14,9 @@ Examples:
     
     # Fail on warnings (default only fails on critical)
     python -m app.eval.run_gates --fail-on-warning
+    
+    # Create incidents for failures (Phase 5.4 PR5)
+    python -m app.eval.run_gates --create-incidents
 
 Exit Codes:
     0 - All gates passed
@@ -22,9 +25,17 @@ Exit Codes:
 """
 import argparse
 import sys
+import asyncio
 from sqlalchemy.orm import Session
 from ..db import SessionLocal
 from .budgets import GateEvaluator, format_gate_report
+
+# Import bridge (Phase 5.4 PR5 - optional)
+try:
+    from app.intervene.bridges import GateBridge
+    BRIDGE_AVAILABLE = True
+except ImportError:
+    BRIDGE_AVAILABLE = False
 
 
 def main():
@@ -59,6 +70,11 @@ def main():
         default="text",
         help="Output format (default: text)",
     )
+    parser.add_argument(
+        "--create-incidents",
+        action="store_true",
+        help="Create incidents for gate failures (Phase 5.4 integration)",
+    )
     
     args = parser.parse_args()
     
@@ -66,6 +82,7 @@ def main():
     
     try:
         evaluator = GateEvaluator(db)
+        bridge = GateBridge(db) if BRIDGE_AVAILABLE and args.create_incidents else None
         
         if args.agent:
             # Single agent evaluation
@@ -74,12 +91,24 @@ def main():
                 lookback_days=args.lookback_days,
                 baseline_days=args.baseline_days,
             )
+            
+            # Create incidents for failures (Phase 5.4 PR5)
+            if bridge and not result["passed"]:
+                incidents = asyncio.run(_create_incidents_for_agent(bridge, result))
+                if incidents and args.format == "text":
+                    print(f"\n🚨 Created {len(incidents)} incident(s)")
         else:
             # All agents evaluation
             result = evaluator.evaluate_all_agents(
                 lookback_days=args.lookback_days,
                 baseline_days=args.baseline_days,
             )
+            
+            # Create incidents for failures (Phase 5.4 PR5)
+            if bridge and not result["passed"]:
+                total_incidents = asyncio.run(_create_incidents_for_all(bridge, result))
+                if total_incidents and args.format == "text":
+                    print(f"\n🚨 Created {total_incidents} incident(s)")
         
         # Output
         if args.format == "json":
@@ -145,6 +174,40 @@ def main():
     
     finally:
         db.close()
+
+
+async def _create_incidents_for_agent(bridge: 'GateBridge', result: dict) -> list:
+    """Create incidents for single agent evaluation failures."""
+    incidents = []
+    
+    violations = result.get("violations", [])
+    budget = result.get("budget")
+    
+    for violation in violations:
+        incident = await bridge.on_budget_violation(
+            violation=violation,
+            budget=budget,
+            context={
+                "current_metrics": result.get("current_metrics"),
+                "baseline_metrics": result.get("baseline_metrics"),
+            }
+        )
+        if incident:
+            incidents.append(incident)
+    
+    return incidents
+
+
+async def _create_incidents_for_all(bridge: 'GateBridge', result: dict) -> int:
+    """Create incidents for multi-agent evaluation failures."""
+    total_incidents = 0
+    
+    for agent, agent_result in result.get("results", {}).items():
+        if not agent_result["passed"]:
+            incidents = await _create_incidents_for_agent(bridge, agent_result)
+            total_incidents += len(incidents)
+    
+    return total_incidents
 
 
 if __name__ == "__main__":
