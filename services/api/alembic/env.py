@@ -6,6 +6,9 @@ from sqlalchemy import pool
 
 from alembic import context
 
+# add your model's MetaData object here
+from app.db import Base
+
 # this is the Alembic Config object
 config = context.config
 
@@ -17,9 +20,6 @@ if database_url:
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-
-# add your model's MetaData object here
-from app.db import Base
 
 target_metadata = Base.metadata
 

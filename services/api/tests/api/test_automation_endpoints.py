@@ -223,6 +223,8 @@ class TestRiskSummaryEndpoint:
         response = await async_client.get(
             "/automation/risk-summary", params={"days": 0}
         )
+        # Verify response (either 422 validation error or 200 with empty results)
+        assert response.status_code in (200, 422)
 
 
 # ============================================================================

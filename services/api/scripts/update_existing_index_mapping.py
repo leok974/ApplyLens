@@ -71,8 +71,6 @@ def update_index_mapping(es_url: str, index_name: str) -> bool:
             print("   Create it first or use install_es_template.py for new indices")
             return False
 
-        # Get current mapping
-        current_mapping = es.indices.get_mapping(index=index_name)
         print(f"✅ Found index '{index_name}'")
 
         # Check index stats

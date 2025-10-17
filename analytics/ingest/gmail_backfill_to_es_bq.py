@@ -170,7 +170,6 @@ def main():
     print(f"✅ Found {len(msgs)} messages across {pages} pages")
     print()
 
-    to_bq = []
     for idx, m in enumerate(msgs, 1):
         if idx % 50 == 0:
             print(f"   Processing message {idx}/{len(msgs)}...")

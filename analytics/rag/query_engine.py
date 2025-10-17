@@ -47,9 +47,6 @@ class VectorStore:
         Returns:
             List of matching documents with scores
         """
-        # Get query embedding
-        query_vec = embedder.encode(query)
-
         # Fetch all vectors (simple implementation - could optimize with indexing)
         cursor = self.conn.execute("SELECT id, text, metadata FROM vectors")
         results = []
