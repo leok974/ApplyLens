@@ -7,7 +7,7 @@ and provides settings for real integrations.
 from __future__ import annotations
 
 import os
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic_settings import BaseSettings
 
@@ -55,6 +55,14 @@ class AgentSettings(BaseSettings):
     EVAL_GATE_LOOKBACK_DAYS: int = 7  # Days to evaluate
     EVAL_GATE_BASELINE_DAYS: int = 14  # Days for baseline comparison
     EVAL_FAIL_ON_WARNING: bool = False  # Fail CI on warnings (default: only critical)
+    
+    # Phase 5: Intelligence Reports
+    INTELLIGENCE_REPORT_ENABLED: bool = True  # Enable weekly reports
+    INTELLIGENCE_SLACK_WEBHOOK: Optional[str] = None  # Slack webhook for reports
+    INTELLIGENCE_EMAIL_RECIPIENTS: Optional[str] = None  # Comma-separated email list
+    INTELLIGENCE_REPORT_DAY: str = "monday"  # Day of week to send reports
+    INTELLIGENCE_SAVE_TO_FILE: bool = True  # Save reports to file system
+    INTELLIGENCE_REPORTS_DIR: str = "reports"  # Directory for saved reports
     
     class Config:
         env_prefix = "APPLYLENS_"

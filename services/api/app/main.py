@@ -136,6 +136,11 @@ from .routers import budgets  # noqa: E402
 
 app.include_router(budgets.router)
 
+# Phase 5 - Intelligence Reports & Weekly Quality Analysis
+from .routers import intelligence  # noqa: E402
+
+app.include_router(intelligence.router)
+
 # Email automation system
 try:
     from .routers.mail_tools import router as mail_tools_router
