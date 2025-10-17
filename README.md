@@ -129,6 +129,212 @@ GET  /profile/time-series       # Email volume trends
 - **API Reference**: [`PHASE_2_IMPLEMENTATION.md`](./PHASE_2_IMPLEMENTATION.md) - Complete API docs
 - **Workflow Details**: [`PHASE_2_WORKFLOW.md`](./PHASE_2_WORKFLOW.md) - Step-by-step guide
 
+## 🛡️ Phase 4: Agent Governance & Safety
+
+ApplyLens now includes **enterprise-grade governance** for autonomous agents with policy enforcement, approval workflows, and execution guardrails!
+
+### Key Features
+
+- **🔐 Policy Engine**: Priority-based authorization with allow/deny rules
+- **💰 Budget Tracking**: Track resource usage (time, ops, cost) per agent execution
+- **✅ Approval Workflows**: Human-in-the-loop for high-risk actions with HMAC signatures
+- **🚧 Execution Guardrails**: Pre/post validation at execution boundaries
+- **📊 Audit Trails**: Complete logging of policy decisions and approvals
+
+### Architecture
+
+```
+Agent Request → Policy Engine → Guardrails → [Approval?] → Executor → Post-Validation
+                     ↓              ↓              ↓           ↓              ↓
+                 Allow/Deny    Validate Params  Human Gate  Execute     Check Results
+```
+
+### Policy Engine
+
+Define fine-grained policies for agent actions:
+
+```python
+from app.policy import PolicyRule
+
+# High-priority deny for dangerous operations
+PolicyRule(
+    id="deny-large-diffs",
+    agent="knowledge_update",
+    action="apply",
+    conditions={"changes_count": 1000},  # >= 1000 changes
+    effect="deny",
+    reason="Large diffs require manual review",
+    priority=100
+)
+
+# Conditional approval for quarantine
+PolicyRule(
+    id="allow-quarantine-low-risk",
+    agent="inbox_triage",
+    action="quarantine",
+    conditions={"risk_score": 70},  # < 70
+    effect="allow",
+    priority=50
+)
+```
+
+**Evaluation Logic:**
+- Rules evaluated by **priority** (highest first)
+- **Deny overrides allow** for same priority
+- Conditions support numeric comparisons and exact matches
+- Default: allow if no rules match
+
+### Budget Tracking
+
+Set resource limits per agent:
+
+```python
+from app.policy import Budget
+
+Budget(
+    ms=30000,        # Max 30 seconds
+    ops=100,         # Max 100 operations
+    cost_cents=50    # Max $0.50 estimated cost
+)
+```
+
+Tracked automatically during execution:
+- `elapsed_ms`: Execution time
+- `ops_count`: API calls, queries, operations
+- `cost_cents_used`: Estimated cloud API costs
+
+### Approval Workflows
+
+Require human approval for high-risk actions:
+
+```python
+# 1. Agent requests approval
+POST /api/v1/approvals
+{
+    "agent": "knowledge_update",
+    "action": "apply",
+    "context": {"file": "config.yaml", "changes_count": 1500},
+    "reason": "Large configuration change"
+}
+
+# 2. Human reviews and signs
+POST /api/v1/approvals/{id}/approve
+{
+    "decision": "approved",
+    "signature": "<HMAC-SHA256-signature>",
+    "comment": "Verified changes are safe"
+}
+
+# 3. Agent executes with approval
+POST /api/v1/agents/execute
+{
+    "plan": {...},
+    "approval_id": "appr_123"
+}
+```
+
+**Security Features:**
+- **HMAC-SHA256 signatures** prevent tampering
+- **Expiration timestamps** (default 1 hour)
+- **Audit logging** of all decisions
+- **Replay protection** via signature verification
+
+### Execution Guardrails
+
+Automatic validation at execution boundaries:
+
+**Pre-Execution (Hard Fail):**
+- ✅ Policy compliance check
+- ✅ Required parameters present
+- ✅ Approval verification (if required)
+- ❌ Blocks execution on violation
+
+**Post-Execution (Soft Fail):**
+- ✅ Result structure validation
+- ✅ Resource metric validation (ops, cost)
+- ⚠️ Logs warnings (action already executed)
+
+```python
+# Example: Quarantine requires email_id
+GuardrailViolation: Missing required parameter 'email_id' for action 'quarantine'
+
+# Example: Invalid result
+GuardrailViolation: Result must be a dict, got <class 'str'>
+```
+
+### API Endpoints
+
+```bash
+# Policy Management
+GET  /api/v1/policy              # Get current policy
+PUT  /api/v1/policy              # Update policy rules
+
+# Approvals
+POST /api/v1/approvals           # Request approval
+GET  /api/v1/approvals           # List approvals (filterable)
+GET  /api/v1/approvals/{id}      # Get approval details
+POST /api/v1/approvals/{id}/approve   # Approve/reject
+POST /api/v1/approvals/{id}/verify    # Verify signature
+
+# Agent Execution (with guardrails)
+POST /api/v1/agents/execute      # Execute with policy checks
+POST /api/v1/agents/plan         # Generate execution plan
+```
+
+### Configuration
+
+Set policy enforcement level:
+
+```bash
+# Environment variables
+POLICY_ENFORCEMENT=strict    # strict | permissive | disabled
+APPROVAL_REQUIRED=true       # Require approvals for deny rules
+APPROVAL_EXPIRY_SECONDS=3600 # 1 hour default
+HMAC_SECRET=<your-secret>    # For approval signatures
+```
+
+### Testing
+
+Phase 4 includes **78 comprehensive tests** with 100% coverage:
+
+```bash
+# Run all Phase 4 tests
+pytest tests/test_policy_engine.py      # 30 policy tests
+pytest tests/test_approvals_api.py      # 25 approval tests
+pytest tests/test_executor_guardrails.py # 23 guardrail tests
+
+# Coverage: policy 100%, approvals high, guardrails 100%
+```
+
+### Documentation
+
+- **[Policy Management Runbook](./docs/runbooks/POLICY_MANAGEMENT.md)** - Creating and managing policies
+- **[Approval Workflows Runbook](./docs/runbooks/APPROVAL_WORKFLOWS.md)** - Request and verify approvals
+- **[Guardrails Configuration](./docs/runbooks/GUARDRAILS_CONFIG.md)** - Tuning validation rules
+- **[Troubleshooting Guide](./docs/runbooks/PHASE4_TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Use Cases
+
+**1. Knowledge Base Updates**
+- Deny large diffs (>1000 changes) without approval
+- Allow small edits automatically
+- Track cost of embedding API calls
+
+**2. Email Quarantine**
+- Require approval for high-risk emails (score >70)
+- Auto-allow low-risk quarantine
+- Validate email_id present before execution
+
+**3. Database Queries**
+- Budget ops count for expensive queries
+- Require approval for DELETE operations
+- Validate SQL injection attempts
+
+**4. External API Calls**
+- Track cost_cents for cloud API usage
+- Budget max time to prevent runaway jobs
+- Require approval for billing-related actions
+
 ## Quickstart (Docker) - Minimal Setup
 
 Fast start without Elasticsearch/Kibana:
