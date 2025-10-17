@@ -1,0 +1,272 @@
+# Prometheus Alert Rules for Agent Evaluation System
+#
+# These rules define alerts for:
+# - Low quality scores
+# - High failure rates
+# - Budget violations
+# - Invariant failures
+# - Red-team detection issues
+# - High latency
+#
+# Configure Alertmanager to route these to Slack, PagerDuty, email, etc.
+
+groups:
+  - name: agent_quality
+    interval: 30s
+    rules:
+      # Critical: Quality score below minimum threshold
+      - alert: AgentQualityScoreCritical
+        expr: agent_quality_score < 70
+        for: 5m
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} quality score critically low"
+          description: "Quality score is {{ $value | humanize }}%, below critical threshold of 70%"
+          runbook_url: "https://docs.example.com/runbooks/agent-quality-low"
+      
+      # Warning: Quality score below target
+      - alert: AgentQualityScoreLow
+        expr: agent_quality_score < 85
+        for: 10m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} quality score below target"
+          description: "Quality score is {{ $value | humanize }}%, below target of 85%"
+          runbook_url: "https://docs.example.com/runbooks/agent-quality-low"
+      
+      # Critical: Success rate too low
+      - alert: AgentSuccessRateCritical
+        expr: agent_success_rate < 0.80
+        for: 5m
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} success rate critically low"
+          description: "Success rate is {{ $value | humanizePercentage }}, below critical threshold of 80%"
+          runbook_url: "https://docs.example.com/runbooks/agent-failures"
+      
+      # Warning: Success rate below target
+      - alert: AgentSuccessRateLow
+        expr: agent_success_rate < 0.95
+        for: 10m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} success rate below target"
+          description: "Success rate is {{ $value | humanizePercentage }}, below target of 95%"
+
+  - name: agent_performance
+    interval: 30s
+    rules:
+      # Critical: Latency too high
+      - alert: AgentLatencyHigh
+        expr: agent_latency_p95_ms > 5000
+        for: 5m
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} p95 latency critically high"
+          description: "p95 latency is {{ $value | humanize }}ms, above critical threshold of 5000ms"
+          runbook_url: "https://docs.example.com/runbooks/agent-latency"
+      
+      # Warning: Latency elevated
+      - alert: AgentLatencyElevated
+        expr: |
+          (agent_latency_p95_ms > 2000 and agent_latency_p95_ms <= 5000)
+          or
+          (agent_latency_avg_ms > 1000 and agent_latency_avg_ms <= 3000)
+        for: 10m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} latency elevated"
+          description: "Latency metrics are elevated - p95: {{ $value }}ms"
+      
+      # Critical: Latency spike (sudden increase)
+      - alert: AgentLatencySpike
+        expr: |
+          rate(agent_latency_p95_ms[5m]) > 0
+          and
+          (agent_latency_p95_ms / agent_latency_p95_ms offset 15m) > 1.5
+        for: 2m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} latency spike detected"
+          description: "Latency increased by >50% in last 15 minutes"
+
+  - name: agent_budgets
+    interval: 1m
+    rules:
+      # Critical: Budget violations occurring
+      - alert: AgentBudgetViolationCritical
+        expr: sum by (agent) (increase(agent_budget_violations_total{severity="critical"}[10m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Critical budget violations for agent {{ $labels.agent }}"
+          description: "{{ $value }} critical budget violations in last 10 minutes"
+          runbook_url: "https://docs.example.com/runbooks/budget-violations"
+      
+      # Warning: Multiple budget violations
+      - alert: AgentBudgetViolationsMultiple
+        expr: sum by (agent) (increase(agent_budget_violations_total[1h])) >= 5
+        for: 5m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Multiple budget violations for agent {{ $labels.agent }}"
+          description: "{{ $value }} budget violations in last hour"
+      
+      # Warning: Quality regression detected
+      - alert: AgentQualityRegression
+        expr: sum by (agent) (increase(agent_budget_violations_total{budget_type="quality_regression"}[30m])) > 0
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Quality regression detected for agent {{ $labels.agent }}"
+          description: "Quality has regressed compared to baseline period"
+          runbook_url: "https://docs.example.com/runbooks/quality-regression"
+      
+      # Warning: Latency regression detected
+      - alert: AgentLatencyRegression
+        expr: sum by (agent) (increase(agent_budget_violations_total{budget_type="latency_regression"}[30m])) > 0
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Latency regression detected for agent {{ $labels.agent }}"
+          description: "Latency has increased significantly compared to baseline"
+
+  - name: agent_invariants
+    interval: 1m
+    rules:
+      # Critical: Invariant failures
+      - alert: AgentInvariantFailures
+        expr: sum by (agent) (increase(agent_invariants_failed_total[10m])) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Invariant failures detected for agent {{ $labels.agent }}"
+          description: "{{ $value }} invariant check(s) failed in last 10 minutes"
+          runbook_url: "https://docs.example.com/runbooks/invariant-failures"
+      
+      # Critical: Specific invariant failing repeatedly
+      - alert: AgentInvariantFailureRepeated
+        expr: sum by (agent, invariant_id) (increase(agent_invariants_failed_total[1h])) >= 3
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Repeated failures of invariant {{ $labels.invariant_id }}"
+          description: "Invariant {{ $labels.invariant_id }} failed {{ $value }} times for {{ $labels.agent }}"
+      
+      # Warning: Invariant pass rate dropping
+      - alert: AgentInvariantPassRateLow
+        expr: agent_invariant_pass_rate < 0.95
+        for: 15m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Invariant pass rate low for agent {{ $labels.agent }}"
+          description: "Pass rate is {{ $value | humanizePercentage }}, below 95% target"
+
+  - name: agent_redteam
+    interval: 5m
+    rules:
+      # Critical: Red team detection rate too low
+      - alert: AgentRedTeamDetectionLow
+        expr: agent_redteam_detection_rate < 0.70
+        for: 15m
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Red team detection rate critically low for {{ $labels.agent }}"
+          description: "Detection rate is {{ $value | humanizePercentage }}, below 70% threshold"
+          runbook_url: "https://docs.example.com/runbooks/redteam-detection"
+      
+      # Warning: Red team attacks being missed
+      - alert: AgentRedTeamAttacksMissed
+        expr: sum by (agent) (increase(agent_redteam_attacks_missed_total[1h])) >= 3
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Red team attacks missed by {{ $labels.agent }}"
+          description: "{{ $value }} attacks missed in last hour (false negatives)"
+      
+      # Warning: High false positive rate
+      - alert: AgentRedTeamFalsePositivesHigh
+        expr: |
+          sum by (agent) (increase(agent_redteam_false_positives_total[1h]))
+          /
+          sum by (agent) (increase(agent_redteam_attacks_detected_total[1h]))
+          > 0.3
+        for: 15m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "High false positive rate for {{ $labels.agent }}"
+          description: "False positive rate exceeds 30% in red team testing"
+
+  - name: agent_availability
+    interval: 1m
+    rules:
+      # Critical: Agent not executing
+      - alert: AgentNotExecuting
+        expr: rate(agent_total_runs_total[5m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} not executing"
+          description: "No executions detected in last 10 minutes"
+          runbook_url: "https://docs.example.com/runbooks/agent-not-executing"
+      
+      # Warning: Low execution rate
+      - alert: AgentExecutionRateLow
+        expr: |
+          rate(agent_total_runs_total[5m]) > 0
+          and
+          rate(agent_total_runs_total[5m]) < 0.1
+        for: 15m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Agent {{ $labels.agent }} execution rate low"
+          description: "Execution rate is {{ $value | humanize }} req/s, below expected levels"
+
+  - name: evaluation_system
+    interval: 1m
+    rules:
+      # Warning: No metrics being exported
+      - alert: EvaluationMetricsStale
+        expr: time() - timestamp(agent_evaluation_info) > 300
+        for: 5m
+        labels:
+          severity: warning
+          component: agent_evaluation
+        annotations:
+          summary: "Evaluation metrics are stale"
+          description: "No metric updates in last 5 minutes - metrics exporter may be down"
+          runbook_url: "https://docs.example.com/runbooks/metrics-stale"

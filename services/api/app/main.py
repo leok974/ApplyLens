@@ -141,6 +141,11 @@ from .routers import intelligence  # noqa: E402
 
 app.include_router(intelligence.router)
 
+# Phase 5 - Evaluation Metrics & Dashboard Integration
+from .routers import metrics_eval  # noqa: E402
+
+app.include_router(metrics_eval.router)
+
 # Email automation system
 try:
     from .routers.mail_tools import router as mail_tools_router
