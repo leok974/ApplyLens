@@ -5,12 +5,13 @@ from __future__ import annotations
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from .audit import AgentAuditor
 from ..events import AgentEvent, get_event_bus
 from ..observability import record_agent_run
-from ..utils.approvals import Approvals
+from ..policy import PolicyEngine, Budget
+from ..policy.defaults import get_default_policies
 
 
 class Executor:
@@ -29,7 +30,8 @@ class Executor:
         self, 
         run_store: Dict[str, dict], 
         auditor: AgentAuditor | None = None,
-        event_bus_enabled: bool = True
+        event_bus_enabled: bool = True,
+        policy_engine: Optional[PolicyEngine] = None
     ):
         """Initialize executor with a run store.
         
@@ -37,6 +39,7 @@ class Executor:
             run_store: Dictionary to store run records by run_id
             auditor: Optional auditor for database logging
             event_bus_enabled: Whether to emit events to event bus (default: True)
+            policy_engine: Optional policy engine for authorization (default: uses default policies)
         """
         self.run_store = run_store
         self.auditor = auditor
@@ -45,6 +48,12 @@ class Executor:
             self.event_bus = get_event_bus()
         else:
             self.event_bus = None
+        
+        # Initialize policy engine with default policies if not provided
+        if policy_engine is None:
+            self.policy_engine = PolicyEngine(get_default_policies())
+        else:
+            self.policy_engine = policy_engine
     
     def execute(
         self, 
@@ -53,6 +62,7 @@ class Executor:
         user_email: str | None = None,
         budget_ms: int | None = None,
         budget_ops: int | None = None,
+        budget_cost_cents: int | None = None,
         allow_actions: bool = False
     ) -> Dict[str, Any]:
         """Execute a plan using the provided handler.
@@ -63,6 +73,7 @@ class Executor:
             user_email: Optional user email for audit logging
             budget_ms: Optional max execution time in milliseconds
             budget_ops: Optional max number of operations
+            budget_cost_cents: Optional max cost in cents
             allow_actions: Whether to allow actions (requires dry_run=false)
             
         Returns:
@@ -71,6 +82,10 @@ class Executor:
         run_id = str(uuid.uuid4())
         t0 = time.perf_counter()
         ops_count = 0
+        cost_cents_used = 0
+        
+        # Create budget object
+        budget = Budget(ms=budget_ms, ops=budget_ops, cost_cents=budget_cost_cents)
         
         run = {
             "run_id": run_id,
@@ -81,7 +96,9 @@ class Executor:
             "artifacts": {},
             "budget_ms": budget_ms,
             "budget_ops": budget_ops,
+            "budget_cost_cents": budget_cost_cents,
             "ops_count": 0,
+            "cost_cents_used": 0,
         }
         self.run_store[run_id] = run
         
@@ -120,18 +137,15 @@ class Executor:
         try:
             # Create execution context with budget tracking
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
-            budget_status = Approvals.check_budget(
+            budget_status = budget.is_exceeded(
                 elapsed_ms=elapsed_ms,
-                ops_count=ops_count,
-                budget_ms=budget_ms,
-                budget_ops=budget_ops
+                ops_used=ops_count,
+                cost_cents_used=cost_cents_used
             )
             
             if budget_status["exceeded"]:
                 raise RuntimeError(
-                    f"Budget exceeded before execution: "
-                    f"time={budget_status['time_exceeded']}, "
-                    f"ops={budget_status['ops_exceeded']}"
+                    f"Budget exceeded before execution: {budget_status}"
                 )
             
             # Execute handler with budget tracking callback
@@ -139,22 +153,29 @@ class Executor:
             
             # Update ops count (handler should track operations)
             ops_count = result.get("ops_count", ops_count) if isinstance(result, dict) else ops_count
+            cost_cents_used = result.get("cost_cents_used", cost_cents_used) if isinstance(result, dict) else cost_cents_used
             run["ops_count"] = ops_count
+            run["cost_cents_used"] = cost_cents_used
             
             # Check budget after execution
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
-            budget_status = Approvals.check_budget(
+            budget_status = budget.is_exceeded(
                 elapsed_ms=elapsed_ms,
-                ops_count=ops_count,
-                budget_ms=budget_ms,
-                budget_ops=budget_ops
+                ops_used=ops_count,
+                cost_cents_used=cost_cents_used
             )
             
             if budget_status["exceeded"]:
+                exceeded_details = []
+                if budget_status.get("time_exceeded"):
+                    exceeded_details.append(f"time: {elapsed_ms}ms > {budget_ms}ms")
+                if budget_status.get("ops_exceeded"):
+                    exceeded_details.append(f"ops: {ops_count} > {budget_ops}")
+                if budget_status.get("cost_exceeded"):
+                    exceeded_details.append(f"cost: {cost_cents_used}¢ > {budget_cost_cents}¢")
+                
                 run["logs"].append(
-                    f"warning: Budget exceeded during execution: "
-                    f"elapsed={elapsed_ms}ms (limit={budget_ms}ms), "
-                    f"ops={ops_count} (limit={budget_ops})"
+                    f"warning: Budget exceeded during execution: {', '.join(exceeded_details)}"
                 )
             
             duration_ms = elapsed_ms

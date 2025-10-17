@@ -57,6 +57,7 @@ def run_agent(name: str, body: AgentRunRequest):
         handler,
         budget_ms=body.budget_ms,
         budget_ops=body.budget_ops,
+        budget_cost_cents=body.budget_cost_cents,
         allow_actions=body.allow_actions
     )
     return run

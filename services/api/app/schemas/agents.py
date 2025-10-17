@@ -38,6 +38,10 @@ class AgentRunRequest(BaseModel):
         None, 
         description="Maximum number of operations (API calls, queries)"
     )
+    budget_cost_cents: Optional[int] = Field(
+        None,
+        description="Maximum estimated cost in cents (for cloud API calls)"
+    )
     params: Dict[str, Any] = Field(
         default_factory=dict, 
         description="Additional parameters"

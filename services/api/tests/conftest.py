@@ -74,7 +74,7 @@ def engine():
     test_engine.dispose()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def db_session(engine) -> Generator[Session, None, None]:
     """
     Provide a transactional database session for each test.
@@ -85,8 +85,8 @@ def db_session(engine) -> Generator[Session, None, None]:
     - No manual cleanup needed
     - Prevents "multiple rows found" errors from leftover data
 
-    This fixture is autouse=True, so it runs for every test automatically.
-    Tests can use the db_session parameter to access the session.
+    Tests that need database access should explicitly request this fixture.
+    Unit tests that don't need database can skip this fixture.
     """
     # Create a connection and begin a transaction
     connection = engine.connect()
