@@ -343,8 +343,8 @@ GET /api/playbooks/incidents/123/actions/history
 
 ---
 
-### PR5: Gate Bridges (Commit: TBD)
-**Status: In Progress**
+### PR5: Gate Bridges (Commit: 82b751a)
+**Status: Committed**
 
 #### Components
 - **Bridge Module** (`app/intervene/bridges.py`): 424 lines
@@ -388,12 +388,51 @@ GET /api/playbooks/incidents/123/actions/history
 
 ---
 
-## Remaining PRs (PR6-7)
+### PR6: CI & Mocks (Commit: TBD)
+**Status: In Progress**
 
-- **PR6**: CI & Mocks (mock providers, golden snapshot tests, CI pipeline)
+#### Components
+- **Mock Services** (`tests/mocks/`):
+  * `issue_trackers.py` (364 lines): Mock GitHub/GitLab/Jira APIs with realistic responses
+  * `action_executors.py` (368 lines): Mock DBT/Elasticsearch/Planner execution
+
+- **Golden Snapshot Tests** (`tests/test_golden_templates.py`): 234 lines
+  * 8 test scenarios for template consistency
+  * Golden files directory with 6 reference templates
+  * UPDATE_GOLDEN=1 mode for intentional changes
+
+- **Integration Tests** (`tests/test_integration_mocked.py`): 346 lines
+  * 15 end-to-end scenarios with mocks
+  * Issue creation flow (GitHub/GitLab/Jira)
+  * Action execution flow (DBT/ES/Planner)
+  * Failure handling tests
+  * Dry-run validation
+
+- **CI Pipeline** (`.github/workflows/interventions.yml`): 167 lines
+  * Test job: Run all Phase 5.4 tests with coverage
+  * Quality Gates job: Run eval gates without incident creation
+  * Lint job: ruff + mypy type checking
+  * PostgreSQL 15 service for integration tests
+  * Codecov integration
+
+- **Documentation** (`docs/TESTING_GUIDE.md`):
+  * Comprehensive testing guide
+  * Mock usage examples
+  * Golden snapshot workflow
+  * CI pipeline documentation
+  * Troubleshooting guide
+
+**Lines Added**: ~1,479
+
+**Status**: Ready for commit ✅
+
+---
+
+## Remaining PRs (PR7)
+
 - **PR7**: Docs & Runbooks (INTERVENTIONS_GUIDE.md, PLAYBOOKS.md, RUNBOOK_SEVERITY.md)
 
-**Overall Phase 5.4 Progress**: 5 of 7 PRs complete (71%) 🚀
+**Overall Phase 5.4 Progress**: 6 of 7 PRs complete (86%) 🚀
 
 ---
 
@@ -402,6 +441,7 @@ GET /api/playbooks/incidents/123/actions/history
 - `130a564`: PR2 - Issue Openers (GitHub/GitLab/Jira) + Templates
 - `9d14778`: PR3 - Remediation Playbooks with Dry-Run & Approvals
 - `448d448`: PR4 - SSE Notifications + React Foundations (Partial)
-- **Next**: PR5 - Gate Bridges (ready for commit)
+- `82b751a`: PR5 - Gate Bridges (Auto-Create Incidents from Eval Failures)
+- **Next**: PR6 - CI & Mocks (ready for commit)
 
-**Total Phase 5.4 Lines**: ~8,002 lines added across 45 files
+**Total Phase 5.4 Lines**: ~9,481 lines added across 51 files
