@@ -25,11 +25,60 @@ def require_env(key: str, default: str | None = None) -> str:
     return os.getenv(key, default or "")
 
 
+class _MockESProvider:
+    """Mock Elasticsearch provider for testing."""
+    
+    def search(self, query: dict[str, Any], index: str | None = None) -> ESSearchResponse:
+        """Search documents (mock).
+        
+        Args:
+            query: Elasticsearch query DSL
+            index: Index to search
+            
+        Returns:
+            Mock search response
+        """
+        hits = [
+            ESSearchHit(
+                id="email1",
+                score=1.0,
+                source={
+                    "subject": "Job Application - Software Engineer",
+                    "from": "applicant@example.com",
+                    "received_at": "2025-10-15T10:00:00Z",
+                    "body_preview": "I am writing to apply..."
+                }
+            ),
+            ESSearchHit(
+                id="email2",
+                score=0.95,
+                source={
+                    "subject": "Interview Invitation",
+                    "from": "hr@company.com",
+                    "received_at": "2025-10-16T14:30:00Z",
+                    "body_preview": "We would like to invite you..."
+                }
+            )
+        ]
+        return ESSearchResponse(hits=hits)
+    
+    def aggregate_daily(self, index: str | None = None, days: int = 7) -> list[dict[str, Any]]:
+        """Aggregate document counts by day (mock)."""
+        return [
+            {"day": "2025-10-15", "emails": 42},
+            {"day": "2025-10-16", "emails": 38},
+        ]
+    
+    def latest_event_ts(self, index: str | None = None) -> str | None:
+        """Get timestamp of most recent document (mock)."""
+        return "2025-10-17T12:00:00Z"
+
+
 class ESTool:
     """Elasticsearch operations tool.
     
     Provides typed interface for Elasticsearch operations.
-    Phase-1 returns mock data for portability and golden testing.
+    Uses provider factory to get mock or real implementation.
     """
     
     def __init__(
@@ -58,27 +107,6 @@ class ESTool:
         Returns:
             Search response with hits
         """
-        # Phase-1: Return deterministic mock data for golden tests
-        hits = [
-            ESSearchHit(
-                id="email1",
-                score=1.0,
-                source={
-                    "subject": "Job Application - Software Engineer",
-                    "from": "applicant@example.com",
-                    "received_at": "2025-10-15T10:00:00Z",
-                    "body_preview": "I am writing to apply..."
-                }
-            ),
-            ESSearchHit(
-                id="email2",
-                score=0.95,
-                source={
-                    "subject": "Interview Invitation",
-                    "from": "hr@company.com",
-                    "received_at": "2025-10-16T14:30:00Z",
-                    "body_preview": "We would like to invite you..."
-                }
-            )
-        ]
-        return ESSearchResponse(hits=hits)
+        from ..providers.factory import provider_factory
+        provider = provider_factory.es()
+        return provider.search(query, index=self.index)

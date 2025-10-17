@@ -9,11 +9,35 @@ from __future__ import annotations
 from ..schemas.tools import GmailMessage, GmailSearchResponse
 
 
+class _MockGmailProvider:
+    """Mock Gmail provider for testing."""
+    
+    def search_recent(self, days: int = 7) -> GmailSearchResponse:
+        """Search for recent emails (mock).
+        
+        Args:
+            days: Number of days to look back
+            
+        Returns:
+            Search response with mock messages
+        """
+        messages = [
+            GmailMessage(
+                id="m1",
+                thread_id="t1",
+                subject="Job Offer - Senior Engineer",
+                from_addr="hr@example.com",
+                received_at="2025-10-15T12:00:00Z"
+            )
+        ]
+        return GmailSearchResponse(messages=messages)
+
+
 class GmailTool:
     """Gmail operations tool.
     
     Provides typed interface for Gmail operations.
-    Phase-1 returns mock data for portability and golden testing.
+    Uses provider factory to get mock or real implementation.
     """
     
     def __init__(self, allow_actions: bool = False):
@@ -33,14 +57,6 @@ class GmailTool:
         Returns:
             Search response with matching messages
         """
-        # Phase-1: Return deterministic mock data for golden tests
-        messages = [
-            GmailMessage(
-                id="m1",
-                thread_id="t1",
-                subject="Job Offer - Senior Engineer",
-                from_addr="hr@example.com",
-                received_at="2025-10-15T12:00:00Z"
-            )
-        ]
-        return GmailSearchResponse(messages=messages)
+        from ..providers.factory import provider_factory
+        provider = provider_factory.gmail()
+        return provider.search_recent(days=days)
