@@ -1,0 +1,35 @@
+{
+  "config_type": "routing_rules",
+  "mart_table": "knowledge.routing_rules",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "diff": {
+    "added": [
+      {
+        "pattern": "^.*-engineer$",
+        "label": "engineering",
+        "priority": 50
+      },
+      {
+        "pattern": "^data-.*",
+        "label": "data_science",
+        "priority": 75
+      }
+    ],
+    "removed": [
+      {
+        "pattern": "^manager-.*",
+        "label": "management",
+        "priority": 60
+      }
+    ],
+    "unchanged": [
+      {
+        "pattern": "^tech-lead-.*",
+        "label": "leadership",
+        "priority": 100
+      }
+    ]
+  },
+  "applied": false,
+  "dry_run": true
+}

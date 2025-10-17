@@ -1,0 +1,56 @@
+{
+  "report_type": "email_activity",
+  "week": "2025-W42",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "current_metrics": {
+    "total_emails": 1100,
+    "unique_senders": 420,
+    "emails_with_attachments": 280,
+    "spam_emails": 150,
+    "avg_email_length": 800.0
+  },
+  "previous_metrics": {
+    "total_emails": 1100,
+    "unique_senders": 420,
+    "emails_with_attachments": 280,
+    "spam_emails": 150,
+    "avg_email_length": 800.0
+  },
+  "trends": {
+    "total_emails": {
+      "current": 1100,
+      "previous": 1100,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "unique_senders": {
+      "current": 420,
+      "previous": 420,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "emails_with_attachments": {
+      "current": 280,
+      "previous": 280,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "spam_emails": {
+      "current": 150,
+      "previous": 150,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "avg_email_length": {
+      "current": 800.0,
+      "previous": 800.0,
+      "change": 0.0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    }
+  }
+}

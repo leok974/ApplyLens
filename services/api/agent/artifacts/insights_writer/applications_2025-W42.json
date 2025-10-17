@@ -1,0 +1,56 @@
+{
+  "report_type": "applications",
+  "week": "2025-W42",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "current_metrics": {
+    "total_applications": 10,
+    "unique_companies": 10,
+    "interviews": 2,
+    "offers": 0,
+    "rejections": 1
+  },
+  "previous_metrics": {
+    "total_applications": 10,
+    "unique_companies": 10,
+    "interviews": 2,
+    "offers": 0,
+    "rejections": 1
+  },
+  "trends": {
+    "total_applications": {
+      "current": 10,
+      "previous": 10,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "unique_companies": {
+      "current": 10,
+      "previous": 10,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "interviews": {
+      "current": 2,
+      "previous": 2,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "offers": {
+      "current": 0,
+      "previous": 0,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    },
+    "rejections": {
+      "current": 1,
+      "previous": 1,
+      "change": 0,
+      "change_pct": 0.0,
+      "direction": "➡️"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "config_type": "synonyms",
+  "mart_table": "knowledge.synonyms",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "diff": {
+    "added": [
+      {
+        "group": "group_5",
+        "terms": "term_25, term_26, term_27, term_28, term_29"
+      },
+      {
+        "group": "group_6",
+        "terms": "term_30, term_31, term_32, term_33, term_34"
+      },
+      {
+        "group": "group_7",
+        "terms": "term_35, term_36, term_37, term_38, term_39"
+      },
+      {
+        "group": "group_8",
+        "terms": "term_40, term_41, term_42, term_43, term_44"
+      },
+      {
+        "group": "group_9",
+        "terms": "term_45, term_46, term_47, term_48, term_49"
+      },
+      {
+        "group": "group_10",
+        "terms": "term_50, term_51, term_52, term_53, term_54"
+      },
+      {
+        "group": "group_11",
+        "terms": "term_55, term_56, term_57, term_58, term_59"
+      },
+      {
+        "group": "group_12",
+        "terms": "term_60, term_61, term_62, term_63, term_64"
+      },
+      {
+        "group": "group_13",
+        "terms": "term_65, term_66, term_67, term_68, term_69"
+      },
+      {
+        "group": "group_14",
+        "terms": "term_70, term_71, term_72, term_73, term_74"
+      },
+      {
+        "group": "group_15",
+        "terms": "term_75, term_76, term_77, term_78, term_79"
+      },
+      {
+        "group": "group_16",
+        "terms": "term_80, term_81, term_82, term_83, term_84"
+      },
+      {
+        "group": "group_17",
+        "terms": "term_85, term_86, term_87, term_88, term_89"
+      },
+      {
+        "group": "group_18",
+        "terms": "term_90, term_91, term_92, term_93, term_94"
+      },
+      {
+        "group": "group_19",
+        "terms": "term_95, term_96, term_97, term_98, term_99"
+      }
+    ],
+    "removed": [],
+    "unchanged": [
+      {
+        "group": "group_0",
+        "terms": "term_0, term_1, term_2, term_3, term_4"
+      },
+      {
+        "group": "group_1",
+        "terms": "term_5, term_6, term_7, term_8, term_9"
+      },
+      {
+        "group": "group_2",
+        "terms": "term_10, term_11, term_12, term_13, term_14"
+      },
+      {
+        "group": "group_3",
+        "terms": "term_15, term_16, term_17, term_18, term_19"
+      },
+      {
+        "group": "group_4",
+        "terms": "term_20, term_21, term_22, term_23, term_24"
+      }
+    ]
+  },
+  "applied": true,
+  "dry_run": false
+}
