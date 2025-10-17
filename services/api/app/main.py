@@ -283,7 +283,9 @@ except ImportError:
 # Phase 5.4 Interventions - Incident tracking and remediation
 try:
     from .routers.incidents import router as incidents_router
+    from .routers.playbooks import router as playbooks_router
     
     app.include_router(incidents_router)
+    app.include_router(playbooks_router)
 except ImportError:
-    pass  # Agents module not available yet
+    pass  # Interventions module not available yet
