@@ -23,6 +23,19 @@ agent_run_latency_ms = Histogram(
     buckets=(50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000)
 )
 
+# Phase 5.1: Planner canary metrics
+planner_selection = Counter(
+    "planner_selection_total",
+    "Planner version selected for execution",
+    ["planner", "reason"]  # planner=v1|v2, reason=default|canary|kill_switch
+)
+
+planner_diff = Counter(
+    "planner_decision_diff_total",
+    "Planner V1 vs V2 decision differences",
+    ["agent_v1", "agent_v2", "changed"]  # changed=True|False
+)
+
 
 def record_agent_run(agent: str, status: str, duration_ms: float) -> None:
     """Record metrics for an agent run.

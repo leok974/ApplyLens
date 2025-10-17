@@ -50,6 +50,10 @@ class AgentSettings(BaseSettings):
     PLANNER_CONFIDENCE_THRESHOLD: float = 0.7
     PLANNER_USE_MOCK_LLM: bool = True  # Use mock LLM in CI/dev
     
+    # Phase 5.1: Canary routing & auto-rollback
+    PLANNER_CANARY_PCT: float = 0.0  # Percentage of traffic to route to V2 (0-100)
+    PLANNER_KILL_SWITCH: bool = False  # Emergency rollback to V1
+    
     # Phase 5: Evaluation & Quality Gates
     EVAL_BUDGETS_ENABLED: bool = True  # Enable budget enforcement
     EVAL_GATE_LOOKBACK_DAYS: int = 7  # Days to evaluate
