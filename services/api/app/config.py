@@ -45,6 +45,11 @@ class AgentSettings(BaseSettings):
     # SSE events
     AGENT_EVENTS_ENABLED: bool = True
     
+    # Phase 5: Planning intelligence
+    PLANNER_MODE: Literal["heuristic", "llm", "auto"] = "heuristic"
+    PLANNER_CONFIDENCE_THRESHOLD: float = 0.7
+    PLANNER_USE_MOCK_LLM: bool = True  # Use mock LLM in CI/dev
+    
     class Config:
         env_prefix = "APPLYLENS_"
         case_sensitive = True
