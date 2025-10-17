@@ -1,0 +1,110 @@
+name: Warehouse Nightly
+
+on:
+  # Run nightly at 4:17 AM UTC
+  schedule:
+    - cron: "17 4 * * *"
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      skip_validation:
+        description: 'Skip ES vs BQ validation'
+        required: false
+        default: 'false'
+
+jobs:
+  dbt-and-validate:
+    name: dbt Run + Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    permissions:
+      contents: read
+      id-token: write  # For Workload Identity Federation
+    
+    env:
+      GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+      RAW_DATASET: gmail  # Fivetran destination dataset
+      BQ_MARTS_DATASET: gmail_raw_stg_gmail_marts
+      ES_URL: ${{ secrets.ES_URL }}
+      PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+      VALIDATION_THRESHOLD_PCT: 2.0
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+      
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install dbt-bigquery dbt-core
+          pip install google-cloud-bigquery
+          pip install prometheus-client
+          pip install requests
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_JSON }}
+      
+      - name: Set GOOGLE_APPLICATION_CREDENTIALS
+        run: |
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${{ steps.auth.outputs.credentials_file_path }}" >> $GITHUB_ENV
+      
+      - name: Install dbt packages
+        working-directory: analytics/dbt
+        run: dbt deps --target prod
+      
+      - name: Run dbt models
+        working-directory: analytics/dbt
+        run: |
+          echo "Running dbt models..."
+          echo "RAW_DATASET: $RAW_DATASET"
+          dbt run --target prod --vars "raw_dataset: $RAW_DATASET" --select models/staging/fivetran models/marts/warehouse
+          
+          echo "dbt run completed successfully"
+      
+      - name: Run dbt tests
+        working-directory: analytics/dbt
+        run: |
+          echo "Running dbt tests..."
+          dbt test --target prod --vars "raw_dataset: $RAW_DATASET" --select models/staging/fivetran models/marts/warehouse
+          
+          echo "dbt tests passed"
+      
+      - name: Generate dbt docs
+        working-directory: analytics/dbt
+        run: |
+          dbt docs generate --target prod
+          echo "dbt documentation generated"
+      
+      - name: Validate ES vs BQ consistency
+        if: ${{ github.event.inputs.skip_validation != 'true' }}
+        run: |
+          echo "Running validation..."
+          python analytics/ops/validate_es_vs_bq.py
+        continue-on-error: true
+      
+      - name: Upload dbt artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dbt-artifacts
+          path: |
+            analytics/dbt/target/manifest.json
+            analytics/dbt/target/run_results.json
+            analytics/dbt/target/catalog.json
+          retention-days: 30
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Warehouse nightly job failed"
+          echo "Check logs for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
