@@ -1,0 +1,78 @@
+{
+  "total_emails": 5,
+  "by_risk_level": {
+    "SAFE": 2,
+    "LOW": 0,
+    "MEDIUM": 0,
+    "HIGH": 0,
+    "CRITICAL": 3
+  },
+  "triage_results": [
+    {
+      "email_id": "email_001",
+      "from": "security@paypal-verify.tk",
+      "subject": "URGENT: Verify Your Account Now",
+      "date": "2025-10-17T10:00:00Z",
+      "risk_score": 100,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "suspicious TLD",
+        "8 suspicious keywords",
+        "phishing pattern: verify account",
+        "suspicious link prompt"
+      ],
+      "suggested_action": "quarantine"
+    },
+    {
+      "email_id": "email_002",
+      "from": "winner@prize-claim.ru",
+      "subject": "Congratulations! You won $1,000,000",
+      "date": "2025-10-17T09:00:00Z",
+      "risk_score": 100,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "suspicious TLD",
+        "4 suspicious keywords",
+        "suspicious link prompt",
+        "Gmail marked as spam"
+      ],
+      "suggested_action": "quarantine"
+    },
+    {
+      "email_id": "email_003",
+      "from": "notifications@github.com",
+      "subject": "Pull request merged #123",
+      "date": "2025-10-17T08:00:00Z",
+      "risk_score": 0,
+      "risk_level": "SAFE",
+      "reasons": [],
+      "suggested_action": "no_action"
+    },
+    {
+      "email_id": "email_004",
+      "from": "newsletter@shop.com",
+      "subject": "Weekend Sale - 50% Off",
+      "date": "2025-10-17T07:00:00Z",
+      "risk_score": 5,
+      "risk_level": "SAFE",
+      "reasons": [],
+      "suggested_action": "no_action"
+    },
+    {
+      "email_id": "email_005",
+      "from": "billing@services-update.cn",
+      "subject": "Your billing information expired",
+      "date": "2025-10-17T06:00:00Z",
+      "risk_score": 90,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "suspicious TLD",
+        "5 suspicious keywords",
+        "phishing pattern: verify account"
+      ],
+      "suggested_action": "quarantine"
+    }
+  ],
+  "actions_taken": [],
+  "quarantined": []
+}

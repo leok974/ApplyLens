@@ -211,6 +211,7 @@ try:
     from .routers.agents import router as agents_router, get_registry
     from .routers.agents_events import router as agents_events_router
     from .agents.warehouse import register as register_warehouse
+    from .agents.inbox_triage import register as register_inbox_triage
 
     app.include_router(agents_router)
     app.include_router(agents_events_router)
@@ -218,5 +219,6 @@ try:
     # Register agents
     registry = get_registry()
     register_warehouse(registry)
+    register_inbox_triage(registry)
 except ImportError:
     pass  # Agents module not available yet
