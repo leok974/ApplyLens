@@ -91,7 +91,9 @@ dbt test --target prod --select +marts.warehouse.*
 ## 💰 Cost Management
 
 ### GCP Budget Alert
-**Status:** ⏳ PENDING SETUP
+**Status:** ✅ CONFIGURED (2025-10-16)  
+**Budget ID:** 82c4ede7-cc5f-4304-964f-f294103854ba  
+**Billing Account:** 01683B-6527BB-918BC2
 
 **Configuration:**
 ```bash
@@ -323,7 +325,7 @@ gcloud billing accounts list
 ## 🎯 Remaining Setup Tasks
 
 - [ ] Rotate SA key (set calendar reminder for 90 days)
-- [ ] Set up GCP budget alert ($10/month threshold)
+- [x] **Set up GCP budget alert ($10/month threshold)** ✅ **COMPLETE (2025-10-16)**
 - [ ] Update Fivetran sync frequency (60 min → 15 min)
 - [ ] Schedule uptime monitoring (every 5 minutes)
 - [ ] Add metrics to monthly review table
