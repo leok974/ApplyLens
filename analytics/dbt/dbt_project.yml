@@ -2,6 +2,11 @@ name: applylens_analytics
 version: 1.0.0
 profile: applylens
 
+# Support both direct BQ and Fivetran sources
+vars:
+  project: "{{ env_var('GCP_PROJECT', env_var('BQ_PROJECT', 'applylens-analytics')) }}"
+  use_fivetran: "{{ env_var('USE_FIVETRAN_SOURCES', 'false') }}"
+
 config-version: 2
 
 model-paths: ["models"]
@@ -22,9 +27,18 @@ models:
     staging:
       +schema: staging
       +materialized: view
+      # Fivetran Gmail staging models
+      fivetran:
+        +schema: gmail_raw_stg
+        +materialized: view
     marts:
       +schema: marts
       +materialized: table
+      # Fivetran-powered mart models
+      warehouse:
+        +schema: gmail_marts
+        +materialized: table
+        +tags: ['warehouse', 'fivetran']
     ml:
       +schema: ml
       +materialized: table

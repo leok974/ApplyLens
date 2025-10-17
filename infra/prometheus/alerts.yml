@@ -56,3 +56,14 @@ groups:
         annotations:
           summary: "DB/ES not ready"
           description: "Either DB or Elasticsearch reports down"
+
+      - alert: AssistantLowHitRate
+        expr: |
+          (rate(assistant_tool_queries_total{has_hits="0"}[5m])
+           / ignoring(has_hits) rate(assistant_tool_queries_total[5m])) > 0.7
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Assistant search hit rate < 30%"
+          description: "More than 70% of assistant queries returning 0 results for 10m. Possible ES issue or mis-scoped queries."

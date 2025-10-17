@@ -5,25 +5,34 @@ Combines keyword (BM25) and semantic (vector) search for better email retrieval.
 Supports structured filters for category, risk score, sender domain, and date ranges.
 """
 
+import os
 from typing import Any, Dict, List, Optional
 
 from .text import embed_query
+
+# Get Elasticsearch index name from environment
+ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")
+
+# Performance caps to prevent heavy queries
+DEFAULT_K = 50   # Default number of results
+HARD_MAX = 200   # Never fetch more than this in one call
 
 
 def rag_search(
     es,
     query: str,
     filters: Optional[Dict[str, Any]] = None,
-    k: int = 50,
+    k: int = DEFAULT_K,
     user_id: Optional[int] = None,
     mode: Optional[str] = None,
+    owner_email: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Perform hybrid keyword + semantic search over emails.
 
     Args:
         es: Elasticsearch client
-        query: User's search query
+        query: User's search query (defaults to "*" if empty)
         filters: Optional structured filters:
             - category: str (e.g., "promotions", "jobs", "suspicious")
             - risk_min: int (minimum risk score, 0-100)
@@ -32,8 +41,10 @@ def rag_search(
             - date_from: str (ISO format, e.g., "2025-10-01")
             - date_to: str (ISO format, e.g., "2025-10-31")
             - labels: List[str] (e.g., ["needs_reply", "newsletter"])
-        k: Number of results to return (default 50)
-        user_id: Optional user ID for multi-tenant filtering
+        k: Number of results to return (default 50, max 200)
+        user_id: Optional user ID for multi-tenant filtering (deprecated, use owner_email)
+        mode: Optional mode for specialized boosts (networking, money)
+        owner_email: Email address of the owner (REQUIRED for multi-user support)
 
     Returns:
         Dictionary with:
@@ -43,11 +54,22 @@ def rag_search(
     """
     filters = filters or {}
 
+    # Cap k to prevent heavy queries from stalling UI
+    k = max(1, min(k, HARD_MAX))
+
+    # Default to "*" if query is empty (per multi-user instructions)
+    if not query or not query.strip():
+        query = "*"
+
     # Build Elasticsearch query
     must: List[Dict[str, Any]] = []
 
+    # CRITICAL: Always filter by owner_email for multi-user support
+    if owner_email:
+        must.append({"term": {"owner_email": owner_email}})
+
     # Keyword search across multiple fields
-    if query.strip():
+    if query.strip() and query != "*":
         must.append(
             {
                 "multi_match": {
@@ -84,11 +106,23 @@ def rag_search(
         else:
             must.append({"term": {"labels": labels}})
 
-    # Date range filter
+    # Date range filter - support both direct date_from/date_to and received_at object
     date_from = filters.get("date_from")
     date_to = filters.get("date_to")
-    if date_from or date_to:
+    received_at_filter = filters.get("received_at")
+    
+    # Handle received_at object with gte/lte
+    if received_at_filter and isinstance(received_at_filter, dict):
         range_filter: Dict[str, Any] = {}
+        if gte := received_at_filter.get("gte"):
+            range_filter["gte"] = gte
+        if lte := received_at_filter.get("lte"):
+            range_filter["lte"] = lte
+        if range_filter:
+            must.append({"range": {"received_at": range_filter}})
+    elif date_from or date_to:
+        # Legacy support for date_from/date_to
+        range_filter = {}
         if date_from:
             range_filter["gte"] = date_from
         if date_to:
@@ -153,13 +187,15 @@ def rag_search(
     }
 
     try:
-        kw_response = es.search(index="emails", body=body)
+        kw_response = es.search(index=ES_INDEX, body=body)
         kw_hits = kw_response["hits"]["hits"]
         total = kw_response["hits"]["total"]["value"]
+        took_ms = kw_response.get("took")  # ES returns timing in milliseconds
     except Exception as e:
         print(f"Keyword search error: {e}")
         kw_hits = []
         total = 0
+        took_ms = None
 
     # Semantic search (optional - only if body_vector field exists)
     knn_hits: List[Dict[str, Any]] = []
@@ -191,7 +227,7 @@ def rag_search(
             if must:
                 knn_body["knn"]["filter"] = {"bool": {"must": must}}
 
-            knn_response = es.search(index="emails", body=knn_body)
+            knn_response = es.search(index=ES_INDEX, body=knn_body)
             knn_hits = knn_response["hits"]["hits"]
     except Exception as e:
         # Semantic search is optional - fail gracefully
@@ -248,6 +284,7 @@ def rag_search(
         "query": query,
         "filters": filters,
         "count": len(docs),
+        "took_ms": took_ms,  # ES timing in milliseconds
     }
 
 
@@ -279,7 +316,7 @@ def search_by_email_id(es, email_ids: List[str]) -> List[Dict[str, Any]]:
             ],
         }
 
-        response = es.search(index="emails", body=body)
+        response = es.search(index=ES_INDEX, body=body)
         hits = response["hits"]["hits"]
 
         return [{"id": hit["_id"], **hit.get("_source", {})} for hit in hits]

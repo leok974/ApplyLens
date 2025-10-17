@@ -382,5 +382,38 @@ def test_extract_unless_brands():
     assert len(brands3) == 0
 
 
+def test_find_emails_fallback(monkeypatch):
+    """Test find_emails fallback when ES returns total>0 but docs=[]."""
+    from app.core import mail_tools
+
+    # Simulate rag: total>0 but docs=[]
+    rag = {"total": 5, "docs": [], "filters": {}}
+    called = {"rag2": False}
+
+    def fake_rag_search(*args, **kwargs):
+        called["rag2"] = True
+        return {
+            "total": 5,
+            "docs": [
+                {
+                    "id": "test-123",
+                    "subject": "Hello World",
+                    "sender": "test@example.com",
+                    "received_at": "2025-10-15T12:00:00Z",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(mail_tools, "rag_search", fake_rag_search)
+    answer, actions = mail_tools.find_emails(rag, "hi", owner_email="u@example.com")
+
+    # Verify fallback was triggered
+    assert called["rag2"] is True
+    # Verify answer contains data from fallback
+    assert "Hello World" in answer or len(answer) > 0
+    # Verify it found emails
+    assert "Found" in answer or "matching" in answer.lower()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

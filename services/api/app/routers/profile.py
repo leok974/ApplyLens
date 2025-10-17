@@ -14,7 +14,13 @@ import os
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
+from ..db import get_db
+from ..deps.user import get_current_user_email
+from ..models import Email
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -372,12 +378,15 @@ logger = logging.getLogger(__name__)
 
 @router.post("/rebuild")
 def profile_rebuild_v2(
-    user_email: str = Query(..., description="User email to rebuild profile for"),
+    user_email: str = Depends(get_current_user_email),
     lookback_days: int = Query(90, description="Days of email history to analyze"),
     db: Session = Depends(get_db),
 ):
     """
-    Rebuild user profile from email history (database-backed).
+    Rebuild profile for current user from email history (database-backed).
+    
+    Automatically uses the authenticated user's email.
+    Admin can override by passing X-User-Email header.
 
     Aggregates:
     - Sender statistics (volume, categories, open rate)
@@ -385,7 +394,6 @@ def profile_rebuild_v2(
     - Interests (extracted keywords with scores)
 
     Args:
-        user_email: User email address
         lookback_days: Days of history to analyze (default 90)
 
     Returns:
@@ -395,10 +403,10 @@ def profile_rebuild_v2(
 
     cutoff = datetime.utcnow() - timedelta(days=lookback_days)
 
-    # Fetch user's emails
+    # Fetch user's emails by owner_email (not recipient)
     emails = (
         db.query(Email)
-        .filter(and_(Email.recipient == user_email, Email.received_at >= cutoff))
+        .filter(and_(Email.owner_email == user_email, Email.received_at >= cutoff))
         .all()
     )
 
@@ -554,14 +562,14 @@ def profile_rebuild_v2(
 
 @router.get("/db-summary")
 def profile_summary_v2(
-    user_email: str = Query(..., description="User email to get summary for"),
+    user_email: str = Depends(get_current_user_email),
     db: Session = Depends(get_db),
 ):
     """
-    Get profile summary for user (database-backed).
-
-    Args:
-        user_email: User email address
+    Get profile summary for current user (database-backed).
+    
+    Automatically uses the authenticated user's email.
+    Admin can override by passing X-User-Email header.
 
     Returns:
         Dict with top senders, categories, and interests

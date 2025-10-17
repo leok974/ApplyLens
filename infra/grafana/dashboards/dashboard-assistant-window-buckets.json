@@ -1,0 +1,393 @@
+{
+  "uid": "applylens-assistant-windows",
+  "title": "ApplyLens · Assistant (Windows & Hit Ratio)",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "tags": ["applylens", "assistant"],
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Tool Queries by Window Bucket (rate 5m)",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(assistant_tool_queries_total[5m])) by (window_bucket, has_hits)",
+          "legendFormat": "{{window_bucket}}d · has_hits={{has_hits}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "fillOpacity": 10,
+            "showPoints": "never"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Zero-Hit Ratio by Window (5m)",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(assistant_tool_queries_total{has_hits=\"0\"}[5m])) by (window_bucket) / sum(rate(assistant_tool_queries_total[5m])) by (window_bucket)",
+          "legendFormat": "{{window_bucket}}d",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "7d"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "30d"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "60d"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "90+d"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Hit Ratio (last 15m, all windows)",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(assistant_tool_queries_total{has_hits=\"1\"}[15m])) / sum(rate(assistant_tool_queries_total[15m]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 0.3,
+                "color": "yellow"
+              },
+              {
+                "value": 0.7,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP 429 Rate /s (chat & stream)",
+      "gridPos": {
+        "x": 6,
+        "y": 8,
+        "w": 9,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(applylens_http_requests_total{status_code=\"429\"}[5m]))",
+          "legendFormat": "429 rate/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "fillOpacity": 20
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "ES Search Latency (from timing data)",
+      "gridPos": {
+        "x": 15,
+        "y": 8,
+        "w": 9,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "avg(rate(assistant_tool_queries_total[5m]) * 0) + avg_over_time(es_search_duration_seconds[5m])",
+          "legendFormat": "ES avg latency",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear"
+          }
+        }
+      },
+      "description": "Note: Requires es_search_duration_seconds metric to be exported from backend"
+    },
+    {
+      "type": "stat",
+      "title": "Active Chat Sessions (approx)",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "rate(ux_heartbeat_total[1m]) * 30",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "text"
+              },
+              {
+                "value": 1,
+                "color": "green"
+              },
+              {
+                "value": 10,
+                "color": "blue"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Chat Opens vs Messages Sent (engagement)",
+      "gridPos": {
+        "x": 6,
+        "y": 12,
+        "w": 9,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "rate(ux_chat_opened_total[5m]) * 300",
+          "legendFormat": "Chat Opens (per 5m)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(assistant_tool_queries_total[5m]) * 300",
+          "legendFormat": "Messages Sent (per 5m)",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "fillOpacity": 10
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Engagement Ratio (msgs/open)",
+      "gridPos": {
+        "x": 15,
+        "y": 12,
+        "w": 9,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "rate(assistant_tool_queries_total[10m]) / rate(ux_chat_opened_total[10m])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 0.2,
+                "color": "yellow"
+              },
+              {
+                "value": 0.5,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      }
+    }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Deployments",
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "changes(applylens_build_info[5m]) > 0",
+        "iconColor": "blue"
+      }
+    ]
+  }
+}

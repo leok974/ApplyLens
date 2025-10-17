@@ -1,3 +1,5 @@
+import { API_BASE } from './apiBase'
+
 export type Email = {
   id: number
   thread_id: string
@@ -276,7 +278,7 @@ export const relabel = (limit = 2000): Promise<LabelRebuildResponse> =>
   post(`/api/ml/label/rebuild?limit=${limit}`)
 
 export const rebuildProfile = (userEmail: string): Promise<ProfileRebuildResponse> =>
-  post(`/profile/rebuild?user_email=${encodeURIComponent(userEmail)}`)
+  post(`${API_BASE}/profile/rebuild?user_email=${encodeURIComponent(userEmail)}`)
 
 export function initiateGmailAuth() {
   window.location.href = '/api/auth/google/login'
@@ -480,5 +482,35 @@ export async function listApplicationsPaged(
 
   const r = await fetch(`/api/applications?${q.toString()}`)
   if (!r.ok) throw new Error("Failed to list applications")
+  return r.json()
+}
+
+// =============================================================================
+// Email Statistics
+// =============================================================================
+
+export interface EmailCountResponse {
+  owner_email: string
+  count: number
+}
+
+export interface EmailStatsResponse {
+  owner_email: string
+  total: number
+  last_30d: number
+  by_day: Array<{ day: string; count: number }>
+  top_senders: Array<{ sender: string; count: number }>
+  top_categories: Array<{ category: string; count: number }>
+}
+
+export async function getEmailCount(): Promise<EmailCountResponse> {
+  const r = await fetch(`${API_BASE}/emails/count`, { credentials: 'include' })
+  if (!r.ok) throw new Error('Failed to get email count')
+  return r.json()
+}
+
+export async function getEmailStats(): Promise<EmailStatsResponse> {
+  const r = await fetch(`${API_BASE}/emails/stats`, { credentials: 'include' })
+  if (!r.ok) throw new Error('Failed to get email stats')
   return r.json()
 }

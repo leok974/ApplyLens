@@ -25,7 +25,7 @@ with daily_emails as (
     -- Sender domains (top 5 by volume)
     ARRAY_AGG(DISTINCT sender_domain ORDER BY sender_domain LIMIT 5) as top_domains
 
-  from `applylens-gmail-1759983601`.`applylens`.`stg_emails`
+  from `applylens-gmail-1759983601`.`gmail_raw_stg_staging`.`stg_emails`
   where received_date IS NOT NULL
   group by received_date
 )

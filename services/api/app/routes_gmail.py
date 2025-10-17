@@ -13,8 +13,9 @@ from .models import Email, OAuthToken
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
-# Simple rate limiter for backfill
-_LAST_BACKFILL_TS = 0
+# Simple rate limiter for backfill (configurable cooldown in seconds)
+_BACKFILL_COOLDOWN_SECONDS = int(os.getenv("BACKFILL_COOLDOWN_SECONDS", "300"))  # 5 minutes default
+_LAST_BACKFILL_TS = {}
 
 
 class BackfillResp(BaseModel):
@@ -168,21 +169,25 @@ def backfill(
     global _LAST_BACKFILL_TS
     now = time.time()
 
-    # Simple 60-second rate limit
-    if now - _LAST_BACKFILL_TS < 60:
+    # Get user email
+    email = user_email or os.getenv("DEFAULT_USER_EMAIL")
+    if not email:
+        BACKFILL_REQUESTS.labels(result="bad_request").inc()
+        raise HTTPException(400, "user_email required (or set DEFAULT_USER_EMAIL)")
+
+    # Per-user rate limit
+    last_ts = _LAST_BACKFILL_TS.get(email, 0)
+    if now - last_ts < _BACKFILL_COOLDOWN_SECONDS:
+        remaining = int(_BACKFILL_COOLDOWN_SECONDS - (now - last_ts))
         BACKFILL_REQUESTS.labels(result="rate_limited").inc()
         raise HTTPException(
-            status_code=429, detail="Backfill too frequent; try again in a minute."
+            status_code=429, 
+            detail=f"Backfill too frequent; try again in {remaining} seconds."
         )
-    _LAST_BACKFILL_TS = now
+    _LAST_BACKFILL_TS[email] = now
 
     db = SessionLocal()
     try:
-        email = user_email or os.getenv("DEFAULT_USER_EMAIL")
-        if not email:
-            BACKFILL_REQUESTS.labels(result="bad_request").inc()
-            raise HTTPException(400, "user_email required (or set DEFAULT_USER_EMAIL)")
-
         count = gmail_backfill(db, user_email=email, days=days)
 
         # Success metrics

@@ -74,12 +74,12 @@ def debug_500():
 
 
 # Include routers
-app.include_router(emails.router, prefix="/api")
-app.include_router(search.router, prefix="/api")
-app.include_router(suggest.router, prefix="/api")
-app.include_router(applications.router, prefix="/api")
+app.include_router(emails.router)
+app.include_router(search.router)
+app.include_router(suggest.router)
+app.include_router(applications.router)
 app.include_router(auth_google.router)
-app.include_router(routes_gmail.router, prefix="/api")
+app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
@@ -88,28 +88,43 @@ from .routers import labeling, labels, profile  # noqa: E402
 
 app.include_router(labels.router)
 app.include_router(profile.router)
-app.include_router(labeling.router, prefix="/api")
+app.include_router(labeling.router)
+
+# UX metrics (lightweight client telemetry)
+from .routers import ux_metrics  # noqa: E402
+
+app.include_router(ux_metrics.router)
 
 # Security analysis
 from .routers import policy, security  # noqa: E402
 
-app.include_router(security.router, prefix="/api")
-app.include_router(policy.router, prefix="/api")
+app.include_router(security.router)
+app.include_router(policy.router)
 
 # Phase 4 - Agentic Actions & Approval Loop
 from .routers import actions  # noqa: E402
 
-app.include_router(actions.router, prefix="/api")
+app.include_router(actions.router)
 
 # Phase 5 - Chat Assistant
 from .routers import chat  # noqa: E402
 
-app.include_router(chat.router, prefix="/api")
+app.include_router(chat.router)
+
+# Email Statistics (with Redis caching)
+from .routers import emails_stats  # noqa: E402
+
+app.include_router(emails_stats.router)
 
 # Phase 6 - Money Mode (Receipt tracking)
 from .routers import money  # noqa: E402
 
-app.include_router(money.router, prefix="/api")
+app.include_router(money.router)
+
+# Fivetran & BigQuery Warehouse Metrics
+from .routers import metrics_profile  # noqa: E402
+
+app.include_router(metrics_profile.router)
 
 # Email automation system
 try:

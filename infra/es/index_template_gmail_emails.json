@@ -1,0 +1,23 @@
+{
+  "index_patterns": ["gmail_emails-*"],
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "emails-rolling-90d",
+      "index.lifecycle.rollover_alias": "gmail_emails",
+      "index.refresh_interval": "1s",
+      "index.number_of_shards": 1,
+      "index.number_of_replicas": 1
+    },
+    "mappings": {
+      "properties": {
+        "owner_email": { "type": "keyword" },
+        "received_at": { "type": "date" }
+      }
+    },
+    "aliases": {
+      "gmail_emails": { "is_write_index": false }
+    }
+  },
+  "priority": 500,
+  "composed_of": []
+}

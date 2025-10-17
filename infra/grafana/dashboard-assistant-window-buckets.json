@@ -1,0 +1,79 @@
+{
+  "dashboard": {
+    "uid": "applylens-assistant-windows",
+    "title": "ApplyLens · Assistant (Windows & Hit Ratio)",
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "10s",
+    "tags": ["applylens","assistant"],
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "Tool Queries by Window Bucket (rate 5m)",
+        "gridPos": {"x":0,"y":0,"w":12,"h":8},
+        "targets": [
+          {
+            "expr": "sum(rate(assistant_tool_queries_total[5m])) by (window_bucket, has_hits)",
+            "legendFormat": "{{window_bucket}}d · has_hits={{has_hits}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Zero-Hit Ratio by Window (5m)",
+        "gridPos": {"x":12,"y":0,"w":12,"h":8},
+        "targets": [
+          {
+            "expr": "sum(rate(assistant_tool_queries_total{has_hits=\"0\"}[5m])) by (window_bucket) / sum(rate(assistant_tool_queries_total[5m])) by (window_bucket)",
+            "legendFormat": "{{window_bucket}}d",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": { "defaults": { "unit": "percentunit" } }
+      },
+      {
+        "type": "stat",
+        "title": "Hit Ratio (last 15m, all windows)",
+        "gridPos": {"x":0,"y":8,"w":6,"h":4},
+        "targets": [
+          { "expr": "sum(rate(assistant_tool_queries_total{has_hits=\"1\"}[15m])) / sum(rate(assistant_tool_queries_total[15m]))", "refId": "A" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1 } }
+      },
+      {
+        "type": "timeseries",
+        "title": "HTTP 429 Rate /s (chat & stream)",
+        "gridPos": {"x":6,"y":8,"w":9,"h":4},
+        "targets": [
+          { "expr": "sum(rate(http_requests_total{status=~\"429\",handler=~\"/api/chat.*\"}[5m]))", "legendFormat": "429 rate", "refId": "A" }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "ES Search p95 latency (if exported)",
+        "gridPos": {"x":15,"y":8,"w":9,"h":4},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(es_search_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "ES p95",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": { "defaults": { "unit": "s", "decimals": 3 } }
+      },
+      {
+        "type": "stat",
+        "title": "Active Chat Sessions (approx)",
+        "gridPos": {"x":0,"y":12,"w":6,"h":4},
+        "targets": [
+          { "expr": "rate(ux_heartbeat_total[1m]) * 30", "refId": "A" }
+        ],
+        "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 } }
+      }
+    ],
+    "time": { "from": "now-1h", "to": "now" }
+  },
+  "overwrite": true
+}

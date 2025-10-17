@@ -5,8 +5,10 @@ import path from 'path'
 // Check if we need a proxy (when API_BASE is not explicitly set or is relative)
 const API_BASE = process.env.VITE_API_BASE
 const needsProxy = !API_BASE || API_BASE.startsWith('/')
+const BASE_PATH = process.env.VITE_BASE_PATH || '/'
 
 export default defineConfig({
+  base: BASE_PATH,
   plugins: [react()],
   resolve: {
     alias: {

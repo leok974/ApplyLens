@@ -35,12 +35,17 @@ from ..core.mail_tools import (
 )
 from ..core.rag import rag_search
 from ..db import SessionLocal
+from ..deps.user import get_current_user_email
+from ..deps.params import clamp_window_days
+from ..metrics import record_tool
 from ..models import ActionType, AuditAction, Policy, ProposedAction
+from ..settings import settings
 
 logger = logging.getLogger(__name__)
 
 # Elasticsearch configuration
-ES_URL = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
+# Use ES_URL (set in docker-compose) or fall back to ELASTICSEARCH_URL
+ES_URL = os.getenv("ES_URL") or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
 ES_ENABLED = True
 try:
     from elasticsearch import Elasticsearch
@@ -67,16 +72,6 @@ def get_es():
         )
 
 
-def get_current_user():
-    """
-    Get current user (stub - replace with actual auth).
-
-    In production, this would extract user from JWT/session.
-    """
-    # TODO: Implement real authentication
-    return {"email": "user@example.com", "id": 1}
-
-
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
@@ -100,6 +95,9 @@ class ChatRequest(BaseModel):
     )
     max_results: int = Field(
         default=50, ge=1, le=100, description="Maximum number of emails to search"
+    )
+    window_days: Optional[int] = Field(
+        default=30, ge=1, le=365, description="Time window in days to search (default: 30)"
     )
 
 
@@ -142,6 +140,10 @@ class ChatResponse(BaseModel):
         default_factory=dict,
         description="Search metadata (total results, query, filters)",
     )
+    timing: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Performance timing (es_ms, llm_ms)",
+    )
 
 
 # System prompt for future LLM integration
@@ -165,7 +167,11 @@ Behavior:
 
 
 @router.post("", response_model=ChatResponse)
-async def chat(req: ChatRequest, es=Depends(get_es), user=Depends(get_current_user)):
+async def chat(
+    req: ChatRequest,
+    es=Depends(get_es),
+    user_email: str = Depends(get_current_user_email),
+):
     """
     Chat with your mailbox.
 
@@ -195,12 +201,27 @@ async def chat(req: ChatRequest, es=Depends(get_es), user=Depends(get_current_us
     intent_explanation = explain_intent(intent)
 
     # Perform RAG search for email context
-    # Pass user_id if available for multi-tenant filtering
-    user_id = user.get("id") if isinstance(user, dict) else None
+    # CRITICAL: Always filter by owner_email for multi-user support
+    # Default to "*" query if empty to avoid empty queries
+    search_query = user_text.strip() or "*"
+
+    # Calculate time window filter
+    window_days = clamp_window_days(req.window_days, default=30, mn=1, mx=365)
+    from datetime import timedelta
+    since = (datetime.utcnow() - timedelta(days=window_days)).isoformat()
+    
+    # Add date range filter to existing filters
+    merged_filters = {**req.filters}
+    if "received_at" not in merged_filters:
+        merged_filters["received_at"] = {"gte": since}
 
     try:
         rag = rag_search(
-            es, user_text, filters=req.filters, k=req.max_results, user_id=user_id
+            es,
+            search_query,
+            filters=merged_filters,
+            k=req.max_results,
+            owner_email=user_email,  # NEW: Pass owner_email for scoping
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
@@ -210,7 +231,7 @@ async def chat(req: ChatRequest, es=Depends(get_es), user=Depends(get_current_us
         if intent == "summarize":
             answer, actions = summarize_emails(rag, user_text)
         elif intent == "find":
-            answer, actions = find_emails(rag, user_text)
+            answer, actions = find_emails(rag, user_text, owner_email=user_email)
         elif intent == "clean":
             answer, actions = clean_promos(rag, user_text)
         elif intent == "unsubscribe":
@@ -226,6 +247,10 @@ async def chat(req: ChatRequest, es=Depends(get_es), user=Depends(get_current_us
         else:
             # Fallback to summarize
             answer, actions = summarize_emails(rag, user_text)
+        
+        # Record tool usage metrics
+        record_tool(intent, rag.get("total", 0), window_days=window_days)
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Tool execution failed: {str(e)}")
 
@@ -256,6 +281,13 @@ async def chat(req: ChatRequest, es=Depends(get_es), user=Depends(get_current_us
         "returned_results": rag.get("count", 0),
         "query": rag.get("query", ""),
         "filters": rag.get("filters", {}),
+        "took_ms": rag.get("took_ms"),  # ES timing
+    }
+    
+    # Timing information for frontend
+    timing = {
+        "es_ms": rag.get("took_ms"),
+        # llm_ms can be added here if you measure LLM call time
     }
 
     return ChatResponse(
@@ -265,6 +297,7 @@ async def chat(req: ChatRequest, es=Depends(get_es), user=Depends(get_current_us
         actions=action_items,
         citations=citations,
         search_stats=search_stats,
+        timing=timing,
     )
 
 
@@ -297,17 +330,21 @@ async def chat_stream(
     q: str,
     propose: int = 0,
     remember: int = 0,
+    window_days: int = Query(30, ge=1, le=365, description="Time window in days"),
     mode: str = Query(None, description="Special mode: networking|money"),
     es=Depends(get_es),
-    user=Depends(get_current_user),
+    user_email: str = Depends(get_current_user_email),
 ):
     """
     Stream chat responses with Server-Sent Events (SSE).
+    
+    **Canary Toggle**: Can be disabled via CHAT_STREAMING_ENABLED=false for rollback/testing.
 
     Query params:
     - q: The user query text
     - propose: If 1, file actions to Approvals tray
     - remember: If 1, learn exceptions from the query (e.g., "unless Best Buy")
+    - window_days: Time window in days to search (default: 30, max: 365)
     - mode: Optional mode (networking|money) for specialized boosts
 
     Events emitted:
@@ -320,13 +357,31 @@ async def chat_stream(
     - done: {"ok": true}
     - error: {"error": "message"}
     """
+    # Canary toggle: allow disabling streaming for rollback/testing
+    if not settings.CHAT_STREAMING_ENABLED:
+        logger.warning("Streaming disabled by CHAT_STREAMING_ENABLED flag")
+        raise HTTPException(
+            status_code=503,
+            detail="Streaming temporarily disabled. Use /chat endpoint instead.",
+            headers={"X-Chat-Streaming-Disabled": "1"}
+        )
+    
     import asyncio
     import json
+    import time
 
     from fastapi.responses import StreamingResponse
 
+    HEARTBEAT_SEC = 20  # Send keep-alive every 20 seconds
+
     async def generate():
+        last_heartbeat = time.monotonic()
+        
         try:
+            # Send ready signal
+            yield f'event: ready\ndata: {json.dumps({"ok": True})}\n\n'
+            await asyncio.sleep(0.01)
+            
             # Detect intent
             intent = detect_intent(q)
             intent_explanation = explain_intent(intent)
@@ -335,18 +390,36 @@ async def chat_stream(
 
             yield f'event: intent\ndata: {json.dumps({"intent": intent, "explanation": intent_explanation})}\n\n'
             await asyncio.sleep(0.1)  # Small delay for UI smoothness
+            
+            # Heartbeat check
+            if time.monotonic() - last_heartbeat > HEARTBEAT_SEC:
+                yield ": keep-alive\n\n"
+                last_heartbeat = time.monotonic()
 
             # Emit intent explanation tokens
             yield f'event: intent_explain\ndata: {json.dumps({"tokens": matches})}\n\n'
             await asyncio.sleep(0.1)
+            
+            # Heartbeat check
+            if time.monotonic() - last_heartbeat > HEARTBEAT_SEC:
+                yield ": keep-alive\n\n"
+                last_heartbeat = time.monotonic()
 
-            # Perform RAG search
+            # Calculate time window filter
+            from datetime import timedelta
+            window_days_capped = clamp_window_days(window_days, default=30, mn=1, mx=365)
+            since = (datetime.utcnow() - timedelta(days=window_days_capped)).isoformat()
+
+            # Perform RAG search with user scoping and time window
+            # CRITICAL: Default to "*" if query is empty, always filter by owner_email
+            search_query = q.strip() or "*"
             rag = rag_search(
                 es=es,
-                query=q,
-                filters={},
+                query=search_query,
+                filters={"received_at": {"gte": since}},
                 k=50,
                 mode=mode,  # Phase 6: Pass mode for specialized boosts
+                owner_email=user_email,  # NEW: Always filter by owner_email
             )
 
             # Route to appropriate tool
@@ -354,7 +427,7 @@ async def chat_stream(
             if intent == "summarize":
                 answer, actions = summarize_emails(rag, q)
             elif intent == "find":
-                answer, actions = find_emails(rag, q)
+                answer, actions = find_emails(rag, q, owner_email=user_email)
             elif intent == "clean":
                 answer, actions = clean_promos(rag, q)
             elif intent == "unsubscribe":
@@ -369,6 +442,14 @@ async def chat_stream(
                 answer, actions = create_tasks(rag, q)
             else:
                 answer, actions = summarize_emails(rag, q)
+
+            # Record tool usage metrics
+            record_tool(tool_name, rag.get("total", 0), window_days=window_days_capped)
+            
+            # Heartbeat check
+            if time.monotonic() - last_heartbeat > HEARTBEAT_SEC:
+                yield ": keep-alive\n\n"
+                last_heartbeat = time.monotonic()
 
             # Emit tool result
             yield f'event: tool\ndata: {json.dumps({"tool": tool_name, "matches": rag.get("total", 0), "actions": len(actions)})}\n\n'
@@ -459,7 +540,7 @@ async def chat_stream(
                                 email_id=int(a["email_id"]),
                                 action=ActionType(a["action"]),
                                 params=a.get("params") or {},
-                                actor=user["email"],
+                                actor=user_email,  # Use user_email from dependency
                                 outcome="proposed",
                                 error=None,
                                 why={"via": "chat", "transcript": transcript},

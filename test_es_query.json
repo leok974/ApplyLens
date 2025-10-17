@@ -1,0 +1,8 @@
+{
+  "query": {
+    "term": {
+      "owner_email": "leoklemet.pa@gmail.com"
+    }
+  },
+  "size": 2
+}

@@ -1,0 +1,9 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Summarize recent emails about interviews"
+    }
+  ],
+  "max_results": 5
+}

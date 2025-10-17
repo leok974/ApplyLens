@@ -69,6 +69,9 @@ class Email(Base):
     labels = Column(ARRAY(String), nullable=True)
     label_heuristics = Column(ARRAY(String), nullable=True)
     raw = Column(JSON, nullable=True)
+    
+    # Multi-user support
+    owner_email = Column(String(320), index=True, nullable=True)  # Email owner
 
     # NEW quick hooks
     company = Column(String(256), index=True)

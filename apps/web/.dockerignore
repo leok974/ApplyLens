@@ -3,6 +3,8 @@ dist
 .git
 *.log
 .DS_Store
+.env.local
+.env.docker
 playwright-report
 test-results
 tests

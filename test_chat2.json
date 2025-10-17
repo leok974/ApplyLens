@@ -1,0 +1,9 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Show me all emails"
+    }
+  ],
+  "max_results": 5
+}

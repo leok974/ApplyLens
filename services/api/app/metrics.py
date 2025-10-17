@@ -47,6 +47,55 @@ risk_score_avg = Gauge(
     "applylens_risk_score_avg", "Average current risk score across all emails"
 )
 
+# --- Assistant Tool Metrics ---
+
+tool_queries_total = Counter(
+    "assistant_tool_queries_total",
+    "Total assistant tool queries",
+    ["tool", "has_hits", "window_bucket"],  # tool: summarize, find, clean, etc.; has_hits: 0 or 1; window_bucket: 7, 30, 60, 90+
+)
+
+
+def window_bucket(days: int) -> str:
+    """
+    Categorize window_days into buckets for metrics.
+    
+    Args:
+        days: Number of days in the window
+    
+    Returns:
+        Bucket label: "7", "30", "60", or "90+"
+    """
+    if days <= 7:
+        return "7"
+    elif days <= 30:
+        return "30"
+    elif days <= 60:
+        return "60"
+    else:
+        return "90+"
+
+
+def record_tool(tool_name: str, hits: int, window_days: int = 30) -> None:
+    """
+    Record assistant tool usage.
+    
+    Args:
+        tool_name: Name of the tool (summarize, find, clean, etc.)
+        hits: Number of results/hits returned
+        window_days: Time window in days for bucket tracking
+    """
+    try:
+        tool_queries_total.labels(
+            tool=tool_name,
+            has_hits="1" if hits > 0 else "0",
+            window_bucket=window_bucket(window_days),
+        ).inc()
+    except Exception:
+        # Metrics are optional - don't fail requests
+        pass
+
+
 # Parity Check Metrics
 parity_checks_total = Counter(
     "applylens_parity_checks_total", "Total number of parity checks performed"

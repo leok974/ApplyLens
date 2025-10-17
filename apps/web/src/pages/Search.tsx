@@ -53,6 +53,35 @@ export default function Search() {
   const [sort, setSort] = useState<SortKey>(init.sort as SortKey)
   const t = useRef<number | null>(null)
 
+  // Handle prefill from URL params (e.g., from chat "Open Search")
+  useEffect(() => {
+    const urlQuery = searchParams.get('q')
+    const urlWindow = searchParams.get('window')
+    
+    if (urlQuery) {
+      setQ(urlQuery)
+    }
+    
+    if (urlWindow) {
+      const days = Number(urlWindow)
+      if ([7, 30, 60, 90].includes(days)) {
+        // Calculate date range from window days
+        const to = new Date()
+        const from = new Date(to)
+        from.setDate(from.getDate() - days)
+        setDates({
+          from: from.toISOString().split('T')[0],
+          to: to.toISOString().split('T')[0]
+        })
+      }
+    }
+    
+    // Auto-trigger search if query was prefilled
+    if (urlQuery) {
+      setTimeout(() => onSearch(), 100)
+    }
+  }, []) // Only run once on mount
+
   async function onSearch(e?: React.FormEvent) {
     e?.preventDefault()
     if (!q.trim()) return
