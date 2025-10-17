@@ -17,7 +17,7 @@ EXPORT_SCRIPT := services/api/app/labeling/export_weak_labels.py
 TRAIN_SCRIPT  := services/api/app/labeling/train_ml.py
 
 # ---- Meta ----
-.PHONY: help export-weak train-labels apply-labels phase2-all clean-weak stats profile test-api test-db-up test-db-down test-db-clean test-all
+.PHONY: help export-weak train-labels apply-labels phase2-all clean-weak stats profile test-api test-db-up test-db-down test-db-clean test-all api-dev api-test agent-test
 
 help:
 	@echo "ApplyLens Phase-2 Labeling Shortcuts"
@@ -28,6 +28,11 @@ help:
 	@echo "  make train-labels    Train TF-IDF+LR model from JSONL"
 	@echo "  make apply-labels    Apply labels to ES (rules + ML fallback)"
 	@echo "  make phase2-all      Run full pipeline: export -> train -> apply"
+	@echo ""
+	@echo "Agents (Phase 1 Agentic System):"
+	@echo "  make api-dev         Run API server with hot reload (port 8003)"
+	@echo "  make api-test        Run all API tests including agent tests"
+	@echo "  make agent-test      Run only agent tests (core + warehouse)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test-api        Run API tests (requires test DB)"
@@ -137,3 +142,22 @@ test-all: test-db-up
 		TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) pytest -v
 	@$(MAKE) test-db-down
 	@echo "✅ All tests passed!"
+
+# ========= Agents Development =========
+
+api-dev:
+	@echo ">> Starting API server with hot reload on port 8003"
+	@cd services/api && uvicorn app.main:app --reload --port 8003
+
+api-test: test-db-up
+	@echo ">> Running API tests (including agent tests)"
+	@cd services/api && \
+		TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) alembic upgrade head && \
+		TEST_DB_PASSWORD=$(TEST_DB_PASSWORD) pytest -v tests/
+	@echo ">> Tests complete!"
+
+agent-test:
+	@echo ">> Running agent tests (core + warehouse)"
+	@cd services/api && \
+		ES_ENABLED=false USE_MOCK_GMAIL=true pytest -v tests/test_agents_core.py tests/test_agent_warehouse.py
+	@echo "✅ Agent tests passed!"

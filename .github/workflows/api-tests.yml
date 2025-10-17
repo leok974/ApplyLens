@@ -89,6 +89,7 @@ jobs:
         run: |
           echo "Running test suite..."
           pytest -q tests/unit tests/api/test_automation_endpoints.py tests/api/test_applications_api.py tests/api/test_query_filters.py \
+            tests/test_agents_core.py tests/test_agent_warehouse.py \
             --ignore=tests/unit/test_api_happy.py \
             --ignore=tests/unit/test_classifier.py \
             --ignore=tests/unit/test_formatting.py \

@@ -205,3 +205,16 @@ try:
     app.include_router(automation_router)
 except ImportError:
     pass  # Automation module not available
+
+# Phase 1 Agentic System - Agents core infrastructure
+try:
+    from .routers.agents import router as agents_router, get_registry
+    from .agents.warehouse import register as register_warehouse
+
+    app.include_router(agents_router)
+    
+    # Register agents
+    registry = get_registry()
+    register_warehouse(registry)
+except ImportError:
+    pass  # Agents module not available yet
