@@ -1,8 +1,8 @@
 """
-Incidents API Router - Phase 5.4 PR1
+Incidents API Router - Phase 5.4 PR1 + PR4
 
 CRUD operations for incidents plus state transitions.
-SSE endpoint for live updates.
+SSE notifications for real-time updates.
 
 Endpoints:
 - GET /incidents - List incidents (filterable)
@@ -11,9 +11,9 @@ Endpoints:
 - POST /incidents/:id/mitigate - Mark as mitigated
 - POST /incidents/:id/resolve - Mark as resolved
 - POST /incidents/:id/close - Close incident
-- GET /incidents/events - SSE stream for live updates
 """
 import logging
+import asyncio
 from datetime import datetime
 from typing import List, Optional
 from enum import Enum
@@ -28,6 +28,16 @@ from app.db import get_db
 from app.models_incident import Incident, IncidentAction
 
 logger = logging.getLogger(__name__)
+
+# Import SSE helpers (optional - graceful if not available)
+try:
+    from app.routers.sse import publish_incident_updated
+    SSE_AVAILABLE = True
+except ImportError:
+    logger.warning("SSE module not available - events will not be published")
+    SSE_AVAILABLE = False
+    async def publish_incident_updated(*args, **kwargs):
+        pass
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 
@@ -207,6 +217,10 @@ def acknowledge_incident(
     db.refresh(incident)
     
     logger.info(f"Incident {incident_id} acknowledged")
+    
+    # Publish SSE event
+    if SSE_AVAILABLE:
+        asyncio.create_task(publish_incident_updated(incident, "acknowledged"))
     
     return {"success": True, "incident": IncidentResponse(**incident.to_dict())}
 

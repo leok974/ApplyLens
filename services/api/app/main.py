@@ -284,8 +284,10 @@ except ImportError:
 try:
     from .routers.incidents import router as incidents_router
     from .routers.playbooks import router as playbooks_router
+    from .routers.sse import router as sse_router
     
     app.include_router(incidents_router)
     app.include_router(playbooks_router)
+    app.include_router(sse_router)
 except ImportError:
     pass  # Interventions module not available yet

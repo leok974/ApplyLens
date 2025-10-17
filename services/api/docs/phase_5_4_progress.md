@@ -1,6 +1,6 @@
-# Phase 5.4 Progress Report - PRs 1-2 Complete
+# Phase 5.4 Progress Report - PRs 1-3 Complete
 
-## ✅ Completed: Incident Tracking & Auto-Issue Creation
+## ✅ Completed: Incident Tracking, Auto-Issues, & Remediation Playbooks
 
 ### PR1: Invariant Watcher & Incident Model (Commit: aee5848)
 **Status: Committed**
@@ -64,6 +64,82 @@
 
 ---
 
+### PR3: Remediation Playbooks (Commit: 9d14778)
+**Status: Committed**
+
+#### Components
+- **Actions** (`app/intervene/actions/`):
+  * `base.py`: Abstract interface with registry (242 lines)
+  * `dbt.py`: DBT model rerun actions (275 lines)
+  * `elastic.py`: Elasticsearch remediation (255 lines)
+  * `planner.py`: Planner canary management (315 lines)
+  
+- **Executor** (`app/intervene/executor.py`):
+  * `PlaybookExecutor` orchestrates action execution (327 lines)
+  * Dry-run simulation before real execution
+  * Approval gate enforcement
+  * Action history tracking in IncidentAction table
+  * Rollback support for reversible actions
+  
+- **Router** (`app/routers/playbooks.py`):
+  * 5 REST endpoints for remediation (175 lines)
+  * List available actions per incident
+  * Dry-run endpoint (simulate without changes)
+  * Execute endpoint (with approval check)
+  * Rollback endpoint (undo reversible actions)
+  * History endpoint (audit trail)
+  
+- **Tests**:
+  * `test_actions.py`: 20 tests for all action types (202 lines)
+  * `test_executor.py`: 14 tests for orchestration (281 lines)
+
+#### Action Types
+
+**DBT Actions**:
+- `RerunDbtAction`: Re-run models (incremental or full refresh)
+  * Parameters: task_id, models, full_refresh, upstream, threads
+  * Approval: Required for full refresh
+  * Reversible: No
+  
+- `RefreshDbtDependenciesAction`: Refresh packages and recompile
+  * Parameters: project_path
+  * Approval: Not required
+  * Reversible: No
+
+**Elasticsearch Actions**:
+- `RefreshSynonymsAction`: Reload synonym filters
+  * Parameters: index_name, synonym_filter, reindex
+  * Approval: Required if reindex=true
+  * Reversible: No
+  
+- `ClearCacheAction`: Clear query/request/fielddata caches
+  * Parameters: index_name, cache_types
+  * Approval: Not required
+  * Reversible: No
+
+**Planner Actions**:
+- `RollbackPlannerAction`: Rollback to previous version
+  * Parameters: from_version, to_version, immediate
+  * Approval: Required if immediate=true
+  * Reversible: Yes (can re-deploy)
+  
+- `AdjustCanarySplitAction`: Change traffic percentage
+  * Parameters: version, target_percent (0-100), gradual
+  * Approval: Required if increasing traffic
+  * Reversible: Yes (can adjust back)
+
+#### Features
+- **Dry-Run Mode**: Shows exact changes, estimated duration/cost before execution
+- **Approval Gates**: High-risk actions require approval with audit trail
+- **Action Registry**: Auto-registration via `@register_action` decorator
+- **Impact Assessment**: Returns risk level, affected systems, downtime, reversibility
+- **Rollback Support**: Reversible actions include rollback config
+- **History Tracking**: All dry-runs and executions logged in DB
+
+**Lines Added**: ~2,410
+
+---
+
 ## Configuration Required
 
 Add to `settings/config.yaml` or RuntimeSettings:
@@ -116,13 +192,15 @@ db.commit()
 Run all tests:
 ```bash
 cd services/api
-pytest tests/test_incident_lifecycle.py -v
-pytest tests/test_issue_adapters.py -v
-pytest tests/test_templates.py -v
-pytest tests/test_watcher_integration.py -v
+pytest tests/test_incident_lifecycle.py -v     # 13 tests
+pytest tests/test_issue_adapters.py -v         # 15 tests
+pytest tests/test_templates.py -v              # 18 tests
+pytest tests/test_watcher_integration.py -v    # 6 tests
+pytest tests/test_actions.py -v                # 20 tests
+pytest tests/test_executor.py -v               # 14 tests
 ```
 
-Expected: **52 tests passing** (13 + 15 + 18 + 6)
+Expected: **86 tests passing** (13 + 15 + 18 + 6 + 20 + 14)
 
 ---
 
@@ -134,72 +212,127 @@ Expected: **52 tests passing** (13 + 15 + 18 + 6)
 4. **External Issues**: Auto-creates GitHub/GitLab/Jira issues with rendered templates
 5. **REST API**: Full CRUD + state transitions
 6. **Templates**: Dynamic markdown with mustache syntax
+7. **Remediation Actions**: 6 typed actions with dry-run mode
+8. **Approval Gates**: High-risk actions require approval
+9. **Action History**: Full audit trail of all executions
+10. **Rollback**: Reversible actions can be undone
 
 ---
 
-## Next Steps: PR3 - Remediation Playbooks
+## Usage Examples
+
+### 1. List Available Actions for Incident
+```bash
+GET /api/playbooks/incidents/123/actions
+```
+
+Response:
+```json
+[
+  {
+    "action_type": "rerun_dbt",
+    "display_name": "Re-run DBT Models",
+    "description": "Re-run failed dbt models to refresh data",
+    "params": {"task_id": 456, "models": []},
+    "requires_approval": false
+  }
+]
+```
+
+### 2. Dry-Run an Action
+```bash
+POST /api/playbooks/incidents/123/actions/dry-run
+{
+  "action_type": "rerun_dbt",
+  "params": {
+    "task_id": 456,
+    "models": ["model_a", "model_b"],
+    "full_refresh": false
+  }
+}
+```
+
+Response:
+```json
+{
+  "status": "dry_run_success",
+  "message": "Ready to re-run 2 dbt model(s)",
+  "estimated_duration": "4m",
+  "estimated_cost": 0.10,
+  "changes": [
+    "🔧 Command: dbt run --select model_a model_b --threads 4",
+    "📊 Will rebuild 2 model(s)",
+    "⏱️ Estimated duration: 4m",
+    "💰 Estimated cost: $0.10"
+  ],
+  "rollback_available": false
+}
+```
+
+### 3. Execute Action with Approval
+```bash
+POST /api/playbooks/incidents/123/actions/execute
+{
+  "action_type": "rollback_planner",
+  "params": {
+    "from_version": "v2.1.0",
+    "to_version": "v2.0.5",
+    "immediate": false
+  },
+  "approved_by": "alice@company.com"
+}
+```
+
+Response:
+```json
+{
+  "status": "success",
+  "message": "Successfully rolled back planner to v2.0.5",
+  "actual_duration": 45.2,
+  "logs_url": "/logs/planner/rollback/v2.1.0",
+  "rollback_available": true,
+  "rollback_action": {
+    "action_type": "deploy_planner",
+    "params": {"version": "v2.1.0"}
+  }
+}
+```
+
+### 4. View Action History
+```bash
+GET /api/playbooks/incidents/123/actions/history
+```
+
+---
+
+## Next Steps: PR4 - SSE Notifications + Web Panel
 
 ### Components to Build
-1. **Typed Actions** (`app/intervene/actions/`):
-   - `base.py`: AbstractAction with dry_run mode
-   - `dbt.py`: RerunDbtAction (task_id, models)
-   - `elastic.py`: RefreshSynonymsAction (index_name)
-   - `planner.py`: RollbackPlannerAction (to_version)
-   - `traffic.py`: ReducePlannerSplitAction (percentage)
+1. **SSE Server** (`app/routers/sse.py`):
+   - Server-Sent Events endpoint for real-time updates
+   - Redis/NATS pubsub for multi-worker support
+   - Event types: incident_created, incident_updated, action_executed
    
-2. **Executor** (`app/intervene/executor.py`):
-   - `PlaybookExecutor` class
-   - Dry-run simulation
-   - Approval integration (Phase 4)
-   - Action status tracking
+2. **React Components** (`web/src/components/incidents/`):
+   - `IncidentsPanel.tsx` - Main dashboard
+   - `IncidentCard.tsx` - Individual incident display
+   - `PlaybookActions.tsx` - Action buttons (Dry Run / Execute)
+   - `ActionHistory.tsx` - Timeline of executions
    
-3. **Router** (`app/routers/playbooks.py`):
-   - `POST /api/incidents/:id/actions` - List available actions
-   - `POST /api/incidents/:id/actions/:action/dry-run` - Preview changes
-   - `POST /api/incidents/:id/actions/:action/apply` - Execute with approval
+3. **React Hooks** (`web/src/hooks/`):
+   - `useIncidentsSSE.ts` - Subscribe to incident events
+   - `usePlaybookActions.ts` - Execute actions with loading states
    
-4. **Tests**:
-   - `test_actions.py`: Unit tests for each action type
-   - `test_executor.py`: Dry-run and execution tests
-   - `test_playbook_approval.py`: Integration with approval gates
+4. **Integration**:
+   - Connect watcher to SSE pubsub
+   - Update incident panel on events
+   - Show toast notifications for new incidents
 
 ### Design Goals
-- Type-safe action definitions (Pydantic models)
-- Dry-run must show exact changes before apply
-- Require approval for sev1/sev2 actions
-- Track action history in IncidentAction table
-- Rollback capability for reversible actions
-
-### Example Action
-
-```python
-from app.intervene.actions.base import AbstractAction
-
-class RerunDbtAction(AbstractAction):
-    """Re-run dbt models that failed."""
-    
-    task_id: int
-    models: List[str]
-    full_refresh: bool = False
-    
-    def validate(self) -> bool:
-        # Check task exists
-        # Check models exist in manifest
-        return True
-    
-    def dry_run(self) -> Dict[str, Any]:
-        # Return: which models would run, estimated cost
-        return {
-            "models": self.models,
-            "estimated_runtime": "5m",
-            "estimated_cost": "$0.50"
-        }
-    
-    def execute(self) -> Dict[str, Any]:
-        # Actually trigger dbt run
-        # Return: run_id, logs_url, status
-        pass
-```
+- Real-time updates without polling
+- Optimistic UI updates
+- Error handling and retry
+- Graceful degradation if SSE unavailable
 
 ---
 
@@ -210,12 +343,13 @@ class RerunDbtAction(AbstractAction):
 - **PR6**: CI & Mocks (mock providers, golden tests)
 - **PR7**: Docs & Runbooks (INTERVENTIONS_GUIDE.md, PLAYBOOKS.md)
 
-**Overall Phase 5.4 Progress**: 2 of 7 PRs complete (28%)
+**Overall Phase 5.4 Progress**: 3 of 7 PRs complete (43%) 🚀
 
 ---
 
 ## Commits
 - `aee5848`: PR1 - Invariant Watcher & Incident Model
 - `130a564`: PR2 - Issue Openers (GitHub/GitLab/Jira) + Templates
+- `9d14778`: PR3 - Remediation Playbooks with Dry-Run & Approvals
 
-**Total Phase 5.4 Lines**: ~3,353 lines added across 21 files
+**Total Phase 5.4 Lines**: ~5,763 lines added across 32 files
