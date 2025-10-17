@@ -6,7 +6,69 @@
 
 Agentic job-inbox MVP: classify job/search emails, extract key facts, and populate a tracker.
 
-## 🎯 Features
+## � Judge Demo (60–90 seconds)
+
+**Goal:** show the end-to-end value quickly and reliably.
+
+### 0) Prereqs
+- Node 18+ and Python 3.11+ installed
+- Docker (for Postgres, optional locally if you use your own DB)
+- Repo cloned, dependencies installed
+
+```bash
+# backend deps
+cd services/api
+python -m pip install -U pip
+pip install -e ".[test]"
+
+# frontend deps
+cd ../../
+npm ci
+```
+
+### 1) Start services
+```bash
+# Start Postgres like CI
+docker run --rm -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=applylens \
+  -p 5433:5432 -d --name applylens-pg postgres:15
+
+# Migrate DB
+cd services/api
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5433/applylens
+export ENV=test CREATE_TABLES_ON_STARTUP=0
+alembic upgrade head
+
+# (optional) API dev server if you demo live endpoints
+# uvicorn app.main:app --reload
+```
+
+### 2) Smoke test (confidence check, <10s)
+```bash
+# Runs Playwright smoke or minimal API/unit checks
+npm run e2e:smoke || true
+```
+
+### 3) Click-through (30–60s)
+- Show Gmail OAuth integration (http://localhost:8003/auth/google/login)
+- Demonstrate email labeling (interview, offer, rejection, etc.)
+- Quick search/autocomplete demo
+- Optional: Show analytics dashboard
+
+### 4) One-liner sanity (fallback)
+```bash
+# Backstop if anything flakes: proves core logic fast
+pytest -q tests/unit && echo "✅ core logic ok"
+```
+
+### 5) Troubleshooting
+
+- **Port conflict**: change local port or kill previous process
+- **DB migration error**: run `alembic downgrade base && alembic upgrade head`
+- **Playwright missing browsers**: `npx playwright install --with-deps`
+
+---
+
+## �🎯 Features
 
 ✨ **Gmail Integration** - OAuth 2.0 authentication and automated email backfill
 🏷️ **Smart Labeling** - Automatic detection of interviews, offers, rejections, and more
