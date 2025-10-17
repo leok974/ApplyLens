@@ -23,6 +23,34 @@ Be respectful, inclusive, and professional in all interactions.
    git checkout -b feature/my-feature develop
    ```
 
+## ⚠️ Do Not Commit Generated Artifacts
+
+**Never commit dbt build artifacts.** These are generated files that should not be version controlled:
+
+```
+❌ DO NOT COMMIT:
+analytics/dbt/dbt_packages/       # installed dbt packages
+analytics/dbt/target/             # compiled SQL models
+analytics/dbt/logs/               # execution logs
+analytics/dbt/package-lock.yml    # resolved package versions
+analytics/dbt/manifest.json       # dbt catalog metadata
+analytics/dbt/run_results.json    # execution results
+analytics/dbt/catalog.json        # documentation data
+```
+
+**Protection in place:**
+- Root `.gitignore` blocks these paths
+- Local `.gitignore` in `analytics/dbt/`
+- Pre-commit hook prevents accidental commits
+- CI workflow cleans before each run
+
+**If you accidentally stage these files:**
+```bash
+git reset HEAD analytics/dbt/dbt_packages/
+git reset HEAD analytics/dbt/package-lock.yml
+# etc.
+```
+
 ## Development Workflow
 
 ### 1. Make Changes

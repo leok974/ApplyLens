@@ -18,3 +18,11 @@ repos:
       - id: check-toml
       - id: mixed-line-ending
         args: ['--fix=lf']
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: no-dbt-artifacts
+        name: block dbt build artifacts
+        entry: bash -c 'git diff --cached --name-only | grep -E "analytics/dbt/(dbt_packages|target|package-lock\.yml|logs|manifest\.json|run_results\.json|catalog\.json)" && echo "❌ Do not commit dbt artifacts. Run: git reset HEAD <file>" && exit 1 || exit 0'
+        language: system
