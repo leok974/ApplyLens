@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict
 
 from .audit import AgentAuditor
+from ..events import AgentEvent, get_event_bus
 from ..observability import record_agent_run
 
 
@@ -20,17 +21,29 @@ class Executor:
     - Captures logs and artifacts
     - Stores results in the run store
     - Logs to audit trail if enabled
+    - Emits events to event bus for real-time updates
     """
     
-    def __init__(self, run_store: Dict[str, dict], auditor: AgentAuditor | None = None):
+    def __init__(
+        self, 
+        run_store: Dict[str, dict], 
+        auditor: AgentAuditor | None = None,
+        event_bus_enabled: bool = True
+    ):
         """Initialize executor with a run store.
         
         Args:
             run_store: Dictionary to store run records by run_id
             auditor: Optional auditor for database logging
+            event_bus_enabled: Whether to emit events to event bus (default: True)
         """
         self.run_store = run_store
         self.auditor = auditor
+        self.event_bus_enabled = event_bus_enabled
+        if event_bus_enabled:
+            self.event_bus = get_event_bus()
+        else:
+            self.event_bus = None
     
     def execute(
         self, 
@@ -61,6 +74,19 @@ class Executor:
         }
         self.run_store[run_id] = run
         
+        # Emit run_started event
+        if self.event_bus:
+            self.event_bus.publish_sync(AgentEvent(
+                event_type="run_started",
+                run_id=run_id,
+                agent=plan["agent"],
+                timestamp=time.time(),
+                data={
+                    "objective": plan["objective"],
+                    "plan": plan,
+                }
+            ))
+        
         # Log start to audit trail
         if self.auditor:
             self.auditor.log_start(
@@ -80,6 +106,20 @@ class Executor:
                 "finished_at": datetime.utcnow(),
                 "artifacts": result or {},
             })
+            
+            # Emit run_finished event
+            if self.event_bus:
+                self.event_bus.publish_sync(AgentEvent(
+                    event_type="run_finished",
+                    run_id=run_id,
+                    agent=plan["agent"],
+                    timestamp=time.time(),
+                    data={
+                        "status": "succeeded",
+                        "artifacts": result or {},
+                        "duration_ms": duration_ms,
+                    }
+                ))
             
             # Log success to audit trail
             if self.auditor:
@@ -105,6 +145,20 @@ class Executor:
                 "finished_at": datetime.utcnow(),
                 "logs": run["logs"] + [f"error: {e!r}"],
             })
+            
+            # Emit run_failed event
+            if self.event_bus:
+                self.event_bus.publish_sync(AgentEvent(
+                    event_type="run_failed",
+                    run_id=run_id,
+                    agent=plan["agent"],
+                    timestamp=time.time(),
+                    data={
+                        "status": "failed",
+                        "error": error_msg,
+                        "duration_ms": duration_ms,
+                    }
+                ))
             
             # Log failure to audit trail
             if self.auditor:

@@ -209,9 +209,11 @@ except ImportError:
 # Phase 1 Agentic System - Agents core infrastructure
 try:
     from .routers.agents import router as agents_router, get_registry
+    from .routers.agents_events import router as agents_events_router
     from .agents.warehouse import register as register_warehouse
 
     app.include_router(agents_router)
+    app.include_router(agents_events_router)
     
     # Register agents
     registry = get_registry()
