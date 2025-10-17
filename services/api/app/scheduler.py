@@ -111,6 +111,17 @@ def job_sample_review_queue():
         logger.error(f"Failed to sample review queue: {e}", exc_info=True)
 
 
+def job_watch_incidents():
+    """Every 15 min: Watch for invariant failures and raise incidents."""
+    logger.info("Starting scheduled job: watch_incidents")
+    
+    try:
+        from app.intervene.watcher import run_watcher_cycle
+        run_watcher_cycle()
+    except Exception as e:
+        logger.error(f"Failed to run watcher cycle: {e}", exc_info=True)
+
+
 def job_check_canary_deployments():
     """Daily job: Check canary deployments and auto-promote/rollback."""
     logger.info("Starting scheduled job: check_canary_deployments")
@@ -188,6 +199,18 @@ def setup_scheduled_jobs():
         replace_existing=True
     )
     logger.info("Scheduled: Check canary deployments (daily at 5 AM)")
+    
+    # Interventions Jobs (Phase 5.4)
+    
+    # Every 15 minutes: Watch for invariant/gate failures
+    scheduler.add_job(
+        job_watch_incidents,
+        trigger=CronTrigger(minute="*/15"),
+        id="watch_incidents",
+        name="Watch for Incidents",
+        replace_existing=True
+    )
+    logger.info("Scheduled: Watch for incidents (every 15 minutes)")
     
     # Start scheduler
     if not scheduler.running:

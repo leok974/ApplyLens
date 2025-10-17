@@ -278,4 +278,12 @@ try:
     register_knowledge_update(registry)
     register_insights_writer(registry)
 except ImportError:
+    pass  # Agents module not available
+
+# Phase 5.4 Interventions - Incident tracking and remediation
+try:
+    from .routers.incidents import router as incidents_router
+    
+    app.include_router(incidents_router)
+except ImportError:
     pass  # Agents module not available yet
