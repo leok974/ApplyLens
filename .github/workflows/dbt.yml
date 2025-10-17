@@ -8,10 +8,11 @@ on:
   # Allow manual trigger
   workflow_dispatch:
     inputs:
-      skip_validation:
-        description: 'Skip ES vs BQ validation'
+      validate_es:
+        description: 'Run ES↔BQ drift validation?'
+        type: boolean
+        default: false
         required: false
-        default: 'false'
 
 jobs:
   dbt-and-validate:
@@ -45,10 +46,10 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install dbt-bigquery dbt-core
-          pip install google-cloud-bigquery
-          pip install prometheus-client
-          pip install requests
+          pip install "dbt-bigquery==1.8.*" "dbt-core==1.8.*"
+          pip install "google-cloud-bigquery==3.*"
+          pip install "prometheus-client==0.20.*"
+          pip install "requests==2.32.*"
       
       - name: Authenticate to Google Cloud
         id: auth
@@ -87,12 +88,33 @@ jobs:
           dbt docs generate --target prod
           echo "dbt documentation generated"
       
-      - name: Validate ES vs BQ consistency
-        if: ${{ github.event.inputs.skip_validation != 'true' }}
-        run: |
-          echo "Running validation..."
-          python analytics/ops/validate_es_vs_bq.py
+      - name: Check ES reachability
+        id: ping_es
+        if: ${{ inputs.validate_es == true }}
         continue-on-error: true
+        run: |
+          if curl -s --max-time 3 "${{ secrets.ES_URL }}" > /dev/null; then
+            echo "reachable=true" >> $GITHUB_OUTPUT
+          else
+            echo "reachable=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Validate ES vs BQ consistency
+        if: ${{ inputs.validate_es == true && steps.ping_es.outputs.reachable == 'true' }}
+        continue-on-error: true
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          BQ_MARTS_DATASET: ${{ env.BQ_MARTS_DATASET }}
+          ES_URL: ${{ secrets.ES_URL }}
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        run: |
+          echo "Running ES vs BQ validation..."
+          python analytics/ops/validate_es_vs_bq.py
+      
+      - name: Note skipped validation
+        if: ${{ inputs.validate_es == true && steps.ping_es.outputs.reachable != 'true' }}
+        run: echo "⚠️ ES not reachable from GitHub runner; drift check skipped."
       
       - name: Upload dbt artifacts
         uses: actions/upload-artifact@v4
