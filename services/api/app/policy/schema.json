@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PolicyRule",
+  "description": "Schema for ApplyLens policy rules (Phase 5.5)",
+  "type": "object",
+  "required": ["id", "agent", "action", "effect"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$",
+      "minLength": 3,
+      "maxLength": 64,
+      "description": "Unique rule identifier (lowercase, alphanumeric, hyphens, underscores)"
+    },
+    "agent": {
+      "type": "string",
+      "pattern": "^[a-z]+\\.[a-z_]+$",
+      "description": "Agent identifier (e.g., inbox.triage, knowledge.search)"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "allow",
+        "quarantine",
+        "escalate",
+        "apply",
+        "update",
+        "delete",
+        "reindex",
+        "deploy",
+        "rollback"
+      ],
+      "description": "Action to evaluate for policy decision"
+    },
+    "effect": {
+      "type": "string",
+      "enum": ["allow", "deny", "needs_approval"],
+      "description": "Policy decision effect"
+    },
+    "conditions": {
+      "type": "object",
+      "description": "Condition predicates (key: operator+field, value: threshold)",
+      "additionalProperties": true,
+      "examples": [
+        {">=risk_score": 90, "domain_seen_days": ">30"},
+        {"category": "phishing", "confidence": ">=0.9"}
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 256,
+      "description": "Human-readable explanation for the rule (required for audit)"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 50,
+      "description": "Rule priority (higher = evaluated first, 0-100)"
+    },
+    "budget": {
+      "type": "object",
+      "description": "Budget constraints for actions requiring approval",
+      "properties": {
+        "cost": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Estimated cost in USD"
+        },
+        "compute": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Compute units (DBT models, ES operations, etc.)"
+        },
+        "risk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Risk level for this action"
+        }
+      }
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the rule is active"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for organization and filtering"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata (author, jira ticket, etc.)",
+      "additionalProperties": true
+    }
+  }
+}

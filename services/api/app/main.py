@@ -291,3 +291,11 @@ try:
     app.include_router(sse_router)
 except ImportError:
     pass  # Interventions module not available yet
+
+# Phase 5.5 Policy UI Editor - Policy bundles with versioning
+try:
+    from .routers.policy_bundles import router as policy_bundles_router
+    
+    app.include_router(policy_bundles_router)
+except ImportError:
+    pass  # Policy bundles module not available yet
