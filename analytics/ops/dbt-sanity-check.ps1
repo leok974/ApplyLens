@@ -60,34 +60,42 @@ Remove-Item -Path dbt_packages, package-lock.yml, target, logs -Recurse -Force -
 Write-Host "   ✅ Cleaned: dbt_packages, package-lock.yml, target, logs" -ForegroundColor Green
 
 Write-Host "`n5️⃣  Installing dbt packages..." -ForegroundColor Blue
-& dbt deps --target prod 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "   ❌ dbt deps failed" -ForegroundColor Red
-    Pop-Location
-    exit 1
+try {
+    $dbtPath = Get-Command dbt -ErrorAction Stop
+    & dbt deps --target prod 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   ❌ dbt deps failed" -ForegroundColor Red
+        Pop-Location
+        exit 1
+    }
+    Write-Host "   ✅ dbt deps successful" -ForegroundColor Green
+} catch {
+    Write-Host "   ⚠️  dbt not found in PATH (install with: pip install dbt-bigquery)" -ForegroundColor Yellow
+    Write-Host "   ⏭️  Skipping dbt deps check" -ForegroundColor Yellow
 }
-Write-Host "   ✅ dbt deps successful" -ForegroundColor Green
 
 # 5. Optional: Run dbt build
-$runBuild = Read-Host "`n6️⃣  Run dbt build? (y/N)"
-if ($runBuild -eq 'y' -or $runBuild -eq 'Y') {
-    Write-Host "`n   Running dbt run..." -ForegroundColor Blue
-    & dbt run --target prod --select models/staging/fivetran models/marts/warehouse
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ dbt run failed" -ForegroundColor Red
-        Pop-Location
-        exit 1
-    }
-    Write-Host "   ✅ dbt run successful" -ForegroundColor Green
+if ($dbtPath) {
+    $runBuild = Read-Host "`n6️⃣  Run dbt build? (y/N)"
+    if ($runBuild -eq 'y' -or $runBuild -eq 'Y') {
+        Write-Host "`n   Running dbt run..." -ForegroundColor Blue
+        & dbt run --target prod --select models/staging/fivetran models/marts/warehouse
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   ❌ dbt run failed" -ForegroundColor Red
+            Pop-Location
+            exit 1
+        }
+        Write-Host "   ✅ dbt run successful" -ForegroundColor Green
 
-    Write-Host "`n   Running dbt test..." -ForegroundColor Blue
-    & dbt test --target prod --select models/staging/fivetran models/marts/warehouse
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "   ❌ dbt test failed" -ForegroundColor Red
-        Pop-Location
-        exit 1
+        Write-Host "`n   Running dbt test..." -ForegroundColor Blue
+        & dbt test --target prod --select models/staging/fivetran models/marts/warehouse
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   ❌ dbt test failed" -ForegroundColor Red
+            Pop-Location
+            exit 1
+        }
+        Write-Host "   ✅ dbt test successful" -ForegroundColor Green
     }
-    Write-Host "   ✅ dbt test successful" -ForegroundColor Green
 }
 
 Pop-Location
