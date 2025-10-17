@@ -35,3 +35,16 @@ applylens:
       priority: interactive
       timeout_seconds: 600  # Longer timeout for prod
       maximum_bytes_billed: 10000000000  # 10GB limit for production
+    
+    # Production profile for Fivetran + warehouse operations
+    prod:
+      type: bigquery
+      method: service-account-json
+      project: "{{ env_var('GCP_PROJECT') }}"
+      dataset: gmail_raw_stg
+      threads: 4
+      keyfile_json: "{{ env_var('GCP_SA_JSON') }}"
+      location: US
+      priority: interactive
+      timeout_seconds: 600
+      maximum_bytes_billed: 10000000000
