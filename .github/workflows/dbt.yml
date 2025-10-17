@@ -46,7 +46,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install "dbt-core==1.8.5" "dbt-bigquery==1.8.5"
+          pip install "dbt-core==1.8.3" "dbt-bigquery==1.8.3"
           pip install "google-cloud-bigquery==3.*"
           pip install "prometheus-client==0.20.*"
           pip install "requests==2.32.*"
