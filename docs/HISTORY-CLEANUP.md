@@ -262,12 +262,52 @@ git log --oneline -1
 
 ---
 
+## �️ Post-Cleanup Guardrails
+
+### Verification Tag
+Tagged commit `history-clean-2025-10-17` marks the cleaned baseline:
+```bash
+git show history-clean-2025-10-17
+```
+
+### Weekly Monitoring
+Run automated check to ensure artifacts stay out:
+```bash
+# Linux/Mac
+./analytics/ops/weekly-history-check.sh
+
+# Windows
+.\analytics\ops\weekly-history-check.ps1
+```
+
+**Expected:** `✅ History is clean! No artifacts found.`
+
+### GitHub Protections
+
+**Branch Protection (main):**
+- ✅ Requires PR before merge
+- ✅ Requires status checks: `Pre-commit Checks` + `dbt Run + Validation`
+- ❌ Force-push disabled (re-enabled post-cleanup)
+
+**Push Rulesets:**
+- ✅ Blocks pushes containing:
+  - `analytics/dbt/dbt_packages/**`
+  - `analytics/dbt/package-lock.yml`
+  - `analytics/dbt/target/**`
+  - `analytics/dbt/logs/**`
+
+See [`GITHUB-GUARDRAILS.md`](./GITHUB-GUARDRAILS.md) for full configuration.
+
+---
+
 ## 📚 Related Documentation
 
+- [`GITHUB-GUARDRAILS.md`](./GITHUB-GUARDRAILS.md) - **Branch protection & push rulesets**
+- [`BULLETPROOFING-VERIFIED.md`](./BULLETPROOFING-VERIFIED.md) - All 10 protection layers
 - [`HOTFIX-DBT-PACKAGES.md`](./HOTFIX-DBT-PACKAGES.md) - Original incident & hotfix
-- [`BULLETPROOFING-VERIFIED.md`](./BULLETPROOFING-VERIFIED.md) - Prevention measures
 - [`.gitignore`](../.gitignore) - Blocked paths
 - [`.pre-commit-config.yaml`](../.pre-commit-config.yaml) - Commit-time checks
+- [`weekly-history-check.{sh,ps1}`](../analytics/ops/) - Automated verification
 
 ---
 
