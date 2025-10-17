@@ -25,6 +25,7 @@ jobs:
     
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+      BQ_PROJECT: ${{ secrets.GCP_PROJECT }}  # Alias for legacy models
       RAW_DATASET: gmail  # Fivetran destination dataset
       BQ_MARTS_DATASET: gmail_raw_stg_gmail_marts
       ES_URL: ${{ secrets.ES_URL }}
