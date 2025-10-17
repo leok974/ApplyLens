@@ -14,8 +14,8 @@ from .text import embed_query
 ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")
 
 # Performance caps to prevent heavy queries
-DEFAULT_K = 50   # Default number of results
-HARD_MAX = 200   # Never fetch more than this in one call
+DEFAULT_K = 50  # Default number of results
+HARD_MAX = 200  # Never fetch more than this in one call
 
 
 def rag_search(
@@ -110,7 +110,7 @@ def rag_search(
     date_from = filters.get("date_from")
     date_to = filters.get("date_to")
     received_at_filter = filters.get("received_at")
-    
+
     # Handle received_at object with gte/lte
     if received_at_filter and isinstance(received_at_filter, dict):
         range_filter: Dict[str, Any] = {}

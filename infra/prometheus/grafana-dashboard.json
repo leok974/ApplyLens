@@ -39,31 +39,31 @@
         "title": "HTTP latency (p50/p90/p99)",
         "type": "timeseries",
         "targets": [
-          { 
-            "expr": "histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+          {
+            "expr": "histogram_quantile(0.5, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))",
             "legendFormat": "p50",
             "refId": "A"
           },
-          { 
-            "expr": "histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+          {
+            "expr": "histogram_quantile(0.9, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))",
             "legendFormat": "p90",
             "refId": "B"
           },
-          { 
-            "expr": "histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))", 
+          {
+            "expr": "histogram_quantile(0.99, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))",
             "legendFormat": "p99",
             "refId": "C"
           }
         ],
-        "fieldConfig": { 
-          "defaults": { 
+        "fieldConfig": {
+          "defaults": {
             "unit": "s",
             "custom": {
               "drawStyle": "line",
               "lineInterpolation": "linear",
               "fillOpacity": 10
             }
-          } 
+          }
         }
       },
       {
@@ -71,13 +71,13 @@
         "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
         "title": "Backfill outcomes (last 1h)",
         "type": "bargauge",
-        "options": { 
+        "options": {
           "orientation": "horizontal",
           "displayMode": "gradient"
         },
         "targets": [
-          { 
-            "expr": "sum by (result) (increase(applylens_backfill_requests_total[1h]))", 
+          {
+            "expr": "sum by (result) (increase(applylens_backfill_requests_total[1h]))",
             "legendFormat": "{{result}}",
             "refId": "A"
           }
@@ -89,8 +89,8 @@
         "title": "Emails inserted (rate)",
         "type": "timeseries",
         "targets": [
-          { 
-            "expr": "rate(applylens_backfill_inserted_total[5m]) * 60", 
+          {
+            "expr": "rate(applylens_backfill_inserted_total[5m]) * 60",
             "legendFormat": "emails/min",
             "refId": "A"
           }
@@ -111,21 +111,21 @@
         "title": "Subsystem health",
         "type": "stat",
         "targets": [
-          { 
-            "expr": "max(applylens_db_up)", 
+          {
+            "expr": "max(applylens_db_up)",
             "legendFormat": "Database",
             "refId": "A"
           },
-          { 
-            "expr": "max(applylens_es_up)", 
+          {
+            "expr": "max(applylens_es_up)",
             "legendFormat": "Elasticsearch",
             "refId": "B"
           }
         ],
-        "options": { 
-          "reduceOptions": { 
-            "calcs": ["last"] 
-          }, 
+        "options": {
+          "reduceOptions": {
+            "calcs": ["last"]
+          },
           "orientation": "horizontal",
           "textMode": "value_and_name",
           "colorMode": "value"
@@ -148,8 +148,8 @@
         "title": "Gmail connected (per user)",
         "type": "table",
         "targets": [
-          { 
-            "expr": "applylens_gmail_connected", 
+          {
+            "expr": "applylens_gmail_connected",
             "legendFormat": "{{user_email}}",
             "refId": "A",
             "format": "table",

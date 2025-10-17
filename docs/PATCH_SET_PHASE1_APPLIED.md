@@ -1,7 +1,7 @@
 # Patch Set Applied: Issues #7 & #8 (Phase 1)
 
-**Date**: October 14, 2025  
-**Commit**: d9eb601  
+**Date**: October 14, 2025
+**Commit**: d9eb601
 **Status**: ✅ Pushed to main, CI running
 
 ---
@@ -114,7 +114,7 @@ Tests `truncate()` function (or fallback if not found):
 
 **Coverage gain**: ~0.3-0.5%
 
-**Total new tests**: 12 unit tests across 3 files  
+**Total new tests**: 12 unit tests across 3 files
 **Estimated coverage gain**: 1-1.5%
 
 **Notes**:
@@ -149,8 +149,8 @@ pytest -q -k "unit or api" --cov=app --cov-report=term-missing --cov-report=xml 
 ## 📊 Expected Impact
 
 ### Coverage
-**Before**: 41.43%  
-**After (estimated)**: 42.5-43.0%  
+**Before**: 41.43%
+**After (estimated)**: 42.5-43.0%
 **Gain**: +1.0-1.5%
 
 **Breakdown**:
@@ -303,6 +303,6 @@ gh run view <run-id> --log | grep "Total coverage"
 
 ---
 
-*Generated: October 14, 2025*  
-*Commit: d9eb601*  
+*Generated: October 14, 2025*
+*Commit: d9eb601*
 *CI Run: 18500750222*

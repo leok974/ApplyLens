@@ -59,8 +59,8 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml start api
 
 ```powershell
 # Generate 200 errors using new debug endpoint
-1..200 | % { 
-    curl http://localhost:8003/debug/500 2>$null 
+1..200 | % {
+    curl http://localhost:8003/debug/500 2>$null
     if ($_ % 40 -eq 0) { Write-Host "Sent $_..." }
 }
 Write-Host "✅ Errors sent. Wait ~5 minutes for alert." -ForegroundColor Green

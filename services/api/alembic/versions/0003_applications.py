@@ -20,11 +20,16 @@ def upgrade() -> None:
     op.execute("ALTER TYPE appstatus ADD VALUE IF NOT EXISTS 'hr_screen'")
     op.execute("ALTER TYPE appstatus ADD VALUE IF NOT EXISTS 'on_hold'")
     op.execute("ALTER TYPE appstatus ADD VALUE IF NOT EXISTS 'ghosted'")
-    
+
     # Add new columns to applications table
-    op.add_column("applications", sa.Column("gmail_thread_id", sa.String(length=128), nullable=True))
-    op.add_column("applications", sa.Column("last_email_snippet", sa.Text(), nullable=True))
-    
+    op.add_column(
+        "applications",
+        sa.Column("gmail_thread_id", sa.String(length=128), nullable=True),
+    )
+    op.add_column(
+        "applications", sa.Column("last_email_snippet", sa.Text(), nullable=True)
+    )
+
     # Create index on gmail_thread_id
     op.create_index("ix_applications_gmail_thread", "applications", ["gmail_thread_id"])
 
@@ -32,10 +37,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Drop index
     op.drop_index("ix_applications_gmail_thread", table_name="applications")
-    
+
     # Drop columns
     op.drop_column("applications", "last_email_snippet")
     op.drop_column("applications", "gmail_thread_id")
-    
-    # Note: Cannot remove enum values in PostgreSQL easily
 
+    # Note: Cannot remove enum values in PostgreSQL easily

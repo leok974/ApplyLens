@@ -99,9 +99,9 @@ bq query --project_id=applylens-gmail-1759983601 \
 
 # Check recent emails
 bq query --project_id=applylens-gmail-1759983601 \
-  'SELECT sender, subject, received_at 
-   FROM applylens.public_emails 
-   ORDER BY received_at DESC 
+  'SELECT sender, subject, received_at
+   FROM applylens.public_emails
+   ORDER BY received_at DESC
    LIMIT 10'
 ```text
 

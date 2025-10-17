@@ -97,7 +97,10 @@ class ChatRequest(BaseModel):
         default=50, ge=1, le=100, description="Maximum number of emails to search"
     )
     window_days: Optional[int] = Field(
-        default=30, ge=1, le=365, description="Time window in days to search (default: 30)"
+        default=30,
+        ge=1,
+        le=365,
+        description="Time window in days to search (default: 30)",
     )
 
 
@@ -208,8 +211,9 @@ async def chat(
     # Calculate time window filter
     window_days = clamp_window_days(req.window_days, default=30, mn=1, mx=365)
     from datetime import timedelta
+
     since = (datetime.utcnow() - timedelta(days=window_days)).isoformat()
-    
+
     # Add date range filter to existing filters
     merged_filters = {**req.filters}
     if "received_at" not in merged_filters:
@@ -247,10 +251,10 @@ async def chat(
         else:
             # Fallback to summarize
             answer, actions = summarize_emails(rag, user_text)
-        
+
         # Record tool usage metrics
         record_tool(intent, rag.get("total", 0), window_days=window_days)
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Tool execution failed: {str(e)}")
 
@@ -283,7 +287,7 @@ async def chat(
         "filters": rag.get("filters", {}),
         "took_ms": rag.get("took_ms"),  # ES timing
     }
-    
+
     # Timing information for frontend
     timing = {
         "es_ms": rag.get("took_ms"),
@@ -337,7 +341,7 @@ async def chat_stream(
 ):
     """
     Stream chat responses with Server-Sent Events (SSE).
-    
+
     **Canary Toggle**: Can be disabled via CHAT_STREAMING_ENABLED=false for rollback/testing.
 
     Query params:
@@ -363,9 +367,9 @@ async def chat_stream(
         raise HTTPException(
             status_code=503,
             detail="Streaming temporarily disabled. Use /chat endpoint instead.",
-            headers={"X-Chat-Streaming-Disabled": "1"}
+            headers={"X-Chat-Streaming-Disabled": "1"},
         )
-    
+
     import asyncio
     import json
     import time
@@ -376,12 +380,12 @@ async def chat_stream(
 
     async def generate():
         last_heartbeat = time.monotonic()
-        
+
         try:
             # Send ready signal
             yield f'event: ready\ndata: {json.dumps({"ok": True})}\n\n'
             await asyncio.sleep(0.01)
-            
+
             # Detect intent
             intent = detect_intent(q)
             intent_explanation = explain_intent(intent)
@@ -390,7 +394,7 @@ async def chat_stream(
 
             yield f'event: intent\ndata: {json.dumps({"intent": intent, "explanation": intent_explanation})}\n\n'
             await asyncio.sleep(0.1)  # Small delay for UI smoothness
-            
+
             # Heartbeat check
             if time.monotonic() - last_heartbeat > HEARTBEAT_SEC:
                 yield ": keep-alive\n\n"
@@ -399,7 +403,7 @@ async def chat_stream(
             # Emit intent explanation tokens
             yield f'event: intent_explain\ndata: {json.dumps({"tokens": matches})}\n\n'
             await asyncio.sleep(0.1)
-            
+
             # Heartbeat check
             if time.monotonic() - last_heartbeat > HEARTBEAT_SEC:
                 yield ": keep-alive\n\n"
@@ -407,7 +411,10 @@ async def chat_stream(
 
             # Calculate time window filter
             from datetime import timedelta
-            window_days_capped = clamp_window_days(window_days, default=30, mn=1, mx=365)
+
+            window_days_capped = clamp_window_days(
+                window_days, default=30, mn=1, mx=365
+            )
             since = (datetime.utcnow() - timedelta(days=window_days_capped)).isoformat()
 
             # Perform RAG search with user scoping and time window
@@ -445,7 +452,7 @@ async def chat_stream(
 
             # Record tool usage metrics
             record_tool(tool_name, rag.get("total", 0), window_days=window_days_capped)
-            
+
             # Heartbeat check
             if time.monotonic() - last_heartbeat > HEARTBEAT_SEC:
                 yield ": keep-alive\n\n"

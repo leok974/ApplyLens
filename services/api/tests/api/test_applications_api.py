@@ -16,7 +16,7 @@ async def test_list_applications_ok(async_client, db_session, seed_minimal):
     seed_minimal(db_session)
     r = await async_client.get("/applications", params={"size": 10})
     assert r.status_code in (200, 204)
-    
+
     if r.status_code == 200:
         data = r.json()
         # Should have some structure (exact format depends on endpoint)
@@ -25,7 +25,9 @@ async def test_list_applications_ok(async_client, db_session, seed_minimal):
 
 @pytest.mark.api
 @pytest.mark.anyio
-async def test_list_applications_with_pagination(async_client, db_session, seed_minimal):
+async def test_list_applications_with_pagination(
+    async_client, db_session, seed_minimal
+):
     """List applications should support pagination parameters."""
     seed_minimal(db_session)
     r = await async_client.get("/applications", params={"size": 1, "offset": 0})
@@ -39,7 +41,7 @@ async def test_get_application_by_id_ok(async_client, db_session, seed_minimal):
     app, _ = seed_minimal(db_session)  # fixture returns (Application, Email)
     r = await async_client.get(f"/applications/{app.id}")
     assert r.status_code in (200, 404)  # depends on router behavior
-    
+
     if r.status_code == 200:
         data = r.json()
         assert "id" in data or "company" in data  # Should have application data
@@ -59,7 +61,7 @@ async def test_list_applications_empty_database(async_client, db_session):
     """List applications with empty database should return empty result."""
     r = await async_client.get("/applications", params={"size": 10})
     assert r.status_code in (200, 204)
-    
+
     if r.status_code == 200:
         data = r.json()
         # Should be empty or have empty items list
@@ -75,5 +77,7 @@ async def test_list_applications_with_filters(async_client, db_session, seed_min
     """List applications should support filter parameters."""
     app, _ = seed_minimal(db_session)
     # Try filtering by status or company if supported
-    r = await async_client.get("/applications", params={"status": "applied", "size": 10})
+    r = await async_client.get(
+        "/applications", params={"status": "applied", "size": 10}
+    )
     assert r.status_code in (200, 204, 422)  # 422 if filter not supported

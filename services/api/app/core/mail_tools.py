@@ -67,7 +67,7 @@ def summarize_emails(rag: Dict[str, Any], user_text: str) -> Tuple[str, List[dic
         return ("No emails found matching your query.", [])
 
     total = rag.get("total", len(docs))
-    
+
     # Show only top 10 in the formatted list
     display_docs = docs[:10]
     lines = [_format_email(d) for d in display_docs]
@@ -80,7 +80,9 @@ def summarize_emails(rag: Dict[str, Any], user_text: str) -> Tuple[str, List[dic
     return (answer, [])
 
 
-def find_emails(rag: Dict[str, Any], user_text: str, *, owner_email: str | None = None, k: int = 20) -> Tuple[str, List[dict]]:
+def find_emails(
+    rag: Dict[str, Any], user_text: str, *, owner_email: str | None = None, k: int = 20
+) -> Tuple[str, List[dict]]:
     """
     Find and list specific emails with reasons for matching.
 

@@ -18,14 +18,17 @@ depends_on = None
 def upgrade() -> None:
     # Add source_confidence column to applications table (if it doesn't exist)
     from sqlalchemy import inspect
+
     bind = op.get_bind()
     inspector = inspect(bind)
-    columns = [col['name'] for col in inspector.get_columns('applications')]
-    
-    if 'source_confidence' not in columns:
+    columns = [col["name"] for col in inspector.get_columns("applications")]
+
+    if "source_confidence" not in columns:
         op.add_column(
             "applications",
-            sa.Column("source_confidence", sa.Float(), nullable=False, server_default="0.5")
+            sa.Column(
+                "source_confidence", sa.Float(), nullable=False, server_default="0.5"
+            ),
         )
 
 

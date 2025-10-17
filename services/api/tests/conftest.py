@@ -187,32 +187,33 @@ except ImportError:
 def seed_minimal():
     """
     Fixture that returns a function to seed minimal test data.
-    
+
     Creates one application and one email linked to it.
     Useful for tests that need basic data without complex setup.
-    
+
     Usage:
         def test_something(db_session, seed_minimal):
             app, email = seed_minimal(db_session)
             ...
-    
+
     Returns:
         Function that takes a session and returns tuple of (application, email)
-    
+
     Note: Does NOT commit - relies on db_session fixture's automatic rollback.
     """
+
     def _seed(session: Session):
         from app.models import Application, Email
-        
+
         # Application model has 'company' and 'role', not 'title'
         app = Application(company="Acme", role="Software Engineer I", status="applied")
         session.add(app)
         session.flush()
-        
+
         em = Email(subject="hello", sender="hr@acme.com", application_id=app.id)
         session.add(em)
         session.flush()  # Flush but don't commit - db_session handles rollback
-        
+
         return app, em
-    
+
     return _seed

@@ -157,7 +157,8 @@ def test_transform_extracts_from_subject():
 def test_transform_year_inference():
     """Test that year is inferred from received_at when missing."""
     d = _doc(
-        "Payment due by 12/25", received_at="2025-10-08T12:00:00Z"  # No year specified
+        "Payment due by 12/25",
+        received_at="2025-10-08T12:00:00Z",  # No year specified
     )
     upd = transform(d)
 

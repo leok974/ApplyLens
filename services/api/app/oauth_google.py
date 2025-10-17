@@ -56,7 +56,7 @@ def _create_flow():
 
 @router.get("/init")
 def init_oauth(
-    user_email: str = Query(..., description="User email address for OAuth")
+    user_email: str = Query(..., description="User email address for OAuth"),
 ):
     """
     Initialize OAuth flow for a user.
@@ -238,9 +238,7 @@ def oauth_callback(
             </script>
         </body>
         </html>
-        """.replace(
-            "{{USER_EMAIL}}", user_email
-        )
+        """.replace("{{USER_EMAIL}}", user_email)
 
         return HTMLResponse(content=html_content)
 
@@ -277,7 +275,7 @@ def check_oauth_status(user_email: str = Query(..., description="User email to c
 
 @router.delete("/disconnect")
 def disconnect_gmail(
-    user_email: str = Query(..., description="User email to disconnect")
+    user_email: str = Query(..., description="User email to disconnect"),
 ):
     """
     Disconnect user's Gmail account (delete stored tokens).

@@ -4,6 +4,7 @@ Usage:
   UVICORN or Docker not required. Just run:
      python -m services.api.scripts.es_reindex_with_ats
 """
+
 from elasticsearch import Elasticsearch
 import os
 
@@ -24,7 +25,7 @@ SETTINGS = {
                     "synonyms": [
                         "lever, lever.co, hire.lever.co",
                         "workday, myworkdayjobs, wd1.myworkday, wd2.myworkday, wd3.myworkday, wd5.myworkday",
-                        "smartrecruiters, smartrecruiters.com, sr.job"
+                        "smartrecruiters, smartrecruiters.com, sr.job",
                     ],
                 }
             },
@@ -39,21 +40,38 @@ SETTINGS = {
     },
     "mappings": {
         "properties": {
-            "subject":     {"type": "text", "analyzer": "standard", "search_analyzer": "ats_search_analyzer"},
-            "body_text":   {"type": "text", "analyzer": "standard", "search_analyzer": "ats_search_analyzer"},
-            "sender":      {"type": "text", "analyzer": "standard", "search_analyzer": "ats_search_analyzer"},
-            "to":          {"type": "text", "analyzer": "standard", "search_analyzer": "ats_search_analyzer"},
-            "labels":      {"type": "keyword"},
+            "subject": {
+                "type": "text",
+                "analyzer": "standard",
+                "search_analyzer": "ats_search_analyzer",
+            },
+            "body_text": {
+                "type": "text",
+                "analyzer": "standard",
+                "search_analyzer": "ats_search_analyzer",
+            },
+            "sender": {
+                "type": "text",
+                "analyzer": "standard",
+                "search_analyzer": "ats_search_analyzer",
+            },
+            "to": {
+                "type": "text",
+                "analyzer": "standard",
+                "search_analyzer": "ats_search_analyzer",
+            },
+            "labels": {"type": "keyword"},
             "received_at": {"type": "date"},
             "first_user_reply_at": {"type": "date"},
-            "last_user_reply_at":  {"type": "date"},
-            "user_reply_count":    {"type": "integer"},
-            "replied":             {"type": "boolean"},
-            "thread_id":   {"type": "keyword"},
-            "message_id":  {"type": "keyword"},
+            "last_user_reply_at": {"type": "date"},
+            "user_reply_count": {"type": "integer"},
+            "replied": {"type": "boolean"},
+            "thread_id": {"type": "keyword"},
+            "message_id": {"type": "keyword"},
         }
     },
 }
+
 
 def main():
     es = Elasticsearch(ES_URL)
@@ -91,6 +109,7 @@ def main():
     actions.append({"add": {"index": NEW_INDEX, "alias": ALIAS}})
     es.indices.update_aliases(body={"actions": actions})
     print(f"Alias {ALIAS} -> {NEW_INDEX} (from {src_index})")
+
 
 if __name__ == "__main__":
     main()

@@ -4,6 +4,7 @@ Revision ID: 0016_phase4_actions
 Revises: 0015_add_security_policies
 Create Date: 2025-10-12
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import TIMESTAMP, ENUM
@@ -15,17 +16,23 @@ depends_on = None
 
 # Reference the existing actiontype enum (created in 0002b)
 actiontype_enum = ENUM(
-    "label_email", "archive_email", "move_to_folder", "unsubscribe_via_header",
-    "create_calendar_event", "create_task", "block_sender", "quarantine_attachment",
+    "label_email",
+    "archive_email",
+    "move_to_folder",
+    "unsubscribe_via_header",
+    "create_calendar_event",
+    "create_task",
+    "block_sender",
+    "quarantine_attachment",
     name="actiontype",
-    create_type=False  # Don't create, it already exists
+    create_type=False,  # Don't create, it already exists
 )
 
 
 def upgrade():
     # Note: actiontype enum already created in migration 0002b
     # No need to create it here - just reference the existing type
-    
+
     # Create policies table
     op.create_table(
         "policies",
@@ -35,11 +42,23 @@ def upgrade():
         sa.Column("priority", sa.Integer, server_default="100", nullable=False),
         sa.Column("condition", sa.JSON, nullable=False),
         sa.Column("action", actiontype_enum, nullable=False),
-        sa.Column("confidence_threshold", sa.Float, server_default="0.7", nullable=False),
-        sa.Column("created_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "confidence_threshold", sa.Float, server_default="0.7", nullable=False
+        ),
+        sa.Column(
+            "created_at",
+            TIMESTAMP(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            TIMESTAMP(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
     )
-    
+
     # Create proposed_actions table
     op.create_table(
         "proposed_actions",
@@ -50,12 +69,17 @@ def upgrade():
         sa.Column("confidence", sa.Float, nullable=False),
         sa.Column("rationale", sa.JSON, server_default="{}"),
         sa.Column("policy_id", sa.Integer, sa.ForeignKey("policies.id"), nullable=True),
-        sa.Column("created_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            TIMESTAMP(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("status", sa.String, server_default="'pending'", nullable=False),
         sa.Column("reviewed_by", sa.String, nullable=True),
         sa.Column("reviewed_at", TIMESTAMP(timezone=True), nullable=True),
     )
-    
+
     # Create audit_actions table
     op.create_table(
         "audit_actions",
@@ -68,7 +92,12 @@ def upgrade():
         sa.Column("error", sa.Text, nullable=True),
         sa.Column("why", sa.JSON, server_default="{}"),
         sa.Column("screenshot_path", sa.String, nullable=True),
-        sa.Column("created_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            TIMESTAMP(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
     )
 
 

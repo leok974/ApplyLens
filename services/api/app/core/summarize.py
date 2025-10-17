@@ -38,7 +38,9 @@ def trim_for_llm(texts: List[str], max_chars: int = MAX_CHARS) -> List[str]:
     return out
 
 
-def extract_snippets_for_llm(docs: List[Dict[str, Any]], max_chars: int = MAX_CHARS) -> List[str]:
+def extract_snippets_for_llm(
+    docs: List[Dict[str, Any]], max_chars: int = MAX_CHARS
+) -> List[str]:
     """
     Extract snippets from email documents for LLM processing.
 

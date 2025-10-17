@@ -4,7 +4,7 @@
 
 This document summarizes the production-ready improvements implemented for stream resilience, rate limiting, parameter validation, and observability.
 
-**Date**: October 15, 2025  
+**Date**: October 15, 2025
 **Status**: ✅ Deployed and Tested
 
 ---
@@ -22,10 +22,10 @@ HEARTBEAT_SEC = 20  # Send keep-alive every 20 seconds
 
 async def generate():
     last_heartbeat = time.monotonic()
-    
+
     # Send ready signal
     yield f'event: ready\ndata: {json.dumps({"ok": True})}\n\n'
-    
+
     # Throughout stream, check and send heartbeats
     if time.monotonic() - last_heartbeat > HEARTBEAT_SEC:
         yield ": keep-alive\n\n"  # SSE comment
@@ -117,7 +117,7 @@ Created reusable clamping utility:
 def clamp_window_days(v: int | None, default: int = 30, mn: int = 1, mx: int = 365) -> int:
     """
     Clamp window_days to a safe range.
-    
+
     Returns:
         Clamped integer in range [mn, mx]
     """
@@ -214,8 +214,8 @@ sum(rate(assistant_tool_queries_total[5m])) by (window_bucket, has_hits)
 
 **Hit rate by window**:
 ```promql
-sum(rate(assistant_tool_queries_total{has_hits="1"}[5m])) by (window_bucket) 
-/ 
+sum(rate(assistant_tool_queries_total{has_hits="1"}[5m])) by (window_bucket)
+/
 sum(rate(assistant_tool_queries_total[5m])) by (window_bucket) * 100
 ```
 
@@ -493,12 +493,12 @@ docker logs applylens-api-prod | grep -i "stream"
 
 ### Manual Tests Performed
 
-✅ SSE heartbeat (ready event present)  
-✅ Parameter validation (rejects invalid values)  
-✅ Default window_days (30 days when omitted)  
-✅ Security headers (all present)  
-✅ Window filtering (7d < 30d < 60d in results)  
-✅ ES timing exposure (took_ms in response)  
+✅ SSE heartbeat (ready event present)
+✅ Parameter validation (rejects invalid values)
+✅ Default window_days (30 days when omitted)
+✅ Security headers (all present)
+✅ Window filtering (7d < 30d < 60d in results)
+✅ ES timing exposure (took_ms in response)
 
 ### Automated Tests Needed
 

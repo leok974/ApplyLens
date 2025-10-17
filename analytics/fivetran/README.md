@@ -12,8 +12,8 @@ This guide walks you through setting up Fivetran to sync ApplyLens PostgreSQL da
 Postgres (ApplyLens DB) → Fivetran Connector → BigQuery (dataset: applylens)
 ```text
 
-**Sync Frequency:** Hourly (configurable to 30 minutes)  
-**Method:** HVR (High Volume Replication) disabled for cost  
+**Sync Frequency:** Hourly (configurable to 30 minutes)
+**Method:** HVR (High Volume Replication) disabled for cost
 **Timezone:** UTC
 
 ---
@@ -120,7 +120,7 @@ GRANT USAGE ON SCHEMA public TO fivetran_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO fivetran_user;
 
 -- Grant future tables access
-ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT SELECT ON TABLES TO fivetran_user;
 
 -- Verify access
@@ -242,8 +242,8 @@ SELECT count(*) as email_count,
 FROM applylens.public_emails;
 
 -- Check risk score distribution
-SELECT 
-  CASE 
+SELECT
+  CASE
     WHEN risk_score IS NULL THEN 'null'
     WHEN risk_score < 30 THEN 'low'
     WHEN risk_score < 60 THEN 'medium'
@@ -283,7 +283,7 @@ WITH gsc_domains AS (
   WHERE query LIKE '%job%' OR query LIKE '%career%'
   GROUP BY domain
 )
-SELECT 
+SELECT
   e.sender,
   REGEXP_EXTRACT(e.sender, r'@(.+)$') as sender_domain,
   g.total_clicks,
@@ -316,7 +316,7 @@ ORDER BY g.total_clicks DESC;
 ```sql
 -- Track application page views → actual applications
 WITH application_events AS (
-  SELECT 
+  SELECT
     user_pseudo_id,
     event_date,
     COUNT(*) as page_views
@@ -325,13 +325,13 @@ WITH application_events AS (
     AND page_location LIKE '%/applications%'
   GROUP BY user_pseudo_id, event_date
 )
-SELECT 
+SELECT
   ae.event_date,
   ae.page_views,
   COUNT(DISTINCT a.id) as applications_created,
   SAFE_DIVIDE(COUNT(DISTINCT a.id), SUM(ae.page_views)) as conversion_rate
 FROM application_events ae
-LEFT JOIN applylens.public_applications a 
+LEFT JOIN applylens.public_applications a
   ON DATE(a.created_at) = PARSE_DATE('%Y%m%d', ae.event_date)
 GROUP BY ae.event_date, ae.page_views
 ORDER BY ae.event_date DESC;
@@ -421,7 +421,7 @@ gcloud alpha billing quotas list \
 
 ```sql
 -- Check last updated timestamp
-SELECT 
+SELECT
   table_name,
   TIMESTAMP_MILLIS(creation_time) as created,
   TIMESTAMP_MILLIS(last_modified_time) as last_updated,
@@ -462,5 +462,5 @@ After Fivetran is syncing successfully:
 
 ---
 
-*Last Updated: October 2025*  
+*Last Updated: October 2025*
 *Maintainer: ApplyLens Analytics Team*

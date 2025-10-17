@@ -4,8 +4,8 @@ Revision ID: 0019_add_thread_id
 Revises: 0018_split_fk_cycles
 Create Date: 2025-10-14
 """
+
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "0019_add_thread_id"

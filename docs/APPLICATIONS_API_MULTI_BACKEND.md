@@ -1,7 +1,7 @@
 # Applications API - Multi-Backend Implementation
 
-**Date**: October 11, 2025  
-**Feature**: `/api/applications` endpoint with auto-detection of data source  
+**Date**: October 11, 2025
+**Feature**: `/api/applications` endpoint with auto-detection of data source
 **Status**: ✅ Complete and deployed
 
 ---
@@ -54,8 +54,8 @@ def _has_es() -> bool:
 
 ### File: `services/api/app/routers/applications.py`
 
-**Total lines**: 182  
-**Functions**: 4  
+**Total lines**: 182
+**Functions**: 4
 **Data sources**: 3
 
 #### Pydantic Model
@@ -168,7 +168,7 @@ except Exception as e:
     raise HTTPException(status_code=503, detail=f"BigQuery error: {e}")
 ```text
 
-**Status code**: 503 Service Unavailable  
+**Status code**: 503 Service Unavailable
 **Response format**: `{"detail": "BigQuery error: <message>"}`
 
 ---
@@ -762,8 +762,8 @@ curl "http://localhost:8003/api/applications?limit=100"
 
 ### Demo Data
 
-**Performance**: Instant (in-memory)  
-**Limitation**: Only 4 records  
+**Performance**: Instant (in-memory)
+**Limitation**: Only 4 records
 **Use case**: Development only
 
 ---
@@ -829,8 +829,8 @@ def application_stats():
 
 ---
 
-**Status**: ✅ Production ready  
-**Data sources**: BigQuery > Elasticsearch > Demo  
-**Endpoint**: `/api/applications`  
-**Default**: Demo data (no config needed)  
+**Status**: ✅ Production ready
+**Data sources**: BigQuery > Elasticsearch > Demo
+**Endpoint**: `/api/applications`
+**Default**: Demo data (no config needed)
 **Backward compatible**: Yes

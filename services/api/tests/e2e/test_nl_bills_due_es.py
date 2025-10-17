@@ -237,7 +237,8 @@ async def test_nl_bills_without_date_phrase(monkeypatch):
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         r = await ac.post(
-            "/nl/run", json={"text": "show me bills"}  # No "before" or "by" phrase
+            "/nl/run",
+            json={"text": "show me bills"},  # No "before" or "by" phrase
         )
 
         assert r.status_code == 200

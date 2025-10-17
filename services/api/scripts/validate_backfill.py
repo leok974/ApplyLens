@@ -10,7 +10,7 @@ Queries Elasticsearch to verify:
 Usage:
     python validate_backfill.py --pretty       # Human-readable output
     python validate_backfill.py --json         # Machine-readable JSON
-    
+
 Environment variables:
     ES_URL          - Elasticsearch URL (default: http://localhost:9200)
     ES_EMAIL_INDEX  - Email index name (default: gmail_emails_v2)
@@ -40,7 +40,7 @@ def count_missing_dates(client) -> int:
     query = {
         "bool": {
             "filter": [{"term": {"category": "bills"}}],
-            "must_not": [{"exists": {"field": "dates"}}]
+            "must_not": [{"exists": {"field": "dates"}}],
         }
     }
     res = client.count(index=INDEX, body={"query": query})
@@ -50,34 +50,31 @@ def count_missing_dates(client) -> int:
 def counts_with_expiry(client) -> tuple[int, int]:
     """
     Count bills with dates[] and expires_at.
-    
+
     Returns:
         (total_with_dates, total_with_expires_at)
     """
     # Total bills with any dates[]
     query_total = {
         "bool": {
-            "filter": [
-                {"term": {"category": "bills"}},
-                {"exists": {"field": "dates"}}
-            ]
+            "filter": [{"term": {"category": "bills"}}, {"exists": {"field": "dates"}}]
         }
     }
-    
+
     # Subset where expires_at exists
     query_expiry = {
         "bool": {
             "filter": [
                 {"term": {"category": "bills"}},
                 {"exists": {"field": "dates"}},
-                {"exists": {"field": "expires_at"}}
+                {"exists": {"field": "expires_at"}},
             ]
         }
     }
-    
+
     total = client.count(index=INDEX, body={"query": query_total}).get("count", 0)
     with_exp = client.count(index=INDEX, body={"query": query_expiry}).get("count", 0)
-    
+
     return int(total), int(with_exp)
 
 
@@ -101,7 +98,7 @@ def main():
         "bills_with_dates": total_with_dates,
         "bills_with_expires_at": with_exp,
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "verdict": verdict
+        "verdict": verdict,
     }
 
     if args.json and not args.pretty:

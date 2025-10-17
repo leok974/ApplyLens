@@ -8,6 +8,7 @@ Based on:
 - SEO failures (pages with ok == false)
 - Playwright test failures with path extraction
 """
+
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +22,7 @@ PAGE_RE = re.compile(r"(\/[a-zA-Z0-9\/\-\._]+)")
 @dataclass
 class Recommendation:
     """Weight adjustment recommendation with evidence."""
+
     rationale: str
     evidence: list[str]
     weight_diffs: dict[str, float]  # key -> delta
@@ -44,7 +46,7 @@ def _extract_paths_from_tests(tests: list[dict]) -> list[str]:
 def _load_page_map() -> dict[str, str]:
     """
     Optional: developer-provided hints (test name -> path).
-    
+
     Create analytics/config/test_page_map.json with mappings like:
     {
         "login flow test": "/login",
@@ -66,14 +68,16 @@ def _failed_seo_paths(seo: dict) -> list[str]:
     return [p for p in paths if p]
 
 
-def recommend_weight_diffs(merged: dict, anomalies: list[dict]) -> Recommendation | None:
+def recommend_weight_diffs(
+    merged: dict, anomalies: list[dict]
+) -> Recommendation | None:
     """
     Generate weight adjustment recommendations based on anomalies.
-    
+
     Args:
         merged: Daily merged metrics (seo, playwright, etc.)
         anomalies: List of detected anomalies with field and z-score
-        
+
     Returns:
         Recommendation object with proposed weight changes, or None if no recommendations
     """
@@ -85,7 +89,7 @@ def recommend_weight_diffs(merged: dict, anomalies: list[dict]) -> Recommendatio
     page_map = _load_page_map()
 
     test_failed_paths = _extract_paths_from_tests(pw_tests)
-    
+
     # Map named tests via hints
     for t in pw_tests:
         nm = t.get("name") or t.get("title")
@@ -103,7 +107,7 @@ def recommend_weight_diffs(merged: dict, anomalies: list[dict]) -> Recommendatio
     # (e.g., "page_priority:/pricing")
     weight_diffs = {}
     evidence = []
-    
+
     for path, count in pressure.most_common(8):
         delta = min(0.05 * count, 0.2)  # cap per run
         weight_diffs[f"page_priority:{path}"] = round(+delta, 3)
@@ -111,8 +115,7 @@ def recommend_weight_diffs(merged: dict, anomalies: list[dict]) -> Recommendatio
 
     # If Playwright pass rate dropped, bias "stability-first" variant selection
     playwright_drop = any(
-        a["field"] == "playwright_pass_pct" and a["z"] < -2 
-        for a in anomalies
+        a["field"] == "playwright_pass_pct" and a["z"] < -2 for a in anomalies
     )
     if playwright_drop:
         weight_diffs["variant:stability_over_speed"] = +0.1
@@ -122,9 +125,7 @@ def recommend_weight_diffs(merged: dict, anomalies: list[dict]) -> Recommendatio
         "Elevate attention to pages implicated by SEO/Test failures; "
         "prefer stable variants until green."
     )
-    
+
     return Recommendation(
-        rationale=rationale,
-        evidence=evidence,
-        weight_diffs=weight_diffs
+        rationale=rationale, evidence=evidence, weight_diffs=weight_diffs
     )

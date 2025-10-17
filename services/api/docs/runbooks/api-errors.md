@@ -68,8 +68,8 @@ docker-compose exec db psql -U postgres -c "SELECT count(*) FROM pg_stat_activit
 
 # Kill idle connections if needed
 docker-compose exec db psql -U postgres -c "
-  SELECT pg_terminate_backend(pid) 
-  FROM pg_stat_activity 
+  SELECT pg_terminate_backend(pid)
+  FROM pg_stat_activity
   WHERE state = 'idle' AND state_change < now() - interval '1 hour';"
 ```text
 
@@ -172,7 +172,7 @@ sum(rate(http_requests_total{status=~"5.."}[5m])) by (route)
 sum(rate(http_requests_total[5m]))
 
 # Error percentage
-sum(rate(http_requests_total{status=~"5.."}[5m])) 
+sum(rate(http_requests_total{status=~"5.."}[5m]))
   / sum(rate(http_requests_total[5m])) * 100
 ```text
 
@@ -186,7 +186,7 @@ WHERE state = 'active'
 ORDER BY duration DESC;
 
 -- Table sizes
-SELECT schemaname, tablename, 
+SELECT schemaname, tablename,
   pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
 FROM pg_tables
 WHERE schemaname = 'public'

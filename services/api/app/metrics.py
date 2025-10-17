@@ -52,17 +52,21 @@ risk_score_avg = Gauge(
 tool_queries_total = Counter(
     "assistant_tool_queries_total",
     "Total assistant tool queries",
-    ["tool", "has_hits", "window_bucket"],  # tool: summarize, find, clean, etc.; has_hits: 0 or 1; window_bucket: 7, 30, 60, 90+
+    [
+        "tool",
+        "has_hits",
+        "window_bucket",
+    ],  # tool: summarize, find, clean, etc.; has_hits: 0 or 1; window_bucket: 7, 30, 60, 90+
 )
 
 
 def window_bucket(days: int) -> str:
     """
     Categorize window_days into buckets for metrics.
-    
+
     Args:
         days: Number of days in the window
-    
+
     Returns:
         Bucket label: "7", "30", "60", or "90+"
     """
@@ -79,7 +83,7 @@ def window_bucket(days: int) -> str:
 def record_tool(tool_name: str, hits: int, window_days: int = 30) -> None:
     """
     Record assistant tool usage.
-    
+
     Args:
         tool_name: Name of the tool (summarize, find, clean, etc.)
         hits: Number of results/hits returned

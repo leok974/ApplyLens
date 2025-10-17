@@ -9,7 +9,7 @@ Stub implementation - replace with actual embedding model.
 def ensure_embedder():
     """
     Get or create the embedding model.
-    
+
     Returns:
         Embedder instance (implement based on your embedding solution)
     """
@@ -22,7 +22,7 @@ def ensure_embedder():
 
 class DummyEmbedder:
     """Placeholder embedder for testing."""
-    
+
     def encode(self, text: str) -> list[float]:
         """Generate dummy embedding vector."""
         # Return simple hash-based vector for testing

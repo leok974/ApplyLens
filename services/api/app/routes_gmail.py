@@ -14,7 +14,9 @@ from .models import Email, OAuthToken
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
 # Simple rate limiter for backfill (configurable cooldown in seconds)
-_BACKFILL_COOLDOWN_SECONDS = int(os.getenv("BACKFILL_COOLDOWN_SECONDS", "300"))  # 5 minutes default
+_BACKFILL_COOLDOWN_SECONDS = int(
+    os.getenv("BACKFILL_COOLDOWN_SECONDS", "300")
+)  # 5 minutes default
 _LAST_BACKFILL_TS = {}
 
 
@@ -181,8 +183,8 @@ def backfill(
         remaining = int(_BACKFILL_COOLDOWN_SECONDS - (now - last_ts))
         BACKFILL_REQUESTS.labels(result="rate_limited").inc()
         raise HTTPException(
-            status_code=429, 
-            detail=f"Backfill too frequent; try again in {remaining} seconds."
+            status_code=429,
+            detail=f"Backfill too frequent; try again in {remaining} seconds.",
         )
     _LAST_BACKFILL_TS[email] = now
 

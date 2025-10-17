@@ -122,9 +122,7 @@ def _company_from_signature(text: str) -> Optional[str]:
 
     Looks for company names in first ~30 lines of email body.
     """
-    lines = [
-        line.strip() for line in re.split(r"[\r\n]+", text) if line.strip()
-    ]  # noqa: E741
+    lines = [line.strip() for line in re.split(r"[\r\n]+", text) if line.strip()]  # noqa: E741
 
     for line in lines[:30]:
         # Pattern: "Acme Inc." or "Acme - Recruiting"

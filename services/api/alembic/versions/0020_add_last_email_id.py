@@ -4,8 +4,8 @@ Revision ID: 0020_add_last_email_id
 Revises: 0019_add_thread_id
 Create Date: 2025-10-14
 """
+
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "0020_add_last_email_id"
@@ -17,11 +17,11 @@ depends_on = None
 def upgrade():
     """
     Add the last_email_id column to applications table.
-    
+
     This column is used to track the most recent email associated with an application.
     It participates in a circular FK relationship with emails.application_id, which was
     made deferrable in migration 0018.
-    
+
     Note: Migration 0018 assumes this column exists and only adds the deferrable constraint.
     This migration adds the actual column if it doesn't exist.
     """

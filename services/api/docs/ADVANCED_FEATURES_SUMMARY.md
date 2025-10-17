@@ -499,9 +499,9 @@ curl -X POST http://localhost:8003/nl/run \
 
 ## Commit Details
 
-**Branch:** `more-features`  
-**Commit:** `345dd05`  
-**Files Changed:** 8 files  
+**Branch:** `more-features`
+**Commit:** `345dd05`
+**Files Changed:** 8 files
 **Lines:** +1,331 / -4
 
 All features are production-ready with comprehensive test coverage! 🎉

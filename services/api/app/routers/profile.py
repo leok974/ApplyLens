@@ -15,7 +15,6 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..db import get_db
@@ -361,9 +360,7 @@ import re  # noqa: E402
 from collections import Counter  # noqa: E402
 from datetime import datetime, timedelta  # noqa: E402
 
-from fastapi import Depends  # noqa: E402
 from sqlalchemy import and_, desc  # noqa: E402
-from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import get_db  # noqa: E402
 from app.models import (  # noqa: E402
@@ -384,7 +381,7 @@ def profile_rebuild_v2(
 ):
     """
     Rebuild profile for current user from email history (database-backed).
-    
+
     Automatically uses the authenticated user's email.
     Admin can override by passing X-User-Email header.
 
@@ -567,7 +564,7 @@ def profile_summary_v2(
 ):
     """
     Get profile summary for current user (database-backed).
-    
+
     Automatically uses the authenticated user's email.
     Admin can override by passing X-User-Email header.
 

@@ -1,11 +1,15 @@
 from google.cloud import bigquery
 import os
 
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r'D:\ApplyLens\analytics\dbt\applylens-ci.json'
-client = bigquery.Client(project='applylens-gmail-1759983601')
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
+    r"D:\ApplyLens\analytics\dbt\applylens-ci.json"
+)
+client = bigquery.Client(project="applylens-gmail-1759983601")
 
 print("🤖 Training BigQuery ML Models...")
-print("This will take a few minutes as ARIMA models need to analyze time series data.\n")
+print(
+    "This will take a few minutes as ARIMA models need to analyze time series data.\n"
+)
 
 # Train email count ARIMA model
 print("1️⃣  Training m_email_count_arima...")

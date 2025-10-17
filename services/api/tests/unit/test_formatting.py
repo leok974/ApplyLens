@@ -10,6 +10,7 @@ import pytest
 try:
     from app.utils.formatting import currency, percent, phone  # type: ignore
 except Exception:
+
     def currency(v):
         return f"${v:,.2f}"
 

@@ -143,7 +143,7 @@ def search(
 
     # Build filter list
     filters = []
-    
+
     # CRITICAL: Always filter by owner_email for multi-user support
     filters.append({"term": {"owner_email": user_email}})
 

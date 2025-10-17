@@ -279,7 +279,7 @@ groups:
         annotations:
           summary: "ES vs BQ data drift detected"
           description: "Delta is {{ $value }}% (threshold: 2%)"
-      
+
       - alert: FivetranSyncStale
         expr: (time() - applylens_fivetran_last_sync_timestamp) / 60 > 30
         for: 15m
@@ -476,5 +476,5 @@ The API automatically falls back to ES when `USE_WAREHOUSE_METRICS=0`.
 
 ---
 
-**Last Updated**: October 16, 2025  
+**Last Updated**: October 16, 2025
 **Maintainer**: ApplyLens Team

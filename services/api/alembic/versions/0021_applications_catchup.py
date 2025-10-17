@@ -4,8 +4,8 @@ Revision ID: 0021_applications_catchup
 Revises: 0020_add_last_email_id
 Create Date: 2025-10-14
 """
+
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "0021_applications_catchup"
@@ -17,15 +17,15 @@ depends_on = None
 def upgrade():
     """
     Add missing columns to applications table that exist in the model but not in migrations.
-    
+
     This is a "catch-up" migration to fix schema drift between models.py and migrations.
     The Application model has evolved over time but some column additions weren't migrated.
-    
+
     Missing columns:
     - notes: Text field for user notes about the application
     - created_at: Timestamp when application was created
     - updated_at: Timestamp when application was last modified
-    
+
     Note: Other columns (thread_id, gmail_thread_id, last_email_id, last_email_snippet)
     were added in migrations 0003, 0019, and 0020.
     """

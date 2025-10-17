@@ -1,4 +1,5 @@
 """User authentication and identification dependencies."""
+
 import os
 from typing import Optional
 
@@ -14,30 +15,30 @@ def get_current_user_email(request: Request) -> str:
     2. Session/cookie (OAuth flow)
     3. Request state (set by OAuth middleware)
     4. DEFAULT_USER_EMAIL env var (fallback for single-user mode)
-    
+
     Raises 401 if no email can be determined.
     """
     # Try header first (allows admin override or testing)
     email = request.headers.get("X-User-Email")
-    
+
     # Try session/cookie (OAuth)
     if not email:
         email = request.cookies.get("user_email")
-    
+
     # Try state or session data if using OAuth
     if not email and hasattr(request.state, "user_email"):
         email = request.state.user_email
-    
+
     # Fallback to environment default (single-user mode)
     if not email:
         email = DEFAULT_USER_EMAIL
-    
+
     if not email:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User email not available. Please log in or set DEFAULT_USER_EMAIL.",
         )
-    
+
     return email
 
 

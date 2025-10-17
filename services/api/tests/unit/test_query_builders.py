@@ -49,7 +49,7 @@ def test_parse_sort_column_extraction():
     col, dir_ = parse_sort("updated_at:asc")
     assert col == "updated_at"
     assert dir_ == "asc"
-    
+
     col, dir_ = parse_sort("email:desc")
     assert col == "email"
     assert dir_ == "desc"

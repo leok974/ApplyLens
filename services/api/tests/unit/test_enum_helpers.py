@@ -15,7 +15,15 @@ except (ImportError, ModuleNotFoundError):
     def to_status(s: str) -> str:
         """Convert string to valid application status."""
         s = (s or "").lower().strip()
-        valid_statuses = {"applied", "interview", "offer", "rejected", "hr_screen", "on_hold", "ghosted"}
+        valid_statuses = {
+            "applied",
+            "interview",
+            "offer",
+            "rejected",
+            "hr_screen",
+            "on_hold",
+            "ghosted",
+        }
         return s if s in valid_statuses else "applied"
 
 
@@ -69,7 +77,15 @@ def test_to_status_none():
 @pytest.mark.unit
 def test_to_status_all_valid():
     """All valid status values should be preserved."""
-    valid_statuses = ["applied", "hr_screen", "interview", "offer", "rejected", "on_hold", "ghosted"]
+    valid_statuses = [
+        "applied",
+        "hr_screen",
+        "interview",
+        "offer",
+        "rejected",
+        "on_hold",
+        "ghosted",
+    ]
     for status in valid_statuses:
         try:
             assert to_status(status) == status

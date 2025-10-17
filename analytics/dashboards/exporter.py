@@ -4,13 +4,18 @@ Phase 51.1 — CSV Dashboard Exporter
 Exports daily KPI metrics to CSV format for dashboards and visualization tools.
 Generates both wide-format (columns per metric) and long-format (metric,value pairs).
 """
+
 from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Iterable
 
-KPI_FIELDS = ["seo_coverage_pct", "playwright_pass_pct", "avg_p95_ms", "autofix_delta_count"]
+KPI_FIELDS = [
+    "seo_coverage_pct",
+    "playwright_pass_pct",
+    "avg_p95_ms",
+    "autofix_delta_count",
+]
 
 
 def _load_daily(path: Path) -> dict:
@@ -19,6 +24,7 @@ def _load_daily(path: Path) -> dict:
     kpi = blob.get("kpi")
     if not kpi:  # compute on the fly if needed
         from analytics.collectors.kpi_extractor import extract_kpis
+
         kpi = extract_kpis(blob)
     return {"date": path.stem, **{k: kpi.get(k) for k in KPI_FIELDS}}
 
@@ -26,11 +32,11 @@ def _load_daily(path: Path) -> dict:
 def export_csv_series(data_dir: Path, out_dir: Path) -> dict[str, Path]:
     """
     Export KPI time-series to CSV files.
-    
+
     Args:
         data_dir: Directory containing daily *.json files
         out_dir: Output directory for CSV files
-        
+
     Returns:
         Dict mapping CSV type to file path
     """

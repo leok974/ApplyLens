@@ -10,6 +10,7 @@ import pytest
 try:
     from app.utils.responses import ok, error, paginated  # type: ignore
 except Exception:
+
     def ok(data=None, **meta):
         return {"ok": True, "data": data, **({"meta": meta} if meta else {})}
 
@@ -17,7 +18,11 @@ except Exception:
         return {"ok": False, "error": {"message": msg, "code": code}}
 
     def paginated(items, total, size, offset):
-        return {"ok": True, "data": items, "meta": {"total": total, "size": size, "offset": offset}}
+        return {
+            "ok": True,
+            "data": items,
+            "meta": {"total": total, "size": size, "offset": offset},
+        }
 
 
 @pytest.mark.unit

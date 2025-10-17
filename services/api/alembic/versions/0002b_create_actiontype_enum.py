@@ -4,6 +4,7 @@ Revision ID: 0002b_create_actiontype_enum
 Revises: 0002a_create_appstatus_enum
 Create Date: 2025-10-13
 """
+
 from alembic import op
 
 revision = "0002b_create_actiontype_enum"

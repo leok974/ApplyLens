@@ -4,6 +4,7 @@ Revision ID: 0002a_create_appstatus_enum
 Revises: 0002_oauth_gmail
 Create Date: 2025-10-13
 """
+
 from alembic import op
 
 revision = "0002a_create_appstatus_enum"
@@ -22,7 +23,7 @@ def upgrade() -> None:
       END IF;
     END$$;
     """)
-    
+
     # Alter the applications.status column to use the enum type
     # First check if it's currently text/varchar
     op.execute("""
@@ -60,7 +61,7 @@ def downgrade() -> None:
       END IF;
     END$$;
     """)
-    
+
     # Drop the enum type if it exists and no other columns use it
     op.execute("""
     DO $$

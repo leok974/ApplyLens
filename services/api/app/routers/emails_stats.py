@@ -22,7 +22,7 @@ def emails_count(
 ):
     """
     Get total email count for current user.
-    
+
     Returns:
         {"owner_email": str, "count": int}
     """
@@ -30,7 +30,7 @@ def emails_count(
         text("SELECT COUNT(*) AS c FROM emails WHERE owner_email = :e"),
         {"e": user_email},
     ).first()
-    
+
     return {
         "owner_email": user_email,
         "count": int(row.c if row and row.c else 0),
@@ -44,7 +44,7 @@ def emails_stats(
 ):
     """
     Get detailed email statistics for current user.
-    
+
     Cached for 60 seconds. Returns:
     - total: Total email count
     - last_30d: Emails received in last 30 days
@@ -70,24 +70,29 @@ def emails_stats(
     ).first()
 
     # Daily breakdown (last 30 days)
-    by_day = db.execute(
-        text("""
-            SELECT 
+    by_day = (
+        db.execute(
+            text("""
+            SELECT
                 DATE_TRUNC('day', received_at)::date AS day,
                 COUNT(*) AS c
             FROM emails
-            WHERE owner_email = :e 
+            WHERE owner_email = :e
                 AND received_at >= NOW() - INTERVAL '30 days'
             GROUP BY 1
             ORDER BY 1
         """),
-        {"e": user_email},
-    ).mappings().all()
+            {"e": user_email},
+        )
+        .mappings()
+        .all()
+    )
 
     # Top senders
-    top_senders = db.execute(
-        text("""
-            SELECT 
+    top_senders = (
+        db.execute(
+            text("""
+            SELECT
                 sender,
                 COUNT(*) AS c
             FROM emails
@@ -96,13 +101,17 @@ def emails_stats(
             ORDER BY c DESC
             LIMIT 10
         """),
-        {"e": user_email},
-    ).mappings().all()
+            {"e": user_email},
+        )
+        .mappings()
+        .all()
+    )
 
     # Top categories
-    top_categories = db.execute(
-        text("""
-            SELECT 
+    top_categories = (
+        db.execute(
+            text("""
+            SELECT
                 COALESCE(category, '(uncategorized)') AS category,
                 COUNT(*) AS c
             FROM emails
@@ -111,28 +120,26 @@ def emails_stats(
             ORDER BY c DESC
             LIMIT 10
         """),
-        {"e": user_email},
-    ).mappings().all()
+            {"e": user_email},
+        )
+        .mappings()
+        .all()
+    )
 
     out = {
         "owner_email": user_email,
         "total": int(totals.total if totals and totals.total else 0),
         "last_30d": int(totals.last_30d if totals and totals.last_30d else 0),
-        "by_day": [
-            {"day": str(r["day"]), "count": int(r["c"])}
-            for r in by_day
-        ],
+        "by_day": [{"day": str(r["day"]), "count": int(r["c"])} for r in by_day],
         "top_senders": [
-            {"sender": r["sender"], "count": int(r["c"])}
-            for r in top_senders
+            {"sender": r["sender"], "count": int(r["c"])} for r in top_senders
         ],
         "top_categories": [
-            {"category": r["category"], "count": int(r["c"])}
-            for r in top_categories
+            {"category": r["category"], "count": int(r["c"])} for r in top_categories
         ],
     }
-    
+
     # Cache for 60 seconds
     cache_set(cache_key, out, ttl=60)
-    
+
     return out

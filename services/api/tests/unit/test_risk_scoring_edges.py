@@ -10,6 +10,7 @@ import pytest
 try:
     from app.security.risk import score_risk  # adjust path if needed
 except Exception:
+
     def score_risk(flags=None, base=0):
         """Calculate risk score based on flags and base score."""
         flags = flags or {}

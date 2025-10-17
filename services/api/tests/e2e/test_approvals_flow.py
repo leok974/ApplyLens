@@ -59,16 +59,17 @@ async def test_full_approvals_flow(async_client):
         return {"result": "success"}
 
     # Apply patches
-    with patch("app.db.approvals_bulk_insert", mock_bulk_insert), patch(
-        "app.db.approvals_get", mock_get
-    ), patch("app.db.approvals_update_status", mock_update_status), patch(
-        "app.logic.audit_es.emit_audit", mock_emit_audit
-    ), patch(
-        "app.routers.approvals.execute_actions_internal", mock_execute_actions_internal
-    ), patch(
-        "app.logic.unsubscribe.perform_unsubscribe", mock_perform_unsubscribe
+    with (
+        patch("app.db.approvals_bulk_insert", mock_bulk_insert),
+        patch("app.db.approvals_get", mock_get),
+        patch("app.db.approvals_update_status", mock_update_status),
+        patch("app.logic.audit_es.emit_audit", mock_emit_audit),
+        patch(
+            "app.routers.approvals.execute_actions_internal",
+            mock_execute_actions_internal,
+        ),
+        patch("app.logic.unsubscribe.perform_unsubscribe", mock_perform_unsubscribe),
     ):
-
         # Step 1: Propose actions
         propose_payload = {
             "items": [
@@ -161,7 +162,6 @@ async def test_full_approvals_flow(async_client):
 async def test_propose_empty_items(async_client):
     """Test that proposing empty items returns error."""
     with patch("app.db.approvals_bulk_insert"), patch("app.logic.audit_es.emit_audit"):
-
         r = await async_client.post("/approvals/propose", json={"items": []})
         assert r.status_code == 400
 
@@ -169,10 +169,10 @@ async def test_propose_empty_items(async_client):
 @pytest.mark.asyncio
 async def test_approve_empty_ids(async_client):
     """Test that approving with empty IDs returns error."""
-    with patch("app.db.approvals_update_status"), patch(
-        "app.logic.audit_es.emit_audit"
+    with (
+        patch("app.db.approvals_update_status"),
+        patch("app.logic.audit_es.emit_audit"),
     ):
-
         r = await async_client.post("/approvals/approve", json={"ids": []})
         assert r.status_code == 400
 
@@ -180,10 +180,10 @@ async def test_approve_empty_ids(async_client):
 @pytest.mark.asyncio
 async def test_reject_empty_ids(async_client):
     """Test that rejecting with empty IDs returns error."""
-    with patch("app.db.approvals_update_status"), patch(
-        "app.logic.audit_es.emit_audit"
+    with (
+        patch("app.db.approvals_update_status"),
+        patch("app.logic.audit_es.emit_audit"),
     ):
-
         r = await async_client.post("/approvals/reject", json={"ids": []})
         assert r.status_code == 400
 
@@ -192,7 +192,6 @@ async def test_reject_empty_ids(async_client):
 async def test_execute_empty_items(async_client):
     """Test that executing with no items returns zero applied."""
     with patch("app.logic.audit_es.emit_audit"):
-
         r = await async_client.post("/approvals/execute", json={"items": []})
         assert r.status_code == 200
         assert r.json()["applied"] == 0
@@ -219,7 +218,6 @@ async def test_list_proposed_with_limit(async_client):
         ]
 
     with patch("app.db.approvals_get", mock_get):
-
         # Request with limit 50
         r = await async_client.get("/approvals/proposed?limit=50")
         assert r.status_code == 200
@@ -241,10 +239,11 @@ async def test_execute_splits_actions_by_type(async_client):
         unsub_executed.append(headers)
         return {"result": "success"}
 
-    with patch("app.logic.audit_es.emit_audit"), patch(
-        "app.routers.approvals.execute_actions_internal", mock_execute_mail
-    ), patch("app.logic.unsubscribe.perform_unsubscribe", mock_perform_unsub):
-
+    with (
+        patch("app.logic.audit_es.emit_audit"),
+        patch("app.routers.approvals.execute_actions_internal", mock_execute_mail),
+        patch("app.logic.unsubscribe.perform_unsubscribe", mock_perform_unsub),
+    ):
         exec_payload = {
             "items": [
                 {
@@ -292,10 +291,10 @@ async def test_propose_audit_to_elasticsearch(async_client):
     def mock_bulk_insert(rows):
         pass  # No-op
 
-    with patch("app.db.approvals_bulk_insert", mock_bulk_insert), patch(
-        "app.logic.audit_es.emit_audit", mock_emit
+    with (
+        patch("app.db.approvals_bulk_insert", mock_bulk_insert),
+        patch("app.logic.audit_es.emit_audit", mock_emit),
     ):
-
         r = await async_client.post(
             "/approvals/propose",
             json={
@@ -335,10 +334,10 @@ async def test_approve_audit_to_elasticsearch(async_client):
     def mock_update(ids, status):
         pass  # No-op
 
-    with patch("app.db.approvals_update_status", mock_update), patch(
-        "app.logic.audit_es.emit_audit", mock_emit
+    with (
+        patch("app.db.approvals_update_status", mock_update),
+        patch("app.logic.audit_es.emit_audit", mock_emit),
     ):
-
         r = await async_client.post("/approvals/approve", json={"ids": [1, 2, 3]})
 
         assert r.status_code == 200

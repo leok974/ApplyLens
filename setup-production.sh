@@ -153,24 +153,24 @@ if [ ! -f "$SSL_DIR/fullchain.pem" ] || [ ! -f "$SSL_DIR/privkey.pem" ]; then
     echo ""
     read -p "Choose option (1/2/3): " -n 1 -r
     echo
-    
+
     case $REPLY in
         1)
             print_status "Setting up Let's Encrypt..."
             read -p "Enter your email address: " EMAIL
             read -p "Enter your domain (applylens.app): " DOMAIN
             DOMAIN=${DOMAIN:-applylens.app}
-            
+
             # Stop nginx if running
             docker-compose -f docker-compose.prod.yml stop nginx 2>/dev/null || true
-            
+
             # Install certbot if not present
             if ! command -v certbot &> /dev/null; then
                 print_status "Installing certbot..."
                 sudo apt update
                 sudo apt install -y certbot
             fi
-            
+
             # Obtain certificate
             sudo certbot certonly --standalone \
                 -d $DOMAIN \
@@ -178,13 +178,13 @@ if [ ! -f "$SSL_DIR/fullchain.pem" ] || [ ! -f "$SSL_DIR/privkey.pem" ]; then
                 --email $EMAIL \
                 --agree-tos \
                 --non-interactive
-            
+
             # Copy certificates
             sudo cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem $SSL_DIR/
             sudo cp /etc/letsencrypt/live/$DOMAIN/privkey.pem $SSL_DIR/
             sudo chown -R $USER:$USER $SSL_DIR
             chmod 600 $SSL_DIR/privkey.pem
-            
+
             print_success "SSL certificates installed"
             ;;
         2)
@@ -218,7 +218,7 @@ if [ ! -f "$SECRETS_DIR/google.json" ]; then
     echo "Save it to: $SECRETS_DIR/google.json"
     echo ""
     read -p "Press Enter when ready..."
-    
+
     if [ ! -f "$SECRETS_DIR/google.json" ]; then
         print_error "Google credentials still not found. Please add them before starting."
     fi
