@@ -318,6 +318,331 @@ pytest tests/test_executor_guardrails.py # 23 guardrail tests
 **1. Knowledge Base Updates**
 - Deny large diffs (>1000 changes) without approval
 - Allow small edits automatically
+
+## 🧪 Phase 5: Intelligence & Evaluation
+
+ApplyLens now includes a **comprehensive evaluation system** for measuring and improving agent quality, security, and reliability!
+
+### Key Features
+
+- **📊 Offline Evaluation**: Test agents against golden tasks with multi-dimensional scoring
+- **🔴 Online Monitoring**: Real-time production metrics and telemetry
+- **🛡️ Red Team Testing**: Adversarial testing for security and robustness
+- **💰 Budget Gates**: Quality thresholds that block regressions in CI/CD
+- **📈 Intelligence Reports**: Weekly automated reports with trend analysis
+- **📉 Prometheus/Grafana**: Real-time dashboards and alerting
+
+### Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│              Agent Evaluation System                         │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Offline Harness          Online Evaluator                  │
+│  ┌──────────────┐        ┌──────────────┐                   │
+│  │ Golden Tasks │        │  Production  │                   │
+│  │ (32 tasks)   │        │   Metrics    │                   │
+│  └──────┬───────┘        └──────┬───────┘                   │
+│         │                       │                            │
+│         └───────┬───────────────┘                            │
+│                 │                                            │
+│         ┌───────▼─────────┐                                 │
+│         │  Judge Pipeline │                                 │
+│         │  • Correctness  │                                 │
+│         │  • Relevance    │                                 │
+│         │  • Safety       │                                 │
+│         │  • Efficiency   │                                 │
+│         └───────┬─────────┘                                 │
+│                 │                                            │
+│         ┌───────▼─────────┐                                 │
+│         │   Invariants    │                                 │
+│         │  • No PII leak  │                                 │
+│         │  • Valid format │                                 │
+│         │  • Compliance   │                                 │
+│         └───────┬─────────┘                                 │
+│                 │                                            │
+│         ┌───────▼─────────────────┐                         │
+│         │   Metrics & Storage     │                         │
+│         │  • AgentMetricsDaily    │                         │
+│         │  • Prometheus           │                         │
+│         │  • Budget Gates         │                         │
+│         └─────────────────────────┘                         │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Offline Evaluation (Eval Harness)
+
+Test agents against **32 golden tasks** across 4 categories:
+
+```bash
+# Run evaluation suite
+python -m app.eval.runner --agent inbox_triage
+
+# Export results
+python -m app.eval.runner --agent inbox_triage --export results.jsonl
+
+# Use specific judges
+python -m app.eval.runner --agent inbox_triage --judge correctness
+```
+
+**Golden Tasks**: Reference examples with known correct outputs
+**Judges**: Multi-dimensional scoring (correctness, relevance, safety, efficiency)
+**Invariants**: Boolean checks (no PII leak, valid format, compliance)
+
+### Online Evaluation
+
+Monitor production performance in real-time:
+
+```python
+from app.eval.telemetry import OnlineEvaluator
+
+evaluator = OnlineEvaluator(db)
+result = evaluator.evaluate_execution(
+    agent_id="inbox_triage",
+    task_input={"email_id": 12345},
+    agent_output={"priority": "high", "labels": ["urgent"]},
+    latency_ms=450,
+    success=True
+)
+# Stores metrics in AgentMetricsDaily
+```
+
+**Metrics Tracked**:
+- Quality score (0-100)
+- Success rate (% without errors)
+- Latency (p50, p95, p99)
+- Invariant pass rate
+- Red team detection rate
+
+### Red Team Testing
+
+Test security and robustness against adversarial inputs:
+
+```python
+from app.eval.telemetry import RedTeamCatalog
+
+catalog = RedTeamCatalog()
+attacks = catalog.get_attacks_for_agent("inbox_triage")
+
+# Test each attack
+for attack in attacks:
+    result = evaluator.evaluate_execution(..., is_redteam=True)
+    if result.has_invariant_violations():
+        print(f"✓ Attack {attack.id} was BLOCKED")
+    else:
+        print(f"✗ Attack {attack.id} was NOT blocked")
+```
+
+**Attack Categories**:
+- Prompt injection (override instructions)
+- Data exfiltration (extract sensitive data)
+- Privilege escalation (unauthorized access)
+- Resource exhaustion (DoS attempts)
+- Business logic abuse
+- Social engineering
+
+### Budget Gates
+
+Set quality thresholds to block regressions:
+
+```bash
+# Check budget gates (fails if violated)
+python -m app.eval.run_gates --agent inbox_triage --fail-on-violation
+
+# Use in CI/CD
+python -m app.eval.run_gates --all --fail-on-violation
+```
+
+**Default Budgets**:
+- Quality score: ≥ 85
+- Success rate: ≥ 95%
+- p95 latency: ≤ 2000ms
+- Invariant pass rate: ≥ 95%
+
+**Regression Detection**:
+- Absolute threshold (below budget)
+- Relative threshold (5% drop from baseline)
+- Trend analysis (quality declining over time)
+
+### Intelligence Reports
+
+Automated weekly reports with insights and recommendations:
+
+```bash
+# Generate weekly report
+python -m app.eval.generate_report
+
+# Deliver via Slack + Email
+python -m app.eval.generate_report --delivery slack,email
+```
+
+**Report Contents**:
+- Executive summary (pass/fail status)
+- Per-agent performance (quality, latency, success rate)
+- Trend analysis (week-over-week changes)
+- Top issues (ranked by severity)
+- Actionable recommendations (prioritized)
+- Red team results
+
+### Prometheus & Grafana Dashboards
+
+Real-time monitoring with **13 dashboard panels** and **20+ alerts**:
+
+```bash
+# Start monitoring stack
+docker-compose -f monitoring/docker-compose.yml up -d
+
+# Access Grafana
+open http://localhost:3000
+
+# Import dashboard
+# → Dashboards → Import → upload services/api/grafana/agent_evaluation_dashboard.json
+```
+
+**Dashboard Panels**:
+- Overall quality status
+- Success rate by agent
+- Budget violations (24h)
+- Latency trends (p95)
+- Invariant pass rate
+- Red team detection rate
+- Violation analysis (by type/severity)
+- Top failing invariants
+
+**Alerts** (6 categories, 20+ rules):
+- Quality: Critical/warning thresholds
+- Performance: Latency spikes
+- Budgets: Violation tracking
+- Invariants: Failure detection
+- Red Team: Detection rate monitoring
+- Availability: Execution monitoring
+
+### API Endpoints
+
+```bash
+# Metrics Export
+POST /metrics/export?lookback_days=7  # Export metrics to Prometheus
+GET  /metrics/dashboard/status        # Dashboard widget data
+GET  /metrics/alerts/summary          # Active alerts summary
+GET  /metrics/health                  # Health check
+
+# Budget Gates
+POST /budgets/evaluate?agent=inbox_triage  # Check budget gates
+GET  /budgets/violations                    # List violations
+GET  /budgets/config                        # Get budget configuration
+
+# Intelligence Reports
+POST /intelligence/generate?lookback_days=7  # Generate report
+GET  /intelligence/reports                   # List reports
+GET  /intelligence/reports/{id}              # Get report details
+POST /intelligence/deliver?channel=slack     # Deliver report
+```
+
+### Configuration
+
+```bash
+# Evaluation Settings
+EVAL_QUALITY_THRESHOLD=85.0      # Minimum quality score
+EVAL_LATENCY_P95_MS=2000         # Maximum p95 latency
+EVAL_SUCCESS_RATE=0.95           # Minimum success rate
+EVAL_INVARIANT_PASS_RATE=0.95    # Minimum invariant pass rate
+
+# Red Team Settings
+REDTEAM_DETECTION_TARGET=0.90    # Target detection rate
+REDTEAM_FALSE_POSITIVE_MAX=0.05  # Max false positive rate
+
+# Intelligence Reports
+REPORT_SCHEDULE="0 9 * * 1"      # Mondays at 9 AM (cron)
+REPORT_DELIVERY=slack,email      # Delivery channels
+SLACK_CHANNEL_INTELLIGENCE=#agent-intelligence
+SMTP_HOST=smtp.gmail.com
+
+# Prometheus/Grafana
+PROMETHEUS_URL=http://localhost:9090
+GRAFANA_URL=http://localhost:3000
+ALERTMANAGER_URL=http://localhost:9093
+```
+
+### Documentation
+
+Comprehensive guides available in `services/api/docs/`:
+
+- **[EVAL_GUIDE.md](./services/api/docs/EVAL_GUIDE.md)** - Complete evaluation system guide
+- **[REDTEAM.md](./services/api/docs/REDTEAM.md)** - Red team testing and attack scenarios
+- **[BUDGETS_AND_GATES.md](./services/api/docs/BUDGETS_AND_GATES.md)** - Budget configuration and CI integration
+- **[INTELLIGENCE_REPORT.md](./services/api/docs/INTELLIGENCE_REPORT.md)** - Weekly reports and trend analysis
+- **[DASHBOARD_ALERTS.md](./services/api/docs/DASHBOARD_ALERTS.md)** - Dashboard setup and alert routing
+- **[Grafana Setup](./services/api/grafana/README.md)** - Dashboard and Prometheus configuration
+
+### Quick Start
+
+1. **Run Offline Evaluation**:
+   ```bash
+   cd services/api
+   python -m app.eval.runner --agent inbox_triage
+   ```
+
+2. **Set Up Budgets**:
+   ```bash
+   python -m app.eval.run_gates --agent inbox_triage
+   ```
+
+3. **Generate Intelligence Report**:
+   ```bash
+   python -m app.eval.generate_report
+   ```
+
+4. **Start Monitoring Stack**:
+   ```bash
+   docker-compose -f monitoring/docker-compose.yml up -d
+   # Access Grafana at http://localhost:3000
+   # Import services/api/grafana/agent_evaluation_dashboard.json
+   ```
+
+### Testing
+
+Phase 5 includes **67 comprehensive tests**:
+
+```bash
+# Evaluation harness tests
+pytest tests/test_eval_harness.py        # 25 tests (83-89% coverage)
+
+# Telemetry tests
+pytest tests/test_telemetry.py           # 6 tests
+
+# Budget gates tests
+pytest tests/test_budgets.py             # 6 tests
+
+# Intelligence report tests
+pytest tests/test_intelligence_report.py # 15 tests (HTML formatting)
+
+# Metrics tests
+pytest tests/test_metrics_eval.py        # 19 tests (10 passing, 9 require DB)
+```
+
+### Use Cases
+
+**1. Pre-Deployment Quality Gates**
+- Run eval harness before merging code
+- Check budget gates in CI/CD
+- Block deployment if quality < 85
+
+**2. Production Monitoring**
+- Real-time dashboards in Grafana
+- Alerts for quality degradation
+- Weekly intelligence reports to team
+
+**3. Security Testing**
+- Red team testing for all agents
+- Target 90% attack detection rate
+- Monitor false positive rate
+
+**4. Continuous Improvement**
+- Track quality trends over time
+- Identify top failure modes
+- Prioritize improvements based on impact
 - Track cost of embedding API calls
 
 **2. Email Quarantine**
