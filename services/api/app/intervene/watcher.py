@@ -1,8 +1,9 @@
 """
-Invariant & Gate Watcher - Phase 5.4 PR1
+Invariant & Gate Watcher - Phase 5.4 PR1+PR2
 
 Watches evaluation results, metrics, and gates continuously.
 Raises incidents when breaches occur, with deduplication.
+Auto-creates issues in external trackers (GitHub/GitLab/Jira).
 
 Background worker runs every N minutes, checks:
 - Invariant failures from Phase 5 evals
@@ -23,6 +24,15 @@ from app.eval.models import EvalResult, InvariantResult
 from app.models_runtime import RuntimeSettings
 
 logger = logging.getLogger(__name__)
+
+# Import adapters (optional - graceful degradation if not configured)
+try:
+    from app.intervene.adapters.base import IssueAdapterFactory
+    from app.intervene.templates import render_incident_issue
+    ADAPTERS_AVAILABLE = True
+except ImportError:
+    logger.warning("Issue adapters not available - incidents will be created without external issues")
+    ADAPTERS_AVAILABLE = False
 
 
 class InvariantWatcher:
@@ -212,6 +222,64 @@ class InvariantWatcher:
         # Allow max 3 incidents per time window
         return count >= 3
     
+    def _create_external_issue(self, incident: Incident) -> Optional[str]:
+        """
+        Create external issue (GitHub/GitLab/Jira) for incident.
+        
+        Returns:
+            Issue URL if successful, None otherwise
+        """
+        if not ADAPTERS_AVAILABLE:
+            return None
+        
+        try:
+            # Get adapter config from runtime settings
+            config_key = "interventions.issue_provider"
+            provider_setting = (
+                self.db.query(RuntimeSettings)
+                .filter(RuntimeSettings.key == config_key)
+                .first()
+            )
+            
+            if not provider_setting:
+                logger.debug("No issue provider configured")
+                return None
+            
+            provider = provider_setting.value.get("provider")
+            config = provider_setting.value.get("config", {})
+            
+            if not provider or not config:
+                return None
+            
+            # Create adapter
+            adapter = IssueAdapterFactory.create(provider, config)
+            
+            # Render template
+            title, body = render_incident_issue(incident)
+            
+            # Create issue request
+            from app.intervene.adapters.base import IssueCreateRequest
+            request = IssueCreateRequest(
+                title=title,
+                body=body,
+                labels=[incident.severity, incident.kind],
+                priority=incident.severity,
+            )
+            
+            # Create issue
+            response = adapter.create_issue(request)
+            
+            if response.success:
+                logger.info(f"Created external issue for incident {incident.id}: {response.issue_url}")
+                return response.issue_url
+            else:
+                logger.error(f"Failed to create external issue: {response.error}")
+                return None
+                
+        except Exception as e:
+            logger.exception(f"Error creating external issue: {e}")
+            return None
+    
     def _create_invariant_incident(
         self,
         eval_result: EvalResult,
@@ -254,6 +322,12 @@ class InvariantWatcher:
         self.db.commit()
         self.db.refresh(incident)
         
+        # Create external issue
+        issue_url = self._create_external_issue(incident)
+        if issue_url:
+            incident.issue_url = issue_url
+            self.db.commit()
+        
         return incident
     
     def _create_budget_incident(
@@ -287,6 +361,12 @@ class InvariantWatcher:
         self.db.commit()
         self.db.refresh(incident)
         
+        # Create external issue
+        issue_url = self._create_external_issue(incident)
+        if issue_url:
+            incident.issue_url = issue_url
+            self.db.commit()
+        
         return incident
     
     def _create_planner_incident(
@@ -315,6 +395,12 @@ class InvariantWatcher:
         self.db.add(incident)
         self.db.commit()
         self.db.refresh(incident)
+        
+        # Create external issue
+        issue_url = self._create_external_issue(incident)
+        if issue_url:
+            incident.issue_url = issue_url
+            self.db.commit()
         
         return incident
 
