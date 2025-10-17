@@ -536,3 +536,43 @@ class PolicyStats(Base):
 
     def __repr__(self):
         return f"<PolicyStats(policy={self.policy_id}, user={self.user_id}, precision={self.precision:.2f})>"
+
+
+class AgentAuditLog(Base):
+    """Agent execution audit log.
+    
+    Tracks all agent runs for observability, debugging, and compliance.
+    Stores plan, execution status, timing, and artifacts.
+    """
+    
+    __tablename__ = "agent_audit_log"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    run_id = Column(String(128), unique=True, nullable=False, index=True)
+    agent = Column(String(128), nullable=False, index=True)
+    objective = Column(String(512), nullable=False)
+    status = Column(String(32), nullable=False, index=True)  # queued, running, succeeded, failed, canceled
+    
+    # Timestamps
+    started_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    duration_ms = Column(Float, nullable=True)
+    
+    # Execution details
+    plan = Column(JSONB, nullable=True)
+    artifacts = Column(JSONB, nullable=True)
+    error = Column(String(2048), nullable=True)
+    
+    # Metadata
+    user_email = Column(String(320), nullable=True, index=True)  # Who triggered it
+    dry_run = Column(Boolean, default=True, nullable=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    __table_args__ = (
+        Index('ix_agent_audit_log_agent_status', 'agent', 'status'),
+        Index('ix_agent_audit_log_started_at_desc', started_at.desc()),
+    )
+    
+    def __repr__(self):
+        return f"<AgentAuditLog(run_id={self.run_id}, agent={self.agent}, status={self.status})>"

@@ -6,6 +6,7 @@ from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 
+from ..agents.audit import get_auditor
 from ..agents.executor import Executor
 from ..agents.planner import Planner
 from ..agents.registry import AgentRegistry
@@ -17,7 +18,8 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 _run_store: Dict[str, dict] = {}
 _registry = AgentRegistry()
 _planner = Planner()
-_executor = Executor(_run_store)
+_auditor = get_auditor()
+_executor = Executor(_run_store, _auditor)
 
 
 @router.get("")
