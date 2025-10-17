@@ -576,3 +576,56 @@ class AgentAuditLog(Base):
     
     def __repr__(self):
         return f"<AgentAuditLog(run_id={self.run_id}, agent={self.agent}, status={self.status})>"
+
+
+class AgentApproval(Base):
+    """Agent action approval requests with HMAC signatures.
+    
+    Tracks approval lifecycle for agent actions that require human review.
+    Includes HMAC signatures for secure approval links and nonce protection.
+    """
+    
+    __tablename__ = "agent_approvals"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    request_id = Column(String(128), unique=True, nullable=False, index=True)
+    
+    # Agent context
+    agent = Column(String(128), nullable=False, index=True)
+    action = Column(String(128), nullable=False)
+    context = Column(JSONB, nullable=False, default=dict)  # Action parameters
+    
+    # Policy decision
+    policy_rule_id = Column(String(128), nullable=True)
+    reason = Column(String(1024), nullable=False)
+    
+    # Approval lifecycle
+    status = Column(String(32), nullable=False, default="pending", index=True)  # pending, approved, rejected, canceled, expired
+    requested_by = Column(String(320), nullable=True, index=True)  # User email who triggered the action
+    requested_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    
+    reviewed_by = Column(String(320), nullable=True)  # User email who approved/rejected
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    expires_at = Column(DateTime(timezone=True), nullable=True, index=True)  # Auto-expire after N hours
+    
+    # Security
+    signature = Column(String(128), nullable=False, unique=True)  # HMAC-SHA256 signature
+    nonce = Column(String(64), nullable=False, unique=True, index=True)  # One-time use nonce
+    nonce_used = Column(Boolean, default=False, nullable=False)
+    
+    # Execution tracking
+    executed = Column(Boolean, default=False, nullable=False)
+    executed_at = Column(DateTime(timezone=True), nullable=True)
+    execution_result = Column(JSONB, nullable=True)  # Result of executing the approved action
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    __table_args__ = (
+        Index('ix_agent_approvals_agent_status', 'agent', 'status'),
+        Index('ix_agent_approvals_requested_at_desc', requested_at.desc()),
+    )
+    
+    def __repr__(self):
+        return f"<AgentApproval(request_id={self.request_id}, agent={self.agent}, status={self.status})>"

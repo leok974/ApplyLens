@@ -166,6 +166,14 @@ try:
 except ImportError:
     pass  # Approvals module not available yet
 
+# Agent Approvals API (Phase 4)
+try:
+    from .routers.approvals_agent import router as agent_approvals_router
+
+    app.include_router(agent_approvals_router)
+except ImportError:
+    pass  # Agent approvals module not available yet
+
 # Grouped unsubscribe
 try:
     from .routers.unsubscribe_group import router as unsubscribe_group_router
