@@ -39,11 +39,11 @@ applylens:
     # Production profile for Fivetran + warehouse operations
     prod:
       type: bigquery
-      method: service-account-json
+      method: service-account
       project: "{{ env_var('GCP_PROJECT') }}"
       dataset: gmail_raw_stg
       threads: 4
-      keyfile_json: "{{ env_var('GCP_SA_JSON') }}"
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS', 'applylens-warehouse-key.json') }}"
       location: US
       priority: interactive
       timeout_seconds: 600
