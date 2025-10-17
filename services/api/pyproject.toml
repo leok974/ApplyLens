@@ -30,6 +30,8 @@ dependencies = [
   "redis>=5.0.0",
   # Phase 2: Email categorization & ML
   "scikit-learn>=1.3.0",
+  # Phase 5.3: Active learning scheduling
+  "APScheduler>=3.10.0",
   # Security analysis
   "idna>=3.4",
   "joblib>=1.3.0",

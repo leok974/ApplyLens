@@ -54,6 +54,23 @@ app.add_middleware(
 def _startup():
     # Make sure ES index exists (no‑op if disabled)
     ensure_index()
+    
+    # Start scheduled jobs (Phase 5.3 active learning)
+    try:
+        from .scheduler import setup_scheduled_jobs
+        setup_scheduled_jobs()
+    except Exception as e:
+        print(f"Warning: Could not start scheduler: {e}")
+
+
+@app.on_event("shutdown")
+def _shutdown():
+    # Gracefully shutdown scheduler
+    try:
+        from .scheduler import shutdown_scheduler
+        shutdown_scheduler()
+    except Exception:
+        pass
 
 
 # Metrics endpoint (Prometheus text format)
@@ -145,6 +162,14 @@ app.include_router(intelligence.router)
 from .routers import metrics_eval  # noqa: E402
 
 app.include_router(metrics_eval.router)
+
+# Phase 5.3 - Active Learning & Judge Reliability
+try:
+    from .api.routes.active import router as active_router
+
+    app.include_router(active_router)
+except ImportError:
+    pass  # Active learning module not available yet
 
 # Email automation system
 try:
