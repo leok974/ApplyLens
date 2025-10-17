@@ -275,6 +275,295 @@ user_weights (
 - **SQL Injection:** SQLAlchemy ORM prevents injection
 - **XSS:** React escapes user input by default
 
+---
+
+## Agentic System Architecture (Phase 3)
+
+### Overview
+
+The agentic system enables autonomous workflows with built-in safety controls, resource limits, and comprehensive auditing.
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│                     Agent Execution Flow                          │
+└──────────────────────────────────────────────────────────────────┘
+
+    POST /agents/execute
+           │
+           ▼
+    ┌─────────────┐
+    │   Router    │  Validate request, check budgets
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │  Executor   │  Inject providers, enforce limits
+    └──────┬──────┘
+           │
+           ├──────────────┬──────────────┬──────────────┐
+           ▼              ▼              ▼              ▼
+    ┌──────────┐   ┌──────────┐  ┌──────────┐  ┌──────────┐
+    │  Agent   │   │Approvals │  │ Budgets  │  │Artifacts │
+    │          │   │          │  │          │  │          │
+    │ • Plan   │   │ • Policy │  │ • Time   │  │ • JSON   │
+    │ • Execute│   │ • Gates  │  │ • Ops    │  │ • MD     │
+    └────┬─────┘   └────┬─────┘  └────┬─────┘  └────┬─────┘
+         │              │              │              │
+         ▼              ▼              ▼              ▼
+    ┌──────────────────────────────────────────────────────┐
+    │              Providers (ES, BQ, Gmail)               │
+    └──────────────────────────────────────────────────────┘
+           │
+           ▼
+    ┌─────────────┐
+    │   Auditor   │  Log to database
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │  EventBus   │  Broadcast SSE events
+    └─────────────┘
+```
+
+### Core Components
+
+#### 1. Agent Registry
+
+**File:** `app/agents/registry.py`
+
+```python
+AGENT_REGISTRY = {
+    "warehouse_health": WarehouseHealthAgent,
+    "inbox_triage": InboxTriageAgent,          # Phase 3
+    "knowledge_update": KnowledgeUpdaterAgent, # Phase 3
+    "insights_writer": InsightsWriterAgent     # Phase 3
+}
+```
+
+#### 2. Executor (`app/agents/executor.py`)
+
+**Responsibilities:**
+- Inject dependencies (providers, auditor, event_bus)
+- Enforce budgets (time, operations)
+- Gate actions with `allow_actions` flag
+- Track operation counts
+- Handle errors and timeouts
+
+**Budget Enforcement:**
+```python
+# Before execution
+if budget_ms or budget_ops:
+    start_time = time.time()
+    ops_count = 0
+
+# During execution
+ops_count += 1  # Track each provider call
+
+# After execution
+elapsed_ms = (time.time() - start_time) * 1000
+budget_status = Approvals.check_budget(
+    elapsed_ms, ops_count, budget_ms, budget_ops
+)
+if budget_status["exceeded"]:
+    log.warning("Budget exceeded")
+```
+
+#### 3. Approvals System (`app/utils/approvals.py`)
+
+**Policy Checks:**
+
+```python
+class Approvals:
+    @staticmethod
+    def allow(agent_name, action, context) -> bool:
+        """Check if action is allowed by policy."""
+        
+        # Always allow read-only
+        if action in ['query', 'fetch', 'read', 'get', 'list', 'search']:
+            return True
+        
+        # Always deny high-risk
+        if action in ['quarantine', 'delete', 'purge', 'drop']:
+            return False  # Phase 3: denied, Phase 4: require approval
+        
+        # Check size limits
+        if context.get('size', 0) > 1000:
+            return False
+        
+        # Check budget limits
+        if context.get('budget_exceeded', False):
+            return False
+        
+        # Check risk thresholds
+        if context.get('risk_score', 0) > 95:
+            return False
+        
+        # Default: allow moderate-risk actions
+        return True
+    
+    @staticmethod
+    def check_budget(elapsed_ms, ops_count, budget_ms, budget_ops):
+        """Validate time and operation budgets."""
+        time_exceeded = budget_ms and elapsed_ms > budget_ms
+        ops_exceeded = budget_ops and ops_count > budget_ops
+        
+        return {
+            "exceeded": time_exceeded or ops_exceeded,
+            "time_limit": budget_ms,
+            "time_used": elapsed_ms,
+            "ops_limit": budget_ops,
+            "ops_used": ops_count
+        }
+```
+
+**Approval Flow (Phase 4):**
+```text
+Agent → Request approval → Approvals Tray → Human review → Approved/Denied
+```
+
+#### 4. Artifacts Store (`app/utils/artifacts.py`)
+
+**Purpose:** Persist agent outputs for review and auditing
+
+**File Structure:**
+```text
+agent/artifacts/
+├── inbox_triage/
+│   ├── report_2025-10-17_103045.md
+│   └── results_2025-10-17_103045.json
+├── knowledge_update/
+│   ├── synonyms.diff.json
+│   └── synonyms.diff.md
+└── insights_writer/
+    ├── email_activity_2025-W42.md
+    └── email_activity_2025-W42.json
+```
+
+**API:**
+```python
+from app.utils.artifacts import artifacts_store
+
+# Write markdown
+artifacts_store.write(
+    path='report.md',
+    content=report_text,
+    agent_name='inbox_triage'
+)
+
+# Write JSON
+artifacts_store.write_json(
+    path='results.json',
+    data={'total': 100},
+    agent_name='inbox_triage'
+)
+
+# Read artifact
+content = artifacts_store.read(
+    path='report.md',
+    agent_name='inbox_triage'
+)
+
+# List artifacts
+files = artifacts_store.list_files(
+    agent_name='inbox_triage',
+    pattern='*.json'
+)
+
+# Timestamped paths
+path = artifacts_store.get_timestamped_path(
+    prefix='report',
+    extension='md',
+    agent_name='inbox_triage'
+)  # → "report_2025-10-17_103045.md"
+
+# Weekly paths (ISO 8601)
+path = artifacts_store.get_weekly_path(
+    prefix='insights',
+    extension='md'
+)  # → "insights_2025-W42.md"
+```
+
+### Phase 3 Agents
+
+#### Inbox Triage Agent
+
+**Purpose:** Automatically triage incoming emails by risk level
+
+**Architecture:**
+```text
+Gmail API → Fetch emails → RiskScorer → Classify → Label/Quarantine → Artifacts
+```
+
+**RiskScorer:**
+- Suspicious keywords (15 points each, max 40)
+- Suspicious TLDs (20 points)
+- Phishing patterns (20 points)
+- Gmail spam labels (50 points)
+- Safe domain allowlist (score = 0)
+
+**Output:** Markdown report + JSON results
+
+#### Knowledge Updater Agent
+
+**Purpose:** Sync Elasticsearch configuration from BigQuery data marts
+
+**Architecture:**
+```text
+BigQuery → Query mart → Fetch ES config → Generate diff → Apply (with approval) → Artifacts
+```
+
+**Diff Types:**
+- Added: New items not in current config
+- Removed: Items in current but not in new
+- Unchanged: Items in both
+
+**Output:** JSON diff + markdown report
+
+#### Insights Writer Agent
+
+**Purpose:** Generate weekly insights reports from warehouse metrics
+
+**Architecture:**
+```text
+BigQuery → Query current week → Query previous week → Calculate trends → Generate report → Artifacts
+```
+
+**Trend Calculation:**
+```python
+change_pct = ((current - previous) / previous) * 100
+direction = '📈' if change_pct > 0 else '📉' if change_pct < 0 else '➡️'
+```
+
+**Output:** Markdown report with tables + JSON data
+
+### Safety Model
+
+**Defense in Depth:**
+
+1. **Dry-run by default** - All agents default to dry-run mode
+2. **Action gates** - `allow_actions=True` required for mutations
+3. **Approval policies** - High-risk actions require human approval (Phase 4)
+4. **Budget limits** - Time and operation limits prevent runaway execution
+5. **Audit logging** - All runs logged to database
+6. **Artifacts** - Outputs persisted for review
+
+**Budget Example:**
+```json
+{
+  "agent_type": "inbox_triage",
+  "budget_ms": 30000,    // Max 30 seconds
+  "budget_ops": 100,     // Max 100 operations
+  "allow_actions": true  // Enable mutations
+}
+```
+
+If budgets are exceeded:
+- Warning logged (execution completes)
+- Future: abort execution or throttle
+- Phase 4: require approval for continuation
+
+---
+
 ## Monitoring & Observability
 
 ### Prometheus Metrics

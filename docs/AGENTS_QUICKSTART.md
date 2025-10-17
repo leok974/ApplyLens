@@ -674,6 +674,301 @@ curl -X POST http://localhost:8000/agents/execute \
 
 **See Also**: [RUNBOOK_WAREHOUSE_HEALTH.md](./RUNBOOK_WAREHOUSE_HEALTH.md)
 
+### Inbox Triage Agent (`inbox_triage`) - Phase 3
+
+**Purpose**: Automatically triage incoming emails by risk level
+
+**Capabilities**:
+- ✅ Risk scoring (0-100) based on multiple signals
+- ✅ Phishing detection (suspicious keywords, TLDs, patterns)
+- ✅ Gmail label application
+- ✅ Quarantine high-risk emails (with approval)
+- ✅ Markdown report generation
+
+**Usage:**
+```bash
+curl -X POST http://localhost:8000/agents/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_type": "inbox_triage",
+    "objective": "Triage last 24 hours of inbox emails",
+    "dry_run": true,
+    "budget_ms": 30000,
+    "budget_ops": 100,
+    "params": {
+      "max_emails": 50,
+      "hours_back": 24
+    }
+  }'
+```
+
+**Output:**
+```json
+{
+  "total_emails": 50,
+  "by_risk_level": {
+    "SAFE": 30,
+    "LOW": 10,
+    "MEDIUM": 5,
+    "HIGH": 3,
+    "CRITICAL": 2
+  },
+  "actions_taken": 8,
+  "artifacts": {
+    "report": "inbox_triage_2025-10-17.md",
+    "results": "inbox_triage_2025-10-17.json"
+  },
+  "ops_count": 52
+}
+```
+
+**Risk Scoring Signals**:
+- Suspicious keywords: "urgent", "verify", "suspend", "account", "click here", "password", etc.
+- Suspicious TLDs: .ru, .cn, .tk, .ml, .ga, .cf
+- Phishing patterns: combinations like "verify" + "account"
+- Gmail spam labels
+- Safe domain allowlist: google.com, github.com, microsoft.com, etc.
+
+### Knowledge Updater Agent (`knowledge_update`) - Phase 3
+
+**Purpose**: Sync Elasticsearch configuration from BigQuery data marts
+
+**Capabilities**:
+- ✅ Query BigQuery marts for configuration data
+- ✅ Generate diffs (added/removed/unchanged)
+- ✅ Preview changes in dry-run mode
+- ✅ Apply changes with approval gates
+- ✅ Write JSON diff artifacts
+
+**Usage:**
+```bash
+curl -X POST http://localhost:8000/agents/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_type": "knowledge_update",
+    "objective": "Update ES synonyms from warehouse",
+    "dry_run": true,
+    "budget_ops": 10,
+    "params": {
+      "config_type": "synonyms",
+      "mart_table": "knowledge.synonyms",
+      "apply_changes": false
+    }
+  }'
+```
+
+**Output:**
+```json
+{
+  "config_type": "synonyms",
+  "added_count": 15,
+  "removed_count": 3,
+  "unchanged_count": 42,
+  "applied": false,
+  "artifacts": {
+    "diff_json": "synonyms.diff.json",
+    "diff_report": "synonyms.diff.md"
+  },
+  "ops_count": 2
+}
+```
+
+**Supported Config Types**:
+- `synonyms` - Search synonyms for Elasticsearch
+- `routing_rules` - Pattern-based routing rules
+
+### Insights Writer Agent (`insights_writer`) - Phase 3
+
+**Purpose**: Generate weekly insights reports from warehouse metrics
+
+**Capabilities**:
+- ✅ Query warehouse for weekly aggregations
+- ✅ Calculate week-over-week trends
+- ✅ Generate markdown reports with tables
+- ✅ Include ASCII sparkline charts
+- ✅ Write to ISO week paths (2025-W42.md)
+
+**Usage:**
+```bash
+curl -X POST http://localhost:8000/agents/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_type": "insights_writer",
+    "objective": "Generate weekly email activity report",
+    "budget_ops": 5,
+    "params": {
+      "report_type": "email_activity",
+      "week_offset": 0,
+      "include_charts": true
+    }
+  }'
+```
+
+**Output:**
+```json
+{
+  "report_type": "email_activity",
+  "week": "2025-W42",
+  "artifacts": {
+    "report": "email_activity_2025-W42.md",
+    "data": "email_activity_2025-W42.json"
+  },
+  "metrics_summary": {
+    "current": {
+      "total_emails": 1250,
+      "unique_senders": 450,
+      "spam_emails": 125
+    },
+    "trends": {
+      "total_emails": {
+        "current": 1250,
+        "previous": 1100,
+        "change": 150,
+        "change_pct": 13.6,
+        "direction": "📈"
+      }
+    }
+  },
+  "ops_count": 2
+}
+```
+
+**Report Types**:
+- `email_activity` - Weekly email processing metrics
+- `applications` - Job application pipeline metrics
+
+---
+
+## Phase 3 Features
+
+### Budget Enforcement
+
+**Purpose**: Prevent agents from consuming excessive resources
+
+**Usage:**
+```json
+{
+  "agent_type": "inbox_triage",
+  "budget_ms": 30000,      // Max 30 seconds
+  "budget_ops": 100        // Max 100 operations
+}
+```
+
+**Budget Tracking:**
+- `budget_ms` - Maximum execution time in milliseconds
+- `budget_ops` - Maximum number of operations (queries, API calls, etc.)
+- Budgets checked before and after execution
+- Warning logged if exceeded (execution not aborted)
+
+**Example Response:**
+```json
+{
+  "status": "success",
+  "ops_count": 52,
+  "duration_ms": 15234,
+  "budget_status": {
+    "exceeded": false,
+    "time_limit": 30000,
+    "time_used": 15234,
+    "ops_limit": 100,
+    "ops_used": 52
+  }
+}
+```
+
+### Approval Gates
+
+**Purpose**: Require human approval for high-risk actions
+
+**Usage:**
+```json
+{
+  "agent_type": "inbox_triage",
+  "allow_actions": true,  // Enable action execution
+  "dry_run": false
+}
+```
+
+**Approval Policy:**
+
+**Always Allowed** (no approval needed):
+- Read-only operations: query, fetch, read, get, list, search
+
+**Always Denied**:
+- High-risk operations: quarantine, delete, purge, drop
+
+**Conditional Approval**:
+- Size limits: Operations affecting > 1000 items require approval
+- Budget limits: Operations exceeding budget require approval
+- Risk thresholds: Actions with risk score > 95 require approval
+
+**Example:**
+```python
+from app.utils.approvals import Approvals
+
+# Check if action is allowed
+allowed = Approvals.allow(
+    agent_name='inbox_triage',
+    action='quarantine',
+    context={
+        'email_count': 5,
+        'risk_score': 98
+    }
+)
+
+# Phase 3: quarantine is always denied
+# Phase 4: will implement human approval workflow
+```
+
+### Artifacts Storage
+
+**Purpose**: Persist agent outputs for review and auditing
+
+**Usage:**
+```python
+from app.utils.artifacts import artifacts_store
+
+# Write markdown report
+artifacts_store.write(
+    path='report.md',
+    content=report_content,
+    agent_name='insights_writer'
+)
+
+# Write JSON data
+artifacts_store.write_json(
+    path='results.json',
+    data={'total': 100, 'processed': 95},
+    agent_name='inbox_triage'
+)
+
+# Read artifact
+content = artifacts_store.read(
+    path='report.md',
+    agent_name='insights_writer'
+)
+
+# List artifacts
+files = artifacts_store.list_files(
+    agent_name='inbox_triage',
+    pattern='*.json'
+)
+```
+
+**Artifact Paths:**
+- Base: `agent/artifacts/{agent_name}/`
+- Timestamped: `report_2025-10-17_103045.md`
+- Weekly: `email_activity_2025-W42.md`
+
+**API Access:**
+```bash
+# List artifacts for an agent
+curl -X GET "http://localhost:8000/agents/artifacts/inbox_triage"
+
+# Download artifact
+curl -X GET "http://localhost:8000/agents/artifacts/inbox_triage/report.md"
+```
+
 ---
 
 ## Next Steps
