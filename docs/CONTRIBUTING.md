@@ -70,10 +70,18 @@ pytest
 # Frontend E2E tests
 npm run test:e2e
 
+# dbt models (requires BigQuery access)
+cd analytics/dbt
+# Use .env.ci.template as reference for environment variables
+export RAW_DATASET=gmail  # Or use: source ../../.env.ci.template
+dbt run --target prod --select models/staging/fivetran models/marts/warehouse
+dbt test --target prod --select models/staging/fivetran models/marts/warehouse
+
 # Linting
 ruff check .
 black --check .
 npm run lint
+pre-commit run --all-files  # Optional: run pre-commit hooks
 ```text
 
 ### 3. Commit

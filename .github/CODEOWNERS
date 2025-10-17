@@ -1,0 +1,16 @@
+# ApplyLens Code Owners
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# dbt configuration and models - require review to prevent artifact commits
+analytics/dbt/**              @leok974
+
+# Documentation - ensure accuracy
+docs/**                       @leok974
+
+# Workflow changes - prevent breaking CI/CD
+.github/workflows/**          @leok974
+
+# Security - credentials and secrets
+secrets/**                    @leok974
+infra/secrets/**              @leok974
+*.env*                        @leok974
