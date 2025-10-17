@@ -126,6 +126,11 @@ from .routers import metrics_profile  # noqa: E402
 
 app.include_router(metrics_profile.router)
 
+# Phase 5 - Agent Telemetry & Online Evaluation
+from .routers import agents_telemetry  # noqa: E402
+
+app.include_router(agents_telemetry.router)
+
 # Email automation system
 try:
     from .routers.mail_tools import router as mail_tools_router

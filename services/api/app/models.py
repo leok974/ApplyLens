@@ -629,3 +629,83 @@ class AgentApproval(Base):
     
     def __repr__(self):
         return f"<AgentApproval(request_id={self.request_id}, agent={self.agent}, status={self.status})>"
+
+
+# ===== Phase 5: Intelligence & Evaluation =====
+
+
+class AgentMetricsDaily(Base):
+    """Daily aggregated metrics for agent quality tracking.
+    
+    Captures production quality signals:
+    - Success/failure rates
+    - User feedback (thumbs up/down)
+    - Quality scores from online eval
+    - Latency and cost metrics
+    - Red-team attack detection
+    
+    Used for:
+    - Trend analysis and regression detection
+    - Weekly intelligence reports
+    - Dashboard metrics
+    - Budget enforcement
+    """
+    
+    __tablename__ = "agent_metrics_daily"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent = Column(String(128), nullable=False, index=True)
+    date = Column(DateTime(timezone=True), nullable=False, index=True)
+    
+    # Execution metrics
+    total_runs = Column(Integer, default=0, nullable=False)
+    successful_runs = Column(Integer, default=0, nullable=False)
+    failed_runs = Column(Integer, default=0, nullable=False)
+    success_rate = Column(Float, nullable=True)  # successful_runs / total_runs
+    
+    # Quality metrics
+    avg_quality_score = Column(Float, nullable=True)  # 0-100 from judges
+    median_quality_score = Column(Float, nullable=True)
+    p95_quality_score = Column(Float, nullable=True)
+    quality_samples = Column(Integer, default=0)  # How many runs were evaluated
+    
+    # User feedback
+    thumbs_up = Column(Integer, default=0, nullable=False)
+    thumbs_down = Column(Integer, default=0, nullable=False)
+    feedback_rate = Column(Float, nullable=True)  # (thumbs_up + thumbs_down) / total_runs
+    satisfaction_rate = Column(Float, nullable=True)  # thumbs_up / (thumbs_up + thumbs_down)
+    
+    # Performance metrics
+    avg_latency_ms = Column(Float, nullable=True)
+    median_latency_ms = Column(Float, nullable=True)
+    p95_latency_ms = Column(Float, nullable=True)
+    p99_latency_ms = Column(Float, nullable=True)
+    
+    # Cost tracking
+    total_cost_weight = Column(Float, default=0.0)  # Relative cost units
+    avg_cost_per_run = Column(Float, nullable=True)
+    
+    # Invariant tracking
+    invariants_passed = Column(Integer, default=0)
+    invariants_failed = Column(Integer, default=0)
+    failed_invariant_ids = Column(ARRAY(Text), nullable=True)  # List of failed invariant IDs
+    
+    # Red-team tracking
+    redteam_attacks_detected = Column(Integer, default=0)
+    redteam_attacks_missed = Column(Integer, default=0)
+    redteam_false_positives = Column(Integer, default=0)
+    
+    # Breakdown by difficulty (JSON)
+    quality_by_difficulty = Column(JSONB, nullable=True)  # {"easy": 95.0, "medium": 80.0, "hard": 65.0}
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    __table_args__ = (
+        Index('ix_agent_metrics_daily_agent_date', 'agent', 'date', unique=True),
+        Index('ix_agent_metrics_daily_date_desc', date.desc()),
+    )
+    
+    def __repr__(self):
+        return f"<AgentMetricsDaily(agent={self.agent}, date={self.date.date()}, success_rate={self.success_rate:.2%})>"
