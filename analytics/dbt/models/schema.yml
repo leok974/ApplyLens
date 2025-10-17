@@ -1,0 +1,122 @@
+version: 2
+
+models:
+  # Staging models - Fivetran Gmail sources
+  - name: stg_gmail__messages
+    description: "Staging layer for Fivetran Gmail messages with basic transformations"
+    columns:
+      - name: message_id
+        description: "Unique Gmail message ID"
+        tests:
+          - unique
+          - not_null
+      - name: thread_id
+        description: "Gmail thread ID (conversation)"
+        tests:
+          - not_null
+      - name: received_ts
+        description: "Message received timestamp"
+        tests:
+          - not_null
+      - name: from_email
+        description: "Sender email address"
+        tests:
+          - not_null
+      - name: synced_at
+        description: "Fivetran sync timestamp"
+        tests:
+          - not_null
+
+  - name: stg_gmail__threads
+    description: "Staging layer for Gmail conversation threads"
+    columns:
+      - name: thread_id
+        description: "Unique Gmail thread ID"
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_gmail__labels
+    description: "Staging layer for Gmail labels and categories"
+    columns:
+      - name: label_id
+        description: "Unique Gmail label ID"
+        tests:
+          - unique
+          - not_null
+      - name: label_name
+        description: "Human-readable label name"
+        tests:
+          - not_null
+
+  # Mart models - Warehouse analytics
+  - name: mart_email_activity_daily
+    description: "Daily email activity metrics for dashboards"
+    columns:
+      - name: day
+        description: "Date of activity"
+        tests:
+          - unique
+          - not_null
+      - name: messages_count
+        description: "Total messages received on this day"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: unique_senders
+        description: "Count of unique senders"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+    tests:
+      # Data quality: no future dates
+      - dbt_utils.expression_is_true:
+          expression: "day <= current_date()"
+
+  - name: mart_top_senders_30d
+    description: "Top email senders in the last 30 days"
+    columns:
+      - name: from_email
+        description: "Sender email address"
+        tests:
+          - unique
+          - not_null
+      - name: messages_30d
+        description: "Message count in last 30 days"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 2"  # Enforces having clause
+    tests:
+      # Data quality: no more than 100 rows
+      - dbt_utils.expression_is_true:
+          expression: "(select count(*) from {{ ref('mart_top_senders_30d') }}) <= 100"
+
+  - name: mart_categories_30d
+    description: "Email category distribution in last 30 days"
+    columns:
+      - name: category
+        description: "Gmail category (promotions, updates, social, forums, primary)"
+        tests:
+          - unique
+          - not_null
+          - accepted_values:
+              values: ['promotions', 'updates', 'social', 'forums', 'primary']
+      - name: messages_30d
+        description: "Message count in category"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: pct_of_total
+        description: "Percentage of total messages"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "between 0 and 100"
+    tests:
+      # Data quality: percentages sum to ~100
+      - dbt_utils.expression_is_true:
+          expression: "abs((select sum(pct_of_total) from {{ ref('mart_categories_30d') }}) - 100) < 1"

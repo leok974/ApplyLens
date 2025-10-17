@@ -2,11 +2,12 @@
   
     
 
-    create or replace table `applylens-gmail-1759983601`.`applylens`.`pred_email_count`
+    create or replace table `applylens-gmail-1759983601`.`gmail_raw_stg_ml`.`pred_email_count`
       
     
     
 
+    
     OPTIONS()
     as (
       
@@ -20,7 +21,7 @@ SELECT
   prediction_interval_lower_bound AS lower_bound,
   prediction_interval_upper_bound AS upper_bound
 FROM ML.FORECAST(
-  MODEL `applylens-gmail-1759983601.applylens.m_email_count_arima`,
+  MODEL `applylens-gmail-1759983601.gmail_raw_stg.m_email_count_arima`,
   STRUCT(7 AS horizon, 0.9 AS confidence_level)
 )
 ORDER BY forecast_timestamp

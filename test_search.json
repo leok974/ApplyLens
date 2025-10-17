@@ -1,0 +1,13 @@
+{
+  "query": {
+    "bool": {
+      "must": [
+        {"query_string": {"query": "interview"}}
+      ],
+      "filter": [
+        {"term": {"owner_email.keyword": "leoklemet.pa@gmail.com"}}
+      ]
+    }
+  },
+  "size": 2
+}

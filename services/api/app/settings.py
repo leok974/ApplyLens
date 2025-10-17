@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     ELASTICSEARCH_INDEX: str = "gmail_emails"
     KIBANA_PORT: Optional[int] = None
 
+    # Feature flags
+    CHAT_STREAMING_ENABLED: bool = True  # Canary toggle for SSE streaming
+
     # PDF parsing
     GMAIL_PDF_PARSE: bool = False
     GMAIL_PDF_MAX_BYTES: int = 2 * 1024 * 1024  # 2MB default

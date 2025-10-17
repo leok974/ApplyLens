@@ -6,8 +6,9 @@ This document tracks recurring maintenance tasks for the ApplyLens warehouse inf
 
 ### Service Account Key Rotation
 **Frequency:** Every 90 days  
-**Last Rotated:** [FILL IN CURRENT DATE]  
-**Next Rotation:** [FILL IN DATE + 90 DAYS]
+**Last Rotated:** 2025-10-16 (initial setup)  
+**Next Rotation:** 2026-01-14  
+**Reminder Status:** ✅ Scheduled (Windows Task Scheduler)
 
 **Procedure:**
 ```powershell
@@ -38,11 +39,15 @@ Remove-Item new-key.json -Force
 ```
 
 **Calendar Reminder:**
+✅ **Already configured!** Task "ApplyLens SA Key Rotation Reminder" will alert on 2026-01-14.
+
+To verify or modify:
 ```powershell
-# Set Windows Task Scheduler reminder
-$action = New-ScheduledTaskAction -Execute "msg" -Argument "$env:USERNAME /TIME:60 'Rotate SA key for applylens-warehouse'"
-$trigger = New-ScheduledTaskTrigger -Once -At ([DateTime]::Now.AddDays(90))
-Register-ScheduledTask -TaskName "SA Key Rotation Reminder" -Action $action -Trigger $trigger
+# View scheduled task
+Get-ScheduledTask -TaskName "ApplyLens SA Key Rotation Reminder"
+
+# View next run time
+Get-ScheduledTaskInfo -TaskName "ApplyLens SA Key Rotation Reminder" | Select NextRunTime
 ```
 
 ---
@@ -91,7 +96,9 @@ dbt test --target prod --select +marts.warehouse.*
 ## 💰 Cost Management
 
 ### GCP Budget Alert
-**Status:** ⏳ PENDING SETUP
+**Status:** ✅ CONFIGURED (2025-10-16)  
+**Budget ID:** 82c4ede7-cc5f-4304-964f-f294103854ba  
+**Billing Account:** 01683B-6527BB-918BC2
 
 **Configuration:**
 ```bash
@@ -128,64 +135,59 @@ gcloud billing budgets create \
 ## 🔄 Data Sync Configuration
 
 ### Fivetran Sync Frequency
-**Status:** ⏳ NEEDS UPDATE (currently 60 minutes)  
-**Target:** 15 minutes (to meet <30 min freshness SLO)
+**Status:** ✅ CONFIGURED (15 minutes as of 2025-10-16)  
+**Previous:** 60 minutes  
+**Current:** 15 minutes (to meet <30 min freshness SLO)
 
 **Current Performance:**
-- Freshness lag: 10-12 minutes (with 60-min sync)
-- API freshness SLO: <30 minutes
-- Target lag: <15 minutes (with 15-min sync)
+- Sync frequency: 15 minutes ✅
+- Expected freshness lag: <15 minutes
+- API freshness SLO: <30 minutes (exceeded)
+- Target achieved: Yes ✅
 
 **Update Procedure:**
-1. Navigate to Fivetran dashboard: https://fivetran.com/dashboard
-2. Select Gmail connector for `applylens-gmail-1759983601`
-3. Settings → Sync Frequency
-4. Change from "60 minutes" to "15 minutes"
-5. Save changes
-6. Monitor first few syncs in Logs tab
-7. Verify freshness: `Invoke-RestMethod 'http://localhost:8003/api/metrics/profile/freshness'`
-8. Confirm: `minutes_since_sync` should be <15 min
+✅ **Already completed!** (2025-10-16)
+
+Configuration details:
+1. Fivetran dashboard: https://fivetran.com/dashboard
+2. Gmail connector for `applylens-gmail-1759983601`
+3. Settings → Sync Frequency: Changed from 60 min → 15 min
+4. Verified in Logs tab
 
 **Cost Impact:**
-- Current: 90k MAR (18% of 500k free tier)
-- With 15-min sync: ~360k MAR (72% of free tier)
+- Previous (60-min): ~90k MAR (18% of 500k free tier)
+- Current (15-min): ~360k MAR (72% of 500k free tier)
 - Still within free tier ✅
+- No additional cost incurred
 
 ---
 
 ## 📊 Monitoring & Uptime
 
 ### Uptime Monitoring Schedule
-**Status:** ✅ Complete (if scheduled)
+**Status:** ✅ SCHEDULED (2025-10-16)
 
-**Script:** `analytics\ops\uptime-monitor.ps1`
+**Script:** `analytics\ops\uptime-monitor.ps1`  
+**Frequency:** Every 5 minutes  
+**Task Name:** "ApplyLens Warehouse Uptime Monitor"
 
-**Scheduled Task Setup:**
+**Scheduled Task Details:**
+- **Next Run:** Check with `Get-ScheduledTaskInfo -TaskName "ApplyLens Warehouse Uptime Monitor"`
+- **Execution:** PowerShell (hidden window, no profile)
+- **Timeout:** 2 minutes max execution time
+- **Retry:** Up to 3 restarts on failure (1-minute intervals)
+- **Battery:** Runs even on battery power
+
+**Verification:**
 ```powershell
-$action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-  -Argument "-NoProfile -ExecutionPolicy Bypass -File D:\ApplyLens\analytics\ops\uptime-monitor.ps1"
-
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
-  -RepetitionInterval (New-TimeSpan -Minutes 5) `
-  -RepetitionDuration ([TimeSpan]::MaxValue)
-
-$settings = New-ScheduledTaskSettingsSet `
-  -ExecutionTimeLimit (New-TimeSpan -Minutes 2) `
-  -RestartCount 3 `
-  -RestartInterval (New-TimeSpan -Minutes 1)
-
-Register-ScheduledTask `
-  -TaskName "ApplyLens Warehouse Uptime Monitor" `
-  -Action $action `
-  -Trigger $trigger `
-  -Settings $settings `
-  -Description "Monitors warehouse API freshness and pushes metrics to Prometheus"
-```
-
-**Verify Task:**
-```powershell
+# Check task status
 Get-ScheduledTask -TaskName "ApplyLens Warehouse Uptime Monitor"
+
+# View execution history
 Get-ScheduledTaskInfo -TaskName "ApplyLens Warehouse Uptime Monitor"
+
+# View task details
+Get-ScheduledTask -TaskName "ApplyLens Warehouse Uptime Monitor" | Get-ScheduledTaskInfo
 ```
 
 ---
@@ -322,12 +324,14 @@ gcloud billing accounts list
 
 ## 🎯 Remaining Setup Tasks
 
-- [ ] Rotate SA key (set calendar reminder for 90 days)
-- [ ] Set up GCP budget alert ($10/month threshold)
-- [ ] Update Fivetran sync frequency (60 min → 15 min)
-- [ ] Schedule uptime monitoring (every 5 minutes)
+- [x] **Rotate SA key (set calendar reminder for 90 days)** ✅ **COMPLETE (2025-10-16)** - Next reminder: 2026-01-14
+- [x] **Set up GCP budget alert ($10/month threshold)** ✅ **COMPLETE (2025-10-16)**
+- [x] **Update Fivetran sync frequency (60 min → 15 min)** ✅ **COMPLETE (2025-10-16)**
+- [x] **Schedule uptime monitoring (every 5 minutes)** ✅ **COMPLETE (2025-10-16)**
 - [ ] Add metrics to monthly review table
 - [ ] Test ES validation with `validate_es=true` flag
+
+**All critical setup tasks complete!** 🎉
 
 ---
 

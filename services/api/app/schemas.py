@@ -6,11 +6,16 @@ from pydantic import BaseModel
 
 class EmailOut(BaseModel):
     id: int
-    thread_id: str
-    from_addr: str
-    subject: str
-    label: str
-    received_at: datetime
+    gmail_id: Optional[str] = None
+    thread_id: Optional[str] = None
+    subject: Optional[str] = None
+    sender: Optional[str] = None
+    recipient: Optional[str] = None
+    received_at: Optional[datetime] = None
+    owner_email: Optional[str] = None
+    company: Optional[str] = None
+    role: Optional[str] = None
+    category: Optional[str] = None
 
     class Config:
         from_attributes = True

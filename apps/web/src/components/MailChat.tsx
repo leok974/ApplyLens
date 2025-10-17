@@ -8,10 +8,12 @@
  * - Loading states and error handling
  */
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Send, Sparkles, AlertCircle, Mail, Play } from 'lucide-react'
 import { sendChatMessage, Message, ChatResponse } from '@/lib/chatClient'
 import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
+import { sync7d, sync60d } from '@/lib/api'
+import { useNavigate } from 'react-router-dom'
 
 interface QuickAction {
   label: string
@@ -68,6 +70,15 @@ interface ConversationMessage extends Message {
 }
 
 export default function MailChat() {
+  const navigate = useNavigate()
+  const [userEmail] = useState('leoklemet.pa@gmail.com') // TODO: Read from auth context
+  
+  // Time window with localStorage persistence
+  const [windowDays, setWindowDays] = useState<number>(() => {
+    const v = Number(localStorage.getItem('chat:windowDays') || '30')
+    return [7, 30, 60, 90].includes(v) ? v : 30
+  })
+  
   const [messages, setMessages] = useState<ConversationMessage[]>([
     {
       role: 'assistant',
@@ -76,7 +87,7 @@ export default function MailChat() {
     },
   ])
   const [input, setInput] = useState('')
-  const [lastQuery, setLastQuery] = useState<string>('')
+  const [lastQuery, setLastQuery] = useState<string>('*')
   const [fileActions, setFileActions] = useState(false)
   const [explain, setExplain] = useState(false)
   const [remember, setRemember] = useState(false)
@@ -86,7 +97,10 @@ export default function MailChat() {
   const [error, setError] = useState<string | null>(null)
   const [dupes, setDupes] = useState<any[] | null>(null)
   const [summary, setSummary] = useState<any | null>(null)
-
+  const [timing, setTiming] = useState<{es_ms?: number; llm_ms?: number; client_ms?: number}>({})
+  const [isStreamAlive, setIsStreamAlive] = useState(false)
+  const streamHeartbeatRef = useRef<number | null>(null)
+  const currentEventSourceRef = useRef<EventSource | null>(null)
   async function loadDupes() {
     try {
       const r = await fetch('/api/money/duplicates')
@@ -105,16 +119,146 @@ export default function MailChat() {
     }
   }
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      // Ctrl/Cmd+R to re-run last query
+      if (e.key.toLowerCase() === 'r' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        if (lastQuery) {
+          send(lastQuery, { propose: fileActions, explain, remember })
+        }
+      }
+      // 1/2/3/4 to quickly set days (7/30/60/90)
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === '1') changeWindowDays(7)
+        if (e.key === '2') changeWindowDays(30)
+        if (e.key === '3') changeWindowDays(60)
+        if (e.key === '4') changeWindowDays(90)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lastQuery, windowDays, fileActions, explain, remember])
+
+  // Cleanup on unmount - abort any active streams
+  useEffect(() => {
+    return () => {
+      if (currentEventSourceRef.current) {
+        currentEventSourceRef.current.close()
+        clearStreamHeartbeat()
+      }
+    }
+  }, [])
+
+  // UX Heartbeat - track active sessions (30s interval)
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+      try {
+        await fetch('/api/ux/heartbeat', { method: 'POST' })
+      } catch (err) {
+        // Silently fail - this is just telemetry
+        console.debug('[Heartbeat] Failed:', err)
+      }
+    }
+
+    // Send initial heartbeat when chat opens
+    sendHeartbeat()
+    fetch('/api/ux/chat/opened', { method: 'POST' }).catch(() => {})
+
+    // Send heartbeat every 30s while component is mounted
+    const interval = setInterval(sendHeartbeat, 30000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
+
+  async function handleSync(days: number) {
+    setBusy(true)
+    try {
+      if (days === 7) {
+        await sync7d()
+      } else if (days === 60) {
+        await sync60d()
+      }
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          content: `✅ Synced ${days} days of emails. Try your search again!`,
+        },
+      ])
+    } catch (err) {
+      console.error('Sync failed:', err)
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'assistant',
+          content: `❌ Sync failed: ${err}`,
+        },
+      ])
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function openSearchPrefilled() {
+    const q = lastQuery?.trim() || '*'
+    navigate(`/search?q=${encodeURIComponent(q)}&window=${windowDays}`)
+  }
+
+  function changeWindowDays(days: number) {
+    setWindowDays(days)
+    localStorage.setItem('chat:windowDays', String(days))
+    // Re-run last query with new window
+    if (lastQuery) {
+      send(lastQuery, { propose: fileActions, explain, remember })
+    }
+  }
+
+  // Heartbeat management for connection status
+  function resetStreamHeartbeat() {
+    setIsStreamAlive(true)
+    
+    // Clear existing timeout
+    if (streamHeartbeatRef.current) {
+      window.clearTimeout(streamHeartbeatRef.current)
+    }
+    
+    // Set new timeout - mark as dead after 35s of silence
+    streamHeartbeatRef.current = window.setTimeout(() => {
+      setIsStreamAlive(false)
+    }, 35000)
+  }
+
+  function clearStreamHeartbeat() {
+    setIsStreamAlive(false)
+    if (streamHeartbeatRef.current) {
+      window.clearTimeout(streamHeartbeatRef.current)
+      streamHeartbeatRef.current = null
+    }
+  }
+
   async function send(text: string, opts?: { propose?: boolean; explain?: boolean; remember?: boolean }) {
     if (!text.trim() || busy) return
 
     setLastQuery(text)
     setError(null)
+    setTiming({}) // Reset timing
+    const t0 = performance.now()
     setIntentTokens([]) // Reset tokens for new query
     const userMessage: ConversationMessage = { role: 'user', content: text }
     setMessages((m) => [...m, userMessage])
     setInput('')
     setBusy(true)
+
+    // Abort any existing stream
+    if (currentEventSourceRef.current) {
+      console.log('[Chat] Aborting previous stream')
+      currentEventSourceRef.current.close()
+      clearStreamHeartbeat()
+    }
 
     // Use streaming SSE for real-time updates
     const shouldPropose = opts?.propose ?? false
@@ -125,25 +269,36 @@ export default function MailChat() {
       + (shouldExplain ? '&explain=1' : '')
       + (shouldRemember ? '&remember=1' : '')
       + (mode ? `&mode=${encodeURIComponent(mode)}` : '')
+      + `&window_days=${windowDays}` // Add window_days parameter
     
     let assistantText = ''
     let filedCount = 0
 
     try {
       const ev = new EventSource(url)
+      currentEventSourceRef.current = ev // Store reference for cleanup
+      
+      // Reset heartbeat on connection
+      resetStreamHeartbeat()
+      
+      ev.addEventListener('ready', () => {
+        resetStreamHeartbeat()
+      })
       
       ev.addEventListener('intent', (e: any) => {
+        resetStreamHeartbeat()
         const data = JSON.parse(e.data)
         console.log('[Chat] Intent detected:', data.intent)
       })
       
       ev.addEventListener('intent_explain', (e: any) => {
+        resetStreamHeartbeat()
         const data = JSON.parse(e.data)
         setIntentTokens(data.tokens || [])
         console.log('[Chat] Intent tokens:', data.tokens)
       })
-      
       ev.addEventListener('memory', (e: any) => {
+        resetStreamHeartbeat()
         const data = JSON.parse(e.data)
         const brands = data.kept_brands || []
         console.log('[Chat] Learned preferences:', brands)
@@ -161,6 +316,7 @@ export default function MailChat() {
       })
 
       ev.addEventListener('tool', (e: any) => {
+        resetStreamHeartbeat()
         const data = JSON.parse(e.data)
         console.log('[Chat] Tool result:', data)
         // Update assistant message with tool progress
@@ -181,12 +337,14 @@ export default function MailChat() {
       })
 
       ev.addEventListener('answer', (e: any) => {
+        resetStreamHeartbeat()
         const data = JSON.parse(e.data)
         assistantText = data.answer || data.text || ''
         console.log('[Chat] Answer received:', assistantText.substring(0, 100))
       })
 
       ev.addEventListener('filed', (e: any) => {
+        resetStreamHeartbeat()
         const data = JSON.parse(e.data)
         filedCount = data.proposed || 0
         console.log('[Chat] Actions filed:', filedCount)
@@ -204,6 +362,7 @@ export default function MailChat() {
       })
 
       ev.addEventListener('done', async () => {
+        clearStreamHeartbeat()
         ev.close()
         
         try {
@@ -261,6 +420,14 @@ export default function MailChat() {
             filtered.push(assistantMessage)
             return filtered
           })
+          
+          // Capture timing from response
+          const t1 = performance.now()
+          setTiming({
+            es_ms: response?.search_stats?.took_ms ?? response?.timing?.es_ms,
+            llm_ms: response?.timing?.llm_ms,
+            client_ms: Math.round(t1 - t0),
+          })
         } catch (err: any) {
           console.error('[Chat] Error fetching final response:', err)
           // Use whatever we got from the stream
@@ -278,6 +445,7 @@ export default function MailChat() {
 
       ev.addEventListener('error', (e: any) => {
         console.error('[Chat] EventSource error:', e)
+        clearStreamHeartbeat()
         ev.close()
         
         const errorMsg = 'Stream connection failed'
@@ -294,6 +462,80 @@ export default function MailChat() {
       })
 
     } catch (err: any) {
+      clearStreamHeartbeat()
+      
+      // Canary fallback: if streaming disabled (503 + header), use non-streaming /chat
+      if (err instanceof Response && err.status === 503) {
+        const streamingDisabled = err.headers?.get('X-Chat-Streaming-Disabled')
+        if (streamingDisabled === '1') {
+          console.log('[Chat] Streaming disabled, falling back to non-streaming endpoint')
+          try {
+            const response = await sendChatMessage({
+              messages: [...messages, userMessage].map((m) => ({
+                role: m.role,
+                content: m.content,
+              })),
+              window_days: windowDays,
+            })
+            
+            // Build assistant message from response
+            let finalText = response.answer || 'Response received.'
+            
+            if (response.intent !== 'summarize' && response.intent_explanation) {
+              finalText = `*${response.intent_explanation}*\n\n${finalText}`
+            }
+            
+            if (response.actions.length > 0) {
+              finalText += `\n\n**${response.actions.length} action${response.actions.length === 1 ? '' : 's'} proposed**`
+            }
+            
+            if (response.citations.length > 0) {
+              finalText += '\n\n**Sources:**'
+              response.citations.slice(0, 5).forEach((c) => {
+                const date = c.received_at ? new Date(c.received_at).toLocaleDateString() : ''
+                finalText += `\n• ${c.subject} — ${c.sender || '?'} ${date ? `(${date})` : ''}`
+              })
+              if (response.citations.length > 5) {
+                finalText += `\n• ... and ${response.citations.length - 5} more`
+              }
+            }
+            
+            setMessages((m) => [
+              ...m,
+              {
+                role: 'assistant',
+                content: finalText,
+                response,
+              },
+            ])
+            
+            // Capture timing
+            const t1 = performance.now()
+            setTiming({
+              es_ms: response?.search_stats?.took_ms ?? response?.timing?.es_ms,
+              llm_ms: response?.timing?.llm_ms,
+              client_ms: Math.round(t1 - t0),
+            })
+            
+            setBusy(false)
+            return
+          } catch (fallbackErr: any) {
+            console.error('[Chat] Fallback to non-streaming also failed:', fallbackErr)
+            setError(fallbackErr?.message || 'Failed to get response')
+            setBusy(false)
+            return
+          }
+        }
+      }
+      
+      // Handle rate limit errors
+      if (err instanceof Response && err.status === 429) {
+        setError("You're sending requests a bit too fast. Please wait a moment and try again.")
+        setBusy(false)
+        return
+      }
+      
+      // Handle other errors
       const errorMsg = err.message || 'Failed to get response'
       setError(errorMsg)
       setMessages((m) => [
@@ -346,11 +588,54 @@ export default function MailChat() {
         ))}
       </div>
 
-      {/* Error Alert */}
+      {/* Scope Indicator with Time Window Dropdown */}
+      <div className="mb-3 text-xs text-neutral-400 flex flex-wrap items-center gap-3 justify-between">
+        <span>
+          Searching as <span className="text-neutral-200 font-medium">{userEmail}</span>
+        </span>
+
+        <div className="flex items-center gap-2">
+          <span>Time window:</span>
+          <select
+            className="bg-neutral-900 border border-neutral-800/80 rounded-md px-2 py-1 text-neutral-200
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600"
+            value={windowDays}
+            onChange={(e) => changeWindowDays(Number(e.target.value))}
+            aria-label="Time window (days)"
+          >
+            <option value={7}>7d</option>
+            <option value={30}>30d</option>
+            <option value={60}>60d</option>
+            <option value={90}>90d</option>
+          </select>
+
+          <button
+            className="ml-2 px-3 py-1.5 rounded-md bg-neutral-900 border border-neutral-800/80 
+                       hover:bg-neutral-800 transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600"
+            onClick={openSearchPrefilled}
+            title="Open Search with the same query and window"
+          >
+            Open Search
+          </button>
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {busy && (
+        <div className="text-sm text-neutral-500 my-2">🔄 Searching mailbox …</div>
+      )}
+
+      {/* Error Alert - Enhanced with friendly messaging */}
       {error && (
-        <div className="rounded-xl bg-red-950/30 border border-red-900/50 p-3 flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-red-300">{error}</div>
+        <div className="mt-2 rounded-md border border-amber-600/40 bg-amber-900/20 p-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" />
+            <div>
+              <div className="font-medium text-sm text-amber-300">Connection hiccup</div>
+              <div className="text-sm text-amber-200/80 mt-1">{error}</div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -421,6 +706,50 @@ export default function MailChat() {
                       {msg.response.search_stats.returned_results} emails
                       searched • {msg.response.intent} intent
                     </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Timing Footer */}
+              {msg.role === 'assistant' && i === messages.length - 1 && (timing.es_ms || timing.llm_ms || timing.client_ms) && (
+                <div className="mt-2 flex items-center gap-2 text-[11px] text-neutral-500">
+                  <span 
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      isStreamAlive ? 'bg-green-500' : 'bg-neutral-600'
+                    }`}
+                    title={isStreamAlive ? 'Connected' : 'Disconnected'}
+                  />
+                  {typeof timing.es_ms === 'number' && <span>ES: {Math.round(timing.es_ms)} ms</span>}
+                  {typeof timing.llm_ms === 'number' && <span>{' · '}LLM: {Math.round(timing.llm_ms)} ms</span>}
+                  {typeof timing.client_ms === 'number' && <span>{' · '}Client: {Math.round(timing.client_ms)} ms</span>}
+                </div>
+              )}
+
+              {/* Empty State - Show sync buttons when no results */}
+              {msg.response && msg.response.search_stats.returned_results === 0 && (
+                <div className="rounded-xl bg-neutral-900 p-4 border border-neutral-800 mt-3">
+                  <div className="text-sm">
+                    🕵️ No emails found in the last {windowDays} days for <b>{userEmail}</b>.
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                      onClick={() => handleSync(7)}
+                    >
+                      Sync 7 days
+                    </button>
+                    <button
+                      className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                      onClick={() => handleSync(60)}
+                    >
+                      Sync 60 days
+                    </button>
+                    <button
+                      className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
+                      onClick={openSearchPrefilled}
+                    >
+                      Open Search
+                    </button>
                   </div>
                 </div>
               )}
@@ -593,6 +922,11 @@ export default function MailChat() {
                 Spending summary
               </button>
             </div>
+            {dupes === null && summary === null && (
+              <div className="text-sm text-neutral-500 mt-2">
+                No data yet — try "Sync 60 days."
+              </div>
+            )}
             {dupes && (
               <pre className="mt-2 text-[11px] overflow-auto max-h-40 bg-neutral-950 p-2 rounded border border-neutral-800">
                 {JSON.stringify(dupes, null, 2)}

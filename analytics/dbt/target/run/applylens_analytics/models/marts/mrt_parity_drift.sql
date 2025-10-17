@@ -2,11 +2,12 @@
   
     
 
-    create or replace table `applylens-gmail-1759983601`.`applylens`.`mrt_parity_drift`
+    create or replace table `applylens-gmail-1759983601`.`gmail_raw_stg_marts`.`mrt_parity_drift`
       
     
     
 
+    
     OPTIONS()
     as (
       

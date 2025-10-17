@@ -1,6 +1,6 @@
 
 
-  create or replace view `applylens-gmail-1759983601`.`applylens`.`stg_applications`
+  create or replace view `applylens-gmail-1759983601`.`gmail_raw_stg_staging`.`stg_applications`
   OPTIONS()
   as 
 

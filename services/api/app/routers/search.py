@@ -2,9 +2,10 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
+from ..deps.user import get_current_user_email
 from ..es import ES_ENABLED, INDEX, es
 
 # ---- Tunables for "demo pop"
@@ -70,6 +71,7 @@ class SearchResponse(BaseModel):
 
 @router.get("/", response_model=SearchResponse)
 def search(
+    request: Request,
     q: str = Query(..., min_length=1, description="Search query"),
     size: int = Query(25, ge=1, le=100, description="Number of results"),
     scale: str = Query("7d", description="Recency scale: 3d|7d|14d"),
@@ -111,9 +113,11 @@ def search(
     quarantined: Optional[bool] = Query(
         None, description="Filter by quarantine status: true|false"
     ),
+    user_email: str = Depends(get_current_user_email),
 ):
     """
     Smart search with:
+    - Multi-user support (always scoped to current user)
     - ATS synonym expansion (Lever, Workday, SmartRecruiters, Greenhouse)
     - Label boost scoring (offer^4, interview^3, rejection^0.5)
     - 7-day recency decay (Gaussian)
@@ -139,6 +143,9 @@ def search(
 
     # Build filter list
     filters = []
+    
+    # CRITICAL: Always filter by owner_email for multi-user support
+    filters.append({"term": {"owner_email": user_email}})
 
     # Add label filters
     if labels:

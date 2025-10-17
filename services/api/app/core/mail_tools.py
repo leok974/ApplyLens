@@ -11,6 +11,11 @@ import re
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple
 
+from app.core.rag import rag_search
+
+# Performance caps to avoid LLM overload
+TOP_N_FOR_SUMMARY = 50  # Maximum docs to show in summaries
+
 
 def _format_email(doc: Dict[str, Any]) -> str:
     """Format email document for display."""
@@ -54,32 +59,54 @@ def summarize_emails(rag: Dict[str, Any], user_text: str) -> Tuple[str, List[dic
     Returns:
         (answer, actions) tuple
     """
-    docs = rag["docs"][:10]
+    # Cap docs to prevent LLM overload
+    docs = rag.get("docs") or []
+    docs = docs[:TOP_N_FOR_SUMMARY]
 
     if not docs:
         return ("No emails found matching your query.", [])
 
     total = rag.get("total", len(docs))
-    lines = [_format_email(d) for d in docs]
+    
+    # Show only top 10 in the formatted list
+    display_docs = docs[:10]
+    lines = [_format_email(d) for d in display_docs]
 
     answer = f"Found {total} emails. Top matches:\n" + "\n".join(lines)
 
-    if total > len(docs):
-        answer += f"\n\n(Showing first {len(docs)} of {total} matches)"
+    if total > len(display_docs):
+        answer += f"\n\n(Showing first {len(display_docs)} of {total} matches)"
 
     return (answer, [])
 
 
-def find_emails(rag: Dict[str, Any], user_text: str) -> Tuple[str, List[dict]]:
+def find_emails(rag: Dict[str, Any], user_text: str, *, owner_email: str | None = None, k: int = 20) -> Tuple[str, List[dict]]:
     """
     Find and list specific emails with reasons for matching.
 
     Similar to summarize but may include more context about why each email matched.
     """
-    docs = rag["docs"][:15]
+    total = int(rag.get("total") or 0)
+    docs = rag.get("docs") or []
+
+    # --- fallback: if ES says there ARE hits but docs empty, fetch again with safe defaults
+    if total > 0 and not docs:
+        # try to re-run with explicit k and match_all fallback
+        q = user_text.strip() or "*"
+        rag2 = rag_search(
+            query=q,
+            filters=rag.get("filters") or {},
+            k=max(k, 20),
+            owner_email=owner_email,
+        )
+        docs = rag2.get("docs") or []
+        total = int(rag2.get("total") or total)
 
     if not docs:
         return ("No emails found matching your criteria.", [])
+
+    # Limit to top results
+    docs = docs[:15]
 
     # Try to extract specific criteria from user text
     lines = []
@@ -100,7 +127,6 @@ def find_emails(rag: Dict[str, Any], user_text: str) -> Tuple[str, List[dict]]:
         reason = " | ".join(reasons) if reasons else ""
         lines.append(_format_email_with_reason(doc, reason))
 
-    total = rag.get("total", len(docs))
     answer = f"Found {total} matching emails:\n" + "\n".join(lines)
 
     return (answer, [])

@@ -4,6 +4,32 @@
 
 import { API_BASE } from './apiBase'
 
+/**
+ * Retry fetch with exponential backoff for rate limits and network errors
+ */
+async function withBackoff<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  let delay = 300
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (e: any) {
+      const shouldRetry = 
+        e?.status === 429 || 
+        e?.name === 'FetchError' ||
+        e?.name === 'TypeError' // Network errors
+      
+      if (shouldRetry && attempt < maxRetries - 1) {
+        console.log(`[Backoff] Retry ${attempt + 1}/${maxRetries} after ${delay}ms`)
+        await new Promise(r => setTimeout(r, delay))
+        delay = Math.min(delay * 2, 2000) // Cap at 2s
+        continue
+      }
+      throw e
+    }
+  }
+  return fn() // Final attempt without catch
+}
+
 export interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
@@ -22,6 +48,7 @@ export interface ChatRequest {
     labels?: string[]
   }
   max_results?: number
+  window_days?: number
 }
 
 export interface Citation {
@@ -50,6 +77,11 @@ export interface ChatResponse {
     returned_results: number
     query: string
     filters: Record<string, any>
+    took_ms?: number  // ES timing
+  }
+  timing?: {
+    es_ms?: number
+    llm_ms?: number
   }
 }
 
@@ -60,24 +92,29 @@ export interface Intent {
 
 /**
  * Send a chat message and get a response.
+ * Automatically retries with backoff on rate limits or network errors.
  */
 export async function sendChatMessage(
   request: ChatRequest
 ): Promise<ChatResponse> {
-  const response = await fetch(`${API_BASE}/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
+  return withBackoff(async () => {
+    const response = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
+      const err: any = new Error(error.detail || `Chat failed: ${response.statusText}`)
+      err.status = response.status // Preserve status for backoff logic
+      throw err
+    }
+
+    return response.json()
   })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
-    throw new Error(error.detail || `Chat failed: ${response.statusText}`)
-  }
-
-  return response.json()
 }
 
 /**

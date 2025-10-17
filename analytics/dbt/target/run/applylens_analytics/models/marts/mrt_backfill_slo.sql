@@ -2,11 +2,12 @@
   
     
 
-    create or replace table `applylens-gmail-1759983601`.`applylens`.`mrt_backfill_slo`
+    create or replace table `applylens-gmail-1759983601`.`gmail_raw_stg_marts`.`mrt_backfill_slo`
       
     
     
 
+    
     OPTIONS()
     as (
       

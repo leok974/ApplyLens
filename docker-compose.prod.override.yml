@@ -1,0 +1,27 @@
+# Docker Compose override for local production testing
+# This file modifies ports to avoid conflicts with other local services
+
+services:
+  nginx:
+    ports:
+      - "8080:80"  # Changed from 80:80 to avoid conflict
+      
+  db:
+    ports:
+      - "5434:5432"  # Changed from 5432 to avoid conflict
+      
+  elasticsearch:
+    ports:
+      - "9201:9200"  # Changed from 9200 to avoid conflict
+      
+  kibana:
+    ports:
+      - "5602:5601"  # Changed from 5601 to avoid conflict
+      
+  prometheus:
+    ports:
+      - "9091:9090"  # Changed from 9090 to avoid conflict
+      
+  grafana:
+    ports:
+      - "3001:3000"  # Changed from 3000 to avoid conflict
