@@ -1,0 +1,25 @@
+# dbt artifacts
+target/
+dbt_packages/
+logs/
+.user.yml
+package-lock.yml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
