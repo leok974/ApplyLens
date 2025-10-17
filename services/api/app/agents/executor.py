@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict
 from .audit import AgentAuditor
 from ..events import AgentEvent, get_event_bus
 from ..observability import record_agent_run
+from ..utils.approvals import Approvals
 
 
 class Executor:
@@ -49,7 +50,10 @@ class Executor:
         self, 
         plan: Dict[str, Any], 
         handler: Callable[[Dict[str, Any]], Dict[str, Any]],
-        user_email: str | None = None
+        user_email: str | None = None,
+        budget_ms: int | None = None,
+        budget_ops: int | None = None,
+        allow_actions: bool = False
     ) -> Dict[str, Any]:
         """Execute a plan using the provided handler.
         
@@ -57,12 +61,16 @@ class Executor:
             plan: Execution plan from planner
             handler: Callable that executes the plan
             user_email: Optional user email for audit logging
+            budget_ms: Optional max execution time in milliseconds
+            budget_ops: Optional max number of operations
+            allow_actions: Whether to allow actions (requires dry_run=false)
             
         Returns:
             Run record with status, logs, and artifacts
         """
         run_id = str(uuid.uuid4())
         t0 = time.perf_counter()
+        ops_count = 0
         
         run = {
             "run_id": run_id,
@@ -71,8 +79,20 @@ class Executor:
             "logs": [f"start agent={plan['agent']} objective={plan['objective']}"],
             "finished_at": None,
             "artifacts": {},
+            "budget_ms": budget_ms,
+            "budget_ops": budget_ops,
+            "ops_count": 0,
         }
         self.run_store[run_id] = run
+        
+        # Check if actions are allowed
+        if not allow_actions and not plan.get("dry_run", True):
+            run.update({
+                "status": "failed",
+                "finished_at": datetime.utcnow(),
+                "logs": run["logs"] + ["error: Actions not allowed (allow_actions=false)"],
+            })
+            return run
         
         # Emit run_started event
         if self.event_bus:
@@ -98,8 +118,46 @@ class Executor:
             )
         
         try:
+            # Create execution context with budget tracking
+            elapsed_ms = int((time.perf_counter() - t0) * 1000)
+            budget_status = Approvals.check_budget(
+                elapsed_ms=elapsed_ms,
+                ops_count=ops_count,
+                budget_ms=budget_ms,
+                budget_ops=budget_ops
+            )
+            
+            if budget_status["exceeded"]:
+                raise RuntimeError(
+                    f"Budget exceeded before execution: "
+                    f"time={budget_status['time_exceeded']}, "
+                    f"ops={budget_status['ops_exceeded']}"
+                )
+            
+            # Execute handler with budget tracking callback
             result = handler(plan)
-            duration_ms = (time.perf_counter() - t0) * 1000
+            
+            # Update ops count (handler should track operations)
+            ops_count = result.get("ops_count", ops_count) if isinstance(result, dict) else ops_count
+            run["ops_count"] = ops_count
+            
+            # Check budget after execution
+            elapsed_ms = int((time.perf_counter() - t0) * 1000)
+            budget_status = Approvals.check_budget(
+                elapsed_ms=elapsed_ms,
+                ops_count=ops_count,
+                budget_ms=budget_ms,
+                budget_ops=budget_ops
+            )
+            
+            if budget_status["exceeded"]:
+                run["logs"].append(
+                    f"warning: Budget exceeded during execution: "
+                    f"elapsed={elapsed_ms}ms (limit={budget_ms}ms), "
+                    f"ops={ops_count} (limit={budget_ops})"
+                )
+            
+            duration_ms = elapsed_ms
             
             run.update({
                 "status": "succeeded",

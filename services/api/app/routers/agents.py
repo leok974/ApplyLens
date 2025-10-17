@@ -52,7 +52,13 @@ def run_agent(name: str, body: AgentRunRequest):
         raise HTTPException(status_code=404, detail=f"agent not found: {name}")
     
     plan = _planner.plan(name, body.objective, body.model_dump())
-    run = _executor.execute(plan, handler)
+    run = _executor.execute(
+        plan, 
+        handler,
+        budget_ms=body.budget_ms,
+        budget_ops=body.budget_ops,
+        allow_actions=body.allow_actions
+    )
     return run
 
 

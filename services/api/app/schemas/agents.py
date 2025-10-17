@@ -26,6 +26,18 @@ class AgentRunRequest(BaseModel):
     
     objective: str = Field(..., description="What the agent should accomplish")
     dry_run: bool = Field(default=True, description="Safe mode - no side effects")
+    allow_actions: bool = Field(
+        default=False, 
+        description="Allow agent to execute actions (requires dry_run=false)"
+    )
+    budget_ms: Optional[int] = Field(
+        None, 
+        description="Maximum execution time in milliseconds"
+    )
+    budget_ops: Optional[int] = Field(
+        None, 
+        description="Maximum number of operations (API calls, queries)"
+    )
     params: Dict[str, Any] = Field(
         default_factory=dict, 
         description="Additional parameters"
