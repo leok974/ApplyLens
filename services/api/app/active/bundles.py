@@ -19,7 +19,8 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 from pathlib import Path
 
-from app.models import RuntimeSetting, AgentApproval
+from app.models import AgentApproval
+from app.models_runtime import RuntimeSettings
 from app.active.heur_trainer import HeuristicTrainer
 
 logger = logging.getLogger(__name__)
@@ -205,7 +206,7 @@ class BundleManager:
         """Save bundle to runtime_settings."""
         key = f"bundle.{agent}.{bundle['bundle_id']}"
         
-        setting = RuntimeSetting(
+        setting = RuntimeSettings(
             key=key,
             value=json.dumps(bundle),
             category="active_learning"
@@ -217,7 +218,7 @@ class BundleManager:
     def _load_bundle(self, agent: str, bundle_id: str) -> Optional[Dict[str, Any]]:
         """Load a bundle from runtime_settings."""
         key = f"bundle.{agent}.{bundle_id}"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if not setting:
             return None
@@ -227,7 +228,7 @@ class BundleManager:
     def _load_active_bundle(self, agent: str) -> Optional[Dict[str, Any]]:
         """Load the currently active bundle."""
         key = f"bundle.{agent}.active"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if not setting:
             return None
@@ -237,7 +238,7 @@ class BundleManager:
     def _load_backup_bundle(self, agent: str) -> Optional[Dict[str, Any]]:
         """Load the backup bundle."""
         key = f"bundle.{agent}.backup"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if not setting:
             return None
@@ -254,13 +255,13 @@ class BundleManager:
         
         key = f"bundle.{agent}.backup"
         
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if setting:
             setting.value = json.dumps(active)
             setting.updated_at = datetime.utcnow()
         else:
-            setting = RuntimeSetting(
+            setting = RuntimeSettings(
                 key=key,
                 value=json.dumps(active),
                 category="active_learning"
@@ -274,13 +275,13 @@ class BundleManager:
         """Apply bundle as active config."""
         key = f"bundle.{agent}.active"
         
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if setting:
             setting.value = json.dumps(bundle)
             setting.updated_at = datetime.utcnow()
         else:
-            setting = RuntimeSetting(
+            setting = RuntimeSettings(
                 key=key,
                 value=json.dumps(bundle),
                 category="active_learning"
@@ -299,13 +300,13 @@ class BundleManager:
         # Save bundle as canary config
         key = f"bundle.{agent}.canary"
         
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if setting:
             setting.value = json.dumps(bundle)
             setting.updated_at = datetime.utcnow()
         else:
-            setting = RuntimeSetting(
+            setting = RuntimeSettings(
                 key=key,
                 value=json.dumps(bundle),
                 category="active_learning"
@@ -314,13 +315,13 @@ class BundleManager:
         
         # Update canary percent
         canary_key = f"planner_canary.{agent}.canary_percent"
-        canary_setting = self.db.query(RuntimeSetting).filter_by(key=canary_key).first()
+        canary_setting = self.db.query(RuntimeSettings).filter_by(key=canary_key).first()
         
         if canary_setting:
             canary_setting.value = str(canary_percent)
             canary_setting.updated_at = datetime.utcnow()
         else:
-            canary_setting = RuntimeSetting(
+            canary_setting = RuntimeSettings(
                 key=canary_key,
                 value=str(canary_percent),
                 category="planner_canary"

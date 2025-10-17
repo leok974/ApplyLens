@@ -19,9 +19,9 @@ import json
 
 import numpy as np
 
-from app.models import RuntimeSetting
+from app.models_runtime import RuntimeSettings
 from app.models_al import LabeledExample
-from app.eval.models import EvaluationResult
+from app.eval.models import EvalResult
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +52,11 @@ class JudgeWeights:
         
         # Fetch evaluation results with judge scores
         eval_results = (
-            self.db.query(EvaluationResult)
+            self.db.query(EvalResult)
             .filter(
-                EvaluationResult.agent == agent,
-                EvaluationResult.created_at >= since,
-                EvaluationResult.judge_scores.isnot(None)
+                EvalResult.agent == agent,
+                EvalResult.created_at >= since,
+                EvalResult.judge_scores.isnot(None)
             )
             .all()
         )
@@ -166,13 +166,13 @@ class JudgeWeights:
         """Save weights to runtime_settings."""
         key = f"judge_weights.{agent}"
         
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if setting:
             setting.value = json.dumps(weights)
             setting.updated_at = datetime.utcnow()
         else:
-            setting = RuntimeSetting(
+            setting = RuntimeSettings(
                 key=key,
                 value=json.dumps(weights),
                 category="active_learning"
@@ -192,7 +192,7 @@ class JudgeWeights:
             Dict of judge_name -> weight, or defaults if not found
         """
         key = f"judge_weights.{agent}"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if setting and setting.value:
             try:

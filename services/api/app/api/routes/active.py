@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from app.database import get_db
+from app.db import get_db
 from app.active.feeds import FeedLoader, load_all_feeds
 from app.active.heur_trainer import HeuristicTrainer
 from app.active.weights import JudgeWeights, nightly_update_weights

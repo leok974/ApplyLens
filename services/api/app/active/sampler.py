@@ -20,7 +20,7 @@ import json
 import numpy as np
 
 from app.models_al import LabeledExample
-from app.eval.models import EvaluationResult
+from app.eval.models import EvalResult
 
 logger = logging.getLogger(__name__)
 
@@ -113,11 +113,11 @@ class UncertaintySampler:
         
         # Fetch recent evaluation results
         eval_results = (
-            self.db.query(EvaluationResult)
+            self.db.query(EvalResult)
             .filter(
-                EvaluationResult.agent == agent,
-                EvaluationResult.created_at >= since,
-                EvaluationResult.judge_scores.isnot(None)
+                EvalResult.agent == agent,
+                EvalResult.created_at >= since,
+                EvalResult.judge_scores.isnot(None)
             )
             .all()
         )
@@ -191,7 +191,7 @@ class UncertaintySampler:
         """
         # Get distinct agents from eval results
         agents = (
-            self.db.query(EvaluationResult.agent)
+            self.db.query(EvalResult.agent)
             .distinct()
             .all()
         )
@@ -221,7 +221,7 @@ class UncertaintySampler:
             Dict with total unlabeled, by_agent, by_uncertainty_range
         """
         # Count unlabeled eval results
-        total = self.db.query(EvaluationResult).count()
+        total = self.db.query(EvalResult).count()
         
         labeled_count = self.db.query(LabeledExample).count()
         
@@ -230,12 +230,12 @@ class UncertaintySampler:
         
         # Count by agent
         by_agent = {}
-        agents = self.db.query(EvaluationResult.agent).distinct().all()
+        agents = self.db.query(EvalResult.agent).distinct().all()
         
         for (agent,) in agents:
             agent_total = (
-                self.db.query(EvaluationResult)
-                .filter(EvaluationResult.agent == agent)
+                self.db.query(EvalResult)
+                .filter(EvalResult.agent == agent)
                 .count()
             )
             agent_labeled = (

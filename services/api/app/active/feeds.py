@@ -16,7 +16,7 @@ from sqlalchemy import and_
 
 from ..models import AgentApproval, AgentMetricsDaily
 from ..models_al import LabeledExample
-from ..eval.models import GoldenTask
+from ..eval.models import EvalTask
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ class FeedLoader:
             Number of labeled examples created
         """
         # Query golden tasks
-        query = self.db.query(GoldenTask)
+        query = self.db.query(EvalTask)
         if agent:
             query = query.filter_by(agent=agent)
         

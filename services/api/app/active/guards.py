@@ -17,9 +17,9 @@ import logging
 from typing import Dict, Optional
 from datetime import datetime, timedelta
 
-from app.models import RuntimeSetting
+from app.models_runtime import RuntimeSettings
 from app.active.bundles import BundleManager
-from app.canary.detector import RegressionDetector
+from app.guard.regression_detector import RegressionDetector
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class OnlineLearningGuard:
         # Filter for approved
         approved = [
             a for a in pending_approvals
-            if self.db.query(self.db.query(RuntimeSetting).filter_by(
+            if self.db.query(self.db.query(RuntimeSettings).filter_by(
                 key=f"approval.{a['id']}.status"
             ).first()).first()
         ]
@@ -247,8 +247,8 @@ class OnlineLearningGuard:
         
         # Find all agents with active canaries
         canary_settings = (
-            self.db.query(RuntimeSetting)
-            .filter(RuntimeSetting.key.like("planner_canary.%.canary_percent"))
+            self.db.query(RuntimeSettings)
+            .filter(RuntimeSettings.key.like("planner_canary.%.canary_percent"))
             .all()
         )
         
@@ -275,7 +275,7 @@ class OnlineLearningGuard:
     def _load_canary_bundle(self, agent: str):
         """Load canary bundle from runtime_settings."""
         key = f"bundle.{agent}.canary"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if not setting:
             return None
@@ -286,7 +286,7 @@ class OnlineLearningGuard:
     def _get_canary_percent(self, agent: str) -> int:
         """Get current canary traffic percent."""
         key = f"planner_canary.{agent}.canary_percent"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if not setting:
             return 0
@@ -296,13 +296,13 @@ class OnlineLearningGuard:
     def _update_canary_percent(self, agent: str, percent: int):
         """Update canary traffic percent."""
         key = f"planner_canary.{agent}.canary_percent"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if setting:
             setting.value = str(percent)
             setting.updated_at = datetime.utcnow()
         else:
-            setting = RuntimeSetting(
+            setting = RuntimeSettings(
                 key=key,
                 value=str(percent),
                 category="planner_canary"
@@ -318,7 +318,7 @@ class OnlineLearningGuard:
         
         # Optionally delete canary bundle
         key = f"bundle.{agent}.canary"
-        setting = self.db.query(RuntimeSetting).filter_by(key=key).first()
+        setting = self.db.query(RuntimeSettings).filter_by(key=key).first()
         
         if setting:
             self.db.delete(setting)

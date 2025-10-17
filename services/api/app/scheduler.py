@@ -10,7 +10,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
+from app.db import SessionLocal
 
 logger = logging.getLogger(__name__)
 
