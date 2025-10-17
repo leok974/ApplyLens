@@ -48,7 +48,8 @@ class AgentAuditor:
         agent: str,
         objective: str,
         plan: Dict[str, Any],
-        user_email: str | None = None
+        user_email: str | None = None,
+        planner_meta: Dict[str, Any] | None = None
     ) -> None:
         """Log agent run start.
         
@@ -58,6 +59,7 @@ class AgentAuditor:
             objective: Run objective
             plan: Execution plan
             user_email: User who triggered the run
+            planner_meta: Planner canary metadata (selected, shadow, diff, etc.)
         """
         if not self._enabled:
             return
@@ -65,13 +67,18 @@ class AgentAuditor:
         try:
             session = self._get_session()
             
+            # Merge planner_meta into plan for persistence
+            plan_with_meta = dict(plan)
+            if planner_meta:
+                plan_with_meta["planner_meta"] = planner_meta
+            
             log = AgentAuditLog(
                 run_id=run_id,
                 agent=agent,
                 objective=objective,
                 status="running",
                 started_at=datetime.now(timezone.utc),
-                plan=plan,
+                plan=plan_with_meta,
                 user_email=user_email,
                 dry_run=plan.get("dry_run", True)
             )

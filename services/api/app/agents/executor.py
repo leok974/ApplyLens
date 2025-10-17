@@ -67,7 +67,8 @@ class Executor:
         budget_ms: int | None = None,
         budget_ops: int | None = None,
         budget_cost_cents: int | None = None,
-        allow_actions: bool = False
+        allow_actions: bool = False,
+        planner_meta: Dict[str, Any] | None = None
     ) -> Dict[str, Any]:
         """Execute a plan using the provided handler.
         
@@ -79,6 +80,7 @@ class Executor:
             budget_ops: Optional max number of operations
             budget_cost_cents: Optional max cost in cents
             allow_actions: Whether to allow actions (requires dry_run=false)
+            planner_meta: Optional metadata from planner switchboard (canary, diff, etc.)
             
         Returns:
             Run record with status, logs, and artifacts
@@ -103,6 +105,7 @@ class Executor:
             "budget_cost_cents": budget_cost_cents,
             "ops_count": 0,
             "cost_cents_used": 0,
+            "planner_meta": planner_meta or {}  # Phase 5.1: Persist canary metadata
         }
         self.run_store[run_id] = run
         
@@ -135,7 +138,8 @@ class Executor:
                 agent=plan["agent"],
                 objective=plan["objective"],
                 plan=plan,
-                user_email=user_email
+                user_email=user_email,
+                planner_meta=planner_meta
             )
         
         try:
