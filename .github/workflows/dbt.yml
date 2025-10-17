@@ -25,7 +25,6 @@ jobs:
     
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-      GCP_SA_JSON: ${{ secrets.GCP_SA_JSON }}
       RAW_DATASET: gmail  # Fivetran destination dataset
       BQ_MARTS_DATASET: gmail_raw_stg_gmail_marts
       ES_URL: ${{ secrets.ES_URL }}
