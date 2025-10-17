@@ -50,6 +50,12 @@ class AgentSettings(BaseSettings):
     PLANNER_CONFIDENCE_THRESHOLD: float = 0.7
     PLANNER_USE_MOCK_LLM: bool = True  # Use mock LLM in CI/dev
     
+    # Phase 5: Evaluation & Quality Gates
+    EVAL_BUDGETS_ENABLED: bool = True  # Enable budget enforcement
+    EVAL_GATE_LOOKBACK_DAYS: int = 7  # Days to evaluate
+    EVAL_GATE_BASELINE_DAYS: int = 14  # Days for baseline comparison
+    EVAL_FAIL_ON_WARNING: bool = False  # Fail CI on warnings (default: only critical)
+    
     class Config:
         env_prefix = "APPLYLENS_"
         case_sensitive = True

@@ -131,6 +131,11 @@ from .routers import agents_telemetry  # noqa: E402
 
 app.include_router(agents_telemetry.router)
 
+# Phase 5 - Budget Gates & Quality Thresholds
+from .routers import budgets  # noqa: E402
+
+app.include_router(budgets.router)
+
 # Email automation system
 try:
     from .routers.mail_tools import router as mail_tools_router
