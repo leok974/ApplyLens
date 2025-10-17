@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
 from .audit import AgentAuditor
+from .guardrails import ExecutionGuardrails, GuardrailViolation, create_guardrails
 from ..events import AgentEvent, get_event_bus
 from ..observability import record_agent_run
 from ..policy import PolicyEngine, Budget
@@ -54,6 +55,9 @@ class Executor:
             self.policy_engine = PolicyEngine(get_default_policies())
         else:
             self.policy_engine = policy_engine
+        
+        # Initialize guardrails with policy engine
+        self.guardrails = create_guardrails(self.policy_engine)
     
     def execute(
         self, 
@@ -135,6 +139,44 @@ class Executor:
             )
         
         try:
+            # PRE-EXECUTION GUARDRAILS
+            # Validate action before execution (policy compliance, params, etc.)
+            try:
+                action = plan.get("action", "execute")
+                context = plan.get("context", {})
+                
+                policy_decision = self.guardrails.validate_pre_execution(
+                    agent=plan["agent"],
+                    action=action,
+                    context=context,
+                    plan=plan
+                )
+                
+                # If approval required, log and fail
+                if policy_decision.requires_approval:
+                    run["logs"].append(
+                        f"info: Action requires approval: {policy_decision.reason}"
+                    )
+                    raise GuardrailViolation(
+                        message=f"Action requires human approval: {policy_decision.reason}",
+                        violation_type="approval_required",
+                        details={
+                            "agent": plan["agent"],
+                            "action": action,
+                            "rule_id": policy_decision.rule_id,
+                            "reason": policy_decision.reason
+                        }
+                    )
+                
+                run["logs"].append(
+                    f"info: Pre-execution guardrails passed (rule: {policy_decision.rule_id or 'default'})"
+                )
+            
+            except GuardrailViolation as e:
+                # Guardrail violation - fail fast
+                run["logs"].append(f"error: Guardrail violation: {e.message}")
+                raise
+            
             # Create execution context with budget tracking
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
             budget_status = budget.is_exceeded(
@@ -150,6 +192,23 @@ class Executor:
             
             # Execute handler with budget tracking callback
             result = handler(plan)
+            
+            # POST-EXECUTION GUARDRAILS
+            # Validate result structure and resource usage
+            try:
+                self.guardrails.validate_post_execution(
+                    agent=plan["agent"],
+                    action=action,
+                    context=context,
+                    result=result
+                )
+                
+                run["logs"].append("info: Post-execution guardrails passed")
+            
+            except GuardrailViolation as e:
+                # Post-execution violation - log but don't fail (action already executed)
+                run["logs"].append(f"warning: Post-execution guardrail violation: {e.message}")
+                # Continue processing but mark as warning
             
             # Update ops count (handler should track operations)
             ops_count = result.get("ops_count", ops_count) if isinstance(result, dict) else ops_count
