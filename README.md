@@ -660,6 +660,179 @@ pytest tests/test_metrics_eval.py        # 19 tests (10 passing, 9 require DB)
 - Budget max time to prevent runaway jobs
 - Require approval for billing-related actions
 
+## 🤖 Phase 5.3: Active Learning & Judge Reliability
+
+ApplyLens now includes a **continuous learning loop** that automatically improves agent performance through labeled data, heuristic training, and safe canary deployment!
+
+### Key Features
+
+- **📊 Labeled Data Collection**: Aggregate feedback from approvals, ratings, and gold sets
+- **🎯 Heuristic Training**: Train deterministic ML models to update planner configs
+- **⚖️ Judge Reliability Weighting**: Assign trust scores to LLM judges based on calibration
+- **🔍 Uncertainty Sampling**: Identify edge cases for human review
+- **🚀 Safe Bundle Deployment**: Gradual canary rollout (10% → 50% → 100%) with auto-rollback
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Active Learning Loop                      │
+└─────────────────────────────────────────────────────────────┘
+
+  [Data Sources]           [Training]          [Deployment]
+       │                       │                    │
+   ┌───┴────┐           ┌──────┴──────┐      ┌────┴─────┐
+   │Approvals│           │  Heuristic  │      │  Bundle  │
+   │Feedback │──────────▶│   Trainer   │─────▶│ Manager  │
+   │Gold Sets│           │             │      │          │
+   └─────────┘           └──────────────┘     └────┬─────┘
+                                                    │
+  [Uncertainty]                                     ▼
+       │                                      [Canary 10%]
+   ┌───┴────┐                                       │
+   │ Sampler│                                  ┌────┴─────┐
+   │  Edge  │                                  │Regression│
+   │  Cases │                                  │ Detector │
+   └───┬────┘                                  └────┬─────┘
+       │                                            │
+       ▼                                            ▼
+  [Human Review]                            [Promote/Rollback]
+                                                    │
+  [Judge Weights]                                   ▼
+       │                                       [Canary 50%]
+   ┌───┴────┐                                       │
+   │ Nightly│                                       ▼
+   │ Weight │                                  [Full Deploy]
+   │ Update │
+   └────────┘
+```
+
+### Components
+
+**1. Labeled Example Store**
+- Central repository for training data
+- Sources: approvals (explicit decisions), feedback (thumbs up/down), gold sets (curated tasks)
+- Confidence scoring (0-100)
+- Deduplication via source + source_id
+
+**2. Heuristic Trainer**
+- Per-agent feature extraction (7/5/4 features depending on agent)
+- Logistic regression & decision tree models
+- Config bundle generation with updated thresholds
+- Diff generation for approval workflow
+- No external LLM calls (deterministic)
+
+**3. Judge Reliability Weighting**
+- Agreement rate with exponential time decay (7-day half-life)
+- Calibration error: abs(confidence - accuracy)
+- Combined weight = agreement - 0.5 * calibration_error
+- Nightly updates per agent (30-day lookback)
+
+**4. Uncertainty Sampler**
+- Three methods: disagreement, low confidence, variance
+- Entropy-based disagreement detection
+- Filter already-labeled examples
+- Top N candidates per agent (default 50)
+
+**5. Bundle Manager**
+- Create, propose, approve, apply workflow
+- Automatic backup before apply
+- Canary deployment at X% traffic
+- Rollback to backup bundle
+
+**6. Online Learning Guardrails**
+- Integrate with Phase 5.1 RegressionDetector
+- Auto-rollback on >5% quality drop
+- Auto-promote on >2% quality gain
+- Gradual rollout (10% → 50% → 100%)
+- Nightly guard check for all canaries
+
+### Quick Start
+
+```bash
+# 1. Load labeled data
+python -m app.active.feeds load_all_feeds
+
+# 2. Train bundle
+python -m app.active.bundles create --agent inbox_triage
+
+# 3. Propose for approval
+python -m app.active.bundles propose --agent inbox_triage --bundle-id <id>
+
+# 4. Approve (manual)
+curl -X POST /api/active/approvals/{id}/approve
+
+# 5. Deploy as 10% canary
+python -m app.active.bundles apply --approval-id {id} --canary-percent 10
+
+# 6. Monitor (automatic nightly checks will promote/rollback)
+python -m app.active.guards check_canaries
+```
+
+### Scheduled Jobs
+
+Add to `app/scheduler.py`:
+
+```python
+# Daily at 2 AM: Load labeled data
+@scheduler.scheduled_job('cron', hour=2)
+def load_labeled_data():
+    load_all_feeds(session)
+
+# Daily at 3 AM: Update judge weights
+@scheduler.scheduled_job('cron', hour=3)
+def update_judge_weights():
+    nightly_update_weights(session)
+
+# Daily at 4 AM: Sample review queue
+@scheduler.scheduled_job('cron', hour=4)
+def sample_review_queue():
+    daily_sample_review_queue(session, top_n_per_agent=20)
+
+# Daily at 5 AM: Check canary deployments
+@scheduler.scheduled_job('cron', hour=5)
+def check_canaries():
+    guard = OnlineLearningGuard(session)
+    guard.nightly_guard_check()
+```
+
+### Documentation
+
+Comprehensive guides available in `docs/`:
+
+- **[ACTIVE_LEARNING.md](./docs/ACTIVE_LEARNING.md)** - Complete technical guide
+- **[RUNBOOK_ACTIVE.md](./docs/RUNBOOK_ACTIVE.md)** - Operational runbook
+- **[PHASE_5_3_COMPLETION_SUMMARY.md](./docs/PHASE_5_3_COMPLETION_SUMMARY.md)** - Implementation summary
+
+### Testing
+
+Phase 5.3 includes **57 comprehensive tests**:
+
+```bash
+pytest tests/test_active_feeds.py       # 7 tests (feed loading)
+pytest tests/test_heur_trainer.py       # 10 tests (training)
+pytest tests/test_weights.py            # 8 tests (judge weights)
+pytest tests/test_sampler.py            # 10 tests (uncertainty)
+pytest tests/test_bundles.py            # 11 tests (bundle lifecycle)
+pytest tests/test_guards.py             # 11 tests (guardrails)
+```
+
+### Integration with Phase 5 & 5.1
+
+- ✅ Uses Phase 5 GoldenTask for training data
+- ✅ Extends Phase 5 EvaluationResult with judge_scores
+- ✅ Uses Phase 5.1 PlannerSwitchboard for traffic split
+- ✅ Integrates with Phase 5.1 RegressionDetector for safety
+
+### Success Metrics
+
+**Target Metrics Post-Deploy**:
+- 80%+ bundles reach 100% deploy
+- <5% canary rollback rate
+- 100+ labeled examples/week
+- Judge weights stable (±0.1/week)
+- 2-5% agent quality improvement per quarter
+
 ## Quickstart (Docker) - Minimal Setup
 
 Fast start without Elasticsearch/Kibana:
