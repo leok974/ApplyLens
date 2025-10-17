@@ -1,0 +1,57 @@
+version: 2
+
+sources:
+  - name: gmail_raw
+    description: "Fivetran-synced Gmail data"
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: "{{ var('raw_dataset', env_var('RAW_DATASET', 'gmail_raw')) }}"
+    tables:
+      - name: message
+        description: "Gmail messages (emails)"
+        columns:
+          - name: id
+            description: "Gmail message ID"
+          - name: thread_id
+            description: "Gmail thread ID"
+          - name: internal_date
+            description: "Message timestamp in milliseconds since epoch"
+          - name: _fivetran_deleted
+            description: "Fivetran soft delete flag"
+          - name: _fivetran_synced
+            description: "Fivetran sync timestamp"
+      
+      - name: thread
+        description: "Gmail threads (conversations)"
+        columns:
+          - name: id
+            description: "Gmail thread ID"
+          - name: history_id
+            description: "Gmail history ID"
+      
+      - name: label
+        description: "Gmail labels"
+        columns:
+          - name: id
+            description: "Label ID"
+          - name: name
+            description: "Label name"
+          - name: type
+            description: "Label type (system or user)"
+      
+      - name: payload_header
+        description: "Email headers (From, To, Subject, etc.)"
+        columns:
+          - name: message_id
+            description: "Gmail message ID"
+          - name: name
+            description: "Header name (e.g., From, To, Subject)"
+          - name: value
+            description: "Header value"
+      
+      - name: message_label
+        description: "Many-to-many relationship between messages and labels"
+        columns:
+          - name: message_id
+            description: "Gmail message ID"
+          - name: label_id
+            description: "Label ID"
