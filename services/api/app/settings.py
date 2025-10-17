@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     # Testing/Mocking
     USE_MOCK_GMAIL: bool = False
 
+    # Phase 4: Agent Governance
+    HMAC_SECRET: Optional[str] = None  # For approval signatures
+
     @property
     def is_test_env(self) -> bool:
         """Check if running in test environment."""
