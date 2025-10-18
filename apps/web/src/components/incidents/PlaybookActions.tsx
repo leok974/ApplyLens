@@ -212,8 +212,8 @@ export const PlaybookActions: React.FC<PlaybookActionsProps> = ({ incident }) =>
                       ? prompt('Enter your email to approve:')
                       : undefined;
                     
-                    if (!selectedAction.requires_approval || approver) {
-                      executeAction(approver);
+                    if (!selectedAction.requires_approval || (approver !== null && approver !== undefined)) {
+                      executeAction(approver || undefined);
                     }
                   }}
                   disabled={executing}
@@ -226,7 +226,7 @@ export const PlaybookActions: React.FC<PlaybookActionsProps> = ({ incident }) =>
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .playbook-actions {
           margin-top: 16px;
           padding: 16px;

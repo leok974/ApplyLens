@@ -4,7 +4,7 @@
  * Display individual incident with actions.
  */
 import React, { useState } from 'react';
-import type { Incident, AvailableAction, ActionResult } from '../../types/incidents';
+import type { Incident } from '../../types/incidents';
 import { PlaybookActions } from './PlaybookActions';
 
 interface IncidentCardProps {
@@ -133,7 +133,7 @@ export const IncidentCard: React.FC<IncidentCardProps> = ({ incident }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .incident-card {
           border: 1px solid #dee2e6;
           border-radius: 8px;
