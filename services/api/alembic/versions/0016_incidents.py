@@ -1,7 +1,7 @@
 """0016_incidents
 
 Revision ID: 0016_incidents
-Revises: 0015_labeled_examples
+Revises: 0015_add_security_policies
 Create Date: 2025-10-17
 
 Phase 5.4 PR1: Incident tracking tables
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '0016_incidents'
-down_revision = '0015_labeled_examples'
+down_revision = '0015_add_security_policies'
 branch_labels = None
 depends_on = None
 
