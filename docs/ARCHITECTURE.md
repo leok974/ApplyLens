@@ -1,52 +1,91 @@
-# Architecture
+# ApplyLens Architecture Documentation
 
-This document describes the high-level architecture of ApplyLens, including system components, data flow, and key design decisions.
+**Version:** 1.0  
+**Last Updated:** October 17, 2025  
+**Audience:** Engineering Team, SRE, New Hires
 
-## System Overview
+---
 
-ApplyLens is a full-stack web application for intelligent job application email management, built with a microservices-inspired architecture using Docker containers.
+## Table of Contents
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│                          Client Browser                          │
-│                    (React + Vite @ :5175)                       │
-└────────────────────┬─────────────────────────────────────────────┘
-                     │ HTTP/WebSocket
-                     ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                       Nginx Reverse Proxy                         │
-│              (Routes /api/* → Backend, /* → Frontend)            │
-└────────────────────┬─────────────────────────────────────────────┘
-                     │
-         ┌───────────┴────────────┐
-         ▼                        ▼
-┌─────────────────┐      ┌─────────────────┐
-│  FastAPI Backend│      │  Vite Frontend  │
-│   (Python 3.11) │      │  (React + TS)   │
-│                 │      │                 │
-│  • REST API     │      │  • SPA UI       │
-│  • Gmail Sync   │      │  • shadcn/ui    │
-│  • ML Models    │      │  • TailwindCSS  │
-│  • WebSockets   │      └─────────────────┘
-└────────┬────────┘
-         │
-         ├─────────────────┐
-         ▼                 ▼
-┌──────────────┐   ┌──────────────┐
-│  PostgreSQL  │   │Elasticsearch │
-│   Database   │   │   (Search)   │
-│              │   │              │
-│  • Emails    │   │  • Full-text │
-│  • Apps      │   │  • Analytics │
-│  • Policies  │   │  • Facets    │
-│  • Users     │   └──────────────┘
-└──────────────┘
-         │
-         ▼
-  ┌──────────────┐
-  │  Gmail API   │
-  │   (OAuth)    │
-  └──────────────┘
+1. [System Architecture](#system-architecture)
+2. [Data Flow](#data-flow)
+3. [Deployment Pipeline](#deployment-pipeline)
+4. [Monitoring Stack](#monitoring-stack)
+5. [Incident Response Workflow](#incident-response-workflow)
+6. [Security Architecture](#security-architecture)
+
+---
+
+## System Architecture
+
+### High-Level Overview
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Users[Users/Browsers]
+        Mobile[Mobile Apps]
+    end
+    
+    subgraph "Edge Layer"
+        CDN[CloudFlare CDN + WAF]
+    end
+    
+    subgraph "Load Balancing"
+        ALB[AWS Application Load Balancer]
+    end
+    
+    subgraph "Application Layer"
+        API1[API Pod 1<br/>ECS Fargate]
+        API2[API Pod 2<br/>ECS Fargate]
+        API3[API Pod 3<br/>ECS Fargate]
+    end
+    
+    subgraph "Data Layer"
+        PG[(PostgreSQL<br/>RDS Multi-AZ)]
+        ES[(Elasticsearch<br/>3-node cluster)]
+        Redis[(Redis<br/>ElastiCache)]
+        S3[(S3<br/>Object Storage)]
+    end
+    
+    subgraph "External Services"
+        Gmail[Gmail API]
+        OpenAI[OpenAI API]
+        PagerDuty[PagerDuty]
+    end
+    
+    Users --> CDN
+    Mobile --> CDN
+    CDN --> ALB
+    ALB --> API1
+    ALB --> API2
+    ALB --> API3
+    
+    API1 --> PG
+    API1 --> ES
+    API1 --> Redis
+    API1 --> S3
+    
+    API2 --> PG
+    API2 --> ES
+    API2 --> Redis
+    API2 --> S3
+    
+    API3 --> PG
+    API3 --> ES
+    API3 --> Redis
+    API3 --> S3
+    
+    API1 --> Gmail
+    API1 --> OpenAI
+    API1 --> PagerDuty
+    
+    API2 --> Gmail
+    API2 --> OpenAI
+    
+    API3 --> Gmail
+    API3 --> OpenAI
 ```text
 
 ## Core Components
@@ -558,44 +597,58 @@ direction = '📈' if change_pct > 0 else '📉' if change_pct < 0 else '➡️'
 ```
 
 If budgets are exceeded:
-- Warning logged (execution completes)
-- Future: abort execution or throttle
-- Phase 4: require approval for continuation
+
+
+### Component Details
+
+#### **API Service** (`services/api`)
+- **Technology:** FastAPI (Python 3.11)
+- **Container:** Docker on AWS ECS Fargate
+- **Scaling:** Auto-scaling 3-10 pods based on CPU/memory
+- **Health Check:** `/health` endpoint (30s interval)
+- **Ports:** 8000 (HTTP), exposed via ALB
+
+#### **Web UI** (`web`)
+- **Technology:** React 18 + TypeScript
+- **Hosting:** Static files on S3 + CloudFront
+- **Build:** Vite bundler
+- **CDN:** CloudFlare for global distribution
+
+#### **PostgreSQL Database**
+- **Version:** PostgreSQL 15
+- **Instance:** RDS db.r5.xlarge (4 vCPU, 32GB RAM)
+- **Multi-AZ:** Yes (automatic failover)
+- **Backups:** Daily snapshots, 30-day retention
+- **Connection Pool:** 100 max connections
+
+#### **Elasticsearch**
+- **Version:** 8.10
+- **Cluster:** 3 nodes (1 master, 2 data)
+- **Instance:** i3.xlarge.elasticsearch
+- **Storage:** 500GB SSD per node
+- **Snapshots:** Automated to S3 daily
+
+#### **Redis Cache**
+- **Version:** 7.0
+- **Instance:** cache.r5.large
+- **Replication:** Multi-AZ with replica
+- **Use Cases:** Session storage, rate limiting, API cache
 
 ---
 
-## Monitoring & Observability
+## Related Documentation
 
-### Prometheus Metrics
+- [Production Handbook](./PRODUCTION_HANDBOOK.md)
+- [SLA Overview](./SLA_OVERVIEW.md)
+- [On-Call Handbook](./ONCALL_HANDBOOK.md)
+- [Security Audit Template](./SECURITY_AUDIT.md)
 
-```python
-# services/api/app/metrics.py
-email_sync_duration = Histogram("email_sync_duration_seconds")
-risk_score_distribution = Histogram("risk_score", buckets=[0, 20, 40, 60, 80, 100])
-api_request_duration = Histogram("http_request_duration_seconds")
-```text
+---
 
-### Grafana Dashboards
-
-- **Email Overview:** Sync rate, category distribution
-- **Risk Analysis:** Risk score histogram, quarantine rate
-- **API Performance:** Request latency, error rate
-- **System Health:** CPU, memory, database connections
-
-## Scalability Considerations
-
-### Current Limitations
-
-- **Single-instance FastAPI:** No horizontal scaling yet
-- **PostgreSQL:** Single primary, no replicas
-- **Elasticsearch:** Single node
-
-### Future Improvements
-
-1. **Load Balancing:** Nginx → multiple FastAPI instances
-2. **Database:** Read replicas for queries, primary for writes
-3. **Caching:** Redis for frequently accessed data
-4. **Task Queue:** Celery for background jobs (Gmail sync, ML training)
+**Document Ownership:** Architecture Team  
+**Review Frequency:** Quarterly or on major changes  
+**Last Review:** October 17, 2025  
+**Next Review:** January 17, 2026
 5. **Elasticsearch Cluster:** Multi-node for high availability
 
 ## Technology Decisions
