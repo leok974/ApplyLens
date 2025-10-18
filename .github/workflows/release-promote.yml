@@ -161,13 +161,13 @@ jobs:
       - name: Notify deployment
         if: always()
         uses: 8398a7/action-slack@v3
+        continue-on-error: true
         with:
           status: ${{ job.status }}
           text: |
             Deployment to ${{ inputs.target_environment }}: ${{ job.status }}
             Commit: ${{ inputs.from_commit || github.sha }}
             ${{ inputs.target_environment == 'canary' && format('Canary: {0}%', inputs.canary_percentage) || '' }}
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
       
@@ -224,9 +224,11 @@ jobs:
       
       - name: Notify rollback
         uses: 8398a7/action-slack@v3
+        continue-on-error: true
         with:
           status: 'warning'
           text: |
             ⚠️ Automatic rollback triggered for ${{ inputs.target_environment }}
             Failed deployment: ${{ github.run_id }}
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
