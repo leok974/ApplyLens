@@ -77,6 +77,18 @@ curl -L http://localhost/ | grep title
 # Response: <title>ApplyLens - Job Inbox</title>
 ```
 
+### Production Domain Tests ✅
+```bash
+# API Health Check
+curl -k -s https://applylens.app/api/healthz
+# Response: {"status":"ok"}
+
+# Web Interface
+curl -k -sL https://applylens.app/ | grep title
+# Response: <title>ApplyLens - Job Inbox</title>
+```
+**✅ Production is LIVE via Cloudflare tunnel!**
+
 ### Service Endpoints
 - **Web UI:** http://localhost/ or http://localhost:5175/
 - **API:** http://localhost:8003/
@@ -127,10 +139,11 @@ git push origin v1.0.0
 **Logs:** "Kibana is now available" message confirmed  
 **Action:** Non-blocking, can be fixed in next release
 
-### 2. Cloudflare Tunnel
-**Status:** Not configured (no `CLOUDFLARED_TUNNEL_TOKEN`)  
-**Impact:** Production domain not accessible externally  
-**Action:** Optional - add token to `.env` if external access needed
+### 2. Cloudflare Tunnel - Internal Service Resolution
+**Status:** ✅ Tunnel connected and working for public access  
+**Minor Issue:** DNS lookup errors for `applylens-api.int` in logs (service uses `applylens-api.internal`)  
+**Impact:** None - production domain fully accessible at https://applylens.app  
+**Action:** Optional - update Cloudflare tunnel configuration to use correct internal hostname
 
 ### 3. Alembic Migration Chain
 **Status:** Some historical migrations have broken references  
