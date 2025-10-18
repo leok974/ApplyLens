@@ -37,15 +37,16 @@ class AgentEvent:
         import json
         
         # SSE format: event, id, data (one per line, double newline at end)
+        data_dict = {
+            'run_id': self.run_id,
+            'agent': self.agent,
+            'timestamp': self.timestamp,
+            **self.data
+        }
         lines = [
             f"event: {self.event_type}",
             f"id: {self.run_id}",
-            f"data: {json.dumps({
-                'run_id': self.run_id,
-                'agent': self.agent,
-                'timestamp': self.timestamp,
-                **self.data
-            })}",
+            f"data: {json.dumps(data_dict)}",
             "",  # Double newline required by SSE spec
         ]
         return "\n".join(lines) + "\n"

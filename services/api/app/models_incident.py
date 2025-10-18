@@ -66,8 +66,8 @@ class Incident(Base):
     assigned_to: Mapped[Optional[str]] = mapped_column(String(128))
     parent_id: Mapped[Optional[int]] = mapped_column(Integer)  # Escalation chain
     
-    # Metadata
-    metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Metadata (renamed from 'metadata' to avoid SQLAlchemy reserved attribute)
+    incident_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     
     # Indexes for efficient queries
     __table_args__ = (
@@ -103,7 +103,7 @@ class Incident(Base):
             "mitigated_at": self.mitigated_at.isoformat() if self.mitigated_at else None,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
             "closed_at": self.closed_at.isoformat() if self.closed_at else None,
-            "metadata": self.metadata,
+            "metadata": self.incident_metadata,
         }
 
 

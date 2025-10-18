@@ -210,8 +210,8 @@ def acknowledge_incident(
         incident.assigned_to = request.assigned_to
     
     if request.notes:
-        incident.metadata = incident.metadata or {}
-        incident.metadata["ack_notes"] = request.notes
+        incident.incident_metadata = incident.incident_metadata or {}
+        incident.incident_metadata["ack_notes"] = request.notes
     
     db.commit()
     db.refresh(incident)
@@ -251,8 +251,8 @@ def mitigate_incident(
     incident.mitigated_at = datetime.utcnow()
     
     if request.notes:
-        incident.metadata = incident.metadata or {}
-        incident.metadata["mitigation_notes"] = request.notes
+        incident.incident_metadata = incident.incident_metadata or {}
+        incident.incident_metadata["mitigation_notes"] = request.notes
     
     db.commit()
     db.refresh(incident)
@@ -288,8 +288,8 @@ def resolve_incident(
     incident.resolved_at = datetime.utcnow()
     
     if request.notes:
-        incident.metadata = incident.metadata or {}
-        incident.metadata["resolution_notes"] = request.notes
+        incident.incident_metadata = incident.incident_metadata or {}
+        incident.incident_metadata["resolution_notes"] = request.notes
     
     db.commit()
     db.refresh(incident)
@@ -325,8 +325,8 @@ def close_incident(
     incident.closed_at = datetime.utcnow()
     
     if request.notes:
-        incident.metadata = incident.metadata or {}
-        incident.metadata["close_notes"] = request.notes
+        incident.incident_metadata = incident.incident_metadata or {}
+        incident.incident_metadata["close_notes"] = request.notes
     
     db.commit()
     db.refresh(incident)
@@ -355,7 +355,7 @@ def update_incident(
     if update.playbooks is not None:
         incident.playbooks = update.playbooks
     if update.metadata is not None:
-        incident.metadata = {**(incident.metadata or {}), **update.metadata}
+        incident.incident_metadata = {**(incident.incident_metadata or {}), **update.metadata}
     
     db.commit()
     db.refresh(incident)

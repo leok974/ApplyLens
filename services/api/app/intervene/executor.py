@@ -168,14 +168,14 @@ class PlaybookExecutor:
             # Update incident if action succeeded
             if result.status == ActionStatus.SUCCESS:
                 # Add to incident history
-                history = incident.metadata.get("action_history", [])
+                history = incident.incident_metadata.get("action_history", [])
                 history.append({
                     "action_type": action_type,
                     "timestamp": datetime.utcnow().isoformat(),
                     "status": "success",
                     "approved_by": approved_by,
                 })
-                incident.metadata["action_history"] = history
+                incident.incident_metadata["action_history"] = history
             
             self.db.commit()
             
