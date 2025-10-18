@@ -296,8 +296,10 @@ except ImportError:
 try:
     from .routers.policy_bundles import router as policy_bundles_router
     from .routers.policy_lint import router as policy_lint_router
+    from .routers.policy_sim import router as policy_sim_router
     
     app.include_router(policy_bundles_router)
     app.include_router(policy_lint_router)
+    app.include_router(policy_sim_router)
 except ImportError:
     pass  # Policy bundles module not available yet
