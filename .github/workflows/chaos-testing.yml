@@ -1,0 +1,258 @@
+name: Chaos Testing
+
+on:
+  schedule:
+    # Run chaos tests weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  
+  workflow_dispatch:
+    # Allow manual trigger with parameters
+    inputs:
+      environment:
+        description: 'Environment to run chaos tests'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - canary
+      chaos_type:
+        description: 'Type of chaos to inject'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - api_outage
+          - high_latency
+          - rate_limit
+          - database_error
+      duration_minutes:
+        description: 'Duration of chaos experiment (minutes)'
+        required: false
+        default: '10'
+        type: string
+
+jobs:
+  chaos-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          cd services/api
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Run chaos engineering tests
+        env:
+          CHAOS_ENABLED: 'true'
+          CHAOS_TYPE: ${{ github.event.inputs.chaos_type || 'all' }}
+          CHAOS_DURATION_MINUTES: ${{ github.event.inputs.duration_minutes || '10' }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          ELASTICSEARCH_URL: ${{ secrets.STAGING_ELASTICSEARCH_URL }}
+        run: |
+          cd services/api
+          pytest tests/chaos/ -v \
+            --tb=short \
+            --junitxml=chaos-test-results.xml \
+            --cov=app/chaos \
+            --cov-report=xml \
+            --cov-report=html
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: chaos-test-results
+          path: services/api/chaos-test-results.xml
+      
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: chaos-coverage-report
+          path: services/api/htmlcov/
+      
+      - name: Check SLO compliance
+        env:
+          GRAFANA_URL: ${{ secrets.GRAFANA_URL }}
+          GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
+        run: |
+          cd services/api
+          python scripts/check_slo_compliance.py \
+            --environment ${{ github.event.inputs.environment || 'staging' }} \
+            --duration-minutes ${{ github.event.inputs.duration_minutes || '10' }}
+      
+      - name: Generate chaos report
+        if: always()
+        run: |
+          cd services/api
+          python scripts/generate_chaos_report.py \
+            --test-results chaos-test-results.xml \
+            --output chaos-report.md
+      
+      - name: Post chaos report to Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Chaos Testing Complete",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🔥 Chaos Engineering Report"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Environment:*\n${{ github.event.inputs.environment || 'staging' }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Chaos Type:*\n${{ github.event.inputs.chaos_type || 'all' }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Duration:*\n${{ github.event.inputs.duration_minutes || '10' }} minutes"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\n${{ job.status }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View full report>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_CHAOS }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Create GitHub issue on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Chaos Test Failure: ${{ github.event.inputs.chaos_type || 'all' }} on ${{ github.event.inputs.environment || 'staging' }}`,
+              body: `## Chaos Test Failure\n\n**Environment:** ${{ github.event.inputs.environment || 'staging' }}\n**Chaos Type:** ${{ github.event.inputs.chaos_type || 'all' }}\n**Duration:** ${{ github.event.inputs.duration_minutes || '10' }} minutes\n**Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n### Description\n\nThe chaos engineering tests failed. This indicates the system may not be properly handling the injected failures.\n\n### Action Required\n\n1. Review the test results and logs\n2. Identify which resilience pattern failed\n3. Implement fixes or improve error handling\n4. Re-run chaos tests to validate\n\n### Labels\n\n- chaos-engineering\n- reliability\n- needs-investigation`,
+              labels: ['chaos-engineering', 'reliability', 'needs-investigation']
+            });
+            console.log(`Created issue #${issue.data.number}`);
+
+  slo-validation:
+    runs-on: ubuntu-latest
+    needs: chaos-tests
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Query Prometheus for SLO metrics
+        env:
+          PROMETHEUS_URL: ${{ secrets.PROMETHEUS_URL }}
+        run: |
+          # Query error rate during chaos test
+          ERROR_RATE=$(curl -s "${PROMETHEUS_URL}/api/v1/query?query=rate(applylens_agent_errors_total[10m])" | jq -r '.data.result[0].value[1]')
+          
+          # Query P95 latency during chaos test
+          P95_LATENCY=$(curl -s "${PROMETHEUS_URL}/api/v1/query?query=histogram_quantile(0.95,rate(applylens_agent_latency_bucket[10m]))" | jq -r '.data.result[0].value[1]')
+          
+          echo "Error Rate: ${ERROR_RATE}"
+          echo "P95 Latency: ${P95_LATENCY}s"
+          
+          # Validate against SLO targets
+          # Error rate should be <2%
+          if (( $(echo "${ERROR_RATE} > 0.02" | bc -l) )); then
+            echo "❌ Error rate ${ERROR_RATE} exceeds SLO target of 2%"
+            exit 1
+          fi
+          
+          # P95 latency should be <1.5s for most agents
+          if (( $(echo "${P95_LATENCY} > 1.5" | bc -l) )); then
+            echo "⚠️ P95 latency ${P95_LATENCY}s exceeds SLO target of 1.5s"
+            exit 1
+          fi
+          
+          echo "✅ SLO targets maintained during chaos"
+      
+      - name: Post SLO validation to Slack
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "⚠️ SLO Violation During Chaos Testing",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "SLO targets were *not maintained* during chaos testing. System resilience needs improvement."
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View details>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_CHAOS }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [chaos-tests, slo-validation]
+    if: always()
+    
+    steps:
+      - name: Verify chaos is disabled
+        env:
+          API_URL: ${{ secrets.STAGING_API_URL }}
+        run: |
+          # Ensure chaos injection is disabled after tests
+          CHAOS_STATUS=$(curl -s "${API_URL}/chaos/status" | jq -r '.enabled')
+          
+          if [ "${CHAOS_STATUS}" = "true" ]; then
+            echo "⚠️ Chaos injection still enabled! Disabling..."
+            curl -X POST "${API_URL}/chaos/disable"
+          else
+            echo "✅ Chaos injection is disabled"
+          fi
+      
+      - name: Archive chaos artifacts
+        run: |
+          echo "Chaos testing artifacts archived in workflow run ${{ github.run_id }}"
