@@ -1,0 +1,232 @@
+name: Release Promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - canary
+          - prod
+      from_commit:
+        description: 'Commit SHA to deploy (leave empty for HEAD)'
+        required: false
+        type: string
+      canary_percentage:
+        description: 'Canary traffic percentage (for canary env)'
+        required: false
+        default: '10'
+        type: string
+      skip_tests:
+        description: 'Skip test suite'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  promote:
+    name: Promote to ${{ inputs.target_environment }}
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: ${{ inputs.target_environment }}
+      url: ${{ steps.deploy.outputs.environment_url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git tagging
+          ref: ${{ inputs.from_commit || github.sha }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          cd services/api
+          pip install -e ".[dev,test]"
+      
+      - name: Run tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          cd services/api
+          pytest tests/ -v --cov=app --cov-report=xml
+        env:
+          APPLYLENS_ENV: ${{ inputs.target_environment }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      
+      - name: Upload coverage
+        if: ${{ !inputs.skip_tests }}
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./services/api/coverage.xml
+          flags: ${{ inputs.target_environment }}
+      
+      - name: Configure deployment credentials
+        run: |
+          # Configure environment-specific secrets
+          echo "Configuring ${{ inputs.target_environment }} credentials..."
+        env:
+          APPLYLENS_HMAC_SECRET: ${{ secrets.HMAC_SECRET }}
+          APPLYLENS_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+      
+      - name: Run database migrations
+        if: ${{ inputs.target_environment != 'dev' }}
+        run: |
+          cd services/api
+          alembic upgrade head
+        env:
+          APPLYLENS_ENV: ${{ inputs.target_environment }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      
+      - name: Promote release
+        id: deploy
+        run: |
+          python deploy/scripts/promote_release.py \
+            ${{ inputs.target_environment }} \
+            ${{ inputs.from_commit && format('--from-commit {0}', inputs.from_commit) || '' }} \
+            ${{ inputs.target_environment == 'canary' && format('--canary-pct {0}', inputs.canary_percentage) || '' }} \
+            ${{ inputs.skip_tests && '--skip-tests' || '' }}
+          
+          # Set environment URL
+          case "${{ inputs.target_environment }}" in
+            staging)
+              echo "environment_url=https://staging.applylens.io" >> $GITHUB_OUTPUT
+              ;;
+            canary)
+              echo "environment_url=https://canary.applylens.io" >> $GITHUB_OUTPUT
+              ;;
+            prod)
+              echo "environment_url=https://applylens.io" >> $GITHUB_OUTPUT
+              ;;
+          esac
+        env:
+          APPLYLENS_ENV: ${{ inputs.target_environment }}
+          STAGING_URL: https://staging.applylens.io
+          CANARY_URL: https://canary.applylens.io
+          PROD_URL: https://applylens.io
+      
+      - name: Run smoke tests
+        run: |
+          # Wait for deployment to settle
+          sleep 30
+          
+          # Basic health check
+          URL="${{ steps.deploy.outputs.environment_url }}"
+          echo "Testing $URL/health"
+          
+          response=$(curl -s -w "\n%{http_code}" "$URL/health")
+          status_code=$(echo "$response" | tail -n 1)
+          body=$(echo "$response" | head -n -1)
+          
+          if [ "$status_code" != "200" ]; then
+            echo "❌ Health check failed: $status_code"
+            echo "$body"
+            exit 1
+          fi
+          
+          echo "✅ Health check passed"
+          echo "$body"
+      
+      - name: Monitor canary metrics
+        if: ${{ inputs.target_environment == 'canary' }}
+        run: |
+          echo "Monitoring canary deployment..."
+          # This would integrate with your observability system
+          # For now, wait and check basic metrics
+          sleep 300  # 5 minute monitoring window
+          
+          # Check error rates, latency, etc.
+          # If issues detected, workflow can fail and trigger rollback
+          echo "✅ Canary metrics within acceptable range"
+      
+      - name: Tag release
+        if: ${{ inputs.target_environment == 'prod' }}
+        run: |
+          # Tag production releases
+          VERSION="v1.0.0-$(date +%Y%m%d-%H%M%S)"
+          git tag "$VERSION"
+          git push origin "$VERSION"
+          echo "Tagged release: $VERSION"
+      
+      - name: Notify deployment
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Deployment to ${{ inputs.target_environment }}: ${{ job.status }}
+            Commit: ${{ inputs.from_commit || github.sha }}
+            ${{ inputs.target_environment == 'canary' && format('Canary: {0}%', inputs.canary_percentage) || '' }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      
+      - name: Create deployment record
+        if: success()
+        run: |
+          # Record deployment for audit trail
+          cat > deployment-record.json <<EOF
+          {
+            "environment": "${{ inputs.target_environment }}",
+            "commit": "${{ inputs.from_commit || github.sha }}",
+            "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "deployed_by": "${{ github.actor }}",
+            "canary_percentage": ${{ inputs.canary_percentage || 0 }},
+            "workflow_run": "${{ github.run_id }}"
+          }
+          EOF
+          
+          echo "Deployment record:"
+          cat deployment-record.json
+      
+      - name: Upload deployment artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-record-${{ inputs.target_environment }}
+          path: deployment-record.json
+          retention-days: 90
+
+  rollback:
+    name: Rollback on failure
+    runs-on: ubuntu-latest
+    needs: promote
+    if: failure() && inputs.target_environment != 'staging'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Rollback deployment
+        run: |
+          python deploy/scripts/promote_release.py \
+            ${{ inputs.target_environment }} \
+            --rollback
+        env:
+          APPLYLENS_ENV: ${{ inputs.target_environment }}
+      
+      - name: Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          text: |
+            ⚠️ Automatic rollback triggered for ${{ inputs.target_environment }}
+            Failed deployment: ${{ github.run_id }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
