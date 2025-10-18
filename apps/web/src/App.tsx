@@ -10,6 +10,7 @@ import InboxWithActions from './components/InboxWithActions'
 import InboxPolished from './pages/InboxPolished'
 import InboxPolishedDemo from './pages/InboxPolishedDemo'
 import ChatPage from './pages/ChatPage'
+import PolicyStudio from './pages/PolicyStudio'
 import { ToastProvider } from './components/ui/use-toast'
 import { Toaster } from './components/ui/sonner'
 import { ProfileSummary } from './components/profile/ProfileSummary'
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/applications" element={<Applications />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/security" element={<SettingsSecurity />} />
+            <Route path="/policy-studio" element={<PolicyStudio />} />
           </Routes>
         </main>
         <Toaster />
