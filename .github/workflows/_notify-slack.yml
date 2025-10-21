@@ -1,0 +1,20 @@
+name: Notify Slack (reusable)
+on:
+  workflow_call:
+    inputs:
+      title: { required: true, type: string }
+      status: { required: true, type: string }
+    secrets:
+      SLACK_WEBHOOK_URL: { required: true }
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to Slack
+        env:
+          WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          TITLE: ${{ inputs.title }}
+          STATUS: ${{ inputs.status }}
+        run: |
+          payload=$(jq -n --arg t "$TITLE" --arg s "$STATUS" '{text: ($t + " → " + $s)}')
+          curl -fsS -X POST -H 'Content-type: application/json' --data "$payload" "$WEBHOOK"

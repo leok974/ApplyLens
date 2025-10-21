@@ -1,0 +1,18 @@
+name: Nightly ES Reindex to v2
+on:
+  schedule:
+    - cron: "0 4 * * *"  # 04:00 UTC nightly
+  workflow_dispatch:
+jobs:
+  reindex:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x scripts/es_reindex_v2.sh
+      - name: Dry-run reindex
+        env:
+          ES_URL: ${{ secrets.ES_URL }}
+          SRC_INDEX: gmail_emails-000001
+          DST_INDEX: gmail_emails-reindexed-${{ github.run_id }}
+          DRY_RUN: "true"
+        run: ./scripts/es_reindex_v2.sh

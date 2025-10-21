@@ -15,3 +15,13 @@ jobs:
       - env:
           ES_URL: ${{ secrets.ES_URL }}
         run: python scripts/test_es_template.py
+
+  notify:
+    needs: [check-template]
+    if: failure()
+    uses: ./.github/workflows/_notify-slack.yml
+    with:
+      title: "ES Template Check failed"
+      status: "❌ Pipeline may not be v2"
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

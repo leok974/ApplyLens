@@ -1,0 +1,26 @@
+name: ES Snapshot (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: "Snapshot repository name"
+        required: false
+        default: "applylens_snapshots"
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create timestamped snapshot
+        env:
+          ES_URL: ${{ secrets.ES_URL }}
+          REPO: ${{ inputs.repo }}
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
+          SNAP_NAME="snap-${TIMESTAMP}"
+
+          echo "→ Creating snapshot: $SNAP_NAME in repo: $REPO"
+          curl -fsS -X PUT "${ES_URL}/_snapshot/${REPO}/${SNAP_NAME}" \
+            -H 'Content-Type: application/json' \
+            -d '{"indices": "gmail_emails-*"}'
+
+          echo "✓ Snapshot created: $SNAP_NAME"

@@ -9,11 +9,31 @@ description = "Grafana API key token"
 regex = '''glsa_[A-Za-z0-9]{32,}'''
 tags = ["grafana","token","apikey"]
 
+[[rules]]
+id = "fivetran-api-key"
+description = "Fivetran API key"
+regex = '''fivetran_[A-Za-z0-9]{32,}'''
+tags = ["fivetran","token","apikey"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API key"
+regex = '''AIza[0-9A-Za-z\-_]{35}'''
+tags = ["google","api","key"]
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["aws","access","key"]
+
 [allowlist]
 paths = [
   '''^\.venv/''',
   '''^node_modules/''',
   '''^apps/.*/tests?/''',
   '''^docs/.*\.png$''',
+  '''^infra/export/''',
+  '''^backups/''',
 ]
 regexTarget = "match"
