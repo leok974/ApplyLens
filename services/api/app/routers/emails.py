@@ -174,3 +174,54 @@ def risk_feedback(email_id: str, body: dict):
         raise HTTPException(
             status_code=500, detail=f"Error submitting feedback: {str(e)}"
         )
+
+
+@router.get("/risk/summary-24h")
+async def risk_summary_24h():
+    """
+    Get 24-hour risk summary for dashboards/monitoring.
+
+    Returns:
+    - high: count of emails with suspicion_score >= 40
+    - warn: count of emails with 25 <= suspicion_score < 40
+    - low: count of emails with suspicion_score < 25
+    - top_reasons: top 5 phishing signals detected
+
+    Useful for Grafana JSON datasource panels, Kibana Canvas, or CLI monitoring.
+    """
+    if not es:
+        raise HTTPException(
+            status_code=503, detail="Elasticsearch connection not available"
+        )
+
+    try:
+        body = {
+            "size": 0,
+            "query": {"range": {"received_at": {"gte": "now-24h"}}},
+            "aggs": {
+                "high": {"filter": {"range": {"suspicion_score": {"gte": 40}}}},
+                "warn": {
+                    "filter": {"range": {"suspicion_score": {"gte": 25, "lt": 40}}}
+                },
+                "low": {"filter": {"range": {"suspicion_score": {"lt": 25}}}},
+                "top_reasons": {"terms": {"field": "explanations.keyword", "size": 5}},
+            },
+        }
+
+        r = es.search(index="gmail_emails-*", body=body)
+        agg = r["aggregations"]
+
+        return {
+            "high": agg["high"]["doc_count"],
+            "warn": agg["warn"]["doc_count"],
+            "low": agg["low"]["doc_count"],
+            "top_reasons": [
+                {"key": b["key"], "count": b["doc_count"]}
+                for b in agg["top_reasons"]["buckets"]
+            ],
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching risk summary: {str(e)}"
+        )
