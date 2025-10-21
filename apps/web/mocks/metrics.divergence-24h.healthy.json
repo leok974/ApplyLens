@@ -1,0 +1,9 @@
+{
+  "divergence_pct": 0.011,
+  "status": "ok",
+  "es_count": 10050,
+  "bq_count": 10000,
+  "divergence": 0.011,
+  "slo_met": true,
+  "message": "Divergence: 1.10% (within SLO)"
+}

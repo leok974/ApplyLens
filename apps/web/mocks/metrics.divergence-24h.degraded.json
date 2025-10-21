@@ -1,0 +1,9 @@
+{
+  "divergence_pct": 0.035,
+  "status": "degraded",
+  "es_count": 10350,
+  "bq_count": 10000,
+  "divergence": 0.035,
+  "slo_met": false,
+  "message": "Divergence: 3.50% (exceeds SLO)"
+}

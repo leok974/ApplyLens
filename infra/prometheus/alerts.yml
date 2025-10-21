@@ -67,3 +67,103 @@ groups:
         annotations:
           summary: "Assistant search hit rate < 30%"
           description: "More than 70% of assistant queries returning 0 results for 10m. Possible ES issue or mis-scoped queries."
+
+  # ===========================================================================
+  # SECURITY ALERTS - Added 2025-10-20
+  # ===========================================================================
+  - name: applylens_security
+    rules:
+      # CSRF Protection
+      - alert: HighCSRFFailureRate
+        expr: rate(applylens_csrf_fail_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CSRF failure rate"
+          description: "CSRF failures at {{ $value }} req/sec on {{ $labels.path }}"
+
+      - alert: CriticalCSRFFailureRate
+        expr: rate(applylens_csrf_fail_total[5m]) > 50
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: Very high CSRF failures"
+          description: "CSRF failures at {{ $value }} req/sec - possible attack"
+
+      # Token Decryption
+      - alert: HighTokenDecryptionErrors
+        expr: rate(applylens_crypto_decrypt_error_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Token decryption errors"
+          description: "Decryption failures: {{ $value }}/sec ({{ $labels.error_type }})"
+
+      - alert: InvalidTagErrors
+        expr: rate(applylens_crypto_decrypt_error_total{error_type="invalid_tag"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: Invalid authentication tags"
+          description: "AES-GCM auth failures - possible tampering or wrong key"
+
+      # Rate Limiting
+      - alert: FrequentRateLimiting
+        expr: rate(applylens_rate_limit_exceeded_total[5m]) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Frequent rate limiting"
+          description: "Rate limit exceeded {{ $value }}/sec from {{ $labels.ip_prefix }}"
+
+      - alert: MassiveRateLimitExceeded
+        expr: rate(applylens_rate_limit_exceeded_total[1m]) > 50
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: Massive rate limiting"
+          description: "Rate limit exceeded {{ $value }}/sec - possible DoS"
+
+      # reCAPTCHA
+      - alert: LowCaptchaScores
+        expr: histogram_quantile(0.50, rate(applylens_recaptcha_score_bucket[5m])) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low reCAPTCHA scores"
+          description: "Median score: {{ $value }} (threshold: 0.5)"
+
+      - alert: HighCaptchaFailureRate
+        expr: rate(applylens_recaptcha_verify_total{status="failure"}[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High reCAPTCHA failure rate"
+          description: "Failures at {{ $value }}/sec"
+
+      # Authentication
+      - alert: HighAuthFailureRate
+        expr: rate(applylens_auth_attempt_total{status="failure"}[5m]) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High auth failure rate"
+          description: "Auth failures: {{ $value }}/sec ({{ $labels.method }})"
+
+      - alert: SuspiciousAuthActivity
+        expr: rate(applylens_auth_attempt_total{status="failure"}[1m]) > 20
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: Suspicious auth activity"
+          description: "Rapid auth failures: {{ $value }}/sec - credential stuffing?"

@@ -1,0 +1,78 @@
+{
+  "applications": [
+    {
+      "company": "Prometric",
+      "role": "Software Developer",
+      "status": "applied",
+      "applied_at": "2025-09-25T12:00:00Z",
+      "location": "Remote",
+      "notes": "Applied through company website"
+    },
+    {
+      "company": "Acme Robotics",
+      "role": "ML Engineer Intern",
+      "status": "interview",
+      "applied_at": "2025-10-01T15:30:00Z",
+      "location": "San Francisco, CA",
+      "notes": "Phone screen scheduled for next week"
+    },
+    {
+      "company": "NeoFinTech",
+      "role": "Data Engineer",
+      "status": "offer",
+      "applied_at": "2025-09-10T10:00:00Z",
+      "location": "New York, NY",
+      "notes": "Received offer, reviewing details"
+    },
+    {
+      "company": "CloudScale Inc",
+      "role": "Backend Engineer",
+      "status": "applied",
+      "applied_at": "2025-10-15T09:00:00Z",
+      "location": "Austin, TX",
+      "notes": "Waiting to hear back"
+    },
+    {
+      "company": "DataViz Solutions",
+      "role": "Full Stack Developer",
+      "status": "rejected",
+      "applied_at": "2025-09-05T14:20:00Z",
+      "location": "Boston, MA",
+      "notes": "Position filled internally"
+    }
+  ],
+  "emails": [
+    {
+      "subject": "Interview Invite — Acme Robotics",
+      "from_email": "recruiting@acmerobotics.com",
+      "received_at": "2025-10-03T14:12:00Z",
+      "labels": ["INBOX", "IMPORTANT"],
+      "snippet": "We'd love to chat about your application for the ML Engineer Intern position. Please let us know your availability for a phone screen next week.",
+      "body_text": "Hi there,\n\nThank you for your application to the ML Engineer Intern position at Acme Robotics. We were impressed by your background and would love to schedule a preliminary phone screen.\n\nPlease reply with 2-3 time slots that work for you next week.\n\nBest regards,\nAcme Recruiting Team"
+    },
+    {
+      "subject": "Offer Details — NeoFinTech",
+      "from_email": "hr@neofintech.io",
+      "received_at": "2025-10-08T09:00:00Z",
+      "labels": ["INBOX"],
+      "snippet": "Congrats! Here's your offer for the Data Engineer position. Please review and let us know if you have any questions.",
+      "body_text": "Congratulations!\n\nWe are pleased to extend you an offer for the Data Engineer position at NeoFinTech.\n\nPlease find the attached offer letter with full details including compensation, benefits, and start date.\n\nWe're excited to have you join the team!\n\nBest,\nNeoFinTech HR"
+    },
+    {
+      "subject": "Application Received - CloudScale Inc",
+      "from_email": "noreply@cloudscale.com",
+      "received_at": "2025-10-15T09:15:00Z",
+      "labels": ["INBOX"],
+      "snippet": "Thank you for applying to CloudScale Inc. We have received your application for Backend Engineer and will review it shortly.",
+      "body_text": "Thank you for your interest in CloudScale Inc!\n\nWe have received your application for the Backend Engineer position. Our team will review your materials and reach out if there's a good fit.\n\nTypically, you can expect to hear from us within 2 weeks.\n\nThank you,\nCloudScale Talent Team"
+    },
+    {
+      "subject": "Re: Your Application - DataViz Solutions",
+      "from_email": "jobs@dataviz.com",
+      "received_at": "2025-09-18T16:30:00Z",
+      "labels": ["INBOX"],
+      "snippet": "Thank you for your interest in DataViz Solutions. Unfortunately, we have decided to move forward with other candidates at this time.",
+      "body_text": "Dear Applicant,\n\nThank you for taking the time to apply for the Full Stack Developer position at DataViz Solutions.\n\nAfter careful consideration, we have decided to move forward with candidates whose experience more closely aligns with our current needs. We were impressed with your background and encourage you to apply for future openings.\n\nWe wish you all the best in your job search.\n\nSincerely,\nDataViz Recruiting"
+    }
+  ]
+}

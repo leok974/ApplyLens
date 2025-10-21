@@ -12,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     text,
@@ -23,13 +24,36 @@ from sqlalchemy.sql import func
 from .db import Base
 
 
+class User(Base):
+    """User accounts for multi-user authentication."""
+    __tablename__ = "users"
+    id = Column(String(64), primary_key=True)  # UUID or generated ID
+    email = Column(String(320), nullable=False, unique=True, index=True)
+    name = Column(String(255), nullable=True)
+    picture_url = Column(Text, nullable=True)
+    is_demo = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+
+class Session(Base):
+    """User sessions for cookie-based authentication."""
+    __tablename__ = "sessions"
+    id = Column(String(64), primary_key=True)  # Session token
+    user_id = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    user = relationship("User", backref="sessions")
+
+
 class OAuthToken(Base):
     __tablename__ = "oauth_tokens"
     id = Column(Integer, primary_key=True)
+    user_id = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)  # New: link to User
     provider = Column(String(32), nullable=False, index=True)  # "google"
-    user_email = Column(String(320), nullable=False, index=True)
-    access_token = Column(Text, nullable=False)
-    refresh_token = Column(Text, nullable=True)
+    user_email = Column(String(320), nullable=False, index=True)  # Keep for backward compatibility
+    access_token = Column(LargeBinary, nullable=False)  # Encrypted with AES-GCM
+    refresh_token = Column(LargeBinary, nullable=True)  # Encrypted with AES-GCM
     token_uri = Column(Text, nullable=False)
     client_id = Column(Text, nullable=False)
     client_secret = Column(Text, nullable=False)
@@ -39,6 +63,7 @@ class OAuthToken(Base):
     updated_at = Column(
         DateTime(timezone=True), onupdate=func.now(), server_default=func.now()
     )
+    user = relationship("User", backref="oauth_tokens")
 
 
 class GmailToken(Base):
@@ -157,6 +182,12 @@ class Application(Base):
 
     status = Column(Enum(AppStatus), default=AppStatus.applied, nullable=False)
     notes = Column(Text, nullable=True)
+
+    # Archive & auto-delete lifecycle fields
+    archived_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    archive_opt_out = Column(Boolean, nullable=False, default=False)
+    auto_delete_opt_out = Column(Boolean, nullable=False, default=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

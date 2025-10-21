@@ -1,7 +1,7 @@
 """Add consent tracking tables
 
 Revision ID: 0018_consent_log
-Revises: 0017_previous_migration
+Revises: 0017_policy_bundles
 Create Date: 2025-10-17 12:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '0018_consent_log'
-down_revision = '0017_previous_migration'
+down_revision = '0017_policy_bundles'
 branch_labels = None
 depends_on = None
 

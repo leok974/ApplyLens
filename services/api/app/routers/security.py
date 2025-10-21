@@ -114,6 +114,92 @@ def get_security_stats(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/risk-top3")
+def get_risk_top3(message_id: str, db: Session = Depends(get_db)):
+    """
+    AI Feature: Smart Risk Badge
+    Returns top 3 risk signals sorted by weight for a given message.
+    
+    Returns:
+        {
+            "score": 45,
+            "signals": [
+                {"id": "DMARC_FAIL", "label": "DMARC Failed", "explain": "..."},
+                {"id": "SPF_FAIL", "label": "SPF Failed", "explain": "..."},
+                {"id": "NEW_DOMAIN", "label": "New Domain", "explain": "..."}
+            ]
+        }
+    """
+    # Fetch email/message
+    email = db.query(Email).filter(Email.id == message_id).first()
+    if not email:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Extract headers from raw
+    headers_dict = {}
+    if email.raw and isinstance(email.raw, dict):
+        payload = email.raw.get("payload", {})
+        headers_list = payload.get("headers", [])
+        headers_dict = {
+            h["name"]: h["value"] for h in headers_list if isinstance(h, dict)
+        }
+    
+    # Parse from field
+    from_parts = email.sender.split("<") if email.sender else []
+    from_name = from_parts[0].strip().strip('"') if len(from_parts) > 1 else ""
+    from_email = (
+        from_parts[1].rstrip(">") if len(from_parts) > 1 else (email.sender or "")
+    )
+    
+    # Analyze risk
+    result = ANALYZER.analyze(
+        headers=headers_dict,
+        from_name=from_name,
+        from_email=from_email,
+        subject=email.subject or "",
+        body_text=email.body_text or "",
+        body_html=None,
+        urls_visible_text_pairs=None,
+        attachments=[],
+        domain_first_seen_days_ago=None,
+    )
+    
+    # Sort flags by weight descending, take top 3
+    sorted_flags = sorted(result.flags, key=lambda f: abs(f.weight), reverse=True)
+    top_3 = sorted_flags[:3]
+    
+    # Map signal IDs to human-readable labels
+    signal_labels = {
+        "DMARC_FAIL": "DMARC Failed",
+        "SPF_FAIL": "SPF Failed",
+        "DKIM_FAIL": "DKIM Failed",
+        "DISPLAY_NAME_SPOOF": "Display Name Spoof",
+        "NEW_DOMAIN": "New Domain",
+        "PUNYCODE_OR_HOMOGLYPH": "Suspicious Characters",
+        "SUSPICIOUS_TLD": "Suspicious TLD",
+        "URL_HOST_MISMATCH": "URL Mismatch",
+        "MALICIOUS_KEYWORD": "Malicious Keywords",
+        "EXECUTABLE_OR_HTML_ATTACHMENT": "Dangerous Attachment",
+        "BLOCKLISTED_HASH_OR_HOST": "Blocklisted",
+        "TRUSTED_DOMAIN": "Trusted Domain",
+    }
+    
+    signals = [
+        {
+            "id": flag.signal,
+            "label": signal_labels.get(flag.signal, flag.signal.replace("_", " ").title()),
+            "explain": flag.evidence,
+        }
+        for flag in top_3
+    ]
+    
+    return {
+        "score": result.risk_score,
+        "signals": signals,
+    }
+
+
 @router.post("/bulk/rescan")
 def bulk_rescan(email_ids: list[str], db: Session = Depends(get_db)):
     """

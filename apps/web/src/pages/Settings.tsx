@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Info } from 'lucide-react'
+import { features } from '../config/features'
+import { ProfileMetrics } from '../components/ProfileMetrics'
 
 export default function Settings() {
   const [scale, setScale] = useState<RecencyScale>(getRecencyScale())
@@ -14,8 +16,13 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <h1 className="text-3xl font-bold">Settings</h1>
+      
+      {/* Warehouse Metrics (feature-flagged) */}
+      {features.warehouseMetrics && (
+        <ProfileMetrics />
+      )}
       
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Search Scoring</h2>

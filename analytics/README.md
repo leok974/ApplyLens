@@ -2,6 +2,54 @@
 
 This directory contains the Analytics Phase 51 upgrade (51.1 → 51.3) for ApplyLens.
 
+## Warehouse Health Check
+
+### Prerequisites
+- `gcloud` CLI installed and authenticated
+- `bq` command-line tool available
+- Service account with BigQuery Data Viewer role
+- `GCP_PROJECT` environment variable set
+
+### Run Health Checks
+
+**PowerShell:**
+```powershell
+.\analytics\bq\health.ps1
+```
+
+**Bash:**
+```bash
+./analytics/bq/health.sh
+```
+
+### Expected Results
+- **messages_last_24h** > 0 (if receiving daily emails)
+- **hours_since_last_sync** < 6 (Fivetran syncs every 6 hours)
+- **Top senders** should include recruiting sites, newsletters, job boards
+
+### Health Queries
+
+The health check runs three SQL queries:
+1. **Messages in last 24h** - Verifies recent data sync
+2. **Top senders (30 days)** - Shows most active email sources
+3. **Data freshness** - Checks `_fivetran_synced` timestamp
+
+See `analytics/bq/health.sql` for query details.
+
+### Troubleshooting
+
+**Issue: "Table not found"**
+- Check Fivetran connector is activated and syncing
+- Verify `GCP_PROJECT` matches your BigQuery project ID
+
+**Issue: "Access denied"**
+- Ensure service account has `roles/bigquery.dataViewer` role
+- Check `GOOGLE_APPLICATION_CREDENTIALS` points to valid JSON
+
+**Issue: "No data in last 24h"**
+- Check Fivetran sync frequency (should be every 6 hours)
+- Run initial historical backfill if connector just activated
+
 ## Structure
 
 ```text

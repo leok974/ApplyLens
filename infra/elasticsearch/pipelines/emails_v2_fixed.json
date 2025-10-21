@@ -1,0 +1,32 @@
+{
+  "description": "ApplyLens emails normalization v2 (smart flags) - fixed for actual schema",
+  "processors": [
+    { "rename": { "field": "snippet", "target_field": "snippet_raw", "ignore_missing": true }},
+    
+    { "lowercase": { "field": "sender", "ignore_missing": true }},
+    { "lowercase": { "field": "recipient", "ignore_missing": true }},
+    { "lowercase": { "field": "subject", "ignore_missing": true }},
+    { "trim":      { "field": "subject", "ignore_missing": true }},
+
+    { "script": {
+      "lang": "painless",
+      "source": "\n        // Normalize labels\n        if (ctx.containsKey('labels') && ctx.labels instanceof List) {\n          def ln = new ArrayList();\n          for (def l : ctx.labels) { if (l != null) ln.add(l.toString().toLowerCase()); }\n          ctx.labels_norm = ln;\n        }\n\n        // Flags from content\n        def subj = ctx.containsKey('subject') && ctx.subject != null ? ctx.subject : '';\n        def body = ctx.containsKey('body_text') && ctx.body_text != null ? ctx.body_text : '';\n        def text = (subj + ' ' + body).toLowerCase();\n\n        // Simple interview/offer detection\n        ctx.is_interview = text.contains('interview') || text.contains('screen') || text.contains('phone screen') || text.contains('onsite');\n        ctx.is_offer     = text.contains('offer') || text.contains('offer letter');\n\n        // Recruiter heuristics - FIXED: use 'sender' instead of 'from'\n        def f = ctx.containsKey('sender') && ctx.sender != null ? ctx.sender : '';\n        ctx.is_recruiter = f.contains('recruit') || f.contains('talent') || f.contains('careers@') || f.contains('hr@') || f.contains('hiring');\n\n        // Calendar invite detection (subject/body hints)\n        ctx.has_calendar_invite = text.contains('calendar invite') || text.contains('ics') || text.contains('event:') || text.contains('zoom meeting') || text.contains('google meet') || text.contains('meeting invitation');\n\n        // Attachment hint\n        ctx.has_attachment = text.contains('attached') || text.contains('attachment') || text.contains('please find');\n\n        // Guess company from email domain (sender: user@company.com)\n        if (f.contains('@')) {\n          try {\n            def dom = f.substring(f.indexOf('@')+1);\n            dom = dom.replace('>', '').replace('\"', '').trim().toLowerCase();\n            if (dom.contains('.')) dom = dom.substring(0, dom.indexOf('.'));\n            if (dom.length() >= 2 && dom.length() <= 32) ctx.company_guess = dom;\n          } catch (Exception e) { /* ignore */ }\n        }\n\n        // Thread fallback key - use sender instead of from\n        if (!ctx.containsKey('thread_id') || ctx.thread_id == null) {\n          ctx.thread_key = subj.toLowerCase().trim() + '|' + (ctx.containsKey('sender') ? ctx.sender : '');\n        }\n      "
+    }},
+
+    { "date": { "field": "received_at", "formats": ["ISO8601","EEE, dd MMM yyyy HH:mm:ss Z"], "ignore_failure": true }},
+    { "date": { "field": "first_user_reply_at",  "formats": ["ISO8601"], "ignore_failure": true }},
+    { "date": { "field": "last_user_reply_at",  "formats": ["ISO8601"], "ignore_failure": true }},
+
+    { "fingerprint": {
+        "fields": ["gmail_id","thread_id","sender","recipient","subject","received_at"],
+        "target_field": "doc_hash",
+        "method": "SHA-1"
+      }
+    },
+
+    { "remove": { "field": ["_temp","snippet_raw"], "ignore_missing": true }}
+  ],
+  "on_failure": [
+    { "set": { "field": "_ingest_error", "value": "{{_ingest.on_failure_message}}" }}
+  ]
+}

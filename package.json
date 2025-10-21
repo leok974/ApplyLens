@@ -10,6 +10,7 @@
     "docs:organize": "node scripts/docs/organize-docs.mjs",
     "docs:fixfences": "node scripts/docs/fix-fences.mjs",
     "docs:lint": "markdownlint **/*.md --ignore node_modules --ignore .git",
+    "verify:fivetran:oauth": "node scripts/fivetran/verify_oauth.mjs",
     "phase2:export": "cross-env ES_URL=http://localhost:9200 ES_EMAIL_INDEX=emails_v1-000001 python services/api/app/labeling/export_weak_labels.py --days 60 --limit 40000 --limit-per-cat 8000 --out /tmp/weak_labels.jsonl",
     "phase2:train": "python services/api/app/labeling/train_ml.py /tmp/weak_labels.jsonl services/api/app/labeling/label_model.joblib",
     "phase2:apply": "curl -s -X POST \"http://localhost:8003/labels/apply\" -H \"Content-Type: application/json\" -d \"{}\"",

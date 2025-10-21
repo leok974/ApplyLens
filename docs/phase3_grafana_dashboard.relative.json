@@ -1,0 +1,379 @@
+{{
+
+  "id": null,  "id": null,
+
+  "uid": "applylens-phase4-overview",  "uid": "applylens-phase4-overview",
+
+  "title": "ApplyLens Phase 4 Overview",  "title": "ApplyLens Phase 4 Overview",
+
+  "tags": ["applylens", "demo"],  "tags": [
+
+  "timezone": "browser",    "applylens",
+
+  "schemaVersion": 38,    "demo",
+
+  "version": 1,    "phase4"
+
+  "refresh": "30s",  ],
+
+  "time": { "from": "now-90d", "to": "now" },  "timezone": "browser",
+
+  "panels": [  "schemaVersion": 38,
+
+    {  "version": 1,
+
+      "type": "timeseries",  "refresh": "30s",
+
+      "title": "Activity by Day (Messages)",  "time": {
+
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },    "from": "now-90d",
+
+      "datasource": { "type": "marcusolsson-json-datasource", "uid": "ApplyLens API" },    "to": "now"
+
+      "targets": [  },
+
+        {  "templating": {
+
+          "refId": "A",    "list": []
+
+          "method": "GET",  },
+
+          "url": "/api/metrics/profile/activity_daily",  "panels": [
+
+          "jsonPath": "$.rows[*]"    {
+
+        }      "type": "timeseries",
+
+      ],      "title": "Activity by Day (Messages)",
+
+      "transformations": [      "gridPos": {
+
+        { "id": "extractFields", "options": { "source": "A", "replace": false, "keepTime": false } }        "x": 0,
+
+      ],        "y": 0,
+
+      "fieldConfig": {        "w": 12,
+
+        "defaults": {        "h": 8
+
+          "custom": { "drawStyle": "bars", "fillOpacity": 80 },      },
+
+          "unit": "none"      "datasource": {
+
+        },        "type": "marcusolsson-json-datasource",
+
+        "overrides": [        "uid": "ApplyLens API"
+
+          {      },
+
+            "matcher": { "id": "byName", "options": "day" },      "targets": [
+
+            "properties": [        {
+
+              { "id": "unit", "value": "time:YYYY-MM-DD" }          "refId": "A",
+
+            ]          "url": "/api/metrics/profile/activity_daily",
+
+          }          "method": "GET",
+
+        ]          "format": "json",
+
+      },          "cacheDurationSeconds": 30,
+
+      "options": {          "headers": [],
+
+        "legend": { "displayMode": "hidden" },          "jsonPath": "$.rows[*]",
+
+        "tooltip": { "mode": "single" }          "fields": [
+
+      }            {
+
+    },              "jsonPath": "$.day",
+
+    {              "name": "time",
+
+      "type": "timeseries",              "type": "time"
+
+      "title": "Unique Senders by Day",            },
+
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 6 },            {
+
+      "datasource": { "type": "marcusolsson-json-datasource", "uid": "ApplyLens API" },              "jsonPath": "$.messages_count",
+
+      "targets": [              "name": "Messages",
+
+        {              "type": "number"
+
+          "refId": "A",            }
+
+          "method": "GET",          ]
+
+          "url": "/api/metrics/profile/activity_daily",        }
+
+          "jsonPath": "$.rows[*]"      ],
+
+        }      "fieldConfig": {
+
+      ],        "defaults": {
+
+      "transformations": [          "custom": {
+
+        { "id": "extractFields", "options": { "source": "A", "replace": false, "keepTime": false } }            "drawStyle": "bars",
+
+      ],            "fillOpacity": 80
+
+      "fieldConfig": {          },
+
+        "defaults": {          "unit": "none",
+
+          "custom": { "drawStyle": "line", "fillOpacity": 10 },          "color": {
+
+          "unit": "none"            "mode": "palette-classic"
+
+        },          }
+
+        "overrides": [        }
+
+          {      }
+
+            "matcher": { "id": "byName", "options": "day" },    },
+
+            "properties": [    {
+
+              { "id": "unit", "value": "time:YYYY-MM-DD" }      "type": "timeseries",
+
+            ]      "title": "Unique Senders by Day",
+
+          }      "gridPos": {
+
+        ]        "x": 12,
+
+      },        "y": 0,
+
+      "options": {        "w": 12,
+
+        "legend": { "displayMode": "hidden" },        "h": 8
+
+        "tooltip": { "mode": "single" }      },
+
+      }      "datasource": {
+
+    },        "type": "marcusolsson-json-datasource",
+
+    {        "uid": "ApplyLens API"
+
+      "type": "table",      },
+
+      "title": "Top Senders (30 Days)",      "targets": [
+
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },        {
+
+      "datasource": { "type": "marcusolsson-json-datasource", "uid": "ApplyLens API" },          "refId": "A",
+
+      "targets": [          "url": "/api/metrics/profile/activity_daily",
+
+        {          "method": "GET",
+
+          "refId": "A",          "format": "json",
+
+          "method": "GET",          "cacheDurationSeconds": 30,
+
+          "url": "/api/metrics/profile/top_senders_30d",          "headers": [],
+
+          "jsonPath": "$.rows[*]"          "jsonPath": "$.rows[*]",
+
+        }          "fields": [
+
+      ],            {
+
+      "transformations": [              "jsonPath": "$.day",
+
+        { "id": "extractFields", "options": { "source": "A", "replace": false, "keepTime": false } },              "name": "time",
+
+        {               "type": "time"
+
+          "id": "organize",             },
+
+          "options": {             {
+
+            "excludeByName": { "first_message_at": true, "last_message_at": true, "active_days": true, "total_size_mb": true },              "jsonPath": "$.unique_senders",
+
+            "indexByName": { "from_email": 0, "messages_30d": 1 },              "name": "Senders",
+
+            "renameByName": { "from_email": "Sender", "messages_30d": "Messages" }              "type": "number"
+
+          }             }
+
+        }          ]
+
+      ],        }
+
+      "options": { "showHeader": true },      ],
+
+      "fieldConfig": {       "fieldConfig": {
+
+        "defaults": {},        "defaults": {
+
+        "overrides": [          "custom": {
+
+          {            "drawStyle": "line",
+
+            "matcher": { "id": "byName", "options": "Messages" },            "fillOpacity": 10
+
+            "properties": [          },
+
+              { "id": "custom.width", "value": 100 }          "unit": "none",
+
+            ]          "color": {
+
+          }            "mode": "palette-classic"
+
+        ]          }
+
+      }        }
+
+    },      }
+
+    {    },
+
+      "type": "barchart",    {
+
+      "title": "Categories (30 Days)",      "type": "table",
+
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },      "title": "Top Senders (30 Days)",
+
+      "datasource": { "type": "marcusolsson-json-datasource", "uid": "ApplyLens API" },      "gridPos": {
+
+      "targets": [        "x": 0,
+
+        {        "y": 8,
+
+          "refId": "A",        "w": 12,
+
+          "method": "GET",        "h": 8
+
+          "url": "/api/metrics/profile/categories_30d",      },
+
+          "jsonPath": "$.rows[*]"      "datasource": {
+
+        }        "type": "marcusolsson-json-datasource",
+
+      ],        "uid": "ApplyLens API"
+
+      "transformations": [      },
+
+        { "id": "extractFields", "options": { "source": "A", "replace": false, "keepTime": false } },      "targets": [
+
+        {         {
+
+          "id": "organize",           "refId": "A",
+
+          "options": {           "url": "/api/metrics/profile/top_senders_30d",
+
+            "excludeByName": { "pct_of_total": true, "total_size_mb": true },          "method": "GET",
+
+            "indexByName": { "category": 0, "messages_30d": 1 },          "format": "json",
+
+            "renameByName": { "category": "Category", "messages_30d": "Messages" }          "cacheDurationSeconds": 60,
+
+          }           "headers": [],
+
+        }          "jsonPath": "$.rows[*]"
+
+      ],        }
+
+      "fieldConfig": {      ],
+
+        "defaults": { "unit": "none" },      "fieldConfig": {
+
+        "overrides": []        "defaults": {},
+
+      },        "overrides": [
+
+      "options": {          {
+
+        "legend": { "displayMode": "hidden" },            "matcher": {
+
+        "tooltip": { "mode": "single" },              "id": "byName",
+
+        "orientation": "horizontal",              "options": "message_count"
+
+        "showValue": "always"            },
+
+      }            "properties": [
+
+    }              {
+
+  ]                "id": "displayName",
+
+}                "value": "Messages"
+
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "sender"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Sender"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Categories (30 Days)",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "marcusolsson-json-datasource",
+        "uid": "ApplyLens API"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "url": "/api/metrics/profile/categories_30d",
+          "method": "GET",
+          "format": "json",
+          "cacheDurationSeconds": 60,
+          "headers": [],
+          "jsonPath": "$.rows[*]",
+          "fields": [
+            {
+              "jsonPath": "$.category",
+              "name": "Category",
+              "type": "string"
+            },
+            {
+              "jsonPath": "$.message_count",
+              "name": "Messages",
+              "type": "number"
+            }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always"
+      }
+    }
+  ]
+}

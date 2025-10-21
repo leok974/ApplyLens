@@ -1,0 +1,34 @@
+{
+  "template": {
+    "settings": {
+      "index.number_of_shards": 1,
+      "index.number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "user_id":     {"type": "keyword"},
+        "gmail_id":    {"type": "keyword"},
+        "thread_id":   {"type": "keyword"},
+        "thread_key":  {"type": "keyword"},
+        "from":        {"type": "keyword", "normalizer": "lowercase"},
+        "to":          {"type": "keyword", "normalizer": "lowercase"},
+        "cc":          {"type": "keyword", "normalizer": "lowercase"},
+        "bcc":         {"type": "keyword", "normalizer": "lowercase"},
+        "subject":     {"type": "text",    "fields": {"kw": {"type": "keyword", "ignore_above": 256}}},
+        "body_text":   {"type": "text"},
+        "labels_norm": {"type": "keyword"},
+        "received_at": {"type": "date"},
+        "sent_at":     {"type": "date"},
+        "archived_at": {"type": "date"},
+        "archived":    {"type": "boolean"},
+        "deleted":     {"type": "boolean"},
+        "is_interview": {"type": "boolean"},
+        "is_offer":     {"type": "boolean"},
+        "doc_hash":    {"type": "keyword"}
+      }
+    }
+  },
+  "version": 1,
+  "_meta": {"owner": "applylens", "kind": "emails_component_template_mapping"}
+}

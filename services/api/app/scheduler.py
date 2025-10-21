@@ -156,6 +156,13 @@ def job_check_canary_deployments():
 
 def setup_scheduled_jobs():
     """Configure and start all scheduled jobs."""
+    import os
+    
+    # Check if scheduler is enabled
+    if os.getenv("SCHEDULER_ENABLED", "1") == "0":
+        logger.info("Scheduler is disabled (SCHEDULER_ENABLED=0)")
+        return
+    
     logger.info("Setting up scheduled jobs...")
     
     # Active Learning Jobs (Phase 5.3)

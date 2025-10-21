@@ -1,0 +1,14 @@
+{
+  "index_patterns": ["gmail_emails-*"],
+  "composed_of": ["applylens_emails_mapping"],
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "applylens_emails_ilm",
+      "index.lifecycle.rollover_alias": "gmail_emails",
+      "index.default_pipeline": "applylens_emails_v2"
+    }
+  },
+  "priority": 500,
+  "version": 2,
+  "_meta": {"owner": "applylens", "kind": "emails_index_template"}
+}

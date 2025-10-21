@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette_exporter import PrometheusMiddleware
 
@@ -11,11 +12,34 @@ from .es import ensure_index
 from .routers import applications, emails, search, suggest
 from .settings import settings
 from .tracing import init_tracing
+from .config import agent_settings
+from .core.csrf import CSRFMiddleware
+from .core.limiter import RateLimitMiddleware
+from .core.metrics import metrics_router
 
 # CORS allowlist from environment (comma-separated)
 ALLOWED_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5175").split(",")
 
 app = FastAPI(title="ApplyLens API")
+
+# Add rate limiting middleware (before CSRF)
+app.add_middleware(
+    RateLimitMiddleware,
+    capacity=agent_settings.RATE_LIMIT_MAX_REQ,
+    window=agent_settings.RATE_LIMIT_WINDOW_SEC
+)
+
+# Add CSRF protection middleware (before session middleware)
+app.add_middleware(CSRFMiddleware)
+
+# Add session middleware for OAuth state management
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=agent_settings.SESSION_SECRET,
+    max_age=3600,  # 1 hour for OAuth state
+    same_site="lax",
+    https_only=agent_settings.COOKIE_SECURE == "1"
+)
 
 
 @app.on_event("startup")
@@ -83,6 +107,9 @@ def metrics():
 # Health endpoints (include new enhanced module)
 app.include_router(health.router)
 
+# Metrics endpoints (security events + Prometheus)
+app.include_router(metrics_router)
+
 
 @app.get("/debug/500")
 def debug_500():
@@ -95,6 +122,15 @@ app.include_router(emails.router)
 app.include_router(search.router)
 app.include_router(suggest.router)
 app.include_router(applications.router)
+
+# Auth router - Google OAuth and demo mode
+from .routers import auth as auth_router  # noqa: E402
+app.include_router(auth_router.router)
+
+# Admin router - System maintenance
+from .routers import admin as admin_router  # noqa: E402
+app.include_router(admin_router.router)
+
 app.include_router(auth_google.router)
 app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
@@ -115,7 +151,7 @@ app.include_router(ux_metrics.router)
 # Security analysis
 from .routers import policy, security  # noqa: E402
 
-app.include_router(security.router)
+app.include_router(security.router, prefix="/api")  # /api/security/*
 app.include_router(policy.router)
 
 # Phase 4 - Agentic Actions & Approval Loop
@@ -142,6 +178,14 @@ app.include_router(money.router)
 from .routers import metrics_profile  # noqa: E402
 
 app.include_router(metrics_profile.router)
+
+# BigQuery Warehouse Profile Metrics (feature-flagged)
+try:
+    from .routers.warehouse import router as warehouse_router
+
+    app.include_router(warehouse_router)
+except ImportError:
+    pass  # Warehouse module not available (requires google-cloud-bigquery)
 
 # Phase 5 - Agent Telemetry & Online Evaluation
 from .routers import agents_telemetry  # noqa: E402
@@ -307,3 +351,33 @@ try:
     app.include_router(policy_activate_router)
 except ImportError:
     pass  # Policy bundles module not available yet
+
+# Phase 4 AI Features - Email Summarizer, Risk Badge, RAG Search
+import logging
+logger = logging.getLogger(__name__)
+
+try:
+    logger.info("Attempting to load AI and RAG routers...")
+    from .routers import ai, rag
+    
+    logger.info(f"AI router loaded: {ai.router}")
+    logger.info(f"RAG router loaded: {rag.router}")
+    
+    app.include_router(ai.router)
+    logger.info("✓ AI router registered")
+    
+    # RAG router: Register twice for backwards compatibility
+    app.include_router(rag.router)  # /rag/...
+    app.include_router(rag.router, prefix="/api")  # /api/rag/... (backwards compat)
+    logger.info("✓ RAG router registered at /rag/* and /api/rag/*")
+    
+    print("✓ Phase 4 AI routers registered successfully")
+except ImportError as e:
+    logger.error(f"⚠ AI features module import failed: {e}")
+    print(f"⚠ AI features module not available: {e}")
+except Exception as e:
+    logger.error(f"✗ Error loading AI features: {e}", exc_info=True)
+    print(f"✗ Error loading AI features: {e}")
+    import traceback
+    traceback.print_exc()
+

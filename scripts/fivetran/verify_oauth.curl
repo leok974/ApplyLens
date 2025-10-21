@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Fivetran OAuth Verification - curl fallback
+# 
+# Usage:
+#   export FIVETRAN_API_KEY="your_key"
+#   export FIVETRAN_API_SECRET="your_secret"
+#   export FIVETRAN_CONNECTOR_ID="connector_id"
+#   ./scripts/fivetran/verify_oauth.curl
+
+if [ -z "$FIVETRAN_API_KEY" ] || [ -z "$FIVETRAN_API_SECRET" ] || [ -z "$FIVETRAN_CONNECTOR_ID" ]; then
+  echo "❌ Missing required environment variables!"
+  echo ""
+  echo "Required:"
+  echo "  FIVETRAN_API_KEY"
+  echo "  FIVETRAN_API_SECRET"
+  echo "  FIVETRAN_CONNECTOR_ID"
+  echo ""
+  echo "Example:"
+  echo "  export FIVETRAN_API_KEY=\"your_key\""
+  echo "  export FIVETRAN_API_SECRET=\"your_secret\""
+  echo "  export FIVETRAN_CONNECTOR_ID=\"connector_id\""
+  echo "  ./scripts/fivetran/verify_oauth.curl"
+  exit 1
+fi
+
+echo "🔍 Fetching Fivetran connector configuration..."
+echo ""
+
+# Create output directory
+mkdir -p docs/hackathon
+
+# Fetch connector details
+curl -u "$FIVETRAN_API_KEY:$FIVETRAN_API_SECRET" \
+  -H "Accept: application/json" \
+  "https://api.fivetran.com/v1/connectors/$FIVETRAN_CONNECTOR_ID" \
+  | tee docs/hackathon/oauth_check.json
+
+echo ""
+echo ""
+echo "✅ Response saved to: docs/hackathon/oauth_check.json"
+echo ""
+echo "Manual verification steps:"
+echo "1. Open oauth_check.json"
+echo "2. Look for these fields:"
+echo "   - data.config.auth_type (should be OAUTH2 or similar)"
+echo "   - data.config.use_own_oauth (should be true for custom OAuth)"
+echo "   - data.config.custom_oauth (should be true for custom OAuth)"
+echo "   - data.authentication.method (check for 'custom_oauth' or 'user_provided')"
+echo "3. If any field indicates custom OAuth → PASS ✅"
+echo "4. If fields indicate shared OAuth → FAIL ❌"
+echo "5. If unclear → Check Fivetran UI manually"
+echo ""
+echo "For automated verification, use:"
+echo "  node scripts/fivetran/verify_oauth.mjs"
+echo ""

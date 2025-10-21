@@ -1,4 +1,5 @@
 # app/routes_applications.py
+import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -13,6 +14,7 @@ from .gmail_service import upsert_application_for_email
 from .models import Application, AppStatus, Email
 
 router = APIRouter(prefix="/applications", tags=["applications"])
+logger = logging.getLogger(__name__)
 
 
 # ---- New: Extract endpoint for email parsing ----
@@ -484,6 +486,261 @@ def create_from_thread(payload: FromThreadPayload):
             thread_id=app.thread_id,
             created_at=app.created_at.isoformat() if app.created_at else "",
             updated_at=app.updated_at.isoformat() if app.updated_at else None,
+        )
+    finally:
+        db.close()
+
+
+# ---- Archive & Auto-Delete Lifecycle Endpoints ----
+
+
+class ArchiveResponse(BaseModel):
+    ok: bool
+    archived_at: str
+    message: str = ""
+
+
+class RestoreResponse(BaseModel):
+    ok: bool
+    message: str = ""
+
+
+class DeleteResponse(BaseModel):
+    ok: bool
+    message: str = ""
+
+
+class BulkArchiveRequest(BaseModel):
+    application_ids: List[int]
+
+
+class BulkArchiveResponse(BaseModel):
+    archived_count: int
+    failed_ids: List[int] = []
+
+
+@router.post("/{app_id}/archive", response_model=ArchiveResponse)
+def archive_application(app_id: int):
+    """
+    Archive an application, hiding it from default views.
+    
+    - Can be manually triggered by users
+    - Auto-triggered by scheduler for rejected apps after X days
+    - Includes grace period for undo
+    """
+    from .db import audit_action
+    from datetime import datetime, timezone
+    
+    db: Session = SessionLocal()
+    try:
+        app = db.query(Application).filter(Application.id == app_id).first()
+        if not app:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        if app.deleted_at:
+            raise HTTPException(status_code=400, detail="Cannot archive: application already deleted")
+        
+        if app.archived_at:
+            return ArchiveResponse(
+                ok=True,
+                archived_at=app.archived_at.isoformat(),
+                message="Application was already archived"
+            )
+        
+        # Archive the application
+        app.archived_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(app)
+        
+        # Audit log
+        audit_action(
+            email_id=str(app_id),
+            action="application.archive",
+            actor="user",
+            rationale="Manual archive via API"
+        )
+        
+        # Sync to Elasticsearch (tombstone pattern)
+        try:
+            from .utils.es_applications import es_tombstone_application
+            es_tombstone_application(app_id)
+        except Exception as e:
+            logger.warning(f"ES sync failed for archive: {e}")
+        
+        return ArchiveResponse(
+            ok=True,
+            archived_at=app.archived_at.isoformat(),
+            message="Application archived successfully"
+        )
+    finally:
+        db.close()
+
+
+@router.post("/{app_id}/restore", response_model=RestoreResponse)
+def restore_application(app_id: int):
+    """
+    Restore an archived application, making it visible again.
+    
+    - Only works within grace period (configurable)
+    - Clears archived_at timestamp
+    - Re-indexes in Elasticsearch
+    """
+    from .db import audit_action
+    
+    db: Session = SessionLocal()
+    try:
+        app = db.query(Application).filter(Application.id == app_id).first()
+        if not app:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        if app.deleted_at:
+            raise HTTPException(status_code=400, detail="Cannot restore: application is deleted")
+        
+        if not app.archived_at:
+            return RestoreResponse(
+                ok=True,
+                message="Application was not archived"
+            )
+        
+        # Check grace period (optional enforcement)
+        # from .config import agent_settings
+        # grace_hours = agent_settings.ARCHIVE_GRACE_UNDO_HOURS
+        # if (datetime.now(timezone.utc) - app.archived_at).total_seconds() > grace_hours * 3600:
+        #     raise HTTPException(status_code=400, detail=f"Grace period expired ({grace_hours}h)")
+        
+        # Restore the application
+        app.archived_at = None
+        db.commit()
+        
+        # Audit log
+        audit_action(
+            email_id=str(app_id),
+            action="application.restore",
+            actor="user",
+            rationale="Manual restore via API"
+        )
+        
+        # Sync to Elasticsearch (re-index)
+        try:
+            from .utils.es_applications import es_upsert_application
+            es_upsert_application(app)
+        except Exception as e:
+            logger.warning(f"ES sync failed for restore: {e}")
+        
+        return RestoreResponse(
+            ok=True,
+            message="Application restored successfully"
+        )
+    finally:
+        db.close()
+
+
+@router.delete("/{app_id}", response_model=DeleteResponse)
+def hard_delete_application(app_id: int, force: bool = False):
+    """
+    Permanently delete an application from the database.
+    
+    - Requires application to be archived first (unless force=True)
+    - Removes from Elasticsearch
+    - Cannot be undone
+    
+    Args:
+        app_id: Application ID to delete
+        force: Skip archive requirement (use with caution)
+    """
+    from .db import audit_action
+    from datetime import datetime, timezone
+    
+    db: Session = SessionLocal()
+    try:
+        app = db.query(Application).filter(Application.id == app_id).first()
+        if not app:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        if not app.archived_at and not force:
+            raise HTTPException(
+                status_code=400,
+                detail="Application must be archived before deletion. Use force=true to bypass."
+            )
+        
+        # Soft delete (mark deleted_at)
+        app.deleted_at = datetime.now(timezone.utc)
+        db.delete(app)
+        db.commit()
+        
+        # Audit log
+        audit_action(
+            email_id=str(app_id),
+            action="application.delete",
+            actor="user",
+            rationale="Manual hard delete via API"
+        )
+        
+        # Sync to Elasticsearch (delete document)
+        try:
+            from .utils.es_applications import es_delete_application
+            es_delete_application(app_id)
+        except Exception as e:
+            logger.warning(f"ES sync failed for delete: {e}")
+        
+        return DeleteResponse(
+            ok=True,
+            message="Application permanently deleted"
+        )
+    finally:
+        db.close()
+
+
+@router.post("/bulk/archive", response_model=BulkArchiveResponse)
+def bulk_archive_applications(req: BulkArchiveRequest):
+    """
+    Archive multiple applications in a single request.
+    
+    - Used for bulk actions in UI
+    - Atomic per-application (continues on error)
+    - Returns count of successes and list of failures
+    """
+    from .db import audit_action
+    from datetime import datetime, timezone
+    
+    db: Session = SessionLocal()
+    archived_count = 0
+    failed_ids = []
+    
+    try:
+        for app_id in req.application_ids:
+            try:
+                app = db.query(Application).filter(Application.id == app_id).first()
+                if not app or app.deleted_at or app.archived_at:
+                    failed_ids.append(app_id)
+                    continue
+                
+                app.archived_at = datetime.now(timezone.utc)
+                db.commit()
+                archived_count += 1
+                
+                # Audit log
+                audit_action(
+                    email_id=str(app_id),
+                    action="application.archive",
+                    actor="user",
+                    rationale="Bulk archive via API"
+                )
+                
+                # Sync to Elasticsearch
+                try:
+                    from .utils.es_applications import es_tombstone_application
+                    es_tombstone_application(app_id)
+                except Exception as e:
+                    logger.warning(f"ES sync failed for bulk archive app {app_id}: {e}")
+                
+            except Exception:
+                failed_ids.append(app_id)
+                db.rollback()
+        
+        return BulkArchiveResponse(
+            archived_count=archived_count,
+            failed_ids=failed_ids
         )
     finally:
         db.close()

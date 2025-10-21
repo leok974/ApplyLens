@@ -102,3 +102,40 @@ def cache_delete(key: str) -> None:
         r.delete(key)
     except Exception:
         pass
+
+
+async def cache_json(key: str, ttl: int, fn):
+    """
+    Cache-aside pattern for async functions returning JSON-serializable data.
+    
+    Checks cache first, calls fn() if miss, stores result with TTL.
+    Falls back to calling fn() directly if Redis unavailable.
+    
+    Args:
+        key: Cache key
+        ttl: Time-to-live in seconds
+        fn: Async callable that returns JSON-serializable data
+        
+    Returns:
+        Result from cache or fn()
+        
+    Example:
+        ```python
+        async def expensive_query():
+            return await db.query(...)
+            
+        result = await cache_json("mykey", 60, expensive_query)
+        ```
+    """
+    # Try cache first
+    cached = cache_get(key)
+    if cached is not None:
+        return cached
+    
+    # Cache miss - call function
+    result = await fn() if callable(fn) else fn
+    
+    # Store in cache
+    cache_set(key, result if isinstance(result, dict) else {"data": result}, ttl)
+    
+    return result

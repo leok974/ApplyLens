@@ -930,6 +930,156 @@ npm run dev
 - **Search**: Elasticsearch with custom analyzers (synonyms, shingles, completion suggester)
 - **Auth**: Google OAuth 2.0 with secure token storage
 - **Email Processing**: Gmail API + BeautifulSoup + heuristic labeling
+- **Warehouse & Analytics**: BigQuery (via Fivetran) + dbt transformations
+
+## 📊 Google Cloud + Fivetran Integration
+
+ApplyLens integrates with **Google Cloud BigQuery** and **Fivetran** for warehouse analytics and profile metrics.
+
+### Architecture
+
+```
+Gmail → Fivetran Connector → BigQuery → dbt Marts → API Endpoints → React Dashboard
+```
+
+**Data Flow:**
+1. **Fivetran** syncs Gmail messages to BigQuery `gmail_raw` dataset (every 6 hours)
+2. **dbt** transforms raw data into analytics-ready marts (`gmail_marts`)
+3. **API** queries BigQuery for profile metrics (cached with Redis, 60s TTL)
+4. **Frontend** renders ProfileMetrics component with 3 cards (Activity, Top Senders, Categories)
+
+### Warehouse Endpoints
+
+All endpoints require `APPLYLENS_USE_WAREHOUSE=1` environment variable (returns 412 Precondition Failed if disabled).
+
+**Profile Metrics:**
+- `GET /api/warehouse/profile/activity-daily?days=14` - Daily email volume (last 14 days)
+- `GET /api/warehouse/profile/top-senders?limit=10` - Top 10 email sources (30 days)
+- `GET /api/warehouse/profile/categories-30d?limit=10` - Category distribution (30 days)
+
+**Divergence Monitoring:**
+- `GET /api/warehouse/profile/divergence-24h` - ES vs BQ count comparison (SLO: <2%)
+
+### Example: Activity Daily
+
+**Request:**
+```bash
+curl https://applylens.app/api/warehouse/profile/activity-daily?days=7
+```
+
+**Response:**
+```json
+[
+  {
+    "day": "2025-10-18",
+    "messages_count": 35,
+    "unique_senders": 12,
+    "avg_size_kb": 45.2,
+    "total_size_mb": 1.5
+  },
+  {
+    "day": "2025-10-17",
+    "messages_count": 42,
+    "unique_senders": 15,
+    "avg_size_kb": 38.7,
+    "total_size_mb": 1.6
+  }
+]
+```
+
+### Frontend Component
+
+The **ProfileMetrics** component displays warehouse analytics in the Settings page (feature-flagged):
+
+```typescript
+// Enable warehouse metrics
+VITE_USE_WAREHOUSE=1
+
+// Component renders 3 cards:
+// 1. Inbox Activity (14-day chart)
+// 2. Top Senders (30-day list with message counts)
+// 3. Categories (30-day distribution with percentages)
+```
+
+### Setup
+
+1. **Activate Fivetran Connector:**
+   - Follow guide: `analytics/fivetran/README.md`
+   - Configure Gmail → BigQuery sync (every 6 hours)
+   - Run historical backfill (90 days recommended)
+
+2. **Verify BigQuery Data:**
+   ```powershell
+   # Run health check
+   .\analytics\bq\health.ps1
+   ```
+
+3. **Run dbt Transformations:**
+   ```powershell
+   cd analytics/dbt
+   .\run_all.ps1
+   ```
+
+4. **Enable Warehouse Features:**
+   ```bash
+   # Backend (.env.prod)
+   APPLYLENS_USE_WAREHOUSE=1
+   APPLYLENS_GCP_PROJECT=applylens-gmail-YOUR_PROJECT_ID
+   
+   # Frontend (.env.production)
+   VITE_USE_WAREHOUSE=1
+   ```
+
+5. **View Metrics:**
+   - Visit https://applylens.app/web/settings
+   - Scroll to "Inbox Analytics (Last 14 Days)"
+   - See Activity chart, Top Senders list, Categories breakdown
+
+### Divergence Monitoring
+
+The divergence endpoint compares Elasticsearch (real-time) vs BigQuery (warehouse) counts to detect sync issues:
+
+- **< 2% divergence**: Healthy (green) ✅
+- **2-5% divergence**: Warning (amber) ⚠️
+- **> 5% divergence**: Critical (red) 🔴
+
+**Example Response:**
+```json
+{
+  "es_count": 100,
+  "bq_count": 98,
+  "divergence": 0.02,
+  "divergence_pct": 2.0,
+  "slo_met": true,
+  "status": "healthy",
+  "message": "Divergence: 2.00% (within SLO)"
+}
+```
+
+### dbt Marts
+
+**Location:** `analytics/dbt/models/marts/warehouse/`
+
+1. **mart_email_activity_daily** - Daily volume, unique senders, size metrics
+2. **mart_top_senders_30d** - Top 100 email sources (last 30 days)
+3. **mart_categories_30d** - Category distribution with percentages
+
+**Run dbt:**
+```powershell
+# PowerShell
+.\analytics\dbt\run_all.ps1
+
+# Bash
+./analytics/dbt/run_all.sh
+```
+
+### Documentation
+
+- **Evidence Pack:** `docs/hackathon/EVIDENCE.md` - Screenshots, activation checklist
+- **Health Checks:** `analytics/README.md` - Troubleshooting guide
+- **Fivetran Setup:** `analytics/fivetran/README.md` - Connector configuration
+- **API Tests:** `services/api/tests/integration/test_warehouse.py` - 10 test cases
+- **E2E Tests:** `apps/web/e2e/warehouse.spec.ts` - 4 scenarios
 
 ## Next steps
 

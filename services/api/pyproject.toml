@@ -15,6 +15,7 @@ dependencies = [
   "orjson",
   "elasticsearch>=8.12,<9",
   "httpx",
+  "itsdangerous",  # For SessionMiddleware
   "google-auth>=2.30.0",
   "google-auth-oauthlib",
   "google-api-python-client",

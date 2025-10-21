@@ -1,9 +1,11 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Inbox from './pages/Inbox'
 import Tracker from './pages/Tracker'
 import Applications from './pages/Applications'
 import Settings from './pages/Settings'
 import SettingsSecurity from './pages/SettingsSecurity'
+import Landing from './pages/Landing'
+import LoginGuard from './pages/LoginGuard'
 import { AppHeader } from './components/AppHeader'
 import Search from './pages/Search'
 import InboxWithActions from './components/InboxWithActions'
@@ -19,23 +21,35 @@ export default function App() {
   return (
     <ToastProvider>
       <div id="app-root" data-testid="app-root" className="min-h-screen bg-background text-foreground">
-        <AppHeader />
-        <main className="mx-auto max-w-6xl px-4 py-6">
-          <Routes>
-            <Route path="/" element={<Inbox />} />
-            <Route path="/inbox-polished" element={<InboxPolished />} />
-            <Route path="/inbox-polished-demo" element={<InboxPolishedDemo />} />
-            <Route path="/inbox-actions" element={<InboxWithActions />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/tracker" element={<Tracker />} />
-            <Route path="/profile" element={<ProfileSummary />} />
-            <Route path="/applications" element={<Applications />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/settings/security" element={<SettingsSecurity />} />
-            <Route path="/policy-studio" element={<PolicyStudio />} />
-          </Routes>
-        </main>
+        <Routes>
+          {/* Public landing page */}
+          <Route path="/welcome" element={<Landing />} />
+          
+          {/* Protected routes */}
+          <Route path="/*" element={
+            <LoginGuard>
+              <AppHeader />
+              <main className="mx-auto max-w-6xl px-4 py-6">
+                <Routes>
+                  <Route path="/" element={<Inbox />} />
+                  <Route path="/inbox" element={<Inbox />} />
+                  <Route path="/inbox-polished" element={<InboxPolished />} />
+                  <Route path="/inbox-polished-demo" element={<InboxPolishedDemo />} />
+                  <Route path="/inbox-actions" element={<InboxWithActions />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/tracker" element={<Tracker />} />
+                  <Route path="/profile" element={<ProfileSummary />} />
+                  <Route path="/applications" element={<Applications />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings/security" element={<SettingsSecurity />} />
+                  <Route path="/policy-studio" element={<PolicyStudio />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+            </LoginGuard>
+          } />
+        </Routes>
         <Toaster />
       </div>
     </ToastProvider>

@@ -514,3 +514,40 @@ export async function getEmailStats(): Promise<EmailStatsResponse> {
   if (!r.ok) throw new Error('Failed to get email stats')
   return r.json()
 }
+
+// ============================================================================
+// Phase 4: AI Features API Helpers
+// ============================================================================
+
+export async function api<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
+  const res = await fetch(path, { 
+    headers: { 'Content-Type': 'application/json' }, 
+    credentials: 'include',
+    ...opts 
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
+
+export const AI = {
+  summarize: (thread_id: string, max_citations = 3) => 
+    api('/api/ai/summarize', { 
+      method: 'POST', 
+      body: JSON.stringify({ thread_id, max_citations }) 
+    }),
+  health: () => api('/api/ai/health'),
+};
+
+export const RAG = {
+  query: (q: string, k = 5) => 
+    api('/api/rag/query', { 
+      method: 'POST', 
+      body: JSON.stringify({ q, k }) 
+    }),
+  health: () => api('/rag/health'),
+};
+
+export const Security = {
+  top3: (message_id: string) => 
+    api(`/api/security/risk-top3?message_id=${encodeURIComponent(message_id)}`),
+};

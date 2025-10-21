@@ -1,0 +1,9 @@
+{
+  "divergence_pct": null,
+  "status": "paused",
+  "es_count": null,
+  "bq_count": null,
+  "divergence": null,
+  "slo_met": false,
+  "message": "Warehouse temporarily unavailable"
+}

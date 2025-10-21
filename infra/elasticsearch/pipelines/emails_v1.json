@@ -1,0 +1,30 @@
+{
+  "description": "ApplyLens emails normalization v1",
+  "processors": [
+    { "rename": { "field": "snippet", "target_field": "snippet_raw", "ignore_missing": true }},
+    { "html_strip": { "field": "body_html", "target_field": "body_text", "ignore_missing": true }},
+
+    { "lowercase": { "field": "from", "ignore_missing": true }},
+    { "lowercase": { "field": "to", "ignore_missing": true }},
+    { "lowercase": { "field": "cc", "ignore_missing": true }},
+    { "lowercase": { "field": "bcc", "ignore_missing": true }},
+    { "lowercase": { "field": "subject", "ignore_missing": true }},
+    { "trim":      { "field": "subject", "ignore_missing": true }},
+
+    { "script": {
+      "lang": "painless",
+      "source": "\n        // Normalize label casing and create labels_norm\n        if (ctx.containsKey('labels') && ctx.labels instanceof List) {\n          def ln = new ArrayList();\n          for (def l : ctx.labels) { if (l != null) ln.add(l.toString().toLowerCase()); }\n          ctx.labels_norm = ln;\n        }\n        // Flags\n        ctx.archived = (ctx.containsKey('archived_at') && ctx.archived_at != null);\n        ctx.deleted  = (ctx.containsKey('deleted_at') && ctx.deleted_at != null);\n        // Basic content flags\n        def s = '';\n        if (ctx.containsKey('subject') && ctx.subject != null) s += ctx.subject + ' ';\n        if (ctx.containsKey('body_text') && ctx.body_text != null) s += ctx.body_text;\n        s = s.toLowerCase();\n        ctx.is_interview = s.contains('interview') || s.contains('screen');\n        ctx.is_offer     = s.contains('offer');\n        // Thread key (fallback if thread_id missing)\n        if (!ctx.containsKey('thread_id') || ctx.thread_id == null) {\n          def key = (ctx.containsKey('subject') && ctx.subject!=null ? ctx.subject.toLowerCase().trim() : '') + '|' +\n                    (ctx.containsKey('from') && ctx.from!=null ? ctx.from : '');\n          ctx.thread_key = key;\n        }\n      "
+    }},
+
+    { "date": { "field": "received_at", "formats": ["ISO8601","EEE, dd MMM yyyy HH:mm:ss Z"], "ignore_failure": true }},
+    { "date": { "field": "sent_at",     "formats": ["ISO8601","EEE, dd MMM yyyy HH:mm:ss Z"], "ignore_failure": true }},
+    { "date": { "field": "archived_at",  "formats": ["ISO8601"], "ignore_failure": true }},
+
+    { "fingerprint": { "fields": ["gmail_id","thread_id","subject","received_at"], "target_field": "doc_hash", "method": "SHA-1" }},
+
+    { "remove": { "field": ["_temp","snippet_raw"], "ignore_missing": true }}
+  ],
+  "on_failure": [
+    { "set": { "field": "_ingest_error", "value": "{{_ingest.on_failure_message}}" }}
+  ]
+}
