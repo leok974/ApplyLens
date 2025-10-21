@@ -30,7 +30,6 @@ export function EmailList({
   selected,
   onToggleSelect,
   activeId,
-  onSetActive,
   onOpen,
   onArchive,
   onSafe,
@@ -43,7 +42,6 @@ export function EmailList({
   selected: Set<string>;
   onToggleSelect: (id: string, value?: boolean) => void;
   activeId?: string;
-  onSetActive?: (id: string) => void;
   onOpen?: (id: string) => void;
   onArchive?: (id: string) => void;
   onSafe?: (id: string) => void;

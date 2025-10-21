@@ -1,6 +1,6 @@
 /**
  * Policy Bundle Editor - Main editing interface
- * 
+ *
  * Features:
  * - Create/edit policy bundles
  * - Rule builder with visual interface
@@ -14,7 +14,6 @@ import { Save, X, Play, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { Textarea } from '../ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { Alert, AlertDescription } from '../ui/alert'
 import { RuleBuilder } from './RuleBuilder'
