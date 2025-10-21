@@ -1,0 +1,55 @@
+{
+  "description": "ApplyLens emails v3.1 - Multi-signal phishing detection (simplified for deployment)",
+  "processors": [
+    {
+      "pipeline": {
+        "name": "applylens_emails_v2",
+        "ignore_failure": true
+      }
+    },
+    {
+      "script": {
+        "description": "v3.1 Authentication signals (SPF/DKIM/DMARC/Reply-To)",
+        "lang": "painless",
+        "params": {
+          "spf_weight": 10,
+          "dkim_weight": 10,
+          "dmarc_weight": 15,
+          "replyto_weight": 15
+        },
+        "source": "int score = ctx.containsKey('suspicion_score') ? (int)ctx.suspicion_score : 0; def reasons = ctx.containsKey('explanations') ? (ctx.explanations instanceof List ? ctx.explanations : new ArrayList()) : new ArrayList(); String auth = ctx.containsKey('headers_authentication_results') ? ctx.headers_authentication_results : ''; String spf = ctx.containsKey('headers_received_spf') ? ctx.headers_received_spf : ''; String reply = ctx.containsKey('reply_to') ? ctx.reply_to : ''; String from = ctx.containsKey('from') ? ctx.from : ''; if (spf.toLowerCase().contains('fail') || auth.toLowerCase().contains('spf=fail')) { score += params.spf_weight; reasons.add('SPF authentication failed'); } if (auth.toLowerCase().contains('dkim=fail')) { score += params.dkim_weight; reasons.add('DKIM authentication failed'); } if (auth.toLowerCase().contains('dmarc=fail') || auth.toLowerCase().contains('policy=reject')) { score += params.dmarc_weight; reasons.add('DMARC policy failed'); } if (reply != null && reply.contains('@') && from != null && from.contains('@')) { String fromDom = from.substring(from.indexOf('@')+1).toLowerCase(); String replyDom = reply.substring(reply.indexOf('@')+1).toLowerCase(); if (!replyDom.endsWith(fromDom.length() > 0 ? fromDom : 'x')) { score += params.replyto_weight; reasons.add('Reply-To domain differs from From domain'); } } ctx.suspicion_score = score; if (score >= 40) { ctx.suspicious = true; } ctx.explanations = reasons;"
+      }
+    },
+    {
+      "script": {
+        "description": "v3.1 Risky attachments",
+        "lang": "painless",
+        "params": {
+          "attachment_weight": 20,
+          "risky_ext": ["exe", "msi", "js", "vbs", "ps1", "cmd", "bat", "scr", "docm", "xlsm", "pptm", "zip", "rar", "7z"]
+        },
+        "source": "if (!ctx.containsKey('attachments')) { return; } int score = ctx.containsKey('suspicion_score') ? (int)ctx.suspicion_score : 0; def reasons = ctx.containsKey('explanations') ? ctx.explanations : new ArrayList(); boolean risky = false; for (att in ctx.attachments) { String name = att.containsKey('filename') ? att.filename.toLowerCase() : ''; if (name.contains('.')) { String ext = name.substring(name.lastIndexOf('.')+1); for (rx in params.risky_ext) { if (ext.equals(rx)) { risky = true; break; } } } } if (risky) { score += params.attachment_weight; reasons.add('Contains risky attachment (executable/script/macro/archive)'); } ctx.suspicion_score = score; if (score >= 40) { ctx.suspicious = true; } ctx.explanations = reasons;"
+      }
+    },
+    {
+      "script": {
+        "description": "v3.1 URL inspection (shorteners, anchor mismatch)",
+        "lang": "painless",
+        "params": {
+          "shortener_weight": 8,
+          "shorteners": ["bit.ly", "tinyurl.com", "t.co", "lnkd.in", "goo.gl"]
+        },
+        "source": "int score = ctx.containsKey('suspicion_score') ? (int)ctx.suspicion_score : 0; def reasons = ctx.containsKey('explanations') ? ctx.explanations : new ArrayList(); String body = ctx.containsKey('body_text') ? ctx.body_text.toLowerCase() : ''; boolean hasShortener = false; for (s in params.shorteners) { if (body.contains(s)) { hasShortener = true; break; } } if (hasShortener) { score += params.shortener_weight; reasons.add('Uses URL shortener (bit.ly, tinyurl, etc)'); } ctx.suspicion_score = score; if (score >= 40) { ctx.suspicious = true; } ctx.explanations = reasons;"
+      }
+    },
+    {
+      "set": {
+        "description": "Ensure suspicious label is set",
+        "if": "ctx.containsKey('suspicious') && ctx.suspicious == true",
+        "field": "labels_norm",
+        "value": ["suspicious"],
+        "override": false
+      }
+    }
+  ]
+}

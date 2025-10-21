@@ -167,3 +167,50 @@ groups:
         annotations:
           summary: "CRITICAL: Suspicious auth activity"
           description: "Rapid auth failures: {{ $value }}/sec - credential stuffing?"
+
+  # ===========================================================================
+  # EMAIL RISK v3.1 ALERTS - Added 2025-10-21
+  # ===========================================================================
+  - name: applylens_email_risk_v31
+    rules:
+      # Suspicious email advice spike
+      - alert: EmailRiskAdviceSpikeHigh
+        expr: rate(applylens_email_risk_served_total{level="suspicious"}[5m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High suspicious advice volume"
+          description: "Suspicious email advice rate > 0.5/min over 10m (staging). Current rate: {{ $value }}/sec"
+
+      # No advice served (ingestion/API/UI regression)
+      - alert: EmailRiskAdviceDrop
+        expr: sum by (level) (increase(applylens_email_risk_served_total[30m])) == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No advice served for 30m"
+          description: "Potential ingestion/API/UI regression - zero advice served for {{ $labels.level }}"
+
+      # User feedback anomaly (surge in scam reports)
+      - alert: EmailRiskFeedbackAnomaly
+        expr: rate(applylens_email_risk_feedback_total{verdict="scam"}[15m]) > 0.1
+        for: 15m
+        labels:
+          severity: info
+        annotations:
+          summary: "Surge in scam feedback reports"
+          description: "Scam feedback rate: {{ $value }}/sec over 15m - possible phishing campaign"
+
+      # High false positive rate (too many legit marked on suspicious)
+      - alert: EmailRiskHighFalsePositives
+        expr: |
+          (rate(applylens_email_risk_feedback_total{verdict="legit"}[1h])
+           / ignoring(verdict) rate(applylens_email_risk_served_total{level="suspicious"}[1h])) > 0.15
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "High false positive rate"
+          description: ">15% of suspicious advice marked as legit - consider weight tuning"

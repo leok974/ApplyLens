@@ -1,0 +1,117 @@
+# Email Risk v3.1 - Prometheus Alert Rules
+# Add these to your Prometheus configuration (infra/prometheus/alerts.yml or alerts/email_risk_v31.yml)
+
+groups:
+  - name: email_risk_v31_alerts
+    interval: 30s
+    rules:
+      # Alert when high volume of suspicious emails detected
+      - alert: EmailRiskAdviceSpikeHigh
+        expr: rate(applylens_email_risk_served_total{level="suspicious"}[5m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: email_risk_v31
+          environment: staging
+        annotations:
+          summary: "High volume of suspicious email advice served"
+          description: "Rate of suspicious email advice requests exceeds 0.5/min over 10 minutes (current rate: {{ $value | humanize }}/s). This may indicate a phishing campaign or false positive spike."
+          dashboard: "http://localhost:5601/kibana (AL — High Risk)"
+          runbook: "Check Kibana 'High Risk' saved search for patterns. Review explanations for common false positives. Consider adjusting weights if needed."
+
+      # Alert when NO advice is being served (possible regression)
+      - alert: EmailRiskAdviceDrop
+        expr: sum by (level) (increase(applylens_email_risk_served_total[30m])) == 0
+        for: 30m
+        labels:
+          severity: warning
+          component: email_risk_v31
+          environment: staging
+        annotations:
+          summary: "No email risk advice being served"
+          description: "Zero risk advice requests in the last 30 minutes. Possible API/pipeline/ingest regression or lack of email traffic."
+          dashboard: "http://localhost:3000/d/applylens-api (API Health)"
+          runbook: "1. Check API health: curl http://localhost:8003/emails/risk/summary-24h 2. Verify pipeline exists: curl http://localhost:9200/_ingest/pipeline/applylens_emails_v3 3. Check ES ingest errors: curl http://localhost:9200/_nodes/stats/ingest 4. Review API logs: docker logs applylens-api-prod"
+
+      # Alert on high feedback rate (users correcting the system)
+      - alert: EmailRiskHighFeedbackRate
+        expr: rate(applylens_email_risk_feedback_total[1h]) > 0.1
+        for: 15m
+        labels:
+          severity: info
+          component: email_risk_v31
+          environment: staging
+        annotations:
+          summary: "High rate of user feedback on risk assessments"
+          description: "Users submitting >0.1 feedback/min over 15 minutes (current: {{ $value | humanize }}/s). Monitor for systematic false positives."
+          dashboard: "http://localhost:9200/gmail_emails-*/_search?q=user_feedback_verdict:*"
+          runbook: "Query user feedback: curl 'http://localhost:9200/gmail_emails-*/_search' -d '{\"query\":{\"exists\":{\"field\":\"user_feedback_verdict\"}},\"aggs\":{\"verdicts\":{\"terms\":{\"field\":\"user_feedback_verdict.keyword\"}}}}'"
+
+      # Alert on imbalance in feedback verdicts (e.g., all 'legit' = false positives)
+      - alert: EmailRiskFeedbackImbalance
+        expr: |
+          (sum(increase(applylens_email_risk_feedback_total{verdict="legit"}[24h]))
+           /
+           sum(increase(applylens_email_risk_feedback_total[24h]))) > 0.7
+        for: 2h
+        labels:
+          severity: warning
+          component: email_risk_v31
+          environment: staging
+        annotations:
+          summary: "High rate of 'legit' feedback (possible false positive issue)"
+          description: ">70% of user feedback marks emails as 'legit' over 24h. System may be over-flagging legitimate emails."
+          dashboard: "http://localhost:5601/kibana (filter: user_confirmed_legit)"
+          runbook: "1. Review false positives in Kibana 2. Check common explanations causing false flags 3. Consider reducing weights: python scripts/analyze_weights.py --reduce-false-positives 4. Re-tune threshold (currently 40)"
+
+      # Alert on pipeline processing errors
+      - alert: EmailRiskPipelineErrors
+        expr: rate(elasticsearch_ingest_pipeline_total{pipeline="applylens_emails_v3",status="failed"}[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          component: email_risk_v31
+          environment: staging
+        annotations:
+          summary: "Elasticsearch v3 pipeline processing errors"
+          description: "Pipeline applylens_emails_v3 failing at >0.01 docs/s over 5 minutes. Risk scoring may be broken."
+          dashboard: "http://localhost:9200/_nodes/stats/ingest"
+          runbook: "1. Check pipeline status: curl http://localhost:9200/_ingest/pipeline/applylens_emails_v3 2. Test with sample doc: curl -X POST 'http://localhost:9200/_ingest/pipeline/applylens_emails_v3/_simulate' -d @test_email_tc4.json 3. Review ES logs: docker logs applylens-es-prod 4. Rollback if needed: curl -X PUT http://localhost:9200/_ingest/pipeline/applylens_emails_v3 -d @backup/emails_v2_backup_*.json"
+
+      # Alert on domain enrichment worker issues
+      - alert: DomainEnrichmentStale
+        expr: (time() - domain_enrichment_last_run_timestamp_seconds) > 7200
+        for: 15m
+        labels:
+          severity: warning
+          component: domain_enrichment
+          environment: staging
+        annotations:
+          summary: "Domain enrichment worker hasn't run in 2+ hours"
+          description: "Domain age detection may be stale. Worker should run every hour."
+          runbook: "1. Check worker status: systemctl status applylens-domain-enrich 2. Check logs: journalctl -u applylens-domain-enrich -n 50 3. Restart if needed: systemctl restart applylens-domain-enrich"
+
+# How to use these alerts:
+#
+# 1. Add to Prometheus configuration:
+#    cp scripts/prometheus_alerts_v31.yml infra/prometheus/alerts/email_risk_v31.yml
+#
+# 2. Update prometheus.yml to include the rules file:
+#    rule_files:
+#      - '/etc/prometheus/alerts/*.yml'
+#
+# 3. Reload Prometheus:
+#    docker exec applylens-prometheus-prod kill -HUP 1
+#    # or
+#    curl -X POST http://localhost:9090/-/reload
+#
+# 4. Verify alerts loaded:
+#    curl http://localhost:9090/api/v1/rules | jq '.data.groups[] | select(.name=="email_risk_v31_alerts")'
+#
+# 5. View in Prometheus UI:
+#    http://localhost:9090/alerts
+#
+# 6. (Optional) Configure Alertmanager for notifications:
+#    - Slack: https://prometheus.io/docs/alerting/latest/configuration/#slack_config
+#    - Email: https://prometheus.io/docs/alerting/latest/configuration/#email_config
+#    - PagerDuty: https://prometheus.io/docs/alerting/latest/configuration/#pagerduty_config

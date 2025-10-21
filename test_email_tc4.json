@@ -1,0 +1,22 @@
+{
+  "id": "test-risk-v31-001",
+  "gmail_id": "test_001",
+  "thread_id": "thread_001",
+  "subject": "Urgent: Verify Your Account Now",
+  "from": "security@paypa1-verify.com",
+  "reply_to": "phisher@evil-server.xyz",
+  "to": "user@example.com",
+  "received_at": "2025-10-21T19:00:00Z",
+  "body_text": "Your account has been locked. Click here to verify: https://bit.ly/3x9z2kL or open the attachment.",
+  "headers_received_spf": "fail (google.com: domain of paypa1-verify.com does not designate permitted sender host)",
+  "headers_authentication_results": "spf=fail smtp.mailfrom=paypa1-verify.com; dkim=fail; dmarc=fail",
+  "attachments": [
+    {
+      "filename": "account_verification.docm",
+      "size": 245760,
+      "mimetype": "application/vnd.ms-word.document.macroEnabled.12"
+    }
+  ],
+  "labels_norm": [],
+  "source": "gmail"
+}
