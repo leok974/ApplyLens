@@ -30,6 +30,14 @@ paths = [
     '''/fixtures/''',
     '''/mock[s]?/''',
     '''^docs/.*\.example\.''',
+    '''\.venv/''',
+    '''/site-packages/''',
+    '''/node_modules/''',
+    '''/lib/apk/''',
+    '''\.pyc$''',
+    '''/dist/assets/''',
+    '''SECRETS_POLICY\.md$''',
+    '''GITHUB_RULESET_SETUP\.md$''',
 ]
 
 # Ignore specific commits (if needed for historical data)
