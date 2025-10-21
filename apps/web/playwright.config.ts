@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: ["pipeline.spec.ts", "search.spec.ts", "highlight.spec.ts", "profile.spec.ts", "e2e/auth.*.spec.ts"],
+  testMatch: ["pipeline.spec.ts", "search.spec.ts", "highlight.spec.ts", "profile.spec.ts", "e2e/auth.*.spec.ts", "e2e/email-risk-banner.spec.ts"],
   testIgnore: ["**/e2e-new/**"],
   timeout: 30_000,
   expect: { timeout: 5_000 },

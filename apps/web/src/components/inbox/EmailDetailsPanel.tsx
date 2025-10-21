@@ -64,6 +64,7 @@ export function EmailDetailsPanel({
   onMarkSafe,
   onMarkSus,
   onExplain,
+  onOpenEmail,    // callback to open email by ID
 }: {
   open: boolean;
   mode?: PanelMode;
@@ -80,10 +81,25 @@ export function EmailDetailsPanel({
   onMarkSafe?: () => void;
   onMarkSus?: () => void;
   onExplain?: () => void;
+  onOpenEmail?: (id: string) => void;
 }) {
   // Risk advice state
   const [riskAdvice, setRiskAdvice] = React.useState<EmailRiskAdvice | null>(null);
   const [loadingRisk, setLoadingRisk] = React.useState(false);
+
+  // Deep-link support: open email by query param ?open=<id>
+  React.useEffect(() => {
+    if (!onOpenEmail) return;
+    const params = new URLSearchParams(window.location.search);
+    const openId = params.get("open");
+    if (openId) {
+      onOpenEmail(openId);
+      // Clean URL after opening
+      const url = new URL(window.location.href);
+      url.searchParams.delete("open");
+      window.history.replaceState({}, "", url);
+    }
+  }, [onOpenEmail]);
 
   // Fetch risk advice when email changes
   React.useEffect(() => {

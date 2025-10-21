@@ -99,12 +99,12 @@ export function EmailRiskBanner({
   const Icon = isHighRisk ? ShieldAlert : AlertTriangle;
 
   return (
-    <Card className={bannerClass} data-testid="email-risk-banner">
+    <Card className={bannerClass} data-testid="risk-banner">
       {/* Header */}
       <div className="space-y-2">
         <div className={titleClass}>
           <Icon className="h-5 w-5" />
-          <span>
+          <span data-testid="risk-score">
             {isHighRisk
               ? `This email looks suspicious (score: ${suspicion_score})`
               : `Some risk indicators found (score: ${suspicion_score})`}
@@ -148,7 +148,7 @@ export function EmailRiskBanner({
               <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
                 Why it's flagged:
               </div>
-              <ul className="ml-4 list-disc space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
+              <ul data-testid="risk-explanations" className="ml-4 list-disc space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
                 {explanations.map((reason, i) => (
                   <li key={i}>{reason}</li>
                 ))}
@@ -164,7 +164,7 @@ export function EmailRiskBanner({
               <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
                 What you should do:
               </div>
-              <ul className="ml-4 list-disc space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
+              <ul data-testid="risk-actions" className="ml-4 list-disc space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
                 {suggested_actions.map((action, i) => (
                   <li key={i}>{action}</li>
                 ))}
@@ -178,7 +178,7 @@ export function EmailRiskBanner({
               <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
                 Verify with sender:
               </div>
-              <ul className="ml-4 list-disc space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
+              <ul data-testid="risk-checks" className="ml-4 list-disc space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
                 {verify_checks.map((check, i) => (
                   <li key={i}>{check}</li>
                 ))}
@@ -193,6 +193,7 @@ export function EmailRiskBanner({
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
         <Button
+          data-testid="btn-mark-scam"
           variant="destructive"
           size="sm"
           onClick={() => handleFeedback('scam')}
@@ -203,6 +204,7 @@ export function EmailRiskBanner({
           Mark as Scam
         </Button>
         <Button
+          data-testid="btn-mark-legit"
           variant="outline"
           size="sm"
           onClick={() => handleFeedback('legit')}
