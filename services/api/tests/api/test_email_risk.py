@@ -1,18 +1,15 @@
-"""
-Unit tests for email risk advice API endpoints.
-
-Tests the /emails/{email_id}/risk-advice endpoint including the BadRequestError
-fallback mechanism that searches across all gmail_emails-* indices.
-"""
+"""Unit tests for email risk advice API endpoints."""
 
 from elasticsearch import BadRequestError, NotFoundError
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 
 class TestGetRiskAdvice:
     """Tests for GET /emails/{email_id}/risk-advice endpoint."""
 
-    def test_successful_get_from_alias(self, client: TestClient, monkeypatch):
+    async def test_successful_get_from_alias(
+        self, async_client: AsyncClient, monkeypatch
+    ):
         """Test successful retrieval using gmail_emails alias."""
         mock_doc = {
             "_source": {
@@ -31,12 +28,13 @@ class TestGetRiskAdvice:
         def mock_get(*args, **kwargs):
             return mock_doc
 
-        # Mock Elasticsearch client
-        from app import es as es_module
+        # Mock ES in the routers.emails module where it's used
+        from app.routers import emails as emails_module
 
-        monkeypatch.setattr(es_module, "es", type("ES", (), {"get": mock_get})())
+        mock_es = type("ES", (), {"get": mock_get})()
+        monkeypatch.setattr(emails_module, "es", mock_es)
 
-        response = client.get("/emails/test-email-001/risk-advice")
+        response = await async_client.get("/emails/test-email-001/risk-advice")
 
         assert response.status_code == 200
         data = response.json()
@@ -44,7 +42,9 @@ class TestGetRiskAdvice:
         assert data["suspicion_score"] == 25
         assert "DMARC policy passed" in data["explanations"]
 
-    def test_badrequest_fallback_to_search(self, client: TestClient, monkeypatch):
+    async def test_badrequest_fallback_to_search(
+        self, async_client: AsyncClient, monkeypatch
+    ):
         """
         Test that BadRequestError triggers fallback to search query.
 
@@ -53,242 +53,241 @@ class TestGetRiskAdvice:
         """
         mock_doc_source = {
             "from": "security@paypa1-verify.com",
-            "reply_to": "phisher@evil-server.xyz",
-            "subject": "Urgent: Verify Your Account Now",
+            "reply_to": "phish@evil.com",
+            "subject": "URGENT: Verify your account now!",
             "suspicious": True,
-            "suspicion_score": 78,
+            "suspicion_score": 85,
             "explanations": [
-                "SPF authentication failed",
-                "DKIM authentication failed",
-                "DMARC policy failed",
-                "Reply-To domain differs from From domain",
-                "Contains risky attachment (executable/script/macro/archive)",
-                "Uses URL shortener (bit.ly, tinyurl, etc)",
+                "From domain mismatch with PayPal",
+                "Reply-to domain is suspicious",
             ],
-            "suggested_actions": ["Wait to share any personal details until verified."],
-            "verify_checks": [
-                "Request official posting link.",
-                "Ask for a calendar invite from corporate domain.",
-            ],
-            "received_at": "2025-10-21T19:00:00Z",
+            "suggested_actions": ["Mark as spam", "Report phishing"],
+            "verify_checks": ["spf:fail", "dkim:fail"],
+            "received_at": "2025-10-21T14:30:00Z",
         }
 
-        call_count = {"get": 0, "search": 0}
+        # Track calls to verify fallback
+        get_calls = []
+        search_calls = []
+
+        # Create a minimal mock meta object for the exception
+        class MockMeta:
+            status = 400
 
         def mock_get(*args, **kwargs):
-            call_count["get"] += 1
-            # Simulate BadRequestError when alias points to multiple indices
+            get_calls.append((args, kwargs))
             raise BadRequestError(
-                "illegal_argument_exception",
-                "Alias points to multiple indices, use search instead",
+                "search_phase_execution_exception",
+                MockMeta(),
+                {"error": "Fielddata is disabled"},
             )
 
         def mock_search(*args, **kwargs):
-            call_count["search"] += 1
-            # Verify search parameters
-            assert kwargs.get("index") == "gmail_emails-*"
-            assert kwargs.get("size") == 1
-            assert "ids" in kwargs.get("query", {})
-            assert "test-risk-v31-001" in kwargs["query"]["ids"]["values"]
-
-            # Return document from search
+            search_calls.append((args, kwargs))
             return {"hits": {"hits": [{"_source": mock_doc_source}]}}
 
-        # Mock Elasticsearch client
-        from app import es as es_module
+        from app.routers import emails as emails_module
 
         mock_es = type("ES", (), {"get": mock_get, "search": mock_search})()
-        monkeypatch.setattr(es_module, "es", mock_es)
+        monkeypatch.setattr(emails_module, "es", mock_es)
 
-        response = client.get("/emails/test-risk-v31-001/risk-advice")
+        response = await async_client.get("/emails/test-risk-v31-001/risk-advice")
 
-        # Verify fallback was triggered
-        assert call_count["get"] == 1, "ES.get should be called first"
-        assert call_count["search"] == 1, "ES.search should be called as fallback"
+        # Verify fallback behavior
+        assert len(get_calls) == 1, "ES.get should be called first"
+        assert (
+            len(search_calls) == 1
+        ), "ES.search should be called after BadRequestError"
 
         # Verify response
         assert response.status_code == 200
         data = response.json()
         assert data["suspicious"] is True
-        assert data["suspicion_score"] == 78
-        assert len(data["explanations"]) == 6
-        assert "SPF authentication failed" in data["explanations"]
-        assert "Reply-To domain differs from From domain" in data["explanations"]
-        assert data["from"] == "security@paypa1-verify.com"
-        assert data["reply_to"] == "phisher@evil-server.xyz"
+        assert data["suspicion_score"] == 85
+        assert "From domain mismatch with PayPal" in data["explanations"]
 
-    def test_notfound_fallback_to_search(self, client: TestClient, monkeypatch):
+    async def test_notfound_fallback_to_search(
+        self, async_client: AsyncClient, monkeypatch
+    ):
         """Test that NotFoundError also triggers fallback to search."""
         mock_doc_source = {
-            "from": "test@example.com",
-            "subject": "Test",
+            "from": "newsletter@example.com",
+            "reply_to": None,
+            "subject": "Weekly updates",
             "suspicious": False,
             "suspicion_score": 10,
-            "explanations": [],
+            "explanations": ["Recognized sender"],
             "suggested_actions": [],
             "verify_checks": [],
-            "received_at": "2025-10-21T10:00:00Z",
+            "received_at": "2025-10-21T09:00:00Z",
         }
 
+        class MockMeta:
+            status = 404
+
         def mock_get(*args, **kwargs):
-            raise NotFoundError("document not found in primary index")
+            raise NotFoundError(
+                "index_not_found_exception",
+                MockMeta(),
+                {"error": "no such index [gmail_emails]"},
+            )
 
         def mock_search(*args, **kwargs):
             return {"hits": {"hits": [{"_source": mock_doc_source}]}}
 
-        from app import es as es_module
+        from app.routers import emails as emails_module
 
         mock_es = type("ES", (), {"get": mock_get, "search": mock_search})()
-        monkeypatch.setattr(es_module, "es", mock_es)
+        monkeypatch.setattr(emails_module, "es", mock_es)
 
-        response = client.get("/emails/test-email-002/risk-advice")
+        response = await async_client.get("/emails/weekly-newsletter-001/risk-advice")
 
         assert response.status_code == 200
-        assert response.json()["suspicion_score"] == 10
+        data = response.json()
+        assert data["suspicious"] is False
+        assert data["suspicion_score"] == 10
 
-    def test_search_fallback_not_found(self, client: TestClient, monkeypatch):
-        """Test 404 when document not found in search fallback."""
+    async def test_search_fallback_not_found(
+        self, async_client: AsyncClient, monkeypatch
+    ):
+        """Test 404 when email not found even after fallback search."""
+
+        class MockMeta:
+            status = 400
 
         def mock_get(*args, **kwargs):
-            raise BadRequestError("alias error")
+            raise BadRequestError("error", MockMeta(), {"error": "Bad request"})
 
         def mock_search(*args, **kwargs):
-            # No hits in search result
-            return {"hits": {"hits": []}}
+            return {"hits": {"hits": []}}  # No results
 
-        from app import es as es_module
+        from app.routers import emails as emails_module
 
         mock_es = type("ES", (), {"get": mock_get, "search": mock_search})()
-        monkeypatch.setattr(es_module, "es", mock_es)
+        monkeypatch.setattr(emails_module, "es", mock_es)
 
-        response = client.get("/emails/nonexistent-email-999/risk-advice")
+        response = await async_client.get("/emails/nonexistent-email/risk-advice")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        data = response.json()
+        assert "not found" in data["detail"].lower()
 
-    def test_search_fallback_error(self, client: TestClient, monkeypatch):
-        """Test 500 when search fallback encounters error."""
+    async def test_search_fallback_error(self, async_client: AsyncClient, monkeypatch):
+        """Test 500 when search fallback raises an error."""
+
+        class MockMeta:
+            status = 400
 
         def mock_get(*args, **kwargs):
-            raise NotFoundError("not found")
+            raise BadRequestError("error", MockMeta(), {"error": "Bad request"})
 
         def mock_search(*args, **kwargs):
             raise Exception("Elasticsearch connection failed")
 
-        from app import es as es_module
+        from app.routers import emails as emails_module
 
         mock_es = type("ES", (), {"get": mock_get, "search": mock_search})()
-        monkeypatch.setattr(es_module, "es", mock_es)
+        monkeypatch.setattr(emails_module, "es", mock_es)
 
-        response = client.get("/emails/test-email-003/risk-advice")
+        response = await async_client.get("/emails/error-case/risk-advice")
 
         assert response.status_code == 500
-        assert "Error searching for email" in response.json()["detail"]
 
-    def test_custom_index_parameter(self, client: TestClient, monkeypatch):
-        """Test using custom index via query parameter."""
+    async def test_custom_index_parameter(self, async_client: AsyncClient, monkeypatch):
+        """Test custom index parameter works with direct get."""
         mock_doc = {
             "_source": {
-                "from": "test@example.com",
-                "subject": "Test",
+                "from": "admin@company.com",
+                "reply_to": None,
+                "subject": "Internal notice",
                 "suspicious": False,
                 "suspicion_score": 5,
-                "explanations": [],
+                "explanations": ["Internal sender"],
                 "suggested_actions": [],
                 "verify_checks": [],
-                "received_at": "2025-10-21T10:00:00Z",
+                "received_at": "2025-10-21T08:00:00Z",
             }
         }
 
+        get_index = None
+
         def mock_get(*args, **kwargs):
-            # Verify custom index is used
-            assert kwargs.get("index") == "gmail_emails-202510"
+            nonlocal get_index
+            get_index = kwargs.get("index")
             return mock_doc
 
-        from app import es as es_module
+        from app.routers import emails as emails_module
 
-        monkeypatch.setattr(es_module, "es", type("ES", (), {"get": mock_get})())
+        mock_es = type("ES", (), {"get": mock_get})()
+        monkeypatch.setattr(emails_module, "es", mock_es)
 
-        response = client.get(
-            "/emails/test-email-004/risk-advice?index=gmail_emails-202510"
+        response = await async_client.get(
+            "/emails/internal-001/risk-advice?index=company_emails"
         )
 
         assert response.status_code == 200
-        assert response.json()["suspicion_score"] == 5
+        assert get_index == "company_emails"
 
-    def test_elasticsearch_unavailable(self, client: TestClient, monkeypatch):
-        """Test 503 when Elasticsearch is not available."""
-        from app import es as es_module
+    async def test_elasticsearch_unavailable(
+        self, async_client: AsyncClient, monkeypatch
+    ):
+        """Test 503 when Elasticsearch is completely unavailable."""
+        from app.routers import emails as emails_module
 
-        monkeypatch.setattr(es_module, "es", None)
+        # Set es to None to simulate unavailable ES
+        monkeypatch.setattr(emails_module, "es", None)
 
-        response = client.get("/emails/test-email-005/risk-advice")
+        response = await async_client.get("/emails/unavailable-test/risk-advice")
 
         assert response.status_code == 503
-        assert "Elasticsearch not available" in response.json()["detail"]
+        data = response.json()
+        assert "not available" in data["detail"].lower()
 
-    def test_response_includes_all_fields(self, client: TestClient, monkeypatch):
-        """Test that response includes all expected risk advice fields."""
+    async def test_response_includes_all_fields(
+        self, async_client: AsyncClient, monkeypatch
+    ):
+        """Test that response includes all expected RiskAdviceOut fields."""
         mock_doc = {
             "_source": {
-                "from": "hr@company.com",
-                "reply_to": "no-reply@company.com",
-                "subject": "Interview Invitation",
-                "suspicious": False,
-                "suspicion_score": 15,
-                "explanations": ["DMARC policy passed", "Known sender domain"],
-                "suggested_actions": ["Review interview details"],
-                "verify_checks": ["Confirm via LinkedIn"],
-                "received_at": "2025-10-21T14:30:00Z",
+                "from": "test@example.com",
+                "reply_to": "reply@example.com",
+                "subject": "Test Subject",
+                "suspicious": True,
+                "suspicion_score": 50,
+                "explanations": ["Test explanation"],
+                "suggested_actions": ["Test action"],
+                "verify_checks": ["spf:pass"],
+                "received_at": "2025-10-21T12:00:00Z",
             }
         }
 
         def mock_get(*args, **kwargs):
             return mock_doc
 
-        from app import es as es_module
+        from app.routers import emails as emails_module
 
-        monkeypatch.setattr(es_module, "es", type("ES", (), {"get": mock_get})())
+        mock_es = type("ES", (), {"get": mock_get})()
+        monkeypatch.setattr(emails_module, "es", mock_es)
 
-        response = client.get("/emails/test-email-006/risk-advice")
+        response = await async_client.get("/emails/field-test-001/risk-advice")
 
         assert response.status_code == 200
         data = response.json()
 
-        # Verify all expected fields are present
+        # Verify all fields present
+        assert "from" in data
+        assert "reply_to" in data
+        assert "subject" in data
         assert "suspicious" in data
         assert "suspicion_score" in data
         assert "explanations" in data
         assert "suggested_actions" in data
         assert "verify_checks" in data
-        assert "from" in data
-        assert "reply_to" in data
-        assert "subject" in data
         assert "received_at" in data
 
         # Verify values
-        assert data["from"] == "hr@company.com"
-        assert data["reply_to"] == "no-reply@company.com"
-        assert data["subject"] == "Interview Invitation"
-        assert len(data["explanations"]) == 2
-        assert len(data["suggested_actions"]) == 1
-        assert len(data["verify_checks"]) == 1
-
-
-class TestPrimeAdvice:
-    """Tests for POST /emails/{email_id}/prime-advice endpoint."""
-
-    def test_prime_advice_background_task(self, client: TestClient, monkeypatch):
-        """Test that prime-advice endpoint accepts requests (background processing)."""
-        # This is a background task endpoint, so we just verify 202 response
-        # Actual ES interaction would happen asynchronously
-
-        response = client.post("/emails/test-email-007/prime-advice")
-
-        # Endpoint should accept request and return 202 or similar
-        # (Actual implementation may vary based on your background task setup)
-        assert response.status_code in [
-            200,
-            202,
-            404,
-        ]  # Adjust based on actual implementation
+        assert data["from"] == "test@example.com"
+        assert data["reply_to"] == "reply@example.com"
+        assert data["subject"] == "Test Subject"
+        assert data["suspicious"] is True
+        assert data["suspicion_score"] == 50

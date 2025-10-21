@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import FastAPI, HTTPException, Response
@@ -26,7 +27,7 @@ app = FastAPI(title="ApplyLens API")
 app.add_middleware(
     RateLimitMiddleware,
     capacity=agent_settings.RATE_LIMIT_MAX_REQ,
-    window=agent_settings.RATE_LIMIT_WINDOW_SEC
+    window=agent_settings.RATE_LIMIT_WINDOW_SEC,
 )
 
 # Add CSRF protection middleware (before session middleware)
@@ -38,7 +39,7 @@ app.add_middleware(
     secret_key=agent_settings.SESSION_SECRET,
     max_age=3600,  # 1 hour for OAuth state
     same_site="lax",
-    https_only=agent_settings.COOKIE_SECURE == "1"
+    https_only=agent_settings.COOKIE_SECURE == "1",
 )
 
 
@@ -78,10 +79,11 @@ app.add_middleware(
 def _startup():
     # Make sure ES index exists (no‑op if disabled)
     ensure_index()
-    
+
     # Start scheduled jobs (Phase 5.3 active learning)
     try:
         from .scheduler import setup_scheduled_jobs
+
         setup_scheduled_jobs()
     except Exception as e:
         print(f"Warning: Could not start scheduler: {e}")
@@ -92,6 +94,7 @@ def _shutdown():
     # Gracefully shutdown scheduler
     try:
         from .scheduler import shutdown_scheduler
+
         shutdown_scheduler()
     except Exception:
         pass
@@ -125,10 +128,12 @@ app.include_router(applications.router)
 
 # Auth router - Google OAuth and demo mode
 from .routers import auth as auth_router  # noqa: E402
+
 app.include_router(auth_router.router)
 
 # Admin router - System maintenance
 from .routers import admin as admin_router  # noqa: E402
+
 app.include_router(admin_router.router)
 
 app.include_router(auth_google.router)
@@ -314,7 +319,7 @@ try:
 
     app.include_router(agents_router)
     app.include_router(agents_events_router)
-    
+
     # Register agents
     registry = get_registry()
     register_warehouse(registry)
@@ -329,7 +334,7 @@ try:
     from .routers.incidents import router as incidents_router
     from .routers.playbooks import router as playbooks_router
     from .routers.sse import router as sse_router
-    
+
     app.include_router(incidents_router)
     app.include_router(playbooks_router)
     app.include_router(sse_router)
@@ -343,7 +348,7 @@ try:
     from .routers.policy_sim import router as policy_sim_router
     from .routers.policy_bundle_io import router as policy_bundle_io_router
     from .routers.policy_activate import router as policy_activate_router
-    
+
     app.include_router(policy_bundles_router)
     app.include_router(policy_lint_router)
     app.include_router(policy_sim_router)
@@ -353,31 +358,30 @@ except ImportError:
     pass  # Policy bundles module not available yet
 
 # Phase 4 AI Features - Email Summarizer, Risk Badge, RAG Search
-import logging
 logger = logging.getLogger(__name__)
 
 try:
     logger.info("Attempting to load AI and RAG routers...")
     from .routers import ai, rag
-    
+
     logger.info(f"AI router loaded: {ai.router}")
     logger.info(f"RAG router loaded: {rag.router}")
-    
+
     app.include_router(ai.router)
-    logger.info("✓ AI router registered")
-    
+    logger.info("[OK] AI router registered")
+
     # RAG router: Register twice for backwards compatibility
     app.include_router(rag.router)  # /rag/...
     app.include_router(rag.router, prefix="/api")  # /api/rag/... (backwards compat)
-    logger.info("✓ RAG router registered at /rag/* and /api/rag/*")
-    
-    print("✓ Phase 4 AI routers registered successfully")
-except ImportError as e:
-    logger.error(f"⚠ AI features module import failed: {e}")
-    print(f"⚠ AI features module not available: {e}")
-except Exception as e:
-    logger.error(f"✗ Error loading AI features: {e}", exc_info=True)
-    print(f"✗ Error loading AI features: {e}")
-    import traceback
-    traceback.print_exc()
+    logger.info("[OK] RAG router registered at /rag/* and /api/rag/*")
 
+    print("[OK] Phase 4 AI routers registered successfully")
+except ImportError as e:
+    logger.error(f"[WARN] AI features module import failed: {e}")
+    print(f"[WARN] AI features module not available: {e}")
+except Exception as e:
+    logger.error(f"[ERROR] Error loading AI features: {e}", exc_info=True)
+    print(f"[ERROR] Error loading AI features: {e}")
+    import traceback
+
+    traceback.print_exc()
