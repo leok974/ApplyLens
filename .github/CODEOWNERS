@@ -14,3 +14,15 @@ docs/**                       @leok974
 secrets/**                    @leok974
 infra/secrets/**              @leok974
 *.env*                        @leok974
+
+# Secrets scanning configuration - protect against bypass
+.gitleaks.toml                @leok974
+.pre-commit-config.yaml       @leok974
+.github/workflows/secret-scan.yml @leok974
+docs/SECRETS_POLICY.md        @leok974
+docs/GITHUB_RULESET_SETUP.md  @leok974
+
+# Configuration files - may contain sensitive patterns
+*.toml                        @leok974
+docker-compose*.yml           @leok974
+Dockerfile*                   @leok974
