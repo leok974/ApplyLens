@@ -1,0 +1,1 @@
+{"type":"index-pattern","id":"applylens-emails-alias","attributes":{"title":"gmail_emails-*","timeFieldName":"received_at","name":"ApplyLens Emails (all)"}}
