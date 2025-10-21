@@ -1,4 +1,3 @@
-import * as React from "react";
 import { AlertTriangle, ShieldAlert, CheckCircle2, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ export type EmailRiskAdvice = {
 };
 
 type EmailRiskBannerProps = {
-  emailId: string;
   riskAdvice: EmailRiskAdvice;
   onMarkScam?: () => void;
   onRequestOfficial?: () => void;
@@ -22,7 +20,6 @@ type EmailRiskBannerProps = {
 };
 
 export function EmailRiskBanner({
-  emailId,
   riskAdvice,
   onMarkScam,
   onRequestOfficial,

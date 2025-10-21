@@ -305,7 +305,6 @@ export function EmailDetailsPanel({
             {!loadingRisk && riskAdvice && (
               <>
                 <EmailRiskBanner
-                  emailId={email.id}
                   riskAdvice={riskAdvice}
                   onMarkScam={handleMarkScam}
                   onRequestOfficial={handleRequestOfficial}

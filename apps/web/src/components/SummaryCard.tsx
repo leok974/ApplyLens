@@ -3,26 +3,12 @@
  * Phase 4 AI Feature: Email Thread Summarizer
  * Displays 5-bullet summary with citations
  */
-import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Chip,
-  Box,
-  CircularProgress,
-  Alert,
-  IconButton,
-  Collapse,
-} from '@mui/material';
-import {
-  AutoAwesome as AIIcon,
-  ExpandMore as ExpandIcon,
-  ExpandLess as CollapseIcon,
-} from '@mui/icons-material';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Citation {
   snippet: string;
@@ -95,101 +81,83 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
   };
 
   return (
-    <Card
-      sx={{
-        mb: 2,
-        border: '1px solid',
-        borderColor: 'primary.main',
-        bgcolor: 'background.paper',
-      }}
-    >
-      <CardContent>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-          }}
+    <Card className="mb-4 border-primary">
+      <CardContent className="p-4">
+        <div
+          className="flex items-center justify-between cursor-pointer"
           onClick={handleToggle}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AIIcon color="primary" />
-            <Typography variant="h6">AI Summary</Typography>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">AI Summary</h3>
             {summary && (
-              <Chip
-                label="5 key points"
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
+              <Badge variant="outline" className="border-primary text-primary">
+                5 key points
+              </Badge>
             )}
-          </Box>
-          <IconButton size="small">
-            {expanded ? <CollapseIcon /> : <ExpandIcon />}
-          </IconButton>
-        </Box>
+          </div>
+          <Button variant="ghost" size="icon">
+            {expanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
 
-        <Collapse in={expanded}>
-          {loading && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-              <CircularProgress size={32} />
-            </Box>
-          )}
+        {expanded && (
+          <div className="mt-4">
+            {loading && (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
 
-          {error && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
+            {error && (
+              <Alert className="mt-2">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          {summary && (
-            <Box sx={{ mt: 2 }}>
-              {/* 5 bullet points */}
-              <List dense>
-                {summary.bullets.map((bullet, idx) => (
-                  <ListItem key={idx} sx={{ pl: 0 }}>
-                    <ListItemText
-                      primary={bullet}
-                      primaryTypographyProps={{
-                        variant: 'body2',
-                        color: 'text.primary',
-                      }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
+            {summary && (
+              <div className="mt-2 space-y-3">
+                {/* 5 bullet points */}
+                <ul className="space-y-2 list-disc list-inside">
+                  {summary.bullets.map((bullet, idx) => (
+                    <li key={idx} className="text-sm text-foreground">
+                      {bullet}
+                    </li>
+                  ))}
+                </ul>
 
-              {/* Citations */}
-              {summary.citations.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    Sources:
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                    {summary.citations.map((citation, idx) => (
-                      <Chip
-                        key={idx}
-                        label={`"${citation.snippet.substring(0, 30)}..."`}
-                        size="small"
-                        variant="outlined"
-                        onClick={() => onCitationClick?.(citation.message_id)}
-                        sx={{
-                          cursor: onCitationClick ? 'pointer' : 'default',
-                          maxWidth: 200,
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          )}
-        </Collapse>
+                {/* Citations */}
+                {summary.citations.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Sources:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {summary.citations.map((citation, idx) => (
+                        <Badge
+                          key={idx}
+                          variant="outline"
+                          className={
+                            onCitationClick
+                              ? 'cursor-pointer hover:bg-accent max-w-[200px] truncate'
+                              : 'max-w-[200px] truncate'
+                          }
+                          onClick={() => onCitationClick?.(citation.message_id)}
+                        >
+                          &quot;{citation.snippet.substring(0, 30)}...&quot;
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

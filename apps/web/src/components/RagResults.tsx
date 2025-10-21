@@ -3,24 +3,13 @@
  * Phase 4 AI Feature: RAG-powered Search
  * Displays search results with highlighted snippets
  */
-import React, { useState } from 'react';
-import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Chip,
-  CircularProgress,
-  Alert,
-  Divider,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  AutoAwesome as AIIcon,
-} from '@mui/icons-material';
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Search, Sparkles, Loader2 } from 'lucide-react';
 
 interface RagHit {
   thread_id: string;
@@ -80,7 +69,7 @@ export const RagResults: React.FC<RagResultsProps> = ({ onResultClick }) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
@@ -89,116 +78,97 @@ export const RagResults: React.FC<RagResultsProps> = ({ onResultClick }) => {
   // Render highlights with HTML (sanitized by backend)
   const renderHighlights = (highlights: string[]) => {
     return highlights.map((highlight, idx) => (
-      <Typography
+      <p
         key={idx}
-        variant="body2"
-        color="text.secondary"
-        sx={{ mt: 0.5 }}
+        className="text-sm text-muted-foreground mt-1"
         dangerouslySetInnerHTML={{ __html: highlight }}
       />
     ));
   };
 
   return (
-    <Box>
+    <div className="space-y-4">
       {/* Search Input */}
-      <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Search emails with AI..."
-          value={query}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={loading}
-          InputProps={{
-            startAdornment: <AIIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-          }}
-        />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search emails with AI..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyPress}
+            disabled={loading}
+            className="pl-10"
+          />
+        </div>
         <Button
-          variant="contained"
           onClick={handleSearch}
           disabled={loading || !query.trim()}
-          startIcon={loading ? <CircularProgress size={20} /> : <SearchIcon />}
         >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Search className="h-4 w-4 mr-2" />
+          )}
           Search
         </Button>
-      </Box>
+      </div>
 
       {/* Error */}
       {error && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          {error}
+        <Alert>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Results */}
       {results && (
-        <Box>
-          <Typography variant="caption" color="text.secondary" gutterBottom>
+        <div className="space-y-4">
+          <p className="text-xs text-muted-foreground">
             Found {results.total} result{results.total !== 1 ? 's' : ''}
-          </Typography>
+          </p>
 
           {results.hits.length === 0 ? (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              No results found for "{query}"
+            <Alert>
+              <AlertDescription>
+                No results found for &quot;{query}&quot;
+              </AlertDescription>
             </Alert>
           ) : (
-            <List sx={{ mt: 1 }}>
+            <div className="space-y-4">
               {results.hits.map((hit, idx) => (
-                <React.Fragment key={hit.message_id}>
-                  {idx > 0 && <Divider sx={{ my: 2 }} />}
-                  <ListItem
-                    alignItems="flex-start"
-                    sx={{
-                      pl: 0,
-                      cursor: onResultClick ? 'pointer' : 'default',
-                      '&:hover': onResultClick
-                        ? { bgcolor: 'action.hover' }
-                        : {},
-                    }}
+                <div key={hit.message_id}>
+                  {idx > 0 && <Separator className="my-4" />}
+                  <div
+                    className={
+                      onResultClick
+                        ? 'cursor-pointer rounded-lg p-3 hover:bg-accent transition-colors'
+                        : 'p-3'
+                    }
                     onClick={() =>
                       onResultClick?.(hit.thread_id, hit.message_id)
                     }
                   >
-                    <ListItemText
-                      primary={
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            mb: 0.5,
-                          }}
-                        >
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            {hit.subject}
-                          </Typography>
-                          <Chip
-                            label={`Score: ${hit.score.toFixed(2)}`}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </Box>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">
-                            From: {hit.sender} •{' '}
-                            {new Date(hit.date).toLocaleDateString()}
-                          </Typography>
-                          <Box sx={{ mt: 1 }}>
-                            {renderHighlights(hit.highlights)}
-                          </Box>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                </React.Fragment>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="text-sm font-semibold">{hit.subject}</h4>
+                      <Badge variant="outline">
+                        Score: {hit.score.toFixed(2)}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      From: {hit.sender} •{' '}
+                      {new Date(hit.date).toLocaleDateString()}
+                    </p>
+                    <div className="space-y-1">
+                      {renderHighlights(hit.highlights)}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </List>
+            </div>
           )}
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };

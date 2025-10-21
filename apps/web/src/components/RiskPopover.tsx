@@ -3,25 +3,21 @@
  * Phase 4 AI Feature: Smart Risk Badge
  * Displays top 3 risk signals with explanations
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Popover,
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  CircularProgress,
-  Alert,
-  Chip,
-  Divider,
-} from '@mui/material';
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  Warning as WarningIcon,
-  CheckCircle as SafeIcon,
-  Error as DangerIcon,
-} from '@mui/icons-material';
+  AlertTriangle,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 
 interface RiskSignal {
   id: string;
@@ -36,16 +32,16 @@ interface RiskData {
 
 interface RiskPopoverProps {
   messageId: string;
-  anchorEl: HTMLElement | null;
-  open: boolean;
-  onClose: () => void;
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const RiskPopover: React.FC<RiskPopoverProps> = ({
   messageId,
-  anchorEl,
+  children,
   open,
-  onClose,
+  onOpenChange,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,16 +79,16 @@ export const RiskPopover: React.FC<RiskPopoverProps> = ({
     }
   };
 
-  const getRiskColor = (score: number): 'success' | 'warning' | 'error' => {
-    if (score < 30) return 'success';
-    if (score < 70) return 'warning';
-    return 'error';
+  const getRiskColor = (score: number): 'default' | 'secondary' | 'destructive' => {
+    if (score < 30) return 'default';
+    if (score < 70) return 'secondary';
+    return 'destructive';
   };
 
   const getRiskIcon = (score: number) => {
-    if (score < 30) return <SafeIcon color="success" />;
-    if (score < 70) return <WarningIcon color="warning" />;
-    return <DangerIcon color="error" />;
+    if (score < 30) return <CheckCircle className="h-5 w-5 text-green-600" />;
+    if (score < 70) return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+    return <AlertCircle className="h-5 w-5 text-red-600" />;
   };
 
   const getRiskLabel = (score: number): string => {
@@ -102,92 +98,70 @@ export const RiskPopover: React.FC<RiskPopoverProps> = ({
   };
 
   return (
-    <Popover
-      open={open}
-      anchorEl={anchorEl}
-      onClose={onClose}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'left',
-      }}
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'left',
-      }}
-      PaperProps={{
-        sx: { maxWidth: 400, p: 2 },
-      }}
-    >
-      {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-          <CircularProgress size={32} />
-        </Box>
-      )}
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        {children}
+      </PopoverTrigger>
+      <PopoverContent className="w-96 p-4">
+        {loading && (
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
 
-      {error && (
-        <Alert severity="info" sx={{ m: 0 }}>
-          {error}
-        </Alert>
-      )}
+        {error && (
+          <Alert>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {riskData && (
-        <Box>
-          {/* Risk Score Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            {getRiskIcon(riskData.score)}
-            <Typography variant="h6">
-              {getRiskLabel(riskData.score)}
-            </Typography>
-            <Chip
-              label={`Score: ${riskData.score}`}
-              size="small"
-              color={getRiskColor(riskData.score)}
-            />
-          </Box>
+        {riskData && (
+          <div className="space-y-4">
+            {/* Risk Score Header */}
+            <div className="flex items-center gap-2">
+              {getRiskIcon(riskData.score)}
+              <h3 className="text-lg font-semibold">
+                {getRiskLabel(riskData.score)}
+              </h3>
+              <Badge variant={getRiskColor(riskData.score)}>
+                Score: {riskData.score}
+              </Badge>
+            </div>
 
-          <Divider sx={{ mb: 2 }} />
+            <Separator />
 
-          {/* Top 3 Signals */}
-          {riskData.signals.length > 0 ? (
-            <>
-              <Typography variant="caption" color="text.secondary" gutterBottom>
-                Top Risk Signals:
-              </Typography>
-              <List dense>
-                {riskData.signals.map((signal, idx) => (
-                  <ListItem key={idx} sx={{ pl: 0, alignItems: 'flex-start' }}>
-                    <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
-                      <Typography
-                        variant="body2"
-                        color="primary"
-                        fontWeight="bold"
-                      >
-                        #{idx + 1}
-                      </Typography>
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={signal.label}
-                      secondary={signal.explain}
-                      primaryTypographyProps={{
-                        variant: 'body2',
-                        fontWeight: 'medium',
-                      }}
-                      secondaryTypographyProps={{
-                        variant: 'caption',
-                        color: 'text.secondary',
-                      }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </>
-          ) : (
-            <Alert severity="success" sx={{ m: 0 }}>
-              No risk signals detected
-            </Alert>
-          )}
-        </Box>
-      )}
+            {/* Top 3 Signals */}
+            {riskData.signals.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Top Risk Signals:
+                </p>
+                <div className="space-y-3">
+                  {riskData.signals.map((signal, idx) => (
+                    <div key={idx} className="flex gap-3">
+                      <div className="flex-shrink-0">
+                        <span className="text-sm font-bold text-primary">
+                          #{idx + 1}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">{signal.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {signal.explain}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Alert>
+                <AlertDescription>No risk signals detected</AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+      </PopoverContent>
     </Popover>
   );
 };
