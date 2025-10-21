@@ -1,8 +1,9 @@
-# ApplyLens — Agentic Suspicious Email Detection (v3)
+# ApplyLens — Agentic Suspicious Email Detection (v3.1)
 
 **Status**: ✅ Implemented
-**Date**: October 21, 2025
+**Date**: October 21, 2025 (v3.1 updates)
 **Phase**: 4 Enhancement — Email Risk Intelligence
+**Version**: 3.1 - Multi-Signal Phishing Detection
 
 ---
 
@@ -10,16 +11,40 @@
 
 This implementation adds **intelligent phishing detection with agentic guidance** to ApplyLens. The system:
 
-1. **Detects** suspicious emails using transparent heuristics (domain mismatch, risky phrases, PII requests)
+1. **Detects** suspicious emails using transparent heuristics (domain mismatch, risky phrases, PII requests, **auth failures, URL inspection, attachments**)
 2. **Explains** why emails are flagged with human-readable reasons
 3. **Guides** users with actionable verification steps and suggested responses
-4. **Empowers** job seekers to protect themselves without blocking legitimate opportunities
+4. **Learns** from user feedback to improve detection over time
+5. **Empowers** job seekers to protect themselves without blocking legitimate opportunities
+
+---
+
+## v3.1 New Signals (October 2025)
+
+### Authentication Failures
+- **SPF Fail** (+10 pts): Sender not authorized by domain
+- **DKIM Fail** (+10 pts): Message integrity not verified
+- **DMARC Fail** (+15 pts): Email authentication policy violation
+- **Reply-To Mismatch** (+15 pts): Reply-To domain differs from From domain
+
+### URL Inspection
+- **Link Shorteners** (+8 pts): Uses bit.ly, tinyurl, t.co, etc.
+- **Anchor Mismatch** (+12 pts): Link text doesn't match destination
+- **Off-Brand URLs** (+10 pts): Links to non-trusted domains
+
+### Attachments
+- **Risky File Types** (+20 pts): Executables, scripts, macro docs, archives
+  - Extensions: exe, msi, js, vbs, ps1, cmd, bat, scr, apk, pkg, docm, xlsm, pptm, zip, rar, 7z, iso, img
+
+### Domain Age (Future)
+- **Young Domain** (+15 pts): Sender domain registered < 30 days
+- Requires enrichment index populated by background worker
 
 ---
 
 ## Architecture
 
-### 1. Elasticsearch Ingest Pipeline v3
+### 1. Elasticsearch Ingest Pipeline v3.1
 
 **File**: `infra/elasticsearch/pipelines/emails_v3.json`
 
@@ -31,11 +56,16 @@ This implementation adds **intelligent phishing detection with agentic guidance*
 - `explanations` (array): Human-readable reasons for the score
 - `suggested_actions` (array): What the user should do next
 - `verify_checks` (array): Specific verification steps to request from sender
+- `from_domain` (keyword): Extracted sender domain for enrichment
+- `user_feedback_verdict` (keyword): User's feedback on email (scam/legit/unsure)
+- `user_feedback_note` (text): Optional feedback note
+- `user_feedback_at` (date): Timestamp of feedback
 
 **Heuristics** (transparent & tunable):
 
 | Check | Weight | Trigger |
 |-------|--------|---------|
+| **v3.0 Signals** | | |
 | Domain mismatch | 25 | Sender domain doesn't match brand mentioned in email |
 | Non-canonical domain | 25 | Brand claim from unverified domain |
 | Risky phrases | 10 each | "equipment will be provided", "send your details", "gift card", "crypto", etc. |
@@ -43,6 +73,16 @@ This implementation adds **intelligent phishing detection with agentic guidance*
 | Vague role | 10 | Missing salary/comp, team, or tech stack details |
 | No calendar invite | 5 | No calendar or scheduling link provided |
 | No career link | 10 | No link to official job posting |
+| **v3.1 Signals** | | |
+| SPF fail | 10 | SPF authentication failed |
+| DKIM fail | 10 | DKIM signature verification failed |
+| DMARC fail | 15 | DMARC policy failed or policy=reject |
+| Reply-To mismatch | 15 | Reply-To domain differs from From domain |
+| Link shorteners | 8 | Contains bit.ly, tinyurl, t.co, etc. |
+| Anchor mismatch | 12 | Link text doesn't match href destination |
+| Off-brand URLs | 10 | Links to non-trusted domains |
+| Risky attachment | 20 | Contains executable, script, macro doc, or archive |
+| Young domain | 15 | Sender domain < 30 days old (requires enrichment) |
 
 **Trusted Domains** (whitelist):
 - `prometric.com`
@@ -110,27 +150,67 @@ email_risk_served_total = Counter(
 - Returns 503 if Elasticsearch is unavailable
 - Graceful fallback to default values if fields missing
 
+**Route**: `POST /emails/{email_id}/risk-feedback`
+
+**Purpose**: Submit user feedback on risk assessment for continuous improvement.
+
+**Request Body**:
+```json
+{
+  "verdict": "scam",  // "scam", "legit", or "unsure"
+  "note": "Verified with company - this was legitimate"  // optional
+}
+```
+
+**Response**:
+```json
+{
+  "ok": true,
+  "verdict": "scam",
+  "labels": ["suspicious", "user_confirmed_scam"]
+}
+```
+
+**Behavior**:
+- **verdict="scam"**: Adds `suspicious` and `user_confirmed_scam` labels
+- **verdict="legit"**: Removes `suspicious` label, adds `user_confirmed_legit`
+- **verdict="unsure"**: No label changes, records feedback for analysis
+- Updates `user_feedback_verdict`, `user_feedback_note`, `user_feedback_at` fields
+- Increments Prometheus counter: `applylens_email_risk_feedback_total{verdict}`
+
+**Use Cases**:
+- Train heuristic weights based on false positive/negative rates
+- Identify new phishing patterns to add to detection rules
+- Measure user trust and system accuracy over time
+
 ---
 
-### 3. Frontend: Intelligent Banner
+### 3. Frontend: Intelligent Banner with Feedback
 
 **File**: `apps/web/src/components/email/EmailRiskBanner.tsx`
 
 **Component**: `<EmailRiskBanner>`
+
+**v3.1 Enhancements**:
+- **Signal Chips**: Displays detected signals as badges (SPF, DKIM, URL, ATTACH, REPLY-TO, etc.)
+- **Collapsible Details**: "Why we flagged it" button to show/hide explanations
+- **Feedback Buttons**:
+  - **"Mark as Scam"**: Calls `/risk-feedback` with `verdict=scam`
+  - **"Mark Legit"**: Calls `/risk-feedback` with `verdict=legit`
+  - **"Request Official Invite"**: Opens prefilled verification template
+  - **"Dismiss"**: Hides banner
 
 **Behavior**:
 
 #### High Risk (suspicious=true):
 - **Red banner** with alert icon
 - Title: "This email looks suspicious (score: 65)"
-- Sections:
+- Signal chips: SPF, DKIM, URL, ATTACH (visual indicators)
+- Collapsible sections:
   1. **Why it's flagged**: Bulleted list of `explanations`
   2. **What you should do**: Bulleted list of `suggested_actions`
   3. **Verify with sender**: Bulleted list of `verify_checks`
-- Buttons:
-  - **"Mark as Scam"**: Labels email as suspicious (updates ES)
-  - **"Request Official Invite"**: Opens prefilled verification email template
-  - **"Dismiss"**: Hides banner (user acknowledged)
+- Action buttons with loading states during feedback submission
 
 #### Medium Risk (score ≥ 25 but suspicious=false):
 - **Yellow banner** with warning icon

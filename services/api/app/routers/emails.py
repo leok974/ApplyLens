@@ -14,6 +14,9 @@ router = APIRouter(prefix="/emails", tags=["emails"])
 email_risk_served_total = Counter(
     "applylens_email_risk_served_total", "Email risk advice served", ["level"]
 )
+email_risk_feedback_total = Counter(
+    "applylens_email_risk_feedback_total", "Email risk feedback submitted", ["verdict"]
+)
 
 
 @router.get("/", response_model=list[EmailOut])
@@ -101,4 +104,73 @@ def get_risk_advice(email_id: str):
             raise HTTPException(status_code=404, detail=f"Email {email_id} not found")
         raise HTTPException(
             status_code=500, detail=f"Error fetching risk advice: {str(e)}"
+        )
+
+
+@router.post("/{email_id}/risk-feedback")
+def risk_feedback(email_id: str, body: dict):
+    """
+    Submit user feedback on email risk assessment for training and refinement.
+
+    Body: { verdict: "scam"|"legit"|"unsure", note?: str }
+
+    - Updates email labels in Elasticsearch
+    - Increments Prometheus metrics: applylens_email_risk_feedback_total{verdict=...}
+    - Helps improve phishing detection heuristics over time
+    """
+    if not es:
+        raise HTTPException(status_code=503, detail="Elasticsearch not available")
+
+    verdict = (body or {}).get("verdict", "unsure")
+    note = (body or {}).get("note", "")
+
+    if verdict not in ["scam", "legit", "unsure"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid verdict. Must be 'scam', 'legit', or 'unsure'",
+        )
+
+    try:
+        # Fetch current labels
+        doc = es.get(
+            index="gmail_emails", id=email_id, _source_includes=["labels_norm"]
+        )
+        labels = doc.get("_source", {}).get("labels_norm", [])
+        if not isinstance(labels, list):
+            labels = []
+
+        # Update labels based on verdict
+        if verdict == "scam":
+            if "suspicious" not in labels:
+                labels.append("suspicious")
+            if "user_confirmed_scam" not in labels:
+                labels.append("user_confirmed_scam")
+        elif verdict == "legit":
+            # Remove suspicious label if present
+            labels = [label for label in labels if label != "suspicious"]
+            if "user_confirmed_legit" not in labels:
+                labels.append("user_confirmed_legit")
+
+        # Update document
+        es.update(
+            index="gmail_emails",
+            id=email_id,
+            doc={
+                "labels_norm": labels,
+                "user_feedback_verdict": verdict,
+                "user_feedback_note": note,
+                "user_feedback_at": "now",
+            },
+        )
+
+        # Increment metrics
+        email_risk_feedback_total.labels(verdict=verdict).inc()
+
+        return {"ok": True, "verdict": verdict, "labels": labels}
+
+    except Exception as e:
+        if "index_not_found" in str(e).lower() or "not_found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=f"Email {email_id} not found")
+        raise HTTPException(
+            status_code=500, detail=f"Error submitting feedback: {str(e)}"
         )

@@ -128,7 +128,181 @@
         // Convenience KQL label
         if (suspicious) { ctx.labels_norm = (ctx.labels_norm instanceof List ? ctx.labels_norm : new ArrayList()); ctx.labels_norm.add('suspicious'); }
       """
-    }}
+    }},
+
+    {
+      "script": {
+        "lang": "painless",
+        "params": {
+          "score_weights": {
+            "spf_fail": 10,
+            "dkim_fail": 10,
+            "dmarc_fail": 15,
+            "replyto_mismatch": 15
+          }
+        },
+        "source": """
+          int score = ctx.containsKey('suspicion_score') ? (int)ctx.suspicion_score : 0;
+          def reasons = ctx.containsKey('explanations') && ctx.explanations instanceof List ? ctx.explanations : new ArrayList();
+          def checks  = ctx.containsKey('verify_checks') && ctx.verify_checks instanceof List ? ctx.verify_checks : new ArrayList();
+
+          String auth = (ctx.containsKey('headers_authentication_results') ? ctx.headers_authentication_results : null);
+          String spf  = (ctx.containsKey('headers_received_spf') ? ctx.headers_received_spf : null);
+          String reply = (ctx.containsKey('reply_to') ? ctx.reply_to : null);
+          String from  = (ctx.containsKey('from') ? ctx.from : null);
+
+          def has(String s, String p) { return s != null && s.toLowerCase().contains(p); }
+
+          // SPF
+          if (has(spf, 'fail') || has(auth, 'spf=fail')) {
+            score += params.score_weights.spf_fail;
+            reasons.add('SPF failed (sender not authorized by domain).');
+            checks.add('Ask sender to resend from corporate account; verify spf/dmarc on headers.');
+          }
+
+          // DKIM
+          if (has(auth, 'dkim=fail')) {
+            score += params.score_weights.dkim_fail;
+            reasons.add('DKIM failed (message integrity not verified).');
+          }
+
+          // DMARC
+          if (has(auth, 'dmarc=fail') || has(auth, 'policy=reject')) {
+            score += params.score_weights.dmarc_fail;
+            reasons.add('DMARC failed/policy reject.');
+          }
+
+          // Reply-To ≠ From domain
+          String dom = from!=null && from.contains('@') ? from.substring(from.indexOf('@')+1).toLowerCase() : '';
+          String rdom = reply!=null && reply.contains('@') ? reply.substring(reply.indexOf('@')+1).toLowerCase() : '';
+          if (rdom.length()>0 && dom.length()>0 && !rdom.endsWith(dom)) {
+            score += params.score_weights.replyto_mismatch;
+            reasons.add('Reply-To domain differs from From domain.');
+            checks.add('Reply only to the address on the official domain after verification.');
+          }
+
+          ctx.suspicion_score = score;
+          if (score >= (ctx.containsKey('score_threshold') ? (int)ctx.score_threshold : 40)) ctx.suspicious = true;
+          ctx.explanations = reasons;
+          ctx.verify_checks = checks;
+        """
+      }
+    },
+
+    {
+      "script": {
+        "lang": "painless",
+        "params": {
+          "shorteners": ["bit.ly","tinyurl.com","t.co","lnkd.in","goo.gl","is.gd","rebrand.ly"],
+          "score_weights": { "shortener": 8, "anchor_mismatch": 12, "offbrand_url": 10 },
+          "trusted_brands": ["prometric.com","finetunelearning.com","google.com","microsoft.com","zoom.us","teams.microsoft.com"]
+        },
+        "source": """
+          int score = ctx.containsKey('suspicion_score') ? (int)ctx.suspicion_score : 0;
+          def reasons = ctx.containsKey('explanations') ? ctx.explanations : new ArrayList();
+          def checks  = ctx.containsKey('verify_checks') ? ctx.verify_checks : new ArrayList();
+
+          String html = ctx.containsKey('body_html') && ctx.body_html!=null ? ctx.body_html : '';
+          String text = ctx.containsKey('body_text') && ctx.body_text!=null ? ctx.body_text : '';
+          String blob = (html.length()>0 ? html : text).toLowerCase();
+
+          def urls = new ArrayList();
+          def m;
+          // crude URL regex
+          def p = /https?:\\/\\/[\\w\\-\\.]+(?:\\:[0-9]+)?[\\w\\-\\./\\?\\#\\&\\=\\%\\+\\~]*/;
+          m = p.matcher(blob);
+          while (m.find()) { urls.add(m.group()); }
+
+          boolean shortHit=false, mismatch=false, offbrand=false;
+          for (u in urls) {
+            for (s in params.shorteners) { if (u.contains(s)) { shortHit=true; break; } }
+
+            // Extract host
+            String host = u.replaceFirst('^https?://',''); host = host.contains('/') ? host.substring(0, host.indexOf('/')) : host;
+            if (!html.isEmpty()) {
+              // If anchor text mentions a different brand domain than host, mark mismatch
+              if ((html.contains('>prometric<') || html.contains('>finetune<')) && !(host.endsWith('prometric.com') || host.endsWith('finetunelearning.com'))) { mismatch=true; }
+            }
+
+            boolean trusted=false;
+            for (t in params.trusted_brands) { if (host.endsWith(t)) { trusted=true; break; } }
+            if (!trusted) offbrand=true;
+          }
+
+          if (shortHit) { score += params.score_weights.shortener; reasons.add('Uses link shortener(s).'); checks.add('Hover/expand short links before clicking.'); }
+          if (mismatch) { score += params.score_weights.anchor_mismatch; reasons.add('Anchor text does not match link destination.'); checks.add('Verify destination domain matches displayed brand.'); }
+          if (offbrand && urls.size()>0) { score += params.score_weights.offbrand_url; reasons.add('Links point to non-brand domains.'); }
+
+          ctx.suspicion_score = score;
+          if (score >= (ctx.containsKey('score_threshold') ? (int)ctx.score_threshold : 40)) ctx.suspicious = true;
+          ctx.explanations = reasons;
+          ctx.verify_checks = checks;
+        """
+      }
+    },
+
+    {
+      "script": {
+        "lang": "painless",
+        "params": {
+          "risky_ext": ["exe","msi","js","vbs","ps1","cmd","bat","scr","apk","pkg","docm","xlsm","pptm","zip","rar","7z","iso","img"],
+          "score_weights": { "risky_attachment": 20 }
+        },
+        "source": """
+          if (!ctx.containsKey('attachments')) return;
+          int score = ctx.containsKey('suspicion_score') ? (int)ctx.suspicion_score : 0;
+          def reasons = ctx.containsKey('explanations') ? ctx.explanations : new ArrayList();
+          def checks  = ctx.containsKey('verify_checks') ? ctx.verify_checks : new ArrayList();
+
+          boolean risky=false;
+          for (att in (List)ctx.attachments) {
+            String name = att.containsKey('filename') && att.filename!=null ? att.filename.toLowerCase() : '';
+            if (name.contains('.')) {
+              String ext = name.substring(name.lastIndexOf('.')+1);
+              for (rx in params.risky_ext) { if (ext == rx) { risky=true; break; } }
+            }
+          }
+          if (risky) {
+            score += params.score_weights.risky_attachment;
+            reasons.add('Contains risky attachment type (scripts/executables/macro docs/archives).');
+            checks.add('Do not open attachments until sender is verified.');
+          }
+          ctx.suspicion_score = score;
+          if (score >= (ctx.containsKey('score_threshold') ? (int)ctx.score_threshold : 40)) ctx.suspicious = true;
+          ctx.explanations = reasons;
+          ctx.verify_checks = checks;
+        """
+      }
+    },
+
+    {
+      "script": {
+        "lang": "painless",
+        "params": { "age_penalty_days": 30, "score_weights": { "young_domain": 15 } },
+        "source": """
+          int score = ctx.containsKey('suspicion_score') ? (int)ctx.suspicion_score : 0;
+          def reasons = ctx.containsKey('explanations') ? ctx.explanations : new ArrayList();
+
+          String dom = ctx.containsKey('from_domain') ? ctx.from_domain : null;
+          if (dom == null) {
+            if (ctx.containsKey('from') && ctx.from != null && ctx.from.contains('@')) {
+              dom = ctx.from.substring(ctx.from.indexOf('@')+1).toLowerCase();
+              ctx.from_domain = dom;
+            }
+          }
+          if (dom == null) { ctx.suspicion_score = score; return; }
+
+          // Note: Inline GET requires script.painless.regex.enabled and may not work in all ES versions
+          // This is a placeholder - if it fails, switch to Enrich Processor
+          // For now, skip the lookup to avoid errors
+          // TODO: Implement with Enrich Processor or external enrichment job
+
+          ctx.suspicion_score = score;
+          if (score >= (ctx.containsKey('score_threshold') ? (int)ctx.score_threshold : 40)) ctx.suspicious = true;
+          ctx.explanations = reasons;
+        """
+      }
+    }
   ],
   "on_failure": [
     { "set": { "field": "_ingest_error", "value": "{{_ingest.on_failure_message}}" } }
