@@ -1,8 +1,10 @@
 # Email Risk v3.1 - Quick Smoke Test
 # Creates a test risky email and fetches risk advice
+# CI/CD: Exits with non-zero code on any check failure
 
 $ES_URL = if ($env:ES_URL) { $env:ES_URL } else { "http://localhost:9200" }
 $API_URL = if ($env:API_URL) { $env:API_URL } else { "http://localhost:8003" }
+$failCount = 0
 
 Write-Host "`n=== Email Risk v3.1 Smoke Test ===" -ForegroundColor Cyan
 
@@ -55,7 +57,7 @@ if ($indexResult.result -eq "created" -or $indexResult.result -eq "updated") {
 } else {
     Write-Host "  ✗ Failed to index document" -ForegroundColor Red
     Write-Host $indexResult
-    exit 1
+    $failCount++
 }
 
 Start-Sleep -Seconds 1
@@ -63,52 +65,87 @@ Start-Sleep -Seconds 1
 Write-Host "`n2. Fetching risk advice from API..." -ForegroundColor Yellow
 
 # Test direct index parameter
-$advice1 = Invoke-RestMethod -Uri "$API_URL/emails/smoke-v31-adv/risk-advice?index=gmail_emails-999999"
+try {
+    $advice1 = Invoke-RestMethod -Uri "$API_URL/emails/smoke-v31-adv/risk-advice?index=gmail_emails-999999"
 
-Write-Host "  ✓ Direct index query:" -ForegroundColor Green
-Write-Host "    Score: $($advice1.suspicion_score)" -ForegroundColor White
-Write-Host "    Suspicious: $($advice1.suspicious)" -ForegroundColor White
-Write-Host "    Signals detected: $($advice1.explanations.Count)" -ForegroundColor White
+    Write-Host "  ✓ Direct index query:" -ForegroundColor Green
+    Write-Host "    Score: $($advice1.suspicion_score)" -ForegroundColor White
+    Write-Host "    Suspicious: $($advice1.suspicious)" -ForegroundColor White
+    Write-Host "    Signals detected: $($advice1.explanations.Count)" -ForegroundColor White
 
-if ($advice1.explanations.Count -gt 0) {
-    Write-Host "`n  Explanations:" -ForegroundColor Cyan
-    $advice1.explanations | ForEach-Object {
-        Write-Host "    - $_" -ForegroundColor Gray
+    if ($advice1.explanations.Count -gt 0) {
+        Write-Host "`n  Explanations:" -ForegroundColor Cyan
+        $advice1.explanations | ForEach-Object {
+            Write-Host "    - $_" -ForegroundColor Gray
+        }
     }
+} catch {
+    Write-Host "  ✗ Failed to fetch risk advice" -ForegroundColor Red
+    Write-Host "    Error: $_" -ForegroundColor Red
+    $failCount++
+    $advice1 = $null
 }
 
 Write-Host "`n3. Testing fallback search (without index param)..." -ForegroundColor Yellow
 
 # Test fallback to wildcard search
-$advice2 = Invoke-RestMethod -Uri "$API_URL/emails/smoke-v31-adv/risk-advice"
+if ($advice1) {
+    try {
+        $advice2 = Invoke-RestMethod -Uri "$API_URL/emails/smoke-v31-adv/risk-advice"
 
-if ($advice2.suspicion_score -eq $advice1.suspicion_score) {
-    Write-Host "  ✓ Fallback search working correctly" -ForegroundColor Green
+        if ($advice2.suspicion_score -eq $advice1.suspicion_score) {
+            Write-Host "  ✓ Fallback search working correctly" -ForegroundColor Green
+        } else {
+            Write-Host "  ⚠ Fallback returned different result (expected: $($advice1.suspicion_score), got: $($advice2.suspicion_score))" -ForegroundColor Yellow
+            $failCount++
+        }
+    } catch {
+        Write-Host "  ✗ Fallback search failed" -ForegroundColor Red
+        Write-Host "    Error: $_" -ForegroundColor Red
+        $failCount++
+    }
 } else {
-    Write-Host "  ⚠ Fallback returned different result" -ForegroundColor Yellow
+    Write-Host "  ⏭ Skipping fallback test (Step 2 failed)" -ForegroundColor Gray
 }
 
 Write-Host "`n4. Checking Prometheus metrics..." -ForegroundColor Yellow
 
-$metrics = Invoke-RestMethod -Uri "$API_URL/metrics"
-$served = ($metrics -split "`n" | Select-String "applylens_email_risk_served_total\{level=`"suspicious`"\}").ToString()
+try {
+    $metrics = Invoke-RestMethod -Uri "$API_URL/metrics"
+    $served = ($metrics -split "`n" | Select-String "applylens_email_risk_served_total\{level=`"suspicious`"\}").ToString()
 
-if ($served) {
-    $count = ($served -split " ")[1]
-    Write-Host "  ✓ Metric: $served" -ForegroundColor Green
-} else {
-    Write-Host "  ⚠ Metric not found yet (may need more requests)" -ForegroundColor Yellow
+    if ($served) {
+        Write-Host "  ✓ Metric: $served" -ForegroundColor Green
+    } else {
+        Write-Host "  ⚠ Metric not found yet (may need more requests)" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "  ✗ Failed to fetch Prometheus metrics" -ForegroundColor Red
+    Write-Host "    Error: $_" -ForegroundColor Red
+    $failCount++
 }
 
 Write-Host "`n=== Smoke Test Complete ===" -ForegroundColor Green
 Write-Host "`nTest document: smoke-v31-adv"
 Write-Host "Expected score: 66+ (SPF+DKIM+DMARC+ReplyTo+Shortener+Attachment)"
-Write-Host "Actual score: $($advice1.suspicion_score)`n"
 
-if ($advice1.suspicion_score -ge 40) {
-    Write-Host "✅ PASS - Email correctly flagged as suspicious" -ForegroundColor Green
-    exit 0
+if ($advice1) {
+    Write-Host "Actual score: $($advice1.suspicion_score)"
+    Write-Host "Failures detected: $failCount`n"
+
+    if ($advice1.suspicion_score -ge 40 -and $failCount -eq 0) {
+        Write-Host "✅ PASS - All checks passed" -ForegroundColor Green
+        exit 0
+    } elseif ($advice1.suspicion_score -lt 40) {
+        Write-Host "❌ FAIL - Email should be flagged as suspicious (score >= 40)" -ForegroundColor Red
+        exit 1
+    } else {
+        Write-Host "❌ FAIL - $failCount check(s) failed" -ForegroundColor Red
+        exit 1
+    }
 } else {
-    Write-Host "❌ FAIL - Email should be flagged as suspicious (score >= 40)" -ForegroundColor Red
+    Write-Host "Actual score: N/A (Step 2 failed)"
+    Write-Host "Failures detected: $failCount`n"
+    Write-Host "❌ FAIL - Critical error fetching risk advice" -ForegroundColor Red
     exit 1
 }
