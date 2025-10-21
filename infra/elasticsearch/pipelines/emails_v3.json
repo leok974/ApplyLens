@@ -1,0 +1,136 @@
+{
+  "description": "ApplyLens emails normalization v3 (phishing/risk flags + agentic suggestions)",
+  "processors": [
+    { "pipeline": { "name": "applylens_emails_v2", "ignore_failure": true }},
+
+    { "script": {
+      "lang": "painless",
+      "params": {
+        "trusted_domains": ["prometric.com","finetunelearning.com"],
+        "risky_phrases": [
+          "mini home office", "equipment will be provided", "send your details",
+          "reply with your name phone location", "screening test will be emailed",
+          "executive team will assign", "work from anywhere", "flexible hours",
+          "gift card", "crypto", "zelle", "wire", "cash app"
+        ],
+        "request_pii": ["ssn","social security","bank","routing","driver's license","id front back","passport","tax","w4"],
+        "score_weights": {
+          "domain_mismatch": 25,
+          "non_canonical_domain": 25,
+          "risky_phrase": 10,
+          "request_pii": 20,
+          "vague_role": 10,
+          "no_calendar_invite": 5,
+          "no_career_link": 10
+        },
+        "score_threshold": 40
+      },
+      "source": """
+        def reasons = new ArrayList();
+        def actions = new ArrayList();
+        def checks  = new ArrayList();
+        int score = 0;
+
+        String subj = (ctx.containsKey('subject') && ctx.subject!=null) ? ctx.subject.toLowerCase() : '';
+        String body = (ctx.containsKey('body_text') && ctx.body_text!=null) ? ctx.body_text.toLowerCase()
+                    : (ctx.containsKey('body_html') && ctx.body_html!=null ? ctx.body_html.toLowerCase() : '');
+        String from = (ctx.containsKey('from') && ctx.from!=null) ? ctx.from.toLowerCase() : '';
+
+        // Extract domain from "from"
+        String dom = '';
+        if (from.contains('@')) {
+          try {
+            dom = from.substring(from.indexOf('@')+1);
+            if (dom.contains('>')) dom = dom.substring(0, dom.indexOf('>'));
+            dom = dom.trim();
+          } catch (Exception e) {}
+        }
+
+        // Domain mismatch vs brand mentions in body/subject
+        def mentions_prometric = subj.contains('prometric') || body.contains('prometric');
+        def mentions_finetune = subj.contains('finetune') || body.contains('finetune');
+        def brand_mentioned = mentions_prometric || mentions_finetune;
+
+        def trusted = false;
+        for (d in params.trusted_domains) { if (dom.endsWith(d)) { trusted = true; break; } }
+
+        if (brand_mentioned && dom.length()>0 && !trusted) {
+          score += params.score_weights.get('domain_mismatch');
+          reasons.add('Sender domain does not match claimed brand: ' + dom);
+          checks.add('Verify sender domain matches official site (e.g., prometric.com).');
+        }
+
+        if (dom.length()>0 && !trusted && brand_mentioned) {
+          score += params.score_weights.get('non_canonical_domain');
+          reasons.add('Non-canonical domain for brand claims: ' + dom);
+          checks.add('Request a calendar invite from an official corporate domain.');
+        }
+
+        // Risky phrases
+        int risky_hits = 0;
+        for (rp in params.risky_phrases) {
+          if (body.contains(rp)) { risky_hits++; }
+        }
+        if (risky_hits>0) {
+          score += Math.min(3, risky_hits) * params.score_weights.get('risky_phrase');
+          reasons.add('Contains common scam language (' + risky_hits + ' hits).');
+          actions.add('Do not purchase or accept "equipment" arrangements or send money.');
+        }
+
+        // PII request
+        for (kw in params.request_pii) {
+          if (body.contains(kw)) {
+            score += params.score_weights.get('request_pii');
+            reasons.add('Requests sensitive personal or financial information.');
+            actions.add('Do not share PII (SSN, banking, IDs) via email.');
+            break;
+          }
+        }
+
+        // Vague role / missing details
+        def vague = 0;
+        if (!body.contains('salary') && !body.contains('pay') && !body.contains('comp')) vague++;
+        if (!body.contains('manager') && !body.contains('team')) vague++;
+        if (!body.contains('tech stack') && !body.contains('python') && !body.contains('typescript') && !body.contains('c#') && !body.contains('java')) vague++;
+        if (vague>=2) {
+          score += params.score_weights.get('vague_role');
+          reasons.add('Vague role details (team/tech/comp not specified).');
+        }
+
+        // No calendar / no careers link hints
+        if (!body.contains('http') && !subj.contains('calendar') && !body.contains('calendar')) {
+          score += params.score_weights.get('no_calendar_invite');
+          reasons.add('No calendar invite or scheduling link provided.');
+          checks.add('Ask for an official calendar invite with meeting link.');
+        }
+        if (!body.contains('/careers') && !body.contains('careers.')) {
+          score += params.score_weights.get('no_career_link');
+          reasons.add('No official careers/job posting link provided.');
+          checks.add('Request the public job posting on the official careers site.');
+        }
+
+        // Aggregate → threshold
+        boolean suspicious = score >= params.score_threshold;
+        ctx.suspicion_score = score;
+        ctx.suspicious = suspicious;
+
+        // Explanations + Agent prompts
+        ctx.explanations = reasons;
+        if (actions.size()==0) { actions.add('Wait to share any personal details until verified.'); }
+        ctx.suggested_actions = actions;
+
+        if (checks.size()==0) {
+          checks.add('Verify domain ownership and senders on company website.');
+          checks.add('Ask for a calendar invite from an official domain.');
+        }
+        ctx.verify_checks = checks;
+
+        // Convenience KQL label
+        if (suspicious) { ctx.labels_norm = (ctx.labels_norm instanceof List ? ctx.labels_norm : new ArrayList()); ctx.labels_norm.add('suspicious'); }
+      """
+    }}
+  ],
+  "on_failure": [
+    { "set": { "field": "_ingest_error", "value": "{{_ingest.on_failure_message}}" } }
+  ]
+}

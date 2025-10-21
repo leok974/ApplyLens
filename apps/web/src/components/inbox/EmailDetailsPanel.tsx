@@ -10,6 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SecurityPanel } from "@/components/security/SecurityPanel";
 import { RiskFlag } from "@/types/security";
+import {
+  EmailRiskBanner,
+  fetchEmailRiskAdvice,
+  type EmailRiskAdvice,
+  generateVerificationEmailDraft
+} from "@/components/email/EmailRiskBanner";
 
 export type EmailDetails = {
   id: string;
@@ -75,6 +81,56 @@ export function EmailDetailsPanel({
   onMarkSus?: () => void;
   onExplain?: () => void;
 }) {
+  // Risk advice state
+  const [riskAdvice, setRiskAdvice] = React.useState<EmailRiskAdvice | null>(null);
+  const [loadingRisk, setLoadingRisk] = React.useState(false);
+
+  // Fetch risk advice when email changes
+  React.useEffect(() => {
+    if (!email?.id) {
+      setRiskAdvice(null);
+      return;
+    }
+
+    setLoadingRisk(true);
+    fetchEmailRiskAdvice(email.id)
+      .then((advice) => setRiskAdvice(advice))
+      .catch((err) => console.error("Failed to load risk advice:", err))
+      .finally(() => setLoadingRisk(false));
+  }, [email?.id]);
+
+  // Handler for "Mark as Scam" button
+  const handleMarkScam = React.useCallback(() => {
+    if (!email) return;
+    // Call parent handler if provided
+    onMarkSus?.();
+    // TODO: Also add "scam" or "suspicious" label via API
+    console.log(`Marking email ${email.id} as scam`);
+  }, [email, onMarkSus]);
+
+  // Handler for "Request Official Invite" button
+  const handleRequestOfficial = React.useCallback(() => {
+    if (!email) return;
+
+    // Extract recruiter name from "from" field
+    const fromMatch = email.from.match(/^([^<]+)/);
+    const recruiterName = fromMatch ? fromMatch[1].trim() : "Recruiter";
+
+    // Generate draft email
+    const draft = generateVerificationEmailDraft(recruiterName, "[Your Name]");
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(draft).then(() => {
+      alert("Verification email template copied to clipboard! Open your email client to send.");
+    }).catch((err) => {
+      console.error("Failed to copy to clipboard:", err);
+      // Fallback: open mailto link
+      const subject = encodeURIComponent("Verification before scheduling");
+      const body = encodeURIComponent(draft.split('\n\n').slice(1).join('\n\n'));
+      window.open(`mailto:${email.from}?subject=${subject}&body=${body}`);
+    });
+  }, [email]);
+
   // width state + persistence
   const [width, setWidth] = React.useState<number>(() => {
     const saved = Number(localStorage.getItem(LS_KEY));
@@ -164,10 +220,10 @@ export function EmailDetailsPanel({
 
       {/* Header */}
       <div className="flex h-14 items-center gap-2 border-b border-[color:hsl(var(--color-border))] px-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onClose} 
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
           aria-label="Close"
           className={mode === "split" ? "md:hidden" : ""}
         >
@@ -244,6 +300,19 @@ export function EmailDetailsPanel({
             </div>
 
             <Separator />
+
+            {/* Risk banner (v3 phishing detection) */}
+            {!loadingRisk && riskAdvice && (
+              <>
+                <EmailRiskBanner
+                  emailId={email.id}
+                  riskAdvice={riskAdvice}
+                  onMarkScam={handleMarkScam}
+                  onRequestOfficial={handleRequestOfficial}
+                />
+                <Separator />
+              </>
+            )}
 
             {/* Security panel */}
             {email.risk_score !== undefined && (
