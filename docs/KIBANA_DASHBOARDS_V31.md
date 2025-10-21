@@ -1,12 +1,12 @@
-# Kibana Dashboards v3.1 — Email Risk Detection
+# ApplyLens Kibana Pack — v3.1 (Saved Searches + Dashboard Shell)
 
 ## Overview
 
-Fast verification of v3.1 multi-signal phishing detection using **reliable, version-agnostic saved searches** and a lightweight dashboard skeleton. This approach avoids brittle Lens JSON exports; charts can be added in-app with a few clicks using the included KQL queries.
+Fast verification of v3.1 multi-signal phishing detection using **reliable, version-agnostic saved searches** and a lightweight dashboard shell. Avoids brittle Lens JSON; add charts in-app with a few clicks.
 
 **What's included**:
 - 📊 Data view for `gmail_emails-*` rollover pattern
-- 🔍 6 saved searches covering key v3.1 signals
+- 🔍 **7 saved searches** covering key v3.1 signals
 - 📈 Empty dashboard shell (add panels interactively)
 - 🎯 KQL query library for common filters
 - 🛠️ Lens chart recipes (build in 60 seconds)
@@ -42,8 +42,7 @@ Fast verification of v3.1 multi-signal phishing detection using **reliable, vers
 
 | File | Purpose | Objects |
 |------|---------|---------|
-| `dv_emails_aliased.ndjson` | Data view for `gmail_emails-*` | 1 index-pattern |
-| `saved_searches_v31.ndjson` | 6 saved searches + data view | 1 index-pattern + 6 searches |
+| `saved_searches_v31.ndjson` | 7 saved searches + data view | 1 index-pattern + 7 searches |
 | `dashboard_shell_v31.ndjson` | Empty dashboard shell | 1 dashboard |
 
 ## 1. Data View (Discover Source)
@@ -64,7 +63,7 @@ Covers all email indices: `gmail_emails-000001`, `gmail_emails-000002`, `gmail_e
 
 **File**: `infra/kibana/saved_searches_v31.ndjson`
 
-Contains **6 saved searches** targeting v3.1 signals:
+Contains **7 saved searches** targeting v3.1 signals:
 
 ### Search 1: High Risk (score ≥ 40)
 - **ID**: `al-highrisk-40`
@@ -108,6 +107,13 @@ Contains **6 saved searches** targeting v3.1 signals:
 - **Columns**: `received_at`, `from`, `subject`, `attachments.filename`, `suspicion_score`
 - **Use case**: Executable/macro file monitoring
 
+### Search 7: URL Shorteners / Anchor Mismatch
+- **ID**: `al-shorteners-anchor-mismatch`
+- **Title**: "AL — URL shorteners / anchor mismatch"
+- **Query**: `body_text : ("bit.ly" or "lnkd.in" or "tinyurl") or explanations : "Anchor text and href domain differ"`
+- **Columns**: `received_at`, `from`, `subject`, `suspicion_score`
+- **Use case**: Detect link cloaking and short link abuse
+
 **Why KQL-based searches?**
 - ✅ Version-agnostic (safe across Kibana minor versions)
 - ✅ Human-readable and auditable
@@ -150,7 +156,6 @@ function Import-NDJSON($path) {
     -Method POST -Headers @{ "kbn-xsrf"="true"; "Authorization"="Basic $enc"; "Content-Type"="multipart/form-data; boundary=$boundary" } -Body $body
 }
 
-Import-NDJSON "infra/kibana/dv_emails_aliased.ndjson"
 Import-NDJSON "infra/kibana/saved_searches_v31.ndjson"
 Import-NDJSON "infra/kibana/dashboard_shell_v31.ndjson"
 ```
@@ -162,11 +167,11 @@ KBN="http://localhost:5601/kibana"
 AUTH="elastic:elasticpass"
 
 curl -s -u "$AUTH" -H "kbn-xsrf: true" \
-  -F "file=@infra/kibana/dv_emails_aliased.ndjson;type=application/ndjson" \
+  -F "file=@infra/kibana/saved_searches_v31.ndjson;type=application/ndjson" \
   "$KBN/api/saved_objects/_import?createNewCopies=false" | jq
 
 curl -s -u "$AUTH" -H "kbn-xsrf: true" \
-  -F "file=@infra/kibana/saved_searches_v31.ndjson;type=application/ndjson" \
+  -F "file=@infra/kibana/dashboard_shell_v31.ndjson;type=application/ndjson" \
   "$KBN/api/saved_objects/_import?createNewCopies=false" | jq
 
 curl -s -u "$AUTH" -H "kbn-xsrf: true" \
@@ -431,6 +436,10 @@ Navigate to **Analytics** → **Discover** → **Open** → **Saved searches**
 - **Expected**: 1 email visible
   * tc5-risky-attachments (invoice.docm, archive.zip)
 
+#### AL — URL shorteners / anchor mismatch
+- **Expected**: 1 email visible
+  * tc4-shortener-anchor-mismatch (bit.ly, lnkd.in links)
+
 ### Step 4: Build Lens Charts (60 seconds total)
 
 Follow instructions in **section 5** to create:
@@ -645,11 +654,10 @@ curl -X DELETE -u elastic:elasticpass \
 
 | File | Objects | Size | Purpose |
 |------|---------|------|---------|
-| `dv_emails_aliased.ndjson` | 1 index-pattern | 1 line | Data view for gmail_emails-* |
-| `saved_searches_v31.ndjson` | 1 index-pattern + 6 searches | 7 lines | v3.1 signal searches |
+| `saved_searches_v31.ndjson` | 1 index-pattern + 7 searches | 8 lines | v3.1 signal searches |
 | `dashboard_shell_v31.ndjson` | 1 dashboard | 1 line | Empty dashboard shell |
 
-**Total**: 9 Kibana objects (1 data view + 6 saved searches + 1 dashboard + 1 duplicate data view reference)
+**Total**: 9 Kibana objects (1 data view + 7 saved searches + 1 dashboard)
 
 ---
 
