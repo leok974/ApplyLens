@@ -1,4 +1,15 @@
 repos:
+  # Secret scanning with gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: Detect secrets with gitleaks
+        description: Scan for hardcoded secrets, API keys, and credentials
+        entry: gitleaks detect --source . --no-git -v
+        language: system
+        pass_filenames: false
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4
     hooks:

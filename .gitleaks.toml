@@ -1,0 +1,117 @@
+# Gitleaks Configuration for ApplyLens
+# https://github.com/gitleaks/gitleaks
+
+title = "ApplyLens Secret Scanning"
+
+[extend]
+# Use default gitleaks rules
+useDefault = true
+
+[allowlist]
+description = "Allowlist for false positives and known safe patterns"
+
+# Allow example/placeholder values
+regexes = [
+    '''YOUR_[A-Z_]+_HERE''',
+    '''REDACTED''',
+    '''example\.com''',
+    '''demo@applylens\.app''',
+    '''localhost''',
+    '''127\.0\.0\.1''',
+    '''placeholder''',
+    '''xxxxxx''',
+]
+
+# Ignore test files and examples
+paths = [
+    '''\.env\.example$''',
+    '''\.env\.template$''',
+    '''/test[s]?/''',
+    '''/fixtures/''',
+    '''/mock[s]?/''',
+    '''^docs/.*\.example\.''',
+]
+
+# Ignore specific commits (if needed for historical data)
+commits = [
+    # Add commit SHAs here if needed for exceptions
+]
+
+# Stopwords - patterns that should never trigger
+stopwords = [
+    '''demo''',
+    '''test''',
+    '''example''',
+    '''sample''',
+    '''placeholder''',
+]
+
+[[rules]]
+id = "grafana-api-key"
+description = "Grafana API Key (JWT format)"
+regex = '''eyJr[A-Za-z0-9_-]{32,}'''
+tags = ["key", "grafana"]
+severity = "high"
+
+[[rules]]
+id = "github-pat"
+description = "GitHub Personal Access Token"
+regex = '''ghp_[A-Za-z0-9]{36}'''
+tags = ["key", "github"]
+severity = "high"
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''AKIA[A-Z0-9]{16}'''
+tags = ["key", "aws"]
+severity = "critical"
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API Key"
+regex = '''sk-[A-Za-z0-9]{32,}'''
+tags = ["key", "openai"]
+severity = "high"
+
+[[rules]]
+id = "bearer-token"
+description = "Bearer Token in Authorization header"
+regex = '''Bearer [A-Za-z0-9_-]{20,}'''
+tags = ["token", "authorization"]
+severity = "high"
+
+[[rules]]
+id = "basic-auth"
+description = "Basic Auth credentials"
+regex = '''://[^:]+:[^@]+@'''
+tags = ["password", "authorization"]
+severity = "high"
+
+[[rules]]
+id = "database-connection-string"
+description = "Database connection string with password"
+regex = '''(postgresql|mysql|mongodb)://[^:]+:[^@]+@'''
+tags = ["password", "database"]
+severity = "critical"
+
+[[rules]]
+id = "private-key"
+description = "Private key in PEM format"
+regex = '''-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----'''
+tags = ["key", "private"]
+severity = "critical"
+
+[[rules]]
+id = "slack-webhook"
+description = "Slack Webhook URL"
+regex = '''https://hooks\.slack\.com/services/[A-Z0-9]{9,}/[A-Z0-9]{9,}/[A-Za-z0-9]{24}'''
+tags = ["webhook", "slack"]
+severity = "medium"
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+'''
+tags = ["token", "jwt"]
+severity = "medium"

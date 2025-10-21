@@ -1169,6 +1169,64 @@ OTEL_ENABLED=1
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 
 # Instruments: FastAPI, SQLAlchemy, HTTP clients
+```
+
+---
+
+## 🔒 Secrets Hygiene
+
+ApplyLens enforces strict secrets management to prevent credential leaks.
+
+### Pre-commit Scanning
+
+Install pre-commit hooks to scan for secrets before committing:
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install hooks (runs automatically on git commit)
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+
+# Run gitleaks directly
+gitleaks detect --source . --no-git -v
+```
+
+### CI/CD Protection
+
+- **GitHub Secret Scanning**: Automatically detects secrets in commits
+- **Gitleaks CI**: Runs on every PR and push (`.github/workflows/secret-scan.yml`)
+- **SARIF Upload**: Results appear in Security > Code scanning tab
+
+### Best Practices
+
+✅ **DO:**
+- Use environment variables for credentials
+- Commit `.env.example` with placeholder values
+- Redact secrets in documentation: `[REDACTED]` or `YOUR_KEY_HERE`
+- Review `git diff --cached` before committing
+- Blur API keys/tokens in screenshots
+
+❌ **DON'T:**
+- Commit API keys, tokens, or passwords
+- Include real credentials in code examples
+- Push `.env` files with real values
+- Share screenshots with visible secrets
+
+### If You Commit a Secret
+
+1. **Revoke immediately** - Generate new credential
+2. **Remove from history** - Use `git commit --amend` or BFG Repo-Cleaner
+3. **Report** - Create security incident report
+
+**Full Policy:** [docs/SECRETS_POLICY.md](docs/SECRETS_POLICY.md)
+
+---
+
+**Documentation:**
 ```text
 
 **Documentation:**
