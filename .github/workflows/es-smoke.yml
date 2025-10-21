@@ -1,0 +1,12 @@
+name: ES Email Pipeline Smoke
+on:
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x scripts/ci-smoke-es-email-v2.sh
+      - env:
+          ES_URL: ${{ secrets.ES_URL }}
+        run: ./scripts/ci-smoke-es-email-v2.sh

@@ -1,14 +1,12 @@
 repos:
-  # Secret scanning with gitleaks (Docker-based for Windows)
   - repo: local
     hooks:
-      - id: gitleaks
-        name: Detect secrets with gitleaks
-        description: Scan for hardcoded secrets, API keys, and credentials
-        entry: pwsh -File gitleaks.ps1 detect --source . --no-git -v
+      - id: gitleaks-docker
+        name: gitleaks (docker)
+        entry: pwsh ./gitleaks.ps1
         language: system
         pass_filenames: false
-        always_run: true
+        args: ["--no-git", "--config=.gitleaks.toml"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4

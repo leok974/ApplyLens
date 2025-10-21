@@ -1,0 +1,17 @@
+name: ES Template Check
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+jobs:
+  check-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - env:
+          ES_URL: ${{ secrets.ES_URL }}
+        run: python scripts/test_es_template.py

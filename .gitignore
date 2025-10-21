@@ -148,3 +148,16 @@ analytics/dbt/catalog.json
 .cache/
 downloads/
 attachments/
+
+# ===================================
+# Secrets - Additional Hardening
+# ===================================
+.env
+.env.*
+infra/.env
+secrets/**
+**/credentials.json
+**/*-credentials.json
+**/service_account*.json
+*.key
+*.pem
