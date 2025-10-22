@@ -1,87 +1,109 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface LoginGuardProps {
   children: React.ReactNode;
 }
 
+type Me = { id: string; email: string } | null;
+
 /**
- * LoginGuard checks authentication status without reloading the page on errors.
+ * Fetch user from /api/auth/me with proper error handling.
  *
- * Previously, any network error (including 502s from backend unavailability) would
- * redirect to /welcome, causing an infinite reload loop. Now, we:
- * 1. Treat 5xx as "degraded" state (show loading/retry, don't redirect)
- * 2. Only redirect to /welcome on 401 (unauthenticated) or empty email
- * 3. Never call window.location.href on network errors
+ * - 401 → null (stable unauthenticated state, show login CTA)
+ * - 5xx/network → "degraded" (retry with backoff)
+ * - 200 → user object
+ */
+async function getMe(signal?: AbortSignal): Promise<Me | "degraded"> {
+  try {
+    const r = await fetch("/api/auth/me", {
+      credentials: "include",
+      signal,
+      headers: { "Accept": "application/json" },
+    });
+
+    // 401 is a STABLE unauthenticated state - don't retry!
+    if (r.status === 401) {
+      console.info("[LoginGuard] User not authenticated (401)");
+      return null;
+    }
+
+    // Any other non-OK status is degraded (network/backend issue)
+    if (!r.ok) {
+      console.warn(`[LoginGuard] Backend error ${r.status}, treating as degraded`);
+      throw new Error(`HTTP ${r.status}`);
+    }
+
+    const data = await r.json();
+    return data;
+  } catch (err) {
+    // Network error, timeout, or 5xx → degraded state
+    if (err instanceof Error && err.name !== "AbortError") {
+      console.warn(`[LoginGuard] Network/server error: ${err.message}`);
+    }
+    return "degraded";
+  }
+}
+
+/**
+ * LoginGuard - Auth check WITHOUT loops.
+ *
+ * KEY FIXES:
+ * 1. 401 → Show login CTA (NO redirect, NO retry)
+ * 2. 5xx/network → Show degraded UI + exponential backoff retry
+ * 3. Effect runs ONCE (proper cleanup with AbortController)
+ * 4. No window.location.href calls (breaks SPA navigation)
  */
 export default function LoginGuard({ children }: LoginGuardProps) {
-  const [authState, setAuthState] = useState<"checking" | "authenticated" | "degraded">("checking");
+  const [authState, setAuthState] = useState<"checking" | "authenticated" | "unauthenticated" | "degraded">("checking");
+  const stopRef = useRef(false);
+  const ctrlRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    let retryTimeout: NodeJS.Timeout | null = null;
+    stopRef.current = false;
+    let attempt = 0;
 
-    const checkAuth = async (attempt = 0) => {
-      try {
-        const r = await fetch("/api/auth/me", { credentials: "include" });
+    const tick = async () => {
+      if (stopRef.current) return;
 
-        if (!mounted) return;
+      // Abort any previous in-flight request
+      ctrlRef.current?.abort();
+      const ctrl = new AbortController();
+      ctrlRef.current = ctrl;
 
-        // 5xx: backend degraded, retry with backoff (don't redirect)
-        if (r.status >= 500 && r.status < 600) {
-          console.warn(`[LoginGuard] Backend unavailable (${r.status}), retrying...`);
-          setAuthState("degraded");
+      const me = await getMe(ctrl.signal);
 
-          // Exponential backoff: 2s, 4s, 8s, 16s, max 30s
-          const delay = Math.min(30000, 2000 * Math.pow(2, attempt));
-          retryTimeout = setTimeout(() => checkAuth(attempt + 1), delay);
-          return;
-        }
+      if (stopRef.current) return; // Check again after async
 
-        // 401/403: not authenticated, redirect to welcome
-        if (r.status === 401 || r.status === 403) {
-          window.location.href = "/welcome";
-          return;
-        }
-
-        // 4xx other than 401/403: treat as degraded
-        if (r.status >= 400 && r.status < 500) {
-          console.warn(`[LoginGuard] Unexpected status ${r.status}, treating as degraded`);
-          setAuthState("degraded");
-          const delay = Math.min(30000, 2000 * Math.pow(2, attempt));
-          retryTimeout = setTimeout(() => checkAuth(attempt + 1), delay);
-          return;
-        }
-
-        const me = await r.json();
-
-        // No email: not authenticated, redirect
-        if (!me?.email) {
-          window.location.href = "/welcome";
-          return;
-        }
-
-        // Success: authenticated
-        setAuthState("authenticated");
-
-      } catch (err) {
-        // Network error (DNS, timeout, etc.): retry with backoff
-        if (!mounted) return;
-
-        console.warn(`[LoginGuard] Network error: ${err}, retrying...`);
+      if (me === "degraded") {
         setAuthState("degraded");
-
-        const delay = Math.min(30000, 2000 * Math.pow(2, attempt));
-        retryTimeout = setTimeout(() => checkAuth(attempt + 1), delay);
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, max 60s
+        const delay = Math.min(60000, 1000 * Math.pow(2, attempt++));
+        console.info(`[LoginGuard] Retrying in ${delay}ms (attempt ${attempt})`);
+        setTimeout(tick, delay);
+        return;
       }
+
+      // Reset attempt counter on successful response
+      attempt = 0;
+
+      if (me === null) {
+        // User not authenticated - show login CTA (NO LOOP!)
+        setAuthState("unauthenticated");
+        return;
+      }
+
+      // User is authenticated
+      setAuthState("authenticated");
     };
 
-    checkAuth();
+    tick();
 
+    // Cleanup: stop polling and abort in-flight request
     return () => {
-      mounted = false;
-      if (retryTimeout) clearTimeout(retryTimeout);
+      stopRef.current = true;
+      ctrlRef.current?.abort();
     };
-  }, []);
+  }, []); // Empty deps - runs ONCE on mount
 
   // Show loading or degraded UI while checking auth
   if (authState === "checking") {
@@ -107,6 +129,26 @@ export default function LoginGuard({ children }: LoginGuardProps) {
           <p className="text-sm text-muted-foreground">
             This usually resolves within a few seconds during deployments.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthenticated - show login CTA (NO redirect loop!)
+  if (authState === "unauthenticated") {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md mx-auto p-6">
+          <h2 className="text-2xl font-bold mb-4">Sign In Required</h2>
+          <p className="text-muted-foreground mb-6">
+            Please sign in to access this page.
+          </p>
+          <a
+            href="/welcome"
+            className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Go to Sign In
+          </a>
         </div>
       </div>
     );
