@@ -8,4 +8,5 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use environment variable for port, default to 8000
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${API_PORT:-8000}

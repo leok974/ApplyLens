@@ -21,6 +21,8 @@ function buildIdPlugin(): Plugin {
 }
 
 export default defineConfig({
+  // Copilot: Ensure the SPA base is '/web/' so public assets emit under /web
+  // and links like '/web/favicon.ico' resolve correctly in prod builds.
   base: BASE_PATH,
   plugins: [react(), buildIdPlugin()],
   resolve: {
