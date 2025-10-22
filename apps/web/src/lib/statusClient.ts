@@ -17,24 +17,36 @@ export interface Status {
 }
 
 /**
- * Fetch status from /api/ready endpoint with 5xx handling.
+ * Fetch status from /api/status endpoint with 5xx handling.
  *
  * Returns degraded state on network errors or 5xx responses instead of throwing.
  * This allows the UI to show a "Paused" banner instead of crashing/reloading.
  */
 export async function fetchStatus(signal?: AbortSignal): Promise<Status> {
   try {
-    const r = await fetch("/ready", { signal });
+    const r = await fetch("/api/status", { signal });
 
     // On 5xx or network error, treat as degraded (not fatal)
     if (!r.ok) {
       if (r.status >= 500 && r.status < 600) {
         console.warn(`[StatusClient] Backend returned ${r.status} - treating as degraded`);
-        return {
-          ok: false,
-          gmail: "degraded",
-          message: `Backend unavailable (HTTP ${r.status})`
-        };
+
+        // Try to parse JSON response (nginx @api_unavailable handler returns JSON)
+        try {
+          const data = await r.json();
+          return {
+            ok: false,
+            gmail: "degraded",
+            message: data.message || `Backend unavailable (HTTP ${r.status})`
+          };
+        } catch {
+          // If JSON parsing fails, return generic message
+          return {
+            ok: false,
+            gmail: "degraded",
+            message: `Backend unavailable (HTTP ${r.status})`
+          };
+        }
       }
 
       // 4xx errors (e.g., 401, 403) might still be auth issues
@@ -48,9 +60,9 @@ export async function fetchStatus(signal?: AbortSignal): Promise<Status> {
 
     const data = await r.json();
 
-    // Map /ready response to our Status interface
-    // Example: { status: "ready", db: "ok", es: "ok" }
-    if (data.status === "ready" || data.db === "ok") {
+    // Map /status or /ready response to our Status interface
+    // Example: { ok: true, gmail: "ok" } or { status: "ready", db: "ok", es: "ok" }
+    if (data.ok === true || data.status === "ready" || data.db === "ok") {
       return { ok: true, gmail: "ok" };
     }
 
@@ -70,7 +82,7 @@ export async function fetchStatus(signal?: AbortSignal): Promise<Status> {
 }
 
 /**
- * Start polling /api/ready with exponential backoff on errors.
+ * Start polling /api/status with exponential backoff on errors.
  *
  * - Healthy (ok=true, gmail="ok"): poll every 2s
  * - Degraded (ok=false or gmail="degraded"): backoff 2s → 4s → 8s → 16s → 32s → 60s max
