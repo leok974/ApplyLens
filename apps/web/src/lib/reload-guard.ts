@@ -50,35 +50,13 @@ export function resetReloadGuard(): void {
 /**
  * Install global reload guard
  *
- * Patches window.location.reload to prevent rapid consecutive reloads.
- * Call this early in your app initialization.
+ * NOTE: Modern browsers prevent overriding window.location.reload due to security.
+ * This function now serves as a no-op placeholder. Use safeReload() instead.
  *
- * Note: Uses Object.defineProperty to override the read-only reload property.
+ * Legacy function kept for backwards compatibility.
  */
 export function installGlobalReloadGuard(): void {
-  const originalReload = window.location.reload.bind(window.location);
-
-  try {
-    // Use Object.defineProperty to override read-only property
-    Object.defineProperty(window.location, 'reload', {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: function() {
-        if (!canReload()) {
-          console.warn('[ReloadGuard] Global reload blocked - cooldown active');
-          return;
-        }
-
-        sessionStorage.setItem(RELOAD_GUARD_KEY, Date.now().toString());
-        originalReload();
-      }
-    });
-
-    console.log('[ReloadGuard] Global reload guard installed');
-  } catch (err) {
-    // If we can't override (some browsers block this), fall back gracefully
-    console.warn('[ReloadGuard] Could not install global reload guard:', err);
-    console.info('[ReloadGuard] Use safeReload() function instead of window.location.reload()');
-  }
+  console.info('[ReloadGuard] Modern browsers block window.location.reload override');
+  console.info('[ReloadGuard] Use safeReload() function instead of window.location.reload()');
+  console.info('[ReloadGuard] No reload loops will occur - all auth errors use exponential backoff');
 }

@@ -22,7 +22,7 @@ export default function LoginGuard({ children }: LoginGuardProps) {
 
     const checkAuth = async (attempt = 0) => {
       try {
-        const r = await fetch("/auth/me", { credentials: "include" });
+        const r = await fetch("/api/auth/me", { credentials: "include" });
 
         if (!mounted) return;
 
