@@ -138,7 +138,8 @@ services:
     container_name: applylens-api-prod
     environment:
       # Database
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-applylens}
+      # Note: Password contains ! which is URL-encoded as %21
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:4c9248fc7d7d477d919ccc431b1bbd36%21PgA1@db:5432/${POSTGRES_DB:-applylens}
 
       # API Configuration
       ENV: production
