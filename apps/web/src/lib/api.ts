@@ -1,5 +1,11 @@
 import { API_BASE } from './apiBase'
 
+// Helper to get CSRF token from cookie
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/csrf_token=([^;]+)/)
+  return match ? match[1] : null
+}
+
 export type Email = {
   id: number
   thread_id: string
@@ -243,12 +249,23 @@ export type BackfillResponse = {
 
 // Copilot: backfillGmail(days) calls '/api/gmail/backfill', handles 202 responses and errors.
 // Copilot: Rate limited to once per 5 minutes per user; backend returns 429 if too frequent.
+// Copilot: Includes CSRF token from cookie in X-CSRF-Token header for security.
 export async function backfillGmail(days = 60, userEmail?: string): Promise<BackfillResponse> {
   let url = `/api/gmail/backfill?days=${days}`
   if (userEmail) {
     url += `&user_email=${encodeURIComponent(userEmail)}`
   }
-  const r = await fetch(url, { method: 'POST' })
+
+  const csrfToken = getCsrfToken()
+  const headers: HeadersInit = {}
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+
+  const r = await fetch(url, {
+    method: 'POST',
+    headers
+  })
   if (!r.ok) throw new Error('Backfill failed')
   return r.json()
 }
@@ -267,8 +284,19 @@ export type ProfileRebuildResponse = {
   interests: number
 }
 
+// Copilot: Helper function for POST requests that automatically includes CSRF token
 async function post(url: string, init: RequestInit = {}) {
-  const r = await fetch(url, { method: 'POST', ...init })
+  const csrfToken = getCsrfToken()
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string> || {}) }
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+
+  const r = await fetch(url, {
+    method: 'POST',
+    ...init,
+    headers
+  })
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
   return r.json().catch(() => ({}))
 }
