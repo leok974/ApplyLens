@@ -9,7 +9,7 @@ These endpoints follow Kubernetes best practices:
 import os
 
 from elasticsearch import Elasticsearch
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from sqlalchemy import text
 
 from .db import SessionLocal
@@ -52,7 +52,11 @@ def ready():
     - Elasticsearch connectivity
     - Current migration version
 
-    Returns 200 with details if ready, 503 if not ready.
+    NEVER returns 5xx - always returns 200 with structured state.
+    This prevents frontend reload loops on 502/503 errors.
+
+    Returns 200 with {"status": "ready"} if ready,
+    or 200 with {"status": "degraded", "errors": [...]} if dependencies are down.
     """
     errors = []
     db_status = "unknown"
@@ -99,7 +103,7 @@ def ready():
     is_ready = db_status == "ok" and es_status == "ok"
 
     response = {
-        "status": "ready" if is_ready else "not_ready",
+        "status": "ready" if is_ready else "degraded",
         "db": db_status,
         "es": es_status,
         "migration": migration_version,
@@ -108,7 +112,60 @@ def ready():
     if errors:
         response["errors"] = errors
 
-    if not is_ready:
-        raise HTTPException(status_code=503, detail=response)
-
+    # ALWAYS return 200 - frontend will check status field
     return response
+
+
+@router.get("/status")
+def status():
+    """Application status endpoint (alias for /ready with simpler response).
+
+    NEVER returns 5xx - always returns 200 with structured state.
+    This prevents frontend reload loops on 502/503 errors.
+
+    Returns:
+        - {"ok": true, "gmail": "ok"} when healthy
+        - {"ok": false, "gmail": "degraded", "message": "..."} when degraded
+    """
+    errors = []
+    db_status = "unknown"
+    es_status = "unknown"
+
+    # Check DB connectivity
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        db_status = "ok"
+        DB_UP.set(1)
+    except Exception as e:
+        db_status = "down"
+        DB_UP.set(0)
+        errors.append(f"Database: {str(e)}")
+    finally:
+        db.close()
+
+    # Check ES connectivity
+    try:
+        es_url = os.getenv("ES_URL", "http://es:9200")
+        es = Elasticsearch(es_url)
+        if es.ping():
+            es_status = "ok"
+            ES_UP.set(1)
+        else:
+            es_status = "down"
+            ES_UP.set(0)
+            errors.append("Elasticsearch: ping failed")
+    except Exception as e:
+        es_status = "down"
+        ES_UP.set(0)
+        errors.append(f"Elasticsearch: {str(e)}")
+
+    # Determine overall status
+    is_healthy = db_status == "ok" and es_status == "ok"
+
+    # Frontend-friendly response format
+    if is_healthy:
+        return {"ok": True, "gmail": "ok"}
+
+    message = "; ".join(errors) if errors else "Services degraded"
+    return {"ok": False, "gmail": "degraded", "message": message}

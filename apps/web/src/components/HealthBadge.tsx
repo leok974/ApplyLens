@@ -20,44 +20,87 @@ export function HealthBadge() {
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === '1';
 
   useEffect(() => {
+    let mounted = true;
+    let pollTimeout: NodeJS.Timeout | null = null;
+    let errorAttempt = 0;
+
     const checkHealth = async () => {
+      if (!mounted) return;
+
       try {
         const res = await fetch('/api/metrics/divergence-24h');
-        
+
+        if (!mounted) return;
+
         if (res.status === 412) {
           // Warehouse disabled (feature flag off)
           setStatus('paused');
           setError('Warehouse disabled');
+          errorAttempt = 0; // Not an error, expected state
+          scheduleNext(60_000);
           return;
         }
 
+        // 5xx errors: backend degraded, show paused with exponential backoff
+        if (res.status >= 500 && res.status < 600) {
+          console.warn(`[HealthBadge] Backend returned ${res.status}, treating as degraded`);
+          setStatus('paused');
+          setError(`Backend unavailable (HTTP ${res.status})`);
+
+          // Exponential backoff: 2s, 4s, 8s, 16s, 32s, max 60s
+          const delay = Math.min(60000, 2000 * Math.pow(2, errorAttempt++));
+          scheduleNext(delay);
+          return;
+        }
+
+        // 4xx errors (other than 412): unexpected, treat as paused
         if (!res.ok) {
-          // Network or server error
+          console.warn(`[HealthBadge] Unexpected status ${res.status}`);
           setStatus('paused');
           setError(`HTTP ${res.status}`);
+
+          const delay = Math.min(60000, 2000 * Math.pow(2, errorAttempt++));
+          scheduleNext(delay);
           return;
         }
 
         const data: DivergenceData = await res.json();
         setDivergenceData(data);
         setError(null);
+        errorAttempt = 0; // Reset backoff on success
 
         // Use status from API response
         setStatus(data.status);
+
+        // Poll every 60s when healthy
+        scheduleNext(60_000);
+
       } catch (err) {
-        // Network unreachable or other error
+        // Network unreachable or other error - DO NOT reload
+        if (!mounted) return;
+
+        console.warn(`[HealthBadge] Network error: ${err}`);
         setStatus('paused');
         setError(err instanceof Error ? err.message : 'Unreachable');
+
+        // Exponential backoff on network errors
+        const delay = Math.min(60000, 2000 * Math.pow(2, errorAttempt++));
+        scheduleNext(delay);
       }
+    };
+
+    const scheduleNext = (delay: number) => {
+      if (pollTimeout) clearTimeout(pollTimeout);
+      pollTimeout = setTimeout(checkHealth, delay);
     };
 
     // Initial check
     checkHealth();
 
-    // Poll every 60 seconds
-    const interval = setInterval(checkHealth, 60_000);
-
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      if (pollTimeout) clearTimeout(pollTimeout);
+    };
   }, []);
 
   const statusConfig = {
@@ -95,14 +138,14 @@ export function HealthBadge() {
     if (status === 'loading') return 'Checking warehouse health...';
     if (status === 'paused' && error) return `Warehouse offline: ${error}`;
     if (status === 'paused') return 'Warehouse paused';
-    
+
     if (divergenceData) {
-      const pctDisplay = divergenceData.divergence_pct !== null 
-        ? `${divergenceData.divergence_pct.toFixed(2)}%` 
+      const pctDisplay = divergenceData.divergence_pct !== null
+        ? `${divergenceData.divergence_pct.toFixed(2)}%`
         : 'N/A';
-      
+
       const demoSuffix = isDemoMode ? ' (Demo data)' : '';
-      
+
       if (status === 'degraded') {
         return `ES/BQ divergence: ${pctDisplay}${demoSuffix}`;
       }
@@ -110,7 +153,7 @@ export function HealthBadge() {
         return `Healthy: ${pctDisplay} divergence${demoSuffix}`;
       }
     }
-    
+
     return config.label;
   };
 

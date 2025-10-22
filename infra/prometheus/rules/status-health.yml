@@ -1,0 +1,132 @@
+# Prometheus Alert Rules for API Status & Health Monitoring
+#
+# These alerts detect reload loops and backend degradation to prevent
+# cascading failures from 502 errors causing infinite page reloads.
+
+groups:
+  - name: api_status_health
+    interval: 30s
+    rules:
+      # Alert when /ready or /status endpoints have low success rate
+      - alert: StatusEndpointDegraded
+        expr: |
+          (
+            sum(rate(applylens_http_requests_total{path=~"/ready|/status", status=~"2.."}[5m]))
+            /
+            sum(rate(applylens_http_requests_total{path=~"/ready|/status"}[5m]))
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+          category: availability
+        annotations:
+          summary: "Status endpoint success rate below 95%"
+          description: |
+            The /ready or /status endpoint success rate is {{ printf "%.2f" $value }}% (threshold: 95%).
+            This may indicate backend degradation or database connection issues.
+            Check applylens_db_up and applylens_es_up metrics.
+
+      # Critical alert when success rate is very low (< 90%)
+      - alert: StatusEndpointCritical
+        expr: |
+          (
+            sum(rate(applylens_http_requests_total{path=~"/ready|/status", status=~"2.."}[5m]))
+            /
+            sum(rate(applylens_http_requests_total{path=~"/ready|/status"}[5m]))
+          ) < 0.90
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+          category: availability
+        annotations:
+          summary: "Status endpoint success rate below 90% - CRITICAL"
+          description: |
+            The /ready or /status endpoint success rate is {{ printf "%.2f" $value }}% (threshold: 90%).
+            This is likely causing reload loops in the frontend.
+            IMMEDIATE ACTION REQUIRED: Check API container logs and database connectivity.
+
+      # Alert when database is down
+      - alert: DatabaseDown
+        expr: applylens_db_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          category: availability
+        annotations:
+          summary: "PostgreSQL database is unreachable"
+          description: |
+            The applylens_db_up metric is 0, indicating the database is down.
+            All API requests requiring database access will fail.
+            Check database container status and connection credentials.
+
+      # Alert when Elasticsearch is down
+      - alert: ElasticsearchDown
+        expr: applylens_es_up == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: elasticsearch
+          category: availability
+        annotations:
+          summary: "Elasticsearch is unreachable"
+          description: |
+            The applylens_es_up metric is 0, indicating Elasticsearch is down.
+            Search and analytics features will be unavailable.
+            Check Elasticsearch container status and connectivity.
+
+      # Alert on high rate of 5xx errors across all API endpoints
+      - alert: HighApiErrorRate
+        expr: |
+          (
+            sum(rate(applylens_http_requests_total{path=~"/api/.*", status=~"5.."}[5m]))
+            /
+            sum(rate(applylens_http_requests_total{path=~"/api/.*"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+          category: errors
+        annotations:
+          summary: "API 5xx error rate above 5%"
+          description: |
+            The API is returning 5xx errors at {{ printf "%.2f" $value }}% rate (threshold: 5%).
+            This may cause frontend reload loops if errors affect status endpoints.
+            Check API container logs for exceptions and backend service health.
+
+      # Alert when status endpoint response time is high (could indicate overload)
+      - alert: StatusEndpointSlowResponse
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(applylens_http_request_duration_seconds_bucket{path=~"/ready|/status"}[5m])) by (le)
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+          category: performance
+        annotations:
+          summary: "Status endpoint P95 latency above 1s"
+          description: |
+            The /ready or /status endpoint P95 response time is {{ printf "%.2f" $value }}s (threshold: 1s).
+            Slow status checks can trigger frontend timeouts and retries.
+            Check database query performance and Elasticsearch connectivity.
+
+      # Alert on sustained high rate of requests to status endpoints (potential retry storm)
+      - alert: StatusEndpointRetryStorm
+        expr: |
+          sum(rate(applylens_http_requests_total{path=~"/ready|/status"}[1m])) > 50
+        for: 3m
+        labels:
+          severity: warning
+          component: frontend
+          category: traffic
+        annotations:
+          summary: "Abnormally high status endpoint request rate"
+          description: |
+            Status endpoints are receiving {{ printf "%.0f" $value }} req/s (threshold: 50 req/s).
+            This may indicate a frontend retry storm from exponential backoff not working correctly.
+            Check browser console logs and verify LoginGuard/HealthBadge retry logic.
