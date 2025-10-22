@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
@@ -7,13 +7,29 @@ const API_BASE = process.env.VITE_API_BASE
 const needsProxy = !API_BASE || API_BASE.startsWith('/')
 const BASE_PATH = process.env.VITE_BASE_PATH || '/'
 
+// Generate build ID from timestamp
+const BUILD_ID = process.env.BUILD_ID || `${Date.now()}`
+
+// Plugin to inject build ID into HTML
+function buildIdPlugin(): Plugin {
+  return {
+    name: 'build-id-injector',
+    transformIndexHtml(html) {
+      return html.replace('__BUILD_ID__', BUILD_ID)
+    }
+  }
+}
+
 export default defineConfig({
   base: BASE_PATH,
-  plugins: [react()],
+  plugins: [react(), buildIdPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  define: {
+    '__BUILD_ID__': JSON.stringify(BUILD_ID),
   },
   server: {
     port: 5175,
@@ -26,5 +42,16 @@ export default defineConfig({
         secure: false,
       }
     } : undefined
+  },
+  build: {
+    // Replace __BUILD_ID__ in HTML during build
+    rollupOptions: {
+      output: {
+        // Add build ID to chunk names for cache busting
+        chunkFileNames: `assets/[name]-${BUILD_ID}.[hash].js`,
+        entryFileNames: `assets/[name]-${BUILD_ID}.[hash].js`,
+        assetFileNames: `assets/[name]-${BUILD_ID}.[hash].[ext]`,
+      }
+    }
   }
 })
