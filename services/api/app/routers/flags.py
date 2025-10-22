@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ def list_flags() -> dict[str, FlagConfig]:
 
 
 @router.post("/{flag}/ramp")
-def ramp_flag(flag: FlagName, to: int = Field(ge=0, le=100)) -> RampEvent:
+def ramp_flag(flag: FlagName, to: int = Query(ge=0, le=100)) -> RampEvent:
     """
     Ramp a feature flag to a new rollout percentage.
 
