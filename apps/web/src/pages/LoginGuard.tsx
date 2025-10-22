@@ -144,10 +144,10 @@ export default function LoginGuard({ children }: LoginGuardProps) {
             Please sign in to access this page.
           </p>
           <a
-            href="/welcome"
+            href="/api/auth/google/login"
             className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
-            Go to Sign In
+            Sign In with Google
           </a>
         </div>
       </div>
