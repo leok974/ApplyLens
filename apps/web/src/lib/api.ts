@@ -149,10 +149,10 @@ export async function searchEmails(
 export async function searchEmailsWithParams(params: SearchParams): Promise<SearchHit[]> {
   const { q, size, limit, risk_min, risk_max, quarantined } = params
   const sp = new URLSearchParams({ q })
-  
+
   const actualLimit = size ?? limit ?? 10
   sp.set('limit', String(actualLimit))
-  
+
   if (params.labelFilter) sp.set('label_filter', params.labelFilter)
   if (params.scale) sp.set('scale', params.scale)
   if (params.labels && params.labels.length > 0) {
@@ -166,12 +166,12 @@ export async function searchEmailsWithParams(params: SearchParams): Promise<Sear
     params.categories.forEach(c => sp.append('categories', c))
   }
   if (params.hideExpired !== undefined) sp.set('hide_expired', String(params.hideExpired))
-  
+
   // Security filters
   if (typeof risk_min === 'number') sp.set('risk_min', String(risk_min))
   if (typeof risk_max === 'number') sp.set('risk_max', String(risk_max))
   if (typeof quarantined === 'boolean') sp.set('quarantined', String(quarantined))
-  
+
   const r = await fetch(`/api/search/?${sp.toString()}`, { credentials: 'include' })
   if (!r.ok) throw new Error(`Search failed (${r.status})`)
   const data = await r.json()
@@ -218,8 +218,8 @@ export type GmailInboxResponse = {
 }
 
 export async function getGmailInbox(
-  page = 1, 
-  limit = 50, 
+  page = 1,
+  limit = 50,
   labelFilter?: string,
   userEmail?: string
 ): Promise<GmailInboxResponse> {
@@ -241,6 +241,8 @@ export type BackfillResponse = {
   user_email: string
 }
 
+// Copilot: backfillGmail(days) calls '/api/gmail/backfill', handles 202 responses and errors.
+// Copilot: Rate limited to once per 5 minutes per user; backend returns 429 if too frequent.
 export async function backfillGmail(days = 60, userEmail?: string): Promise<BackfillResponse> {
   let url = `/api/gmail/backfill?days=${days}`
   if (userEmail) {
@@ -274,7 +276,7 @@ async function post(url: string, init: RequestInit = {}) {
 export const sync7d = () => post('/api/gmail/backfill?days=7')
 export const sync60d = () => post('/api/gmail/backfill?days=60')
 
-export const relabel = (limit = 2000): Promise<LabelRebuildResponse> => 
+export const relabel = (limit = 2000): Promise<LabelRebuildResponse> =>
   post(`/api/ml/label/rebuild?limit=${limit}`)
 
 export const rebuildProfile = (userEmail: string): Promise<ProfileRebuildResponse> =>
@@ -520,34 +522,34 @@ export async function getEmailStats(): Promise<EmailStatsResponse> {
 // ============================================================================
 
 export async function api<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
-  const res = await fetch(path, { 
-    headers: { 'Content-Type': 'application/json' }, 
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    ...opts 
+    ...opts
   });
   if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
 
 export const AI = {
-  summarize: (thread_id: string, max_citations = 3) => 
-    api('/api/ai/summarize', { 
-      method: 'POST', 
-      body: JSON.stringify({ thread_id, max_citations }) 
+  summarize: (thread_id: string, max_citations = 3) =>
+    api('/api/ai/summarize', {
+      method: 'POST',
+      body: JSON.stringify({ thread_id, max_citations })
     }),
   health: () => api('/api/ai/health'),
 };
 
 export const RAG = {
-  query: (q: string, k = 5) => 
-    api('/api/rag/query', { 
-      method: 'POST', 
-      body: JSON.stringify({ q, k }) 
+  query: (q: string, k = 5) =>
+    api('/api/rag/query', {
+      method: 'POST',
+      body: JSON.stringify({ q, k })
     }),
   health: () => api('/rag/health'),
 };
 
 export const Security = {
-  top3: (message_id: string) => 
+  top3: (message_id: string) =>
     api(`/api/security/risk-top3?message_id=${encodeURIComponent(message_id)}`),
 };

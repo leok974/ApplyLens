@@ -7,6 +7,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette_exporter import PrometheusMiddleware
 
+# Copilot: Ensure routers include gmail/backfill at /api/gmail/backfill and health/live endpoint.
+# Copilot: All routers should use proper prefixes and error logging with exc_info=True.
 from . import auth_google, health, oauth_google, routes_extract, routes_gmail
 from .db import Base, engine
 from .es import ensure_index

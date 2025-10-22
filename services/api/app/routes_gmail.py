@@ -11,6 +11,9 @@ from .gmail_service import gmail_backfill
 from .metrics import BACKFILL_INSERTED, BACKFILL_REQUESTS, GMAIL_CONNECTED
 from .models import Email, OAuthToken
 
+# Copilot: POST /gmail/backfill?days=60 enqueues backfill task and returns inserted count.
+# Copilot: Rate limiting enforced per user with configurable cooldown (default 300s).
+# Copilot: Metrics increments (BACKFILL_REQUESTS, BACKFILL_INSERTED) for observability.
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
 # Simple rate limiter for backfill (configurable cooldown in seconds)
