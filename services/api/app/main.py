@@ -174,6 +174,11 @@ from .routers import emails_stats  # noqa: E402
 
 app.include_router(emails_stats.router)
 
+# Feature Flags Management (Email Risk v3.1 rollout)
+from .routers import flags  # noqa: E402
+
+app.include_router(flags.router)
+
 # Phase 6 - Money Mode (Receipt tracking)
 from .routers import money  # noqa: E402
 

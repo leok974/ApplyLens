@@ -1,7 +1,87 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, demo]
+  pull_request:
+    branches: [main, demo]
 
 jobs:
+  # Email Risk v3.1 - Backend unit tests
+  backend-unit:
+    name: Backend Unit Tests (Email Risk v3.1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        working-directory: services/api
+        run: |
+          pip install -U pip
+          pip install -r requirements.txt
+      - name: Run pytest - Email Risk tests
+        working-directory: services/api
+        run: |
+          pytest tests/api/test_email_risk.py -v --maxfail=1 --disable-warnings --tb=short
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: services/api/coverage.lcov
+          retention-days: 7
+
+  # Email Risk v3.1 - Frontend unit tests
+  web-unit:
+    name: Frontend Unit Tests (Feature Flags)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run vitest - Feature flag tests
+        working-directory: apps/web
+        run: pnpm test -- --run --reporter=verbose
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-results
+          path: apps/web/test-results/
+          retention-days: 7
+
+  # Email Risk v3.1 - Smoke test
+  smoke-risk:
+    name: Smoke Test (Email Risk v3.1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PowerShell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https
+          wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+      - name: Install curl and jq
+        run: sudo apt-get install -y curl jq
+      - name: Note - Smoke test requires running services
+        run: |
+          echo "⚠️  Smoke test requires Elasticsearch and API services"
+          echo "    Run manually: pwsh ./scripts/smoke_risk_advice.ps1"
+          echo "    This job is informational only in CI"
+
+  # Legacy checks
   api:
     runs-on: ubuntu-latest
     steps:
@@ -29,3 +109,21 @@ jobs:
         run: |
           npm ci || npm install
           npm run build
+
+  # Require all critical checks
+  all-checks:
+    name: All Checks Passed ✅
+    runs-on: ubuntu-latest
+    needs: [backend-unit, web-unit, api, web]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          if [ "${{ needs.backend-unit.result }}" != "success" ] || \
+             [ "${{ needs.web-unit.result }}" != "success" ] || \
+             [ "${{ needs.api.result }}" != "success" ] || \
+             [ "${{ needs.web.result }}" != "success" ]; then
+            echo "❌ One or more required checks failed"
+            exit 1
+          fi
+          echo "✅ All required checks passed"
