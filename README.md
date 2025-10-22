@@ -1025,7 +1025,7 @@ VITE_USE_WAREHOUSE=1
    # Backend (.env.prod)
    APPLYLENS_USE_WAREHOUSE=1
    APPLYLENS_GCP_PROJECT=applylens-gmail-YOUR_PROJECT_ID
-   
+
    # Frontend (.env.production)
    VITE_USE_WAREHOUSE=1
    ```
@@ -1123,27 +1123,53 @@ ApplyLens includes production-ready monitoring infrastructure:
 - `/healthz` - Liveness probe (basic check)
 - `/live` - Liveness alias
 - `/ready` - Readiness probe (DB + ES + migration version)
+- `/status` - Graceful degradation status (always returns 200)
 
-### Grafana Dashboard
+### Grafana Dashboards
 
-Import the operational dashboard for real-time monitoring:
+**API Status & Health Monitoring:**
+- Success Rate Gauge (target: ≥99%)
+- Request Rate Chart
+- Database/Elasticsearch Status
+- P50/P95/P99 Latency
+- 5xx Error Rate
 
-```bash
-# Import ops-overview.json into Grafana
-# Location: services/api/dashboards/ops-overview.json
-# Panels: Error rates, latency, parity, performance
-```text
+**Access:** <http://localhost:3000> (Grafana)
+**Dashboard JSON:** `infra/grafana/dashboards/api-status-health.json`
 
-### Alerts & Runbooks
+**Operations Overview:**
+- Error rates, latency, parity, performance
+- Dashboard: `services/api/dashboards/ops-overview.json`
 
-Production-critical alerts with runbooks:
+### Prometheus Alerts
 
-- **APIHighErrorRateFast** - 5xx rate > 5% ([runbook](services/api/docs/runbooks/api-errors.md))
+**Critical alerts configured:**
+- **StatusEndpointDegraded** - Service degradation detected
+- **StatusEndpointCritical** - Critical service failure
+- **DatabaseDown** - Database unavailable
+- **ElasticsearchDown** - Search unavailable
+- **HighApiErrorRate** - 5xx rate > 5% ([runbook](services/api/docs/runbooks/api-errors.md))
+- **StatusEndpointSlowResponse** - High latency detected
+- **StatusEndpointRetryStorm** - Too many retries
+
+**Additional production alerts:**
 - **RiskJobFailures** - Risk computation failures ([runbook](services/api/docs/runbooks/risk-job.md))
 - **ParityDriftTooHigh** - DB↔ES drift > 0.5% ([runbook](services/api/docs/runbooks/parity.md))
 - **BackfillDurationSLO** - p95 duration > 5min ([runbook](services/api/docs/runbooks/backfill.md))
 
-**Alert rules:** `infra/alerts/prometheus-rules.yml`
+**Alert rules:** `infra/prometheus/rules/status-health.yml` + `infra/alerts/prometheus-rules.yml`
+**Prometheus UI:** <http://localhost:9090>
+
+### Reload Loop Protection
+
+ApplyLens implements a **4-layer defense** against infinite reload loops:
+
+1. **Frontend:** Exponential backoff (2s→4s→8s→16s→max 60s) with AbortController
+2. **Backend:** `/status` always returns HTTP 200 (even when degraded)
+3. **Nginx:** JSON error handler + retry logic (no HTML error pages)
+4. **Monitoring:** Prometheus alerts for retry storms
+
+**Documentation:** `RELOAD_LOOP_FIX_SUMMARY.md`, `AUTH_CHECK_LOOP_FIX.md`
 
 ### Structured Logging
 
