@@ -38,6 +38,9 @@ export default function Search() {
   const suggestionAbortController = useRef<AbortController | null>(null)
   const hydratedRef = useRef(false)
 
+  // Debug mode for score visibility (controlled via URL: ?debugScore=1)
+  const debugScore = searchParams.get('debugScore') === '1' || searchParams.get('debugScore') === 'true'
+
   // Initialize from URL and localStorage
   const initialState = useMemo(() => {
     const urlQuery = searchParams.get('q') || ''
@@ -469,7 +472,7 @@ export default function Search() {
 
       {/* Results header */}
       {!loading && !error && results.length > 0 && (
-        <SearchResultsHeader query={query} total={total} showHint />
+        <SearchResultsHeader query={query} total={total} showHint debugScore={debugScore} />
       )}
 
       {/* Results list - only render when we have results */}
@@ -520,10 +523,22 @@ export default function Search() {
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-row items-center gap-2">
-                  {h.score !== undefined && h.score !== null && Math.round(h.score) > 0 && (
-                    <span className="text-[11px] text-[color:hsl(var(--muted-foreground))]">
-                      score: {Math.round(h.score)}
+                  {/* Score badge - show debug info if debugScore=1, otherwise hide if rounds to 0 */}
+                  {debugScore ? (
+                    // Debug view: always show raw and rounded so you can inspect behavior
+                    <span
+                      className="text-[10px] text-muted-foreground font-mono px-1.5 py-0.5 rounded border bg-background/60"
+                      data-testid="score-debug"
+                    >
+                      raw {h.score ?? "?"} / ~{h.score !== undefined && h.score !== null ? Math.round(h.score) : "?"}
                     </span>
+                  ) : (
+                    // Normal view: only show if rounded >= 1
+                    h.score !== undefined && h.score !== null && Math.round(h.score) > 0 && (
+                      <span className="text-[11px] text-[color:hsl(var(--muted-foreground))]">
+                        score: {Math.round(h.score)}
+                      </span>
+                    )
                   )}
                   <EmailLabels labels={h.labels} />
 
