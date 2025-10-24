@@ -1,5 +1,6 @@
 import base64
 import datetime as dt
+import logging
 import os
 import re
 from typing import Dict, List, Optional
@@ -21,9 +22,13 @@ from .ingest.due_dates import (
 from .ingest.gmail_metrics import compute_thread_reply_metrics
 from .models import Application, AppStatus, Email, OAuthToken
 from .security.analyzer import BlocklistProvider, EmailRiskAnalyzer
+from .core.crypto import Crypto
 
 ELASTICSEARCH_URL = os.getenv("ES_URL")
 ES_INDEX = os.getenv("ELASTICSEARCH_INDEX", "gmail_emails")
+
+# Initialize crypto for token decryption
+crypto = Crypto()
 
 # Initialize security analyzer (singleton)
 _BLOCKLIST_PROVIDER = None
@@ -50,6 +55,8 @@ LABEL_MAP_BOOSTS = {
 
 ATS_SYNONYMS = ["lever", "workday", "smartrecruiters", "greenhouse"]
 
+logger = logging.getLogger(__name__)
+
 
 def _get_creds(db: Session, user_email: str) -> Credentials:
     tok: OAuthToken = (
@@ -57,20 +64,60 @@ def _get_creds(db: Session, user_email: str) -> Credentials:
     )
     if not tok:
         raise ValueError("No OAuth token for user")
+
+    # Log redacted client ID for debugging (helpful for spotting mismatches)
+    # Show last 40 chars to see the full unique part (e.g., "...p72bhr.apps.googleusercontent.com")
+    client_id_suffix = tok.client_id[-40:] if tok.client_id else "unknown"
+    logger.info(
+        f"Creating credentials for {user_email} with client_id suffix: ...{client_id_suffix}"
+    )
+
+    # Decrypt tokens (they are stored encrypted with AES-GCM)
+    access_token_str = (
+        crypto.dec(tok.access_token).decode() if tok.access_token else None
+    )
+    refresh_token_str = (
+        crypto.dec(tok.refresh_token).decode() if tok.refresh_token else None
+    )
+
     creds = Credentials(
-        token=tok.access_token,
-        refresh_token=tok.refresh_token,
+        token=access_token_str,
+        refresh_token=refresh_token_str,
         token_uri=tok.token_uri,
         client_id=tok.client_id,
         client_secret=tok.client_secret,
         scopes=tok.scopes.split(),
     )
     if not creds.valid and creds.refresh_token:
-        creds.refresh(GRequest())
-        # persist refreshed tokens
-        tok.access_token = creds.token
-        tok.expiry = creds.expiry
-        db.commit()
+        try:
+            logger.info(
+                f"Refreshing token for {user_email} using client_id suffix: ...{client_id_suffix}"
+            )
+            creds.refresh(GRequest())
+            # persist refreshed tokens (encrypt before storing)
+            tok.access_token = crypto.enc(creds.token.encode())
+            tok.expiry = creds.expiry
+            db.commit()
+            logger.info(f"Token refresh successful for {user_email}")
+        except Exception as refresh_error:
+            # If refresh fails (invalid_grant, etc.), delete the invalid token
+            # and raise an error prompting user to re-authenticate
+            from google.auth import exceptions as google_exceptions
+
+            if isinstance(refresh_error, google_exceptions.RefreshError):
+                logger.error(
+                    f"Token refresh failed for {user_email}: {str(refresh_error)}"
+                )
+                # Delete invalid token from database
+                db.delete(tok)
+                db.commit()
+                logger.info(f"Deleted invalid token for {user_email}")
+                raise ValueError(
+                    "OAuth token invalid or expired. Please re-authenticate at /api/auth/google/login"
+                ) from refresh_error
+            else:
+                # Re-raise other exceptions
+                raise
     return creds
 
 
@@ -533,4 +580,214 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
 
     db.commit()
     index_bulk_emails(es_docs)
+    return inserted
+
+
+def gmail_backfill_with_progress(
+    db: Session,
+    user_email: str,
+    days: int = 60,
+    progress_callback: Optional[callable] = None,
+) -> int:
+    """
+    Backfill Gmail messages with progress tracking.
+
+    Args:
+        db: Database session
+        user_email: Gmail user email
+        days: Number of days to backfill
+        progress_callback: Optional callback function(processed: int, total: int)
+
+    Returns:
+        Number of emails inserted
+    """
+    creds = _get_creds(db, user_email)
+    svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
+    q = f"newer_than:{days}d"
+
+    # First, get all threads (not individual messages)
+    threads = []
+    page_token = None
+    while True:
+        resp = (
+            svc.users()
+            .threads()
+            .list(userId="me", q=q, pageToken=page_token, maxResults=500)
+            .execute()
+        )
+        threads.extend(resp.get("threads", []))
+        page_token = resp.get("nextPageToken")
+        if not page_token:
+            break
+
+    # Count total messages across all threads (estimate)
+    total_messages = 0
+    for thread_meta in threads:
+        # Most threads have 1-5 messages, use snippet length as rough proxy
+        # For now, just use thread count as approximation (will refine during processing)
+        total_messages += 1
+
+    # Report initial total
+    if progress_callback:
+        progress_callback(0, total_messages)
+
+    es_docs = []
+    inserted = 0
+    processed_threads = 0
+
+    # Process each thread
+    for thread_meta in threads:
+        thread_id = thread_meta["id"]
+
+        # Get full thread with all messages
+        thread = (
+            svc.users()
+            .threads()
+            .get(userId="me", id=thread_id, format="full")
+            .execute()
+        )
+        messages = thread.get("messages", [])
+
+        # Update total now that we know actual message count
+        if processed_threads == 0:
+            # Estimate total based on first thread
+            avg_msgs_per_thread = len(messages)
+            total_messages = len(threads) * max(1, avg_msgs_per_thread)
+            if progress_callback:
+                progress_callback(0, total_messages)
+
+        # Compute reply metrics once per thread
+        metrics = compute_thread_reply_metrics(messages, user_email.lower())
+
+        # Process each message in the thread
+        for meta in messages:
+            payload = meta.get("payload", {})
+            headers = payload.get("headers", [])
+            subject = _header(headers, "Subject") or ""
+            sender = _header(headers, "From") or ""
+            recipient = _header(headers, "To") or ""
+            internal_date = int(meta.get("internalDate", "0")) // 1000
+            received_at = dt.datetime.utcfromtimestamp(internal_date)
+
+            # Parse body
+            body_text = _parts_to_text(payload)
+            label_heur = derive_labels(sender, subject, body_text)
+
+            # Extract quick hooks
+            company = extract_company(sender, body_text)
+            role = extract_role(subject)
+            source = extract_source(headers, sender, subject, body_text)
+            source_conf = estimate_source_confidence(source)
+
+            # Extract due dates and money amounts
+            combined_text = f"{subject} {body_text}"
+            due_dates = extract_due_dates(combined_text, received_at)
+            money_amounts = extract_money_amounts(combined_text)
+            earliest_due = extract_earliest_due_date(combined_text, received_at)
+
+            # Upsert in DB
+            existing = db.query(Email).filter_by(gmail_id=meta["id"]).first()
+            if not existing:
+                existing = Email(gmail_id=meta["id"])
+                db.add(existing)
+
+            existing.thread_id = thread_id
+            existing.subject = subject
+            existing.sender = sender
+            existing.recipient = recipient
+            existing.received_at = received_at
+            existing.body_text = body_text
+            existing.labels = (
+                [_header(headers, "X-Gmail-Labels")]
+                if _header(headers, "X-Gmail-Labels")
+                else []
+            )
+            existing.label_heuristics = label_heur
+            existing.company = company
+            existing.role = role
+            existing.source = source
+            existing.source_confidence = source_conf
+            existing.dates = due_dates
+            existing.money_amounts = money_amounts
+            existing.expires_at = earliest_due
+
+            # Security analysis (safe fallback)
+            try:
+                from .security import analyze_email_security, SecurityAnalysisInput
+
+                risk_result = analyze_email_security(
+                    SecurityAnalysisInput(
+                        from_address=sender,
+                        subject=subject,
+                        body=body_text,
+                        urls_visible_text_pairs=None,
+                        attachments=[],
+                        domain_first_seen_days_ago=None,
+                    )
+                )
+                existing.risk_score = float(risk_result.risk_score)
+                existing.flags = [f.dict() for f in risk_result.flags]
+                existing.quarantined = risk_result.quarantined
+            except Exception as e:
+                print(f"Warning: Security analysis failed for {meta['id']}: {e}")
+                existing.risk_score = 0.0
+                existing.flags = []
+                existing.quarantined = False
+
+            db.flush()
+            upsert_application_for_email(db, existing)
+
+            inserted += 1
+
+            # Prepare ES doc
+            es_docs.append(
+                {
+                    "gmail_id": existing.gmail_id,
+                    "thread_id": existing.thread_id,
+                    "subject": subject,
+                    "body_text": body_text,
+                    "sender": sender,
+                    "recipient": recipient,
+                    "received_at": received_at.isoformat(),
+                    "labels": existing.labels or [],
+                    "label_heuristics": label_heur,
+                    "subject_suggest": {"input": [subject] if subject else []},
+                    "company": company,
+                    "role": role,
+                    "source": source,
+                    "source_confidence": source_conf,
+                    "first_user_reply_at": metrics["first_user_reply_at"],
+                    "last_user_reply_at": metrics["last_user_reply_at"],
+                    "user_reply_count": metrics["user_reply_count"],
+                    "replied": metrics["replied"],
+                    "dates": due_dates,
+                    "money_amounts": money_amounts,
+                    "expires_at": earliest_due,
+                    "risk_score": int(existing.risk_score)
+                    if existing.risk_score
+                    else 0,
+                    "quarantined": existing.quarantined
+                    if hasattr(existing, "quarantined")
+                    else False,
+                    "flags": existing.flags if existing.flags else [],
+                }
+            )
+
+            # Report progress every 10 emails
+            if inserted % 10 == 0 and progress_callback:
+                progress_callback(inserted, total_messages)
+
+        processed_threads += 1
+
+        # Report progress after each thread
+        if progress_callback:
+            progress_callback(inserted, total_messages)
+
+    db.commit()
+    index_bulk_emails(es_docs)
+
+    # Final progress update
+    if progress_callback:
+        progress_callback(inserted, inserted)
+
     return inserted
