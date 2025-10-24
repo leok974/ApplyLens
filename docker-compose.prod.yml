@@ -134,7 +134,12 @@ services:
   # API (FastAPI Backend)
   # =============================================================================
   api:
-    image: leoklemet/applylens-api:latest
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile.prod
+    # Versioned tag for rollback capability (v0.4.1 = CSRF exemptions + UX fixes)
+    # For immutable deploy, use digest: leoklemet/applylens-api@sha256:99a07206dfb3987c7c8f3775af0f61a405b298d4db54c9877ac567528ab1bc7a
+    image: leoklemet/applylens-api:v0.4.20  # Hardened: rate limiting (20 req/min), _source filtering, LOG_LEVEL=INFO
     container_name: applylens-api-prod
     environment:
       # Database
@@ -156,13 +161,18 @@ services:
       # Redis (Caching)
       REDIS_URL: redis://redis:6379/0
 
-      # Google OAuth (requires APPLYLENS_ prefix due to pydantic config)
+      # Google OAuth (credentials read from google.json file, not env vars)
       GOOGLE_CREDENTIALS: ${GOOGLE_CREDENTIALS:-/secrets/google.json}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-http://localhost:8003/auth/google/callback}
+      GOOGLE_OAUTH_SCOPES: ${GOOGLE_OAUTH_SCOPES:-https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email openid}
+      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET}
+
+      # Google OAuth for routers/auth.py (requires APPLYLENS_ prefix)
       APPLYLENS_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       APPLYLENS_GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       APPLYLENS_OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-http://localhost:8003/auth/google/callback}
-      GOOGLE_OAUTH_SCOPES: ${GOOGLE_OAUTH_SCOPES:-https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email openid}
-      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET}
 
       # Application
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
@@ -191,6 +201,7 @@ services:
 
       # Monitoring
       PROMETHEUS_ENABLED: "true"
+      PROMETHEUS_URL: http://prometheus:9090
       LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "${API_PORT:-8003}:8003"
@@ -221,13 +232,16 @@ services:
   # WEB (Frontend)
   # =============================================================================
   web:
-    build:
-      context: ./apps/web
-      dockerfile: Dockerfile.prod
-      args:
-        - NODE_ENV=production
-        - VITE_API_BASE=${VITE_API_BASE:-/api}
-        - WEB_BASE_PATH=${WEB_BASE_PATH:-/}
+    # Versioned tag for rollback capability (v0.4.18 = Progress %, ETA, cancel, auto-refresh)
+    # Previous: v0.4.17 (Async job pattern for Gmail backfill)
+    # v0.4.16 (Handle 524 Gateway Timeout gracefully)
+    # v0.4.15 (Empty query fallback to "*", no more 422)
+    # v0.4.14 (Clear filters + strict URL parsing)
+    # v0.4.13 (LoginGuard + nginx safety + E2E tests)
+    # v0.4.12 (Selective trailing slash fix)
+    # v0.4.11 (Auto-trailing slash - broke /auth/me)
+    # v0.4.10 (Cache headers + version banner + apiUrl)
+    image: leoklemet/applylens-web:v0.4.23  # Fixed: scores that round to 0 now properly hidden
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
