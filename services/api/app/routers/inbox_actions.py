@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from ..deps.user import get_current_user_email
 from ..es import ES_ENABLED, INDEX, es
 
-router = APIRouter(prefix="/api/actions", tags=["inbox_actions"])
+router = APIRouter(prefix="/actions", tags=["inbox_actions"])
 logger = logging.getLogger(__name__)
 
 # Check if mutations are allowed in this environment
@@ -71,14 +71,18 @@ class ActionResponse(BaseModel):
 # ===== Helper Functions =====
 
 
-def build_allowed_actions(in_prod: bool = False) -> List[str]:
+def build_allowed_actions() -> List[str]:
     """
-    Build list of allowed actions based on environment.
+    Build list of allowed actions based on ALLOW_ACTION_MUTATIONS env var.
 
-    In dev: all actions
-    In prod: only explain (to avoid 403s until mutations are enabled)
+    When ALLOW_ACTION_MUTATIONS=true (dev/local):
+        Returns all actions: archive, mark_safe, mark_suspicious, unsubscribe, explain
+    When ALLOW_ACTION_MUTATIONS=false (production default):
+        Returns only: ["explain"]
+
+    This prevents UI from showing buttons that will 403 in production.
     """
-    if ALLOW_ACTION_MUTATIONS and not in_prod:
+    if ALLOW_ACTION_MUTATIONS:
         return ["archive", "mark_safe", "mark_suspicious", "unsubscribe", "explain"]
     return ["explain"]
 
@@ -218,8 +222,8 @@ async def get_inbox_actions(
                 "quarantined": quarantined,
             }
 
-            # Build allowed actions
-            allowed_actions = build_allowed_actions(in_prod=False)
+            # Build allowed actions based on ALLOW_ACTION_MUTATIONS env var
+            allowed_actions = build_allowed_actions()
 
             row = ActionRow(
                 message_id=str(message_id),
