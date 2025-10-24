@@ -177,8 +177,10 @@ app.include_router(policy.router)
 
 # Phase 4 - Agentic Actions & Approval Loop
 from .routers import actions  # noqa: E402
+from .routers import inbox_actions  # noqa: E402
 
 app.include_router(actions.router)
+app.include_router(inbox_actions.router)
 
 # Phase 5 - Chat Assistant
 from .routers import chat  # noqa: E402

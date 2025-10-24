@@ -137,8 +137,9 @@ services:
     build:
       context: ./services/api
       dockerfile: Dockerfile.prod
+    # v0.4.26: Implemented Actions page with real backend endpoints
     # v0.4.25: Added /api/tracker endpoint for Gmail-derived applications
-    image: leoklemet/applylens-api:v0.4.25
+    image: leoklemet/applylens-api:v0.4.26
     container_name: applylens-api-prod
     environment:
       # Database
@@ -240,8 +241,9 @@ services:
     # v0.4.12 (Selective trailing slash fix)
     # v0.4.11 (Auto-trailing slash - broke /auth/me)
     # v0.4.10 (Cache headers + version banner + apiUrl)
+    # v0.4.26: Actions page with real backend functionality
     # v0.4.25: Tracker page shows real Gmail data + OAuth fix
-    image: leoklemet/applylens-web:v0.4.25
+    image: leoklemet/applylens-web:v0.4.26
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production

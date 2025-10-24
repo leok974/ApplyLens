@@ -588,6 +588,66 @@ export async function explainEmail(id: string): Promise<ExplainResponse> {
   return r.json()
 }
 
+// ===== Actions Inbox API =====
+
+export type ActionReason = {
+  category: string
+  signals: string[]
+  risk_score: number
+  quarantined: boolean
+}
+
+export type ActionRow = {
+  message_id: string
+  from_name: string
+  from_email: string
+  subject: string
+  received_at: string
+  labels: string[]
+  reason: ActionReason
+  allowed_actions: string[]
+}
+
+export async function fetchActionsInbox(): Promise<ActionRow[]> {
+  const r = await fetch('/api/actions/inbox')
+  if (!r.ok) throw new Error(`Fetch actions inbox failed: ${r.status}`)
+  return r.json()
+}
+
+export type ExplainActionResponse = {
+  summary: string
+}
+
+export async function explainAction(message_id: string): Promise<ExplainActionResponse> {
+  const r = await fetch('/api/actions/explain', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message_id })
+  })
+  if (!r.ok) throw new Error(`Explain action failed: ${r.status}`)
+  return r.json()
+}
+
+async function performAction(action: string, message_id: string): Promise<{ ok: boolean }> {
+  const r = await fetch(`/api/actions/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message_id })
+  })
+  if (!r.ok) {
+    if (r.status === 403) throw new Error('Actions are read-only in production')
+    throw new Error(`Action ${action} failed: ${r.status}`)
+  }
+  return r.json()
+}
+
+export const inboxActions = {
+  markSafe: (id: string) => performAction('mark_safe', id),
+  markSuspicious: (id: string) => performAction('mark_suspicious', id),
+  archive: (id: string) => performAction('archive', id),
+  unsubscribe: (id: string) => performAction('unsubscribe', id),
+}
+
 // Get email by ID (for details panel)
 
 export type EmailDetailResponse = {
