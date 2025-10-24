@@ -4,5 +4,5 @@ datasources:
     uid: prom
     type: prometheus
     access: proxy
-    url: http://prometheus:9090
+    url: http://applylens-prometheus-prod:9090
     isDefault: true

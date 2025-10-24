@@ -22,7 +22,18 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # =============================================================================
 FROM python:3.11-slim
 
+# Build arguments for metadata
+ARG GIT_SHA
+ARG BUILD_DATE
+
 WORKDIR /app
+
+# Metadata labels for provenance
+LABEL org.opencontainers.image.revision="${GIT_SHA}" \
+      org.opencontainers.image.source="https://github.com/leok974/ApplyLens" \
+      org.opencontainers.image.title="applylens-api" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.description="ApplyLens API - FastAPI backend with Gmail integration"
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \

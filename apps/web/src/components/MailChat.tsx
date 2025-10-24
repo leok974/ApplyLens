@@ -1,6 +1,6 @@
 /**
  * MailChat - Conversational mailbox assistant
- * 
+ *
  * Features:
  * - Quick-action chips for common queries
  * - Message history with user/assistant roles
@@ -72,13 +72,13 @@ interface ConversationMessage extends Message {
 export default function MailChat() {
   const navigate = useNavigate()
   const [userEmail] = useState('leoklemet.pa@gmail.com') // TODO: Read from auth context
-  
+
   // Time window with localStorage persistence
   const [windowDays, setWindowDays] = useState<number>(() => {
     const v = Number(localStorage.getItem('chat:windowDays') || '30')
     return [7, 30, 60, 90].includes(v) ? v : 30
   })
-  
+
   const [messages, setMessages] = useState<ConversationMessage[]>([
     {
       role: 'assistant',
@@ -155,7 +155,14 @@ export default function MailChat() {
   useEffect(() => {
     const sendHeartbeat = async () => {
       try {
-        await fetch('/api/ux/heartbeat', { method: 'POST' })
+        await fetch('/api/ux/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            page: '/chat',
+            ts: Date.now() / 1000,
+          }),
+        })
       } catch (err) {
         // Silently fail - this is just telemetry
         console.debug('[Heartbeat] Failed:', err)
@@ -220,12 +227,12 @@ export default function MailChat() {
   // Heartbeat management for connection status
   function resetStreamHeartbeat() {
     setIsStreamAlive(true)
-    
+
     // Clear existing timeout
     if (streamHeartbeatRef.current) {
       window.clearTimeout(streamHeartbeatRef.current)
     }
-    
+
     // Set new timeout - mark as dead after 35s of silence
     streamHeartbeatRef.current = window.setTimeout(() => {
       setIsStreamAlive(false)
@@ -270,27 +277,27 @@ export default function MailChat() {
       + (shouldRemember ? '&remember=1' : '')
       + (mode ? `&mode=${encodeURIComponent(mode)}` : '')
       + `&window_days=${windowDays}` // Add window_days parameter
-    
+
     let assistantText = ''
     let filedCount = 0
 
     try {
       const ev = new EventSource(url)
       currentEventSourceRef.current = ev // Store reference for cleanup
-      
+
       // Reset heartbeat on connection
       resetStreamHeartbeat()
-      
+
       ev.addEventListener('ready', () => {
         resetStreamHeartbeat()
       })
-      
+
       ev.addEventListener('intent', (e: any) => {
         resetStreamHeartbeat()
         const data = JSON.parse(e.data)
         console.log('[Chat] Intent detected:', data.intent)
       })
-      
+
       ev.addEventListener('intent_explain', (e: any) => {
         resetStreamHeartbeat()
         const data = JSON.parse(e.data)
@@ -302,7 +309,7 @@ export default function MailChat() {
         const data = JSON.parse(e.data)
         const brands = data.kept_brands || []
         console.log('[Chat] Learned preferences:', brands)
-        
+
         // Show confirmation message
         if (brands.length > 0) {
           setMessages((m) => [
@@ -348,7 +355,7 @@ export default function MailChat() {
         const data = JSON.parse(e.data)
         filedCount = data.proposed || 0
         console.log('[Chat] Actions filed:', filedCount)
-        
+
         // Show confirmation message
         if (filedCount > 0) {
           setMessages((m) => [
@@ -364,7 +371,7 @@ export default function MailChat() {
       ev.addEventListener('done', async () => {
         clearStreamHeartbeat()
         ev.close()
-        
+
         try {
           // Fetch the full response for citations
           const response = await sendChatMessage({
@@ -420,7 +427,7 @@ export default function MailChat() {
             filtered.push(assistantMessage)
             return filtered
           })
-          
+
           // Capture timing from response
           const t1 = performance.now()
           setTiming({
@@ -447,7 +454,7 @@ export default function MailChat() {
         console.error('[Chat] EventSource error:', e)
         clearStreamHeartbeat()
         ev.close()
-        
+
         const errorMsg = 'Stream connection failed'
         setError(errorMsg)
         setMessages((m) => [
@@ -463,7 +470,7 @@ export default function MailChat() {
 
     } catch (err: any) {
       clearStreamHeartbeat()
-      
+
       // Canary fallback: if streaming disabled (503 + header), use non-streaming /chat
       if (err instanceof Response && err.status === 503) {
         const streamingDisabled = err.headers?.get('X-Chat-Streaming-Disabled')
@@ -477,18 +484,18 @@ export default function MailChat() {
               })),
               window_days: windowDays,
             })
-            
+
             // Build assistant message from response
             let finalText = response.answer || 'Response received.'
-            
+
             if (response.intent !== 'summarize' && response.intent_explanation) {
               finalText = `*${response.intent_explanation}*\n\n${finalText}`
             }
-            
+
             if (response.actions.length > 0) {
               finalText += `\n\n**${response.actions.length} action${response.actions.length === 1 ? '' : 's'} proposed**`
             }
-            
+
             if (response.citations.length > 0) {
               finalText += '\n\n**Sources:**'
               response.citations.slice(0, 5).forEach((c) => {
@@ -499,7 +506,7 @@ export default function MailChat() {
                 finalText += `\n• ... and ${response.citations.length - 5} more`
               }
             }
-            
+
             setMessages((m) => [
               ...m,
               {
@@ -508,7 +515,7 @@ export default function MailChat() {
                 response,
               },
             ])
-            
+
             // Capture timing
             const t1 = performance.now()
             setTiming({
@@ -516,7 +523,7 @@ export default function MailChat() {
               llm_ms: response?.timing?.llm_ms,
               client_ms: Math.round(t1 - t0),
             })
-            
+
             setBusy(false)
             return
           } catch (fallbackErr: any) {
@@ -527,14 +534,14 @@ export default function MailChat() {
           }
         }
       }
-      
+
       // Handle rate limit errors
       if (err instanceof Response && err.status === 429) {
         setError("You're sending requests a bit too fast. Please wait a moment and try again.")
         setBusy(false)
         return
       }
-      
+
       // Handle other errors
       const errorMsg = err.message || 'Failed to get response'
       setError(errorMsg)
@@ -610,7 +617,7 @@ export default function MailChat() {
           </select>
 
           <button
-            className="ml-2 px-3 py-1.5 rounded-md bg-neutral-900 border border-neutral-800/80 
+            className="ml-2 px-3 py-1.5 rounded-md bg-neutral-900 border border-neutral-800/80
                        hover:bg-neutral-800 transition-colors
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600"
             onClick={openSearchPrefilled}
@@ -713,7 +720,7 @@ export default function MailChat() {
               {/* Timing Footer */}
               {msg.role === 'assistant' && i === messages.length - 1 && (timing.es_ms || timing.llm_ms || timing.client_ms) && (
                 <div className="mt-2 flex items-center gap-2 text-[11px] text-neutral-500">
-                  <span 
+                  <span
                     className={`inline-block h-2 w-2 rounded-full ${
                       isStreamAlive ? 'bg-green-500' : 'bg-neutral-600'
                     }`}
@@ -836,7 +843,7 @@ export default function MailChat() {
           />
           remember exceptions
         </label>
-        
+
         {/* Mode Selector */}
         <label className="text-xs flex items-center gap-2 px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
           <span className="opacity-70">mode</span>
@@ -851,7 +858,7 @@ export default function MailChat() {
             <option value="money">money</option>
           </select>
         </label>
-        
+
         {/* Money Mode: Export Receipts Link */}
         {mode === 'money' && (
           <a
@@ -863,7 +870,7 @@ export default function MailChat() {
             Export receipts (CSV)
           </a>
         )}
-        
+
         <button
           onClick={() => lastQuery && send(lastQuery, { propose: true })}
           disabled={busy || !lastQuery}
@@ -904,19 +911,19 @@ export default function MailChat() {
         {/* Right Sidebar - Policy Accuracy Panel */}
         <div className="lg:col-span-1 space-y-3">
           <PolicyAccuracyPanel />
-          
+
           {/* Money Tools Panel */}
           <div className="rounded-2xl border border-neutral-800 p-3 bg-neutral-900">
             <div className="text-sm font-semibold mb-2">Money tools</div>
             <div className="flex gap-2">
-              <button 
-                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700" 
+              <button
+                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700"
                 onClick={loadDupes}
               >
                 View duplicates
               </button>
-              <button 
-                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700" 
+              <button
+                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700"
                 onClick={loadSummary}
               >
                 Spending summary

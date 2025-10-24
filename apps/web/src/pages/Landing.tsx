@@ -29,8 +29,13 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto text-center space-y-8">
           {/* Logo and Title */}
           <div className="space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-              <Mail className="w-8 h-8 text-primary" />
+            <div className="inline-flex items-center justify-center mb-4">
+              <img
+                src="/ApplyLensLogo.png"
+                alt="ApplyLens Logo"
+                className="w-24 h-24 object-contain"
+                draggable={false}
+              />
             </div>
             <h1 className="text-5xl font-bold tracking-tight">
               ApplyLens

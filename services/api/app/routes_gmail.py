@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from typing import List, Optional
@@ -10,6 +11,8 @@ from .db import SessionLocal
 from .gmail_service import gmail_backfill
 from .metrics import BACKFILL_INSERTED, BACKFILL_REQUESTS, GMAIL_CONNECTED
 from .models import Email, OAuthToken
+
+logger = logging.getLogger(__name__)
 
 # Copilot: POST /gmail/backfill?days=60 enqueues backfill task and returns inserted count.
 # Copilot: Rate limiting enforced per user with configurable cooldown (default 300s).
@@ -203,7 +206,27 @@ def backfill(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        from google.auth import exceptions as google_exceptions
+
+        logger.error(f"Backfill exception for {email}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         BACKFILL_REQUESTS.labels(result="error").inc()
+
+        # Copilot: return 401 with {"error":"gmail_reauth_required"} when RefreshError occurs
+        # and 403 with {"error":"csrf_failed"} for CSRF failures.
+        if (
+            isinstance(e, google_exceptions.RefreshError)
+            or "invalid_grant" in str(e).lower()
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "error": "gmail_reauth_required",
+                    "message": "OAuth token invalid or expired. Please re-authenticate.",
+                },
+            )
+
         raise HTTPException(status_code=400, detail=str(e))
     finally:
         db.close()

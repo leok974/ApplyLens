@@ -16,15 +16,17 @@ import PolicyStudio from './pages/PolicyStudio'
 import { ToastProvider } from './components/ui/use-toast'
 import { Toaster } from './components/ui/sonner'
 import { ProfileSummary } from './components/profile/ProfileSummary'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export default function App() {
   return (
     <ToastProvider>
-      <div id="app-root" data-testid="app-root" className="min-h-screen bg-background text-foreground">
+      <TooltipProvider delayDuration={100}>
+        <div id="app-root" data-testid="app-root" className="min-h-screen bg-background text-foreground">
         <Routes>
           {/* Public landing page */}
           <Route path="/welcome" element={<Landing />} />
-          
+
           {/* Protected routes */}
           <Route path="/*" element={
             <LoginGuard>
@@ -52,6 +54,7 @@ export default function App() {
         </Routes>
         <Toaster />
       </div>
+      </TooltipProvider>
     </ToastProvider>
   )
 }

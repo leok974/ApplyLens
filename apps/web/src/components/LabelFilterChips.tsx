@@ -28,7 +28,9 @@ export function LabelFilterChips({
         return (
           <button
             key={l}
+            type="button"
             onClick={() => toggle(l)}
+            data-testid={`filter-label-${l}`}
             className={
               "inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 transition " +
               (l === "offer"
@@ -44,7 +46,7 @@ export function LabelFilterChips({
         );
       })}
       {current.size > 0 && (
-        <button onClick={clearAll} className="text-xs text-muted-foreground underline">
+        <button type="button" onClick={clearAll} className="text-xs text-muted-foreground underline">
           Clear
         </button>
       )}

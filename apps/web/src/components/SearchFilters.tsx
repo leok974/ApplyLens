@@ -79,6 +79,7 @@ export function SearchFilters({
         {hasActiveFilters && (
           <div className="text-right pt-2 border-t">
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={clearAllFilters}

@@ -1,4 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="20" fill="#667eea"/>
-  <text x="50" y="70" font-size="60" font-weight="bold" text-anchor="middle" fill="white" font-family="Arial, sans-serif">📬</text>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle border (light purple/gray) -->
+  <circle cx="256" cy="256" r="245" stroke="#A5B4C7" stroke-width="8" fill="none"/>
+
+  <!-- Inner circle border (purple) -->
+  <circle cx="256" cy="256" r="230" stroke="#7B68EE" stroke-width="6" fill="none"/>
+
+  <!-- Dark background circle -->
+  <circle cx="256" cy="256" r="220" fill="#1A2332"/>
+
+  <!-- Swoosh/arc pattern (blue gradient) -->
+  <path d="M 150 150 Q 180 200 150 250 Q 120 300 150 350" stroke="url(#blueGradient)" stroke-width="25" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 180 120 Q 220 160 200 220 Q 180 280 200 340" stroke="url(#blueGradient)" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.5"/>
+  <path d="M 330 180 Q 360 220 340 280" stroke="url(#cyanGradient)" stroke-width="22" fill="none" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Letter A shape (cyan/blue) -->
+  <path d="M 200 160 L 256 100 L 312 160 L 312 200 L 200 200 Z" fill="url(#blueToTeal)" opacity="0.9"/>
+  <path d="M 220 200 L 220 220 L 292 220 L 292 200" fill="url(#blueToTeal)" opacity="0.8"/>
+
+  <!-- Envelope icon -->
+  <rect x="200" y="270" width="112" height="80" rx="4" fill="none" stroke="url(#purpleToBlue)" stroke-width="6"/>
+  <path d="M 200 270 L 256 310 L 312 270" fill="none" stroke="url(#purpleToBlue)" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5B9FED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A7FCC;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5DD9E8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4AB8C7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="blueToTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5B9FED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5DD9E8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="purpleToBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7B68EE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5B9FED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
 </svg>

@@ -1,6 +1,6 @@
 /**
  * useIncidentsSSE Hook - Phase 5.4 PR4
- * 
+ *
  * Subscribe to real-time incident updates via Server-Sent Events.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -29,13 +29,13 @@ export function useIncidentsSSE(): UseIncidentsSSEResult {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(`${API_BASE}/api/incidents?limit=50`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       setIncidents(data.incidents || []);
     } catch (err) {
@@ -77,7 +77,7 @@ export function useIncidentsSSE(): UseIncidentsSSEResult {
     eventSource.addEventListener('incident_created', (event) => {
       console.log('New incident:', event.data);
       const incident = JSON.parse(event.data) as Incident;
-      
+
       setIncidents((prev) => {
         // Prepend new incident (most recent first)
         const exists = prev.some((i) => i.id === incident.id);
@@ -89,7 +89,7 @@ export function useIncidentsSSE(): UseIncidentsSSEResult {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('New Incident', {
           body: `${incident.severity.toUpperCase()}: ${incident.summary}`,
-          icon: '/favicon.ico',
+          icon: '/ApplyLensLogo.png',
         });
       }
     });
@@ -97,7 +97,7 @@ export function useIncidentsSSE(): UseIncidentsSSEResult {
     eventSource.addEventListener('incident_updated', (event) => {
       console.log('Incident updated:', event.data);
       const update = JSON.parse(event.data);
-      
+
       setIncidents((prev) =>
         prev.map((incident) =>
           incident.id === update.id
@@ -115,15 +115,15 @@ export function useIncidentsSSE(): UseIncidentsSSEResult {
     eventSource.onerror = (err) => {
       console.error('SSE error:', err);
       setConnected(false);
-      
+
       // Close and attempt reconnect after delay
       eventSource.close();
       eventSourceRef.current = null;
-      
+
       // Exponential backoff reconnect (up to 30 seconds)
       const delay = Math.min(30000, Math.random() * 5000 + 5000);
       console.log(`Reconnecting in ${(delay / 1000).toFixed(1)}s...`);
-      
+
       reconnectTimeoutRef.current = setTimeout(() => {
         connectSSE();
       }, delay);

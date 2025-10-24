@@ -10,6 +10,15 @@ import { initTheme } from './lib/theme'
 import { installGlobalReloadGuard } from './lib/reload-guard'
 // import { registerServiceWorker } from './lib/sw-register'
 
+// Version banner for debugging
+console.info(
+  '%c🔍 ApplyLens Web v0.4.22%c\n' +
+  'Build: TBD @ 2025-01-24\n' +
+  'Features: Tooltip fix, active filter visual feedback, score handling',
+  'color: #10b981; font-weight: bold; font-size: 14px;',
+  'color: #6b7280; font-size: 11px;'
+)
+
 // Install reload guard to prevent infinite reload loops
 installGlobalReloadGuard()
 
@@ -20,10 +29,14 @@ initTheme()
 // Uncomment when you have a sw.js file and want to enable offline support
 // registerServiceWorker().catch(console.error)
 
+// Determine basename from Vite's BASE_URL
+const basename = import.meta.env.BASE_URL && import.meta.env.BASE_URL !== '/' ? import.meta.env.BASE_URL : ''
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <BrowserRouter
+        basename={basename}
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,

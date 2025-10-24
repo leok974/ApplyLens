@@ -19,7 +19,7 @@ export function SearchControls() {
     } else {
       newSet.add(category)
     }
-    
+
     if (newSet.size > 0) {
       searchParams.set("cat", [...newSet].join(","))
     } else {
@@ -43,6 +43,7 @@ export function SearchControls() {
       {CATEGORIES.map((cat) => (
         <Button
           key={cat}
+          type="button"
           variant={selectedCats.has(cat) ? "default" : "secondary"}
           size="sm"
           onClick={() => toggleCategory(cat)}
@@ -52,7 +53,7 @@ export function SearchControls() {
           {cat}
         </Button>
       ))}
-      
+
       <div className="ml-auto flex items-center gap-2">
         <Label htmlFor="hide-expired" className="text-sm cursor-pointer">
           Hide expired
@@ -64,6 +65,7 @@ export function SearchControls() {
           data-testid="switch-hide-expired"
         />
         <Button
+          type="button"
           variant={hideExpired ? "secondary" : "default"}
           size="sm"
           onClick={() => setHideExpired(!hideExpired)}

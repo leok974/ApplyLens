@@ -4,6 +4,10 @@
 # =============================================================================
 FROM node:20-alpine AS builder
 
+# Build arguments for metadata
+ARG GIT_SHA
+ARG BUILD_DATE
+
 WORKDIR /app
 
 # Copy dependency files
@@ -28,6 +32,15 @@ RUN npm run build
 # Production stage with nginx
 # =============================================================================
 FROM nginx:1.27-alpine
+
+# Metadata labels for provenance
+ARG GIT_SHA
+ARG BUILD_DATE
+LABEL org.opencontainers.image.revision="${GIT_SHA}" \
+      org.opencontainers.image.source="https://github.com/leok974/ApplyLens" \
+      org.opencontainers.image.title="applylens-web" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.description="ApplyLens frontend - React/Vite with nginx"
 
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html

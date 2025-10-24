@@ -1,9 +1,18 @@
 import { API_BASE } from './apiBase'
+import { apiUrl } from './apiUrl'
 
 // Helper to get CSRF token from cookie
 function getCsrfToken(): string | null {
   const match = document.cookie.match(/csrf_token=([^;]+)/)
   return match ? match[1] : null
+}
+
+// Copilot: add ensureCsrf() before POSTs; handle 401/403 specifically in backfillGmail().
+export async function ensureCsrf(): Promise<void> {
+  const hasCsrf = document.cookie.includes("csrf_token=")
+  if (!hasCsrf) {
+    await fetch(apiUrl("/api/auth/csrf"), { credentials: "include" })
+  }
 }
 
 export type Email = {
@@ -34,7 +43,7 @@ export type Email = {
 }
 
 export async function fetchEmails(): Promise<Email[]> {
-  const r = await fetch('/api/emails/')
+  const r = await fetch(apiUrl('/api/emails/'))
   if (!r.ok) throw new Error('Failed to fetch emails')
   return r.json()
 }
@@ -196,6 +205,33 @@ export async function unifiedSuggest(prefix: string, limit = 8): Promise<Unified
   return r.json()
 }
 
+/**
+ * Fail-soft suggestions API helper - NEVER throws, NEVER blocks results.
+ * Returns empty array on any error to keep UI responsive.
+ */
+export async function getSuggestions(q: string, limit = 8): Promise<string[]> {
+  if (!q || q.trim().length < 2) return []
+
+  try {
+    const res = await fetch(
+      `/api/suggest/?q=${encodeURIComponent(q)}&limit=${limit}`,
+      { credentials: 'include' }
+    )
+
+    if (!res.ok) {
+      console.warn(`[suggest] soft-fail: ${res.status}`)
+      return []
+    }
+
+    const j = await res.json()
+    // Accept multiple shapes: {suggestions: []}, {items: []}, or direct array
+    return j.suggestions ?? j.items ?? (Array.isArray(j) ? j : [])
+  } catch (err) {
+    console.warn('[suggest] soft-fail:', err)
+    return [] // ← do NOT throw; UI should continue to render results
+  }
+}
+
 // Gmail Integration
 
 export type GmailConnectionStatus = {
@@ -242,15 +278,21 @@ export async function getGmailInbox(
 }
 
 export type BackfillResponse = {
-  inserted: number
+  inserted?: number
   days: number
   user_email: string
+  status?: string
+  message?: string
+  _timeout?: boolean
 }
 
 // Copilot: backfillGmail(days) calls '/api/gmail/backfill', handles 202 responses and errors.
 // Copilot: Rate limited to once per 5 minutes per user; backend returns 429 if too frequent.
 // Copilot: Includes CSRF token from cookie in X-CSRF-Token header for security.
 export async function backfillGmail(days = 60, userEmail?: string): Promise<BackfillResponse> {
+  // Ensure CSRF cookie is set before making POST request
+  await ensureCsrf()
+
   let url = `/api/gmail/backfill?days=${days}`
   if (userEmail) {
     url += `&user_email=${encodeURIComponent(userEmail)}`
@@ -264,9 +306,128 @@ export async function backfillGmail(days = 60, userEmail?: string): Promise<Back
 
   const r = await fetch(url, {
     method: 'POST',
-    headers
+    headers,
+    credentials: 'include'
   })
-  if (!r.ok) throw new Error('Backfill failed')
+
+  // Handle 524 Gateway Timeout (Cloudflare timeout - typically 100 seconds)
+  if (r.status === 524) {
+    console.warn('[backfill] 524 Gateway Timeout - backfill may still be running on backend')
+    return {
+      status: 'timeout',
+      message: 'Backfill started but response timed out. Check your inbox in a few minutes.',
+      days,
+      user_email: userEmail || 'current'
+    }
+  }
+
+  // Handle specific error codes
+  if (r.status === 401) {
+    const data = await r.json().catch(() => ({}))
+    if (data.error === 'gmail_reauth_required') {
+      throw new Error('Please reconnect your Gmail account')
+    }
+    throw new Error('Authentication required')
+  }
+
+  if (r.status === 403) {
+    throw new Error('Please refresh the page and try again')
+  }
+
+  if (!r.ok) throw new Error(`Backfill failed: ${r.status} ${r.statusText}`)
+  return r.json()
+}
+
+// v0.4.17: Async Job Pattern for Gmail Backfill (no more 524 timeouts!)
+export type StartJobResponse = {
+  job_id: string
+  started: boolean
+}
+
+export type JobStatusResponse = {
+  job_id: string
+  state: 'queued' | 'running' | 'done' | 'error' | 'canceled'
+  processed: number
+  total: number | null
+  error: string | null
+  inserted: number | null
+}
+
+/**
+ * Start async Gmail backfill job - returns immediately with job_id
+ * Use with useJobPoller() hook to track progress
+ */
+export async function startBackfillJob(days = 60, userEmail?: string): Promise<StartJobResponse> {
+  await ensureCsrf()
+
+  let url = `/api/gmail/backfill/start?days=${days}`
+  if (userEmail) {
+    url += `&user_email=${encodeURIComponent(userEmail)}`
+  }
+
+  const csrfToken = getCsrfToken()
+  const headers: HeadersInit = {}
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+
+  const r = await fetch(url, {
+    method: 'POST',
+    headers,
+    credentials: 'include'
+  })
+
+  // Handle 524 Gateway Timeout (fallback - shouldn't happen with async jobs)
+  if (r.status === 524) {
+    console.warn('[startBackfillJob] 524 Gateway Timeout - job may have started anyway')
+    throw new Error('Request timed out. Please try again.')
+  }
+
+  if (!r.ok) {
+    const text = await r.text()
+    throw new Error(`Failed to start backfill: ${r.status} - ${text}`)
+  }
+
+  return r.json()
+}
+
+/**
+ * Get status of a running job (used by useJobPoller)
+ */
+export async function getJobStatus(jobId: string): Promise<JobStatusResponse> {
+  const url = `/api/gmail/backfill/status?job_id=${encodeURIComponent(jobId)}`
+  const r = await fetch(url, { credentials: 'include' })
+
+  if (!r.ok) {
+    throw new Error(`Failed to get job status: ${r.status}`)
+  }
+
+  return r.json()
+}
+
+/**
+ * Cancel a running job
+ */
+export async function cancelJob(jobId: string): Promise<{ ok: boolean; error?: string }> {
+  await ensureCsrf()
+
+  const csrfToken = getCsrfToken()
+  const headers: HeadersInit = {}
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+
+  const url = `/api/gmail/backfill/cancel?job_id=${encodeURIComponent(jobId)}`
+  const r = await fetch(url, {
+    method: 'POST',
+    headers,
+    credentials: 'include'
+  })
+
+  if (!r.ok) {
+    throw new Error(`Failed to cancel job: ${r.status}`)
+  }
+
   return r.json()
 }
 
@@ -285,7 +446,11 @@ export type ProfileRebuildResponse = {
 }
 
 // Copilot: Helper function for POST requests that automatically includes CSRF token
+// Handles 524 (Gateway Timeout) gracefully for long-running operations
 async function post(url: string, init: RequestInit = {}) {
+  // Ensure CSRF cookie is set before making POST request
+  await ensureCsrf()
+
   const csrfToken = getCsrfToken()
   const headers: Record<string, string> = { ...(init.headers as Record<string, string> || {}) }
   if (csrfToken) {
@@ -295,8 +460,21 @@ async function post(url: string, init: RequestInit = {}) {
   const r = await fetch(url, {
     method: 'POST',
     ...init,
-    headers
+    headers,
+    credentials: 'include'
   })
+
+  // Handle 524 Gateway Timeout (Cloudflare timeout)
+  if (r.status === 524) {
+    console.warn('[api] 524 Gateway Timeout - operation may still be running on backend')
+    // Return a special response indicating timeout but potential success
+    return {
+      status: 'timeout',
+      message: 'Operation started but response timed out. Check back in a moment.',
+      _timeout: true
+    }
+  }
+
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
   return r.json().catch(() => ({}))
 }
@@ -351,7 +529,7 @@ export async function getApplication(id: number): Promise<AppOut> {
 }
 
 export async function createApplication(input: Partial<AppOut>): Promise<AppOut> {
-  const r = await fetch('/api/applications', {
+  const r = await fetch(apiUrl('/api/applications'), {  // apiUrl auto-adds trailing slash
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input)
@@ -361,7 +539,7 @@ export async function createApplication(input: Partial<AppOut>): Promise<AppOut>
 }
 
 export async function updateApplication(id: number, patch: Partial<AppOut>): Promise<AppOut> {
-  const r = await fetch(`/api/applications/${id}`, {
+  const r = await fetch(apiUrl(`/api/applications/${id}`), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(patch)
@@ -581,3 +759,44 @@ export const Security = {
   top3: (message_id: string) =>
     api(`/api/security/risk-top3?message_id=${encodeURIComponent(message_id)}`),
 };
+
+// ---------- Tracker API ----------
+
+export interface TrackerRow {
+  company: string
+  role: string
+  source: string
+  status: string
+  last_update: string
+}
+
+/**
+ * Fetch application rows derived from Gmail emails for the Tracker page.
+ * Returns job-related emails grouped by company as simple tracker rows.
+ * Safe for production - read-only, fails gracefully.
+ */
+export async function fetchTrackerApplications(): Promise<TrackerRow[]> {
+  try {
+    const response = await fetch('/api/tracker', {
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      console.warn(`Tracker API returned ${response.status}`)
+      return []
+    }
+
+    const data = await response.json()
+
+    // Validate response is an array
+    if (!Array.isArray(data)) {
+      console.warn('Tracker API returned non-array:', data)
+      return []
+    }
+
+    return data
+  } catch (error) {
+    console.error('Failed to fetch tracker applications:', error)
+    return []
+  }
+}

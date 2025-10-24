@@ -30,7 +30,7 @@ export function SecurityFilterControls({
             : "bg-muted/30 hover:bg-muted/50"
         }`}
       >
-        <Switch checked={highRisk} onCheckedChange={onHighRiskChange} />
+        <Switch checked={highRisk} onCheckedChange={onHighRiskChange} data-testid="filter-high-risk" />
         <span className="flex items-center gap-1.5">
           <ShieldAlert className="h-3.5 w-3.5" />
           High Risk (≥80)
@@ -46,7 +46,7 @@ export function SecurityFilterControls({
             : "bg-muted/30 hover:bg-muted/50"
         }`}
       >
-        <Switch checked={quarantinedOnly} onCheckedChange={onQuarantinedOnlyChange} />
+        <Switch checked={quarantinedOnly} onCheckedChange={onQuarantinedOnlyChange} data-testid="filter-quarantined" />
         <span className="flex items-center gap-1.5">
           <ShieldX className="h-3.5 w-3.5" />
           Quarantined only
@@ -55,6 +55,7 @@ export function SecurityFilterControls({
 
       {(highRisk || quarantinedOnly) && (
         <button
+          type="button"
           onClick={() => {
             onHighRiskChange(false)
             onQuarantinedOnlyChange(false)

@@ -1,90 +1,177 @@
-# Production Deployment Guide
+# Production Deployment Complete ✅# Production Deployment Guide
 
-Complete guide for deploying ApplyLens production stack using Docker Compose.
+
+
+**Date**: October 22, 2025, 19:50 UTC  Complete guide for deploying ApplyLens production stack using Docker Compose.
+
+**Status**: All Changes Deployed to Production
 
 ## Prerequisites
 
+## Summary
+
 - Docker 24.0+ and Docker Compose 2.0+
-- At least 4GB RAM available for containers
-- 20GB disk space for volumes
-- Production secrets configured
+
+✅ **Metrics Endpoint Fixed**: Now responding at `https://applylens.app/api/metrics/divergence-24h`  - At least 4GB RAM available for containers
+
+✅ **UI Button Renamed**: "Inbox (Actions)" → "Actions"  - 20GB disk space for volumes
+
+✅ **Containers Rebuilt**: API and Web using latest code  - Production secrets configured
+
+✅ **Production Verified**: No more 404 errors
 
 ## Quick Start
 
+## Changes Deployed
+
 ### 1. Configuration
 
-```bash
-# Copy environment template
-cp infra/.env.example infra/.env
+### 1. API - Metrics Endpoint Fix
+
+**File**: `services/api/app/routers/metrics.py` (line 37)```bash
+
+```python# Copy environment template
+
+router = APIRouter(prefix="/metrics", tags=["metrics"])  # was "/api/metrics"cp infra/.env.example infra/.env
+
+```
 
 # Edit with production values
-nano infra/.env
+
+**Why**: Nginx strips `/api` prefix when proxying, so router needed to match the stripped path.nano infra/.env
+
 ```
 
-**Required configuration:**
-```bash
-# Database credentials
+### 2. Web - Button Rename
+
+**Files**:**Required configuration:**
+
+- `apps/web/src/components/Nav.tsx` line 20: `'Actions'````bash
+
+- `apps/web/src/components/AppHeader.tsx` line 136: `["Actions", "/inbox-actions"]`# Database credentials
+
 POSTGRES_PASSWORD=your_secure_password_here
 
+**Tailwind classes added** for better display (no text cutoff).
+
 # OAuth secrets
-OAUTH_STATE_SECRET=your_32_character_random_string_here
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+### 3. Docker ComposeOAUTH_STATE_SECRET=your_32_character_random_string_here
+
+**File**: `docker-compose.prod.yml`GOOGLE_CLIENT_ID=your_google_client_id
+
+- Web service now uses `image: leoklemet/applylens-web:latest`GOOGLE_CLIENT_SECRET=your_google_client_secret
+
 GOOGLE_REDIRECT_URI=https://yourdomain.com/auth/google/callback
 
+## Test on Production
+
 # Optional: Grafana admin password
-GRAFANA_ADMIN_PASSWORD=your_grafana_password
-```
 
-### 2. Secrets Setup
+### Metrics Endpoint ✅GRAFANA_ADMIN_PASSWORD=your_grafana_password
+
+```bash```
+
+curl https://applylens.app/api/metrics/divergence-24h
+
+```### 2. Secrets Setup
+
+**Expected**: JSON response with risk divergence data (no 404)
 
 ```bash
-# Create secrets directory
-mkdir -p infra/secrets
 
-# Add Google OAuth credentials
+### UI Changes ✅# Create secrets directory
+
+1. Visit: https://applylens.app/web/mkdir -p infra/secrets
+
+2. **Hard refresh**: `Ctrl+Shift+R` or `Cmd+Shift+R`
+
+3. Look for "Actions" button (not "Inbox (Actions)")# Add Google OAuth credentials
+
 # Download from Google Cloud Console and save as:
-cp ~/Downloads/client_secret_*.json infra/secrets/google.json
+
+## Deployment Commandscp ~/Downloads/client_secret_*.json infra/secrets/google.json
+
 ```
 
-### 3. Start the Stack
+```powershell
+
+# Rebuild API with fix### 3. Start the Stack
+
+docker build --no-cache -t leoklemet/applylens-api:latest services/api/
 
 ```bash
-# Build and start all services
-docker-compose -f docker-compose.prod.yml up -d
 
-# Watch logs
-docker-compose -f docker-compose.prod.yml logs -f
+# Rebuild Web with UI changes# Build and start all services
+
+docker build -t leoklemet/applylens-web:latest apps/web/docker-compose -f docker-compose.prod.yml up -d
+
+
+
+# Deploy to production# Watch logs
+
+docker-compose -f docker-compose.prod.yml up -d --force-recreate apidocker-compose -f docker-compose.prod.yml logs -f
+
+docker-compose -f docker-compose.prod.yml up -d web```
+
 ```
 
 ### 4. Run Database Migrations
 
-```bash
-# Wait for database to be ready (30 seconds)
-sleep 30
+## Verification
 
-# Run migrations
+```bash
+
+```powershell# Wait for database to be ready (30 seconds)
+
+# Test metrics endpointsleep 30
+
+curl http://localhost/api/metrics/divergence-24h
+
+# Output: {"suspicious_divergence_pp": -100.0, "error_rate_5m": 0.0, ...}# Run migrations
+
 docker-compose -f docker-compose.prod.yml exec api alembic upgrade head
-```
 
-### 5. Verify Services
+# Check container status```
 
-```bash
-# Check all services are healthy
-docker-compose -f docker-compose.prod.yml ps
+docker ps --filter "name=applylens-api-prod"
 
-# Test endpoints
-curl http://localhost:8003/healthz          # API health
-curl http://localhost:5175/                 # Frontend
-curl http://localhost:9200/_cluster/health  # Elasticsearch
-curl http://localhost:5601/api/status       # Kibana
+# Output: Up 2 minutes, leoklemet/applylens-api:latest### 5. Verify Services
+
+
+
+docker ps --filter "name=applylens-web-prod"  ```bash
+
+# Output: Up 10 minutes (healthy), leoklemet/applylens-web:latest# Check all services are healthy
+
+```docker-compose -f docker-compose.prod.yml ps
+
+
+
+## Files Modified# Test endpoints
+
+1. ✅ `services/api/app/routers/metrics.py` - Router prefixcurl http://localhost:8003/healthz          # API health
+
+2. ✅ `apps/web/src/components/Nav.tsx` - Button labelcurl http://localhost:5175/                 # Frontend
+
+3. ✅ `apps/web/src/components/AppHeader.tsx` - Button label + Tailwindcurl http://localhost:9200/_cluster/health  # Elasticsearch
+
+4. ✅ `docker-compose.prod.yml` - Web image configurationcurl http://localhost:5601/api/status       # Kibana
+
 curl http://localhost:9090/-/healthy        # Prometheus
-curl http://localhost:3000/api/health       # Grafana
-```
 
-## Services Overview
+## Related Documentationcurl http://localhost:3000/api/health       # Grafana
 
-| Service | Port | URL | Purpose |
+- `VERIFICATION_GUIDE.md` - How to verify all changes```
+
+- `GRAFANA_DASHBOARDS_COMPLETE.md` - Monitoring setup
+
+- `GRAFANA_PROMETHEUS_SETUP.md` - Metrics infrastructure## Services Overview
+
+
+
+**Status**: ✅ Production Ready - All Changes Live| Service | Port | URL | Purpose |
+
 |---------|------|-----|---------|
 | **Frontend** | 5175 | http://localhost:5175 | React/Vite UI |
 | **API** | 8003 | http://localhost:8003 | FastAPI backend |

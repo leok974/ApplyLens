@@ -105,13 +105,13 @@ export default function InboxPolishedDemo() {
   const [activeId, setActiveId] = React.useState<string>("1");
   const [showHelp, setShowHelp] = React.useState(false);
   const [density, setDensity] = React.useState<"compact"|"comfortable">("comfortable");
-  
+
   // Panel mode state
   const [panelMode, setPanelMode] = React.useState<PanelMode>(() => {
     const saved = localStorage.getItem(MODE_KEY) as PanelMode | null;
     return saved === "split" || saved === "overlay" ? saved : "overlay";
   });
-  
+
   // Track viewport >= 1024px
   const [isDesktop, setIsDesktop] = React.useState<boolean>(
     typeof window !== "undefined" ? window.innerWidth >= DESKTOP_BP : true
@@ -129,7 +129,7 @@ export default function InboxPolishedDemo() {
       mq.removeEventListener?.("change", onMQ);
     };
   }, []);
-  
+
   // Effective mode: force overlay on small screens, keep saved preference for desktop
   const effectiveMode: PanelMode = isDesktop ? panelMode : "overlay";
 
@@ -137,7 +137,7 @@ export default function InboxPolishedDemo() {
   React.useEffect(() => {
     if (isDesktop && panelMode === "split") setOpenPanel(true);
   }, [isDesktop, panelMode]);
-  
+
   // Details panel state
   const [selectedDetailId, setSelectedDetailId] = React.useState<string | null>(null);
   const [openPanel, setOpenPanel] = React.useState(false);
@@ -145,7 +145,7 @@ export default function InboxPolishedDemo() {
   const [detail, setDetail] = React.useState<EmailDetails | null>(null);
   const [thread, setThread] = React.useState<any[] | null>(null);
   const [indexInThread, setIndexInThread] = React.useState<number | null>(null);
-  
+
   // Filter states
   const [onlyPromo, setOnlyPromo] = React.useState(false);
   const [onlyBills, setOnlyBills] = React.useState(false);
@@ -166,10 +166,10 @@ export default function InboxPolishedDemo() {
     setSelectedDetailId(id);
     setOpenPanel(true);
     setLoadingDetail(true);
-    
+
     // Simulate API call - in production, use getEmailById and getThread from api.ts
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     const email = items.find(e => e.id === id);
     if (email) {
       const mapped: EmailDetails = {
@@ -208,7 +208,7 @@ export default function InboxPolishedDemo() {
           body_text: email.preview + "\n\n[Full email content would appear here in production]"
         }
       ];
-      
+
       // Only set thread if there's more than one message
       if (demoThread.length > 1) {
         setThread(demoThread);
@@ -227,13 +227,13 @@ export default function InboxPolishedDemo() {
     setIndexInThread(i);
     const m = thread[i];
     // Rehydrate detail body with that message
-    setDetail((prev) => prev ? { 
-      ...prev, 
-      id: m.id, 
-      from: m.from, 
-      date: m.date, 
-      body_html: m.body_html, 
-      body_text: m.body_text 
+    setDetail((prev) => prev ? {
+      ...prev,
+      id: m.id,
+      from: m.from,
+      date: m.date,
+      body_html: m.body_html,
+      body_text: m.body_text
     } : prev);
     setSelectedDetailId(m.id);
   }
@@ -251,35 +251,35 @@ export default function InboxPolishedDemo() {
   // Demo handlers
   const runSearch = async () => {
     setLoading(true);
-    
+
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     let filtered = [...demoEmails];
-    
+
     // Apply text search
     if (q.trim()) {
-      filtered = filtered.filter(email => 
+      filtered = filtered.filter(email =>
         email.subject.toLowerCase().includes(q.toLowerCase()) ||
         email.sender.toLowerCase().includes(q.toLowerCase()) ||
         email.preview.toLowerCase().includes(q.toLowerCase())
       );
     }
-    
+
     // Apply category filters
     if (onlyPromo) filtered = filtered.filter(e => e.reason === "promo");
     if (onlyBills) filtered = filtered.filter(e => e.reason === "bill");
     if (onlySafe) filtered = filtered.filter(e => e.reason === "safe");
-    
+
     setItems(filtered);
     setLoading(false);
-    
+
     toast({
       title: "Search complete",
       description: `Found ${filtered.length} email${filtered.length !== 1 ? 's' : ''}`,
     });
   };
-  
+
   const resetFilters = () => {
     setQ("");
     setOnlyPromo(false);
@@ -314,10 +314,10 @@ export default function InboxPolishedDemo() {
       const idx = activeId ? items.findIndex(i => i.id === activeId) : -1;
 
       // Help dialog
-      if (e.key === "?") { 
-        setShowHelp((v) => !v); 
-        e.preventDefault(); 
-        return; 
+      if (e.key === "?") {
+        setShowHelp((v) => !v);
+        e.preventDefault();
+        return;
       }
 
       // j/k navigation
@@ -365,7 +365,7 @@ export default function InboxPolishedDemo() {
     });
     clearSelection();
   };
-  
+
   const bulkSafe = () => {
     const count = selected.size;
     toast({
@@ -374,7 +374,7 @@ export default function InboxPolishedDemo() {
     });
     clearSelection();
   };
-  
+
   const bulkSus = () => {
     const count = selected.size;
     toast({
@@ -441,9 +441,9 @@ export default function InboxPolishedDemo() {
           <SearchIcon className="h-4 w-4" />
         </Button>
         <div className="ml-auto flex items-center gap-2">
-          <Button 
-            variant={!isDesktop ? "secondary" : "outline"} 
-            size="sm" 
+          <Button
+            variant={!isDesktop ? "secondary" : "outline"}
+            size="sm"
             onClick={togglePanelMode}
             disabled={!isDesktop}
             className="hidden md:inline-flex"
@@ -497,7 +497,7 @@ export default function InboxPolishedDemo() {
           onApply={runSearch}
           onReset={resetFilters}
         />
-        
+
         {/* Content area: list + optional split panel */}
         {effectiveMode === "split" ? (
           // GRID: list on left, details docked right
@@ -512,7 +512,6 @@ export default function InboxPolishedDemo() {
                 selected={selected}
                 onToggleSelect={toggleSelect}
                 activeId={activeId}
-                onSetActive={setActiveId}
                 density={density}
                 onOpen={(id) => openDetails(id)}
                 onArchive={handleArchive}
@@ -564,7 +563,6 @@ export default function InboxPolishedDemo() {
               selected={selected}
               onToggleSelect={toggleSelect}
               activeId={activeId}
-              onSetActive={setActiveId}
               density={density}
               onOpen={(id) => openDetails(id)}
               onArchive={handleArchive}

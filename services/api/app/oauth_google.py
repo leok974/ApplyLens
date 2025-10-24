@@ -75,10 +75,11 @@ def init_oauth(
         state = urllib.parse.quote(json.dumps(state_data))
 
         # Generate authorization URL
+        # Always request fresh refresh token by forcing consent screen
         auth_url, _ = flow.authorization_url(
-            access_type="offline",  # Get refresh token
-            prompt="consent",  # Force consent to get refresh token
-            include_granted_scopes="true",
+            access_type="offline",  # Request offline access (refresh token)
+            prompt="consent",  # Always show consent screen to get new refresh token
+            include_granted_scopes="true",  # Include previously granted scopes
             state=state,
         )
 

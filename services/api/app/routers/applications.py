@@ -3,14 +3,19 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-router = APIRouter(tags=["applications"])
+from ..deps.user import get_current_user_email
+from ..es import ES_ENABLED, INDEX, es
+
+router = APIRouter(prefix="/api", tags=["applications"])
+logger = logging.getLogger(__name__)
 
 # ---------- Pydantic Models ----------
 
@@ -380,3 +385,153 @@ def list_applications(
         order=order,
         total=len(filtered),
     )
+
+
+# ---------- Tracker Models ----------
+
+
+class TrackerRow(BaseModel):
+    """Application row for the Tracker page"""
+
+    company: str
+    role: str
+    source: str
+    status: str
+    last_update: str  # ISO datetime
+
+
+# ---------- Tracker Endpoint ----------
+
+
+@router.get("/tracker", response_model=List[TrackerRow])
+def get_tracker_applications(user_email: str = Depends(get_current_user_email)):
+    """
+    Get application rows for the Tracker page derived from Gmail emails.
+
+    This is a read-only endpoint that groups job-related emails by company
+    and returns them as application rows for the Tracker UI.
+
+    Safe for production - no mutations, graceful fallback to empty list.
+    """
+    try:
+        # If Elasticsearch is disabled or not available, return empty list
+        if not ES_ENABLED or es is None:
+            logger.info("Tracker: ES disabled, returning empty list")
+            return []
+
+        # Query ES for job-related emails for this user
+        # Look for emails with label_heuristics: offer, interview, rejection, application_receipt
+        body = {
+            "size": 100,  # Get up to 100 recent job emails
+            "query": {
+                "bool": {
+                    "must": [
+                        {"term": {"owner_email.keyword": user_email}},
+                    ],
+                    "should": [
+                        {"term": {"label_heuristics": "offer"}},
+                        {"term": {"label_heuristics": "interview"}},
+                        {"term": {"label_heuristics": "rejection"}},
+                        {"term": {"label_heuristics": "application_receipt"}},
+                    ],
+                    "minimum_should_match": 1,
+                }
+            },
+            "sort": [{"received_at": {"order": "desc"}}],
+            "_source": [
+                "company",
+                "role",
+                "source",
+                "label_heuristics",
+                "received_at",
+                "sender",
+            ],
+        }
+
+        result = es.search(index=INDEX, body=body)
+        hits = result.get("hits", {}).get("hits", [])
+
+        # Group emails by company and build application rows
+        # Use a dict to deduplicate by company
+        apps_by_company = {}
+
+        for hit in hits:
+            src = hit.get("_source", {})
+            company = src.get("company") or _extract_company_from_sender(
+                src.get("sender", "")
+            )
+            role = src.get("role", "Unknown Role")
+            source = src.get("source", "Gmail")
+            labels = src.get("label_heuristics", [])
+            received_at = src.get("received_at")
+
+            # Skip if no company identified
+            if not company:
+                continue
+
+            # Determine status from label_heuristics
+            status = "Applied"
+            if "offer" in labels:
+                status = "Offer"
+            elif "interview" in labels:
+                status = "Interview Scheduled"
+            elif "rejection" in labels:
+                status = "Rejected"
+            elif "application_receipt" in labels:
+                status = "Applied"
+
+            # Only keep the most recent email per company
+            if company not in apps_by_company:
+                apps_by_company[company] = TrackerRow(
+                    company=company,
+                    role=role,
+                    source=source,
+                    status=status,
+                    last_update=received_at or datetime.utcnow().isoformat(),
+                )
+            else:
+                # Update if this email is more recent or has a "higher" status
+                existing = apps_by_company[company]
+                status_priority = {
+                    "Offer": 4,
+                    "Interview Scheduled": 3,
+                    "Rejected": 2,
+                    "Applied": 1,
+                }
+                if status_priority.get(status, 0) > status_priority.get(
+                    existing.status, 0
+                ):
+                    apps_by_company[company].status = status
+                    apps_by_company[company].last_update = (
+                        received_at or existing.last_update
+                    )
+
+        # Convert to list and sort by last_update descending
+        rows = list(apps_by_company.values())
+        rows.sort(key=lambda x: x.last_update, reverse=True)
+
+        logger.info(f"Tracker: Found {len(rows)} applications for user {user_email}")
+        return rows
+
+    except Exception as e:
+        # Fail gracefully - log error and return empty list
+        logger.exception(f"Tracker endpoint failed for user {user_email}: {e}")
+        return []
+
+
+def _extract_company_from_sender(sender: str) -> str:
+    """
+    Extract company name from sender email address.
+    E.g., "jobs@lever.co" -> "Lever"
+    """
+    if not sender:
+        return ""
+
+    # Extract domain from email
+    if "@" in sender:
+        domain = sender.split("@")[-1]
+        # Remove TLD and convert to title case
+        company = domain.split(".")[0]
+        return company.title()
+
+    return sender.title()

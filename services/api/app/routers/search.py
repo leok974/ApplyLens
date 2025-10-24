@@ -1,3 +1,5 @@
+import json
+import logging
 import re
 from datetime import datetime
 from typing import List, Optional
@@ -7,6 +9,8 @@ from pydantic import BaseModel
 
 from ..deps.user import get_current_user_email
 from ..es import ES_ENABLED, INDEX, es
+
+logger = logging.getLogger(__name__)
 
 # ---- Tunables for "demo pop"
 LABEL_WEIGHTS = {
@@ -72,7 +76,9 @@ class SearchResponse(BaseModel):
 @router.get("/", response_model=SearchResponse)
 def search(
     request: Request,
-    q: str = Query(..., min_length=1, description="Search query"),
+    q: Optional[str] = Query(
+        None, description="Search query (defaults to '*' for match_all)"
+    ),
     size: int = Query(25, ge=1, le=100, description="Number of results"),
     scale: str = Query("7d", description="Recency scale: 3d|7d|14d"),
     labels: Optional[List[str]] = Query(
@@ -101,7 +107,7 @@ def search(
         description="Filter by ML category (ats, bills, banks, events, promotions)",
     ),
     hide_expired: bool = Query(
-        True,
+        False,  # Default to False - don't filter by default
         description="Hide expired emails (expires_at < now) and past events (event_start_at < now)",
     ),
     risk_min: Optional[int] = Query(
@@ -127,25 +133,45 @@ def search(
     if not ES_ENABLED or es is None:
         return SearchResponse(total=0, hits=[], info="Elasticsearch disabled")
 
+    # Log search parameters for debugging
+    logger.debug(
+        "SEARCH params: q=%s scale=%s hide_expired=%s quarantined=%s risk_min=%s labels=%s owner=%s",
+        q,
+        scale,
+        hide_expired,
+        quarantined,
+        risk_min,
+        labels,
+        user_email,
+    )
+
+    # Tolerant defaults: treat missing/empty q as "*" (match_all)
+    q = (q or "*").strip() or "*"
+
     # Validate / normalize scale (defensive)
     allowed = {"3d", "7d", "14d"}
     scale = scale if scale in allowed else "7d"
     recency = {**RECENCY, "scale": scale}
 
     # Build base query with phrase + prefix matching
-    base_query = {
-        "simple_query_string": {
-            "query": f'"{q}" | {q}*',
-            "fields": SEARCH_FIELDS,
-            "default_operator": "and",
+    if q == "*":
+        base_query = {"match_all": {}}
+    else:
+        base_query = {
+            "simple_query_string": {
+                "query": f'"{q}" | {q}*',
+                "fields": SEARCH_FIELDS,
+                "default_operator": "and",
+            }
         }
-    }
 
     # Build filter list
     filters = []
+    must_not = []
 
     # CRITICAL: Always filter by owner_email for multi-user support
-    filters.append({"term": {"owner_email": user_email}})
+    # Use .keyword subfield for exact match since owner_email is text type
+    filters.append({"term": {"owner_email.keyword": user_email}})
 
     # Add label filters
     if labels:
@@ -176,7 +202,7 @@ def search(
     if categories:
         filters.append({"terms": {"category": categories}})
 
-    # Add risk score filter (Security)
+    # Add risk score filter (Security) - only if explicitly provided
     if risk_min is not None or risk_max is not None:
         risk_range = {}
         if risk_min is not None:
@@ -185,9 +211,13 @@ def search(
             risk_range["lte"] = risk_max
         filters.append({"range": {"risk_score": risk_range}})
 
-    # Add quarantine filter (Security)
-    if quarantined is not None:
-        filters.append({"term": {"quarantined": quarantined}})
+    # Add quarantine filter (Security) - improved to handle missing fields
+    # Use must_not instead of term:false to include docs where field is missing
+    if quarantined is True:
+        filters.append({"term": {"quarantined": True}})
+    elif quarantined is False:
+        # Prefer must_not to include docs where quarantined is null/missing
+        must_not.append({"term": {"quarantined": True}})
 
     # Add hide expired filter (Phase 35)
     if hide_expired:
@@ -255,15 +285,49 @@ def search(
     else:
         sort = "relevance"
 
-    # Wrap in bool query if filters present
-    if filters:
-        query = {"bool": {"must": [base_query], "filter": filters}}
+    # Wrap in bool query if filters or must_not present
+    if filters or must_not:
+        bool_parts = {"must": [base_query], "filter": filters}
+        if must_not:
+            bool_parts["must_not"] = must_not
+        query = {"bool": bool_parts}
     else:
         query = base_query
 
     # Build function_score query with label boosts + recency decay
     body = {
         "size": size,
+        # Performance: Only fetch fields we actually render in the UI
+        "_source": [
+            "id",
+            "gmail_id",
+            "subject",
+            "subject_highlight",
+            "from_email",
+            "sender",
+            "from_addr",
+            "from",
+            "snippet",
+            "preview",
+            "body_preview",
+            "body_highlight",
+            "sent_at",
+            "received_at",
+            "date",
+            "labels",
+            "label_heuristics",
+            "label",
+            "score",
+            "replied",
+            "time_to_response_hours",
+            "first_user_reply_at",
+            "category",
+            "expires_at",
+            "event_start_at",
+            "risk_score",
+            "quarantined",
+            "owner_email",
+        ],
         "query": {
             "function_score": {
                 "query": query,
@@ -311,6 +375,16 @@ def search(
             },
         },
     }
+
+    # Debug log the final DSL for troubleshooting
+    logger.debug(
+        "SEARCH alias=%s owner=%s q='%s' filters=%d dsl=%s",
+        INDEX_ALIAS,
+        user_email,
+        q,
+        len(filters),
+        json.dumps(body, default=str),
+    )
 
     res = es.search(index=INDEX_ALIAS, body=body)
 

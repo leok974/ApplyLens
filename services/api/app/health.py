@@ -24,6 +24,34 @@ except ImportError:
         return "unknown"
 
 
+def initialize_health_metrics():
+    """Initialize health metrics on startup to avoid 0 values in Prometheus.
+
+    This ensures DB_UP and ES_UP are set immediately when the app starts,
+    preventing false alerts in Prometheus before the first /ready call.
+    """
+    # Check DB connectivity
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        DB_UP.set(1)
+    except Exception:
+        DB_UP.set(0)
+    finally:
+        db.close()
+
+    # Check ES connectivity
+    try:
+        es_url = os.getenv("ES_URL", "http://es:9200")
+        es = Elasticsearch(es_url)
+        if es.ping():
+            ES_UP.set(1)
+        else:
+            ES_UP.set(0)
+    except Exception:
+        ES_UP.set(0)
+
+
 router = APIRouter(prefix="", tags=["health"])  # Root scope for K8s probes
 
 

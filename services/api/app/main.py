@@ -12,7 +12,7 @@ from starlette_exporter import PrometheusMiddleware
 from . import auth_google, health, oauth_google, routes_extract, routes_gmail
 from .db import Base, engine
 from .es import ensure_index
-from .routers import applications, emails, search, suggest
+from .routers import applications, emails, search, suggest, search_debug
 from .settings import settings
 from .tracing import init_tracing
 from .config import agent_settings
@@ -82,6 +82,14 @@ def _startup():
     # Make sure ES index exists (no‑op if disabled)
     ensure_index()
 
+    # Initialize health metrics (DB_UP, ES_UP) on startup
+    try:
+        from .health import initialize_health_metrics
+
+        initialize_health_metrics()
+    except Exception as e:
+        print(f"Warning: Could not initialize health metrics: {e}")
+
     # Start scheduled jobs (Phase 5.3 active learning)
     try:
         from .scheduler import setup_scheduled_jobs
@@ -125,6 +133,7 @@ def debug_500():
 # Include routers
 app.include_router(emails.router)
 app.include_router(search.router)
+app.include_router(search_debug.router)  # Debug diagnostics for search
 app.include_router(suggest.router)
 app.include_router(applications.router)
 
@@ -142,6 +151,11 @@ app.include_router(auth_google.router)
 app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
+
+# Async Gmail backfill with job tracking (v0.4.17)
+from .routers import gmail_backfill  # noqa: E402
+
+app.include_router(gmail_backfill.router)  # /gmail/backfill/* (no /api prefix needed)
 
 # Phase 2 - Category labeling and profile analytics
 from .routers import labeling, labels, profile  # noqa: E402

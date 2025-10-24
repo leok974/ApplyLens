@@ -19,7 +19,9 @@ export function RepliedFilterChips({
         return (
           <button
             key={key}
+            type="button"
             onClick={() => onChange(key)}
+            data-testid={`filter-replied-${key}`}
             className={
               "inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 transition " +
               (active ? "bg-blue-200 ring-blue-300" : "bg-blue-100 ring-blue-200")

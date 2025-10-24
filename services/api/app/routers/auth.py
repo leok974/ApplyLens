@@ -28,6 +28,13 @@ async def google_login(request: Request):
     if not agent_settings.GOOGLE_CLIENT_ID:
         raise HTTPException(400, "Google OAuth not configured")
 
+    # Log which router is handling this request (prevent regression)
+    client_id = agent_settings.GOOGLE_CLIENT_ID
+    logger.info(
+        "Auth router: core auth.py handling /auth/google/login (client ...%s)",
+        client_id[-6:] if client_id else "NONE",
+    )
+
     state = secrets.token_urlsafe(16)
     # Store state in session for CSRF protection
     # Note: For production, use Starlette SessionMiddleware or signed cookies

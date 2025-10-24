@@ -22,7 +22,7 @@ export default function Inbox() {
   const [labelFilter, setLabelFilter] = useState('')
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  
+
   // Check connection status on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -31,16 +31,16 @@ export default function Inbox() {
       setErr('✅ Successfully connected to Gmail! Click "Sync Emails" to fetch your messages.')
       setTimeout(() => setErr(null), 5000)
     }
-    
+
     getGmailStatus()
       .then(setStatus)
       .catch(e => console.error('Status check failed:', e))
   }, [])
-  
+
   // Fetch emails when filter or page changes
   useEffect(() => {
     if (!status?.connected) return
-    
+
     setLoading(true)
     getGmailInbox(page, 50, labelFilter || undefined, status.user_email)
       .then(resp => {
@@ -50,10 +50,10 @@ export default function Inbox() {
       .catch(e => setErr(String(e)))
       .finally(() => setLoading(false))
   }, [status, page, labelFilter])
-  
+
   // Note: Sync buttons are now in AppHeader component
   // TODO: Wire up sync functionality through context or props if needed
-  
+
   if (!status) {
     return <div className="p-4">Loading Gmail status...</div>
   }
@@ -90,91 +90,98 @@ export default function Inbox() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">📬 Gmail Inbox</h1>
-        <p className="text-sm text-muted-foreground">
-          Connected as <span className="font-mono">{status.user_email}</span>
-        </p>
-      </div>
+    <div className="px-3 sm:px-4">
+      <div className="pt-4">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
+              <span role="img" aria-label="inbox">📥</span>
+              Gmail Inbox
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Connected as <strong>{status.user_email}</strong>
+            </p>
+          </div>
+        </div>
 
-      {err && (
-        <Alert variant={err.startsWith('✅') ? 'default' : 'destructive'} className="mb-4">
-          {err.startsWith('✅') ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <AlertCircle className="h-4 w-4" />
+          {err && (
+            <Alert variant={err.startsWith('✅') ? 'default' : 'destructive'} className="mb-4">
+              {err.startsWith('✅') ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>{err}</AlertDescription>
+            </Alert>
           )}
-          <AlertDescription>{err}</AlertDescription>
-        </Alert>
-      )}
 
-      {/* Label Filter Tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto">
-        {LABEL_FILTERS.map(filter => (
-          <button
-            key={filter.value}
-            onClick={() => {
-              setLabelFilter(filter.value)
-              setPage(1)
-            }}
-            className={`px-4 py-2 rounded whitespace-nowrap transition ${
-              labelFilter === filter.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+          {/* Label Filter Tabs */}
+          <div className="flex gap-2 mb-4 overflow-x-auto">
+            {LABEL_FILTERS.map(filter => (
+              <button
+                key={filter.value}
+                onClick={() => {
+                  setLabelFilter(filter.value)
+                  setPage(1)
+                }}
+                className={`px-4 py-2 rounded whitespace-nowrap transition ${
+                  labelFilter === filter.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted hover:bg-muted/70'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Email Count */}
+          <div className="mb-4 text-sm text-muted-foreground">
+            Showing {emails.length} of {total} emails
+            {labelFilter && ` (filtered by ${LABEL_FILTERS.find(f => f.value === labelFilter)?.label})`}
+          </div>
+
+          {/* Email List */}
+          {loading ? (
+            <div className="text-center py-8">Loading emails...</div>
+          ) : emails.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {labelFilter
+                ? `No emails found with label "${labelFilter}". Try a different filter.`
+                : 'No emails yet. Click "Sync Emails" to fetch from Gmail.'
+              }
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {emails.map(e => (
+                <EmailCard key={e.id} e={e} />
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {total > 50 && (
+            <div className="mt-6 flex justify-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 bg-muted rounded disabled:opacity-50"
+              >
+                ← Previous
+              </button>
+              <span className="px-4 py-2">
+                Page {page} of {Math.ceil(total / 50)}
+              </span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={page >= Math.ceil(total / 50)}
+                className="px-4 py-2 bg-muted rounded disabled:opacity-50"
+              >
+                Next →
+              </button>
+            </div>
+          )}
       </div>
-
-      {/* Email Count */}
-      <div className="mb-4 text-sm text-gray-600">
-        Showing {emails.length} of {total} emails
-        {labelFilter && ` (filtered by ${LABEL_FILTERS.find(f => f.value === labelFilter)?.label})`}
-      </div>
-
-      {/* Email List */}
-      {loading ? (
-        <div className="text-center py-8">Loading emails...</div>
-      ) : emails.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          {labelFilter 
-            ? `No emails found with label "${labelFilter}". Try a different filter.`
-            : 'No emails yet. Click "Sync Emails" to fetch from Gmail.'
-          }
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {emails.map(e => (
-            <EmailCard key={e.id} e={e} />
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {total > 50 && (
-        <div className="mt-6 flex justify-center gap-2">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-          >
-            ← Previous
-          </button>
-          <span className="px-4 py-2">
-            Page {page} of {Math.ceil(total / 50)}
-          </span>
-          <button
-            onClick={() => setPage(p => p + 1)}
-            disabled={page >= Math.ceil(total / 50)}
-            className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Next →
-          </button>
-        </div>
-      )}
     </div>
   )
 }

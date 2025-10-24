@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 
 // This test uses route mocking to simulate OAuth callback without hitting Google
 
-test('google login (mock) sets session and redirects', async ({ page, context }) => {
+test('@devOnly google login (mock) sets session and redirects', async ({ page, context }) => {
   await page.route('**/auth/google/login', async (route) => {
     // Simulate provider redirect by forcing a navigation to callback with fake code/state
     await route.fulfill({ status: 302, headers: { location: '/auth/google/callback?code=fake&state=fake' } });

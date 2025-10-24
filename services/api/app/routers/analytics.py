@@ -20,7 +20,7 @@ def latest():
     return {"status": "ok", "markdown": p.read_text(encoding="utf-8")}
 
 
-@router.get("/search")
+@router.get("/search/")
 def search(q: str = Query(..., min_length=2), k: int = 6):
     """
     Search analytics vector store for relevant insights.

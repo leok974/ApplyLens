@@ -17,7 +17,7 @@ export default function Nav() {
     <nav style={{ padding: 12, borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center' }}>
       <div style={{ flex: 1 }}>
         {link('/', 'Inbox')}
-        {link('/inbox-actions', 'Inbox (Actions)')}
+        {link('/inbox-actions', 'Actions')}
         {link('/search', 'Search')}
         {link('/tracker', 'Tracker')}
         {link('/settings', 'Settings')}

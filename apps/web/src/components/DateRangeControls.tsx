@@ -16,6 +16,7 @@ export function DateRangeControls({
           value={from?.slice(0, 10) || ""}
           onChange={(e) => onChange({ from: e.target.value || undefined, to })}
           className="rounded border px-2 py-1 text-xs"
+          data-testid="filter-date-from"
         />
       </label>
       <label className="text-xs">
@@ -25,10 +26,12 @@ export function DateRangeControls({
           value={to?.slice(0, 10) || ""}
           onChange={(e) => onChange({ from, to: e.target.value || undefined })}
           className="rounded border px-2 py-1 text-xs"
+          data-testid="filter-date-to"
         />
       </label>
       {(from || to) && (
         <button
+          type="button"
           onClick={() => onChange({ from: undefined, to: undefined })}
           className="text-xs text-muted-foreground underline"
         >

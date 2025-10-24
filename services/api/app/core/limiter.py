@@ -3,6 +3,7 @@
 Provides in-memory token bucket rate limiting for /auth/* endpoints.
 Protects against brute force attacks and abuse during high traffic.
 """
+
 import time
 import hashlib
 import logging
@@ -16,14 +17,14 @@ logger = logging.getLogger(__name__)
 
 class MemoryBucket:
     """In-memory token bucket rate limiter.
-    
+
     Uses a simple token bucket algorithm with per-IP, per-path tracking.
     For multi-instance deployments, use Redis-backed implementation.
     """
-    
+
     def __init__(self, capacity: int, window: int):
         """Initialize bucket limiter.
-        
+
         Args:
             capacity: Maximum requests allowed per window
             window: Time window in seconds
@@ -32,58 +33,60 @@ class MemoryBucket:
         self.window = window
         self.tokens = {}  # {key: {"ts": timestamp, "count": count}}
         logger.info(f"Rate limiter initialized: {capacity} req/{window}sec")
-    
+
     def _key(self, ip: str, path: str) -> str:
         """Generate unique key for IP + path combination.
-        
+
         Args:
             ip: Client IP address
             path: Request path
-            
+
         Returns:
             SHA256 hash of IP:path
         """
         return hashlib.sha256(f"{ip}:{path}".encode()).hexdigest()
-    
+
     def allow(self, ip: str, path: str) -> bool:
         """Check if request is allowed under rate limit.
-        
+
         Args:
             ip: Client IP address
             path: Request path
-            
+
         Returns:
             True if request allowed, False if rate limited
         """
         now = int(time.time())
         key = self._key(ip, path)
         bucket = self.tokens.get(key)
-        
+
         # New window or expired bucket
         if not bucket or now - bucket["ts"] >= self.window:
             self.tokens[key] = {"ts": now, "count": 1}
             return True
-        
+
         # Within window, check capacity
         if bucket["count"] < self.capacity:
             bucket["count"] += 1
             return True
-        
+
         # Rate limited
-        logger.warning(f"Rate limit exceeded: {ip} on {path} ({bucket['count']}/{self.capacity})")
+        logger.warning(
+            f"Rate limit exceeded: {ip} on {path} ({bucket['count']}/{self.capacity})"
+        )
         return False
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """FastAPI middleware for rate limiting auth endpoints.
-    
+
     Limits requests to /auth/* paths based on IP address.
     Returns 429 Too Many Requests when limit exceeded.
     """
-    
+
     def __init__(self, app, capacity: int, window: int):
         """Initialize middleware.
-        
+
         Args:
             app: FastAPI application
             capacity: Max requests per window
@@ -92,24 +95,24 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.mem = MemoryBucket(capacity, window)
         logger.info("Rate limit middleware registered")
-    
+
     async def dispatch(self, request: Request, call_next):
         """Process request and apply rate limiting.
-        
+
         Args:
             request: Incoming HTTP request
             call_next: Next middleware/handler
-            
+
         Returns:
             HTTP response (200 or 429)
         """
         if not agent_settings.RATE_LIMIT_ENABLED:
             return await call_next(request)
-        
+
         path = request.url.path
-        
-        # Only limit auth and demo endpoints
-        if path.startswith("/auth/"):
+
+        # Only limit auth endpoints and suggest endpoint (prevent spam)
+        if path.startswith("/auth/") or path.startswith("/api/suggest"):
             # Extract real client IP from X-Forwarded-For header (first IP in chain)
             forwarded_for = request.headers.get("X-Forwarded-For")
             if forwarded_for:
@@ -117,19 +120,49 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 ip = forwarded_for.split(",")[0].strip()
             else:
                 ip = request.client.host if request.client else "0.0.0.0"
-            
-            if not self.mem.allow(ip, path):
-                logger.warning(f"Rate limit exceeded: {ip} on {path}")
-                # Track metric with IP prefix for privacy (first 2 octets only)
-                ip_prefix = ".".join(ip.split(".")[:2]) + ".*.*" if "." in ip else "unknown"
-                rate_limit_exceeded_total.labels(path=path, ip_prefix=ip_prefix).inc()
-                return Response(
-                    "Too Many Requests - Please slow down",
-                    status_code=429,
-                    headers={"Retry-After": str(agent_settings.RATE_LIMIT_WINDOW_SEC)}
-                )
-            
-            # Request allowed
-            rate_limit_allowed_total.labels(path=path).inc()
-        
+
+            # Use stricter limits for suggest endpoint (20 req/min as recommended)
+            if path.startswith("/api/suggest"):
+                # Create separate bucket with tighter limits for suggest
+                suggest_capacity = 20
+                suggest_window = 60  # 1 minute
+                if not hasattr(self, "suggest_bucket"):
+                    self.suggest_bucket = MemoryBucket(suggest_capacity, suggest_window)
+
+                if not self.suggest_bucket.allow(ip, path):
+                    logger.warning(f"Suggest rate limit exceeded: {ip} on {path}")
+                    ip_prefix = (
+                        ".".join(ip.split(".")[:2]) + ".*.*" if "." in ip else "unknown"
+                    )
+                    rate_limit_exceeded_total.labels(
+                        path="/api/suggest", ip_prefix=ip_prefix
+                    ).inc()
+                    return Response(
+                        "Too Many Requests - Please slow down",
+                        status_code=429,
+                        headers={"Retry-After": "60"},
+                    )
+                rate_limit_allowed_total.labels(path="/api/suggest").inc()
+            else:
+                # Auth endpoints use default limits
+                if not self.mem.allow(ip, path):
+                    logger.warning(f"Rate limit exceeded: {ip} on {path}")
+                    # Track metric with IP prefix for privacy (first 2 octets only)
+                    ip_prefix = (
+                        ".".join(ip.split(".")[:2]) + ".*.*" if "." in ip else "unknown"
+                    )
+                    rate_limit_exceeded_total.labels(
+                        path=path, ip_prefix=ip_prefix
+                    ).inc()
+                    return Response(
+                        "Too Many Requests - Please slow down",
+                        status_code=429,
+                        headers={
+                            "Retry-After": str(agent_settings.RATE_LIMIT_WINDOW_SEC)
+                        },
+                    )
+
+                # Request allowed
+                rate_limit_allowed_total.labels(path=path).inc()
+
         return await call_next(request)

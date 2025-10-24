@@ -8,17 +8,25 @@ import datetime as dt
 import json
 import secrets
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 
+from .core.csrf import issue_csrf_cookie
+from .core.crypto import Crypto
 from .db import SessionLocal
 from .models import OAuthToken
 from .settings import settings
 
-router = APIRouter(prefix="/auth/google", tags=["auth"])
+# LEGACY ROUTER - Disabled to prevent conflict with routers/auth.py
+# Changed prefix to /auth2/google to avoid shadowing modern auth router
+# Only keeping /csrf endpoint active. Use routers/auth.py for OAuth login.
+router = APIRouter(prefix="/auth2/google", tags=["auth-legacy"])
+
+# Initialize crypto for token encryption
+crypto = Crypto()
 
 # Load OAuth configuration from centralized settings
 GOOGLE_CREDENTIALS = settings.GOOGLE_CREDENTIALS
@@ -43,6 +51,14 @@ def _decode_state(token: str) -> dict:
     return json.loads(raw_bytes.decode())
 
 
+# Copilot: add GET /api/auth/csrf that issues the csrf_token cookie for JS to read.
+@router.get("/csrf")
+def get_csrf_token(response: Response):
+    """Issue CSRF token cookie for frontend JavaScript to read"""
+    issue_csrf_cookie(response)
+    return {"ok": True}
+
+
 @router.get("/login")
 def login():
     """Initiate OAuth flow with Google"""
@@ -58,10 +74,11 @@ def login():
     state = _encode_state(
         {"nonce": secrets.token_hex(16), "t": int(dt.datetime.utcnow().timestamp())}
     )
+    # Always request fresh refresh token by forcing consent screen
     auth_url, _ = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent",
+        access_type="offline",  # Request offline access (refresh token)
+        prompt="consent",  # Always show consent screen to get new refresh token
+        include_granted_scopes="true",  # Include previously granted scopes
         state=state,
     )
 
@@ -126,8 +143,12 @@ def callback(request: Request, state: str, code: str):
             )
             db.add(existing)
 
-        existing.access_token = creds.token
-        existing.refresh_token = creds.refresh_token or existing.refresh_token
+        # Encrypt tokens before storing (AES-GCM encryption)
+        existing.access_token = (
+            crypto.enc(creds.token.encode()) if creds.token else existing.access_token
+        )
+        if creds.refresh_token:
+            existing.refresh_token = crypto.enc(creds.refresh_token.encode())
         # expiry is naive datetime in UTC for google creds; ensure aware
         expiry = creds.expiry
         existing.expiry = expiry

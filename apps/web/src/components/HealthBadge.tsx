@@ -28,7 +28,7 @@ export function HealthBadge() {
       if (!mounted) return;
 
       try {
-        const res = await fetch('/api/metrics/divergence-24h');
+        const res = await fetch('/api/metrics/divergence-bq');
 
         if (!mounted) return;
 
@@ -69,8 +69,13 @@ export function HealthBadge() {
         setError(null);
         errorAttempt = 0; // Reset backoff on success
 
-        // Use status from API response
-        setStatus(data.status);
+        // Use status from API response with validation
+        if (data.status && ['ok', 'degraded', 'paused'].includes(data.status)) {
+          setStatus(data.status);
+        } else {
+          console.warn(`[HealthBadge] Invalid status from API: ${data.status}, defaulting to 'paused'`);
+          setStatus('paused');
+        }
 
         // Poll every 60s when healthy
         scheduleNext(60_000);
@@ -130,7 +135,8 @@ export function HealthBadge() {
     },
   };
 
-  const config = statusConfig[status];
+  // Safety check: fallback to 'paused' if status is invalid
+  const config = statusConfig[status] || statusConfig.paused;
   const Icon = config.icon;
 
   // Tooltip details

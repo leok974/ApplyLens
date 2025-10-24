@@ -79,7 +79,7 @@
   --color-destructive: hsl(0 84.2% 60.2%);
   --color-destructive-foreground: hsl(0 0% 100%);
   --color-ring: hsl(221 75% 64%);
-  
+
   --radius-lg: 0.5rem;
   --radius-md: calc(0.5rem - 2px);
   --radius-sm: calc(0.5rem - 4px);
@@ -189,3 +189,45 @@ html.dark ::-webkit-scrollbar-thumb {
   background: hsl(var(--color-muted-foreground));
 }
 
+/* Hide horizontal scrollbar in the tab strip while keeping scrollability */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tighter letter spacing for brand wordmark next to large logo */
+.brand-tight {
+  letter-spacing: -0.01em;
+}
+
+/* Hover effect for the header logo (subtle lift + glow) */
+.logo-hover {
+  transition: transform 160ms ease, filter 160ms ease, opacity 160ms ease;
+  will-change: transform, filter;
+}
+.logo-hover:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: drop-shadow(0 2px 10px rgba(99, 102, 241, 0.25)); /* primary-ish glow */
+}
+
+/* Page-load entrance (respects reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+  .brand-enter {
+    animation: brandIn 520ms cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes brandIn {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(.96);
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: none;
+    }
+  }
+}

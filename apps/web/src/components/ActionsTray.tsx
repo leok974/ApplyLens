@@ -1,6 +1,6 @@
 /**
  * ActionsTray Component
- * 
+ *
  * Right-side drawer that displays pending actions for human-in-the-loop approval.
  * Features:
  * - List of proposed actions with email context
@@ -88,7 +88,7 @@ export function ActionsTray({ isOpen, onClose }: ActionsTrayProps) {
       }
 
       const result = await approveAction(action.id, screenshotDataUrl)
-      
+
       if (result.ok) {
         toast({
           title: "✅ Action approved",
@@ -166,8 +166,9 @@ export function ActionsTray({ isOpen, onClose }: ActionsTrayProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-40"
+        className="fixed inset-0 bg-black/50 z-40 pointer-events-auto"
         onClick={onClose}
+        aria-hidden={false}
       />
 
       {/* Tray */}
@@ -266,7 +267,7 @@ function ActionCard({ action, processing, onApprove, onReject, onAlways }: Actio
             {actionInfo.label}
           </Badge>
         </div>
-        
+
         {/* Confidence */}
         <div className="flex items-center gap-2">
           <div className="flex-1 h-1.5 bg-neutral-700 rounded-full overflow-hidden">
@@ -314,7 +315,7 @@ function ActionCard({ action, processing, onApprove, onReject, onAlways }: Actio
               <ChevronDown className="h-3 w-3" />
             )}
           </button>
-          
+
           {expanded && (
             <div className="mt-2 space-y-2 text-xs text-neutral-300">
               <p>{action.rationale.narrative || "No explanation available"}</p>

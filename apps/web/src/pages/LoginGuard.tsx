@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { apiUrl } from "../lib/apiUrl";
 
 interface LoginGuardProps {
   children: React.ReactNode;
@@ -9,21 +10,37 @@ type Me = { id: string; email: string } | null;
 /**
  * Fetch user from /api/auth/me with proper error handling.
  *
- * - 401 → null (stable unauthenticated state, show login CTA)
+ * - 401/403 → null (stable unauthenticated state, show login CTA)
+ * - 3xx redirect → null (treat as unauth, never follow)
+ * - Non-JSON response → null (HTML fallback = unauth)
  * - 5xx/network → "degraded" (retry with backoff)
  * - 200 → user object
  */
 async function getMe(signal?: AbortSignal): Promise<Me | "degraded"> {
   try {
-    const r = await fetch("/api/auth/me", {
+    const r = await fetch(apiUrl("/api/auth/me"), {
       credentials: "include",
       signal,
       headers: { "Accept": "application/json" },
+      redirect: "manual", // Never follow redirects
     });
 
-    // 401 is a STABLE unauthenticated state - don't retry!
-    if (r.status === 401) {
-      console.info("[LoginGuard] User not authenticated (401)");
+    // 3xx: If redirected, treat as unauthenticated (don't follow to HTML login page)
+    if (r.status >= 300 && r.status < 400) {
+      const loc = r.headers.get('location') || '';
+      console.warn('[LoginGuard] Redirect detected', { from: '/api/auth/me', to: loc, status: r.status });
+      return null;
+    }
+
+    // 401/403 is a STABLE unauthenticated state - don't retry!
+    if (r.status === 401 || r.status === 403) {
+      console.info("[LoginGuard] User not authenticated (401/403)");
+      return null;
+    }
+
+    // 204 No Content → unauthenticated
+    if (r.status === 204) {
+      console.info("[LoginGuard] No session (204)");
       return null;
     }
 
@@ -33,12 +50,26 @@ async function getMe(signal?: AbortSignal): Promise<Me | "degraded"> {
       throw new Error(`HTTP ${r.status}`);
     }
 
+    // Check content-type before parsing JSON
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const body = (await r.text()).slice(0, 200);
+      console.error('[LoginGuard] Non-JSON response', {
+        url: r.url,
+        status: r.status,
+        ct,
+        body
+      });
+      // Treat HTML response as unauthenticated (don't crash)
+      return null;
+    }
+
     const data = await r.json();
     return data;
   } catch (err) {
     // Network error, timeout, or 5xx → degraded state
     if (err instanceof Error && err.name !== "AbortError") {
-      console.warn(`[LoginGuard] Network/server error: ${err.message}`);
+      console.error(`[LoginGuard] Network/server error:`, err.message);
     }
     return "degraded";
   }

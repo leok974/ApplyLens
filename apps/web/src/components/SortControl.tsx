@@ -14,6 +14,7 @@ export function SortControl({
         value={value}
         onChange={(e) => onChange(e.target.value as SortKey)}
         className="rounded border px-2 py-1 text-xs"
+        data-testid="filter-sort"
       >
         <option value="relevance">Relevance</option>
         <option value="received_desc">Newest</option>

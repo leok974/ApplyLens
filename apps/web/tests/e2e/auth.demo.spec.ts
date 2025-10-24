@@ -7,7 +7,7 @@ async function startDemo(page: any) {
 }
 
 test.describe('Demo login flow', () => {
-  test('landing → demo → inbox → me', async ({ page }) => {
+  test('@devOnly landing → demo → inbox → me', async ({ page }) => {
     await page.goto('/welcome');
     await expect(page.getByRole('button', { name: 'Connect Gmail' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Try Demo' })).toBeVisible();

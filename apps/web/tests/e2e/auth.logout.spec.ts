@@ -5,7 +5,7 @@ async function ensureDemo(page: any) {
   await page.request.post('/auth/demo/start');
 }
 
-test('logout clears session and returns to landing', async ({ page }) => {
+test('@devOnly logout clears session and returns to landing', async ({ page }) => {
   await ensureDemo(page);
   await page.goto('/');
   // Open header menu and click Logout (or call API)
