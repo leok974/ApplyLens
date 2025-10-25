@@ -12,9 +12,9 @@ import { installGlobalReloadGuard } from './lib/reload-guard'
 
 // Version banner for debugging
 console.info(
-  '%c🔍 ApplyLens Web v0.4.22%c\n' +
-  'Build: TBD @ 2025-01-24\n' +
-  'Features: Tooltip fix, active filter visual feedback, score handling',
+  '%c🔍 ApplyLens Web v0.4.27%c\n' +
+  'Build: 2025-10-24\n' +
+  'Features: Enhanced Actions page with drawer UI, inline explanations, production read-only mode',
   'color: #10b981; font-weight: bold; font-size: 14px;',
   'color: #6b7280; font-size: 11px;'
 )
