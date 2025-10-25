@@ -9,48 +9,46 @@
 - [x] Updated `docker-compose.prod.yml` with v0.4.26 tags
 - [x] Created deployment script: `DEPLOY_v0.4.26.sh`
 
+# Deployment Checklist - v0.4.26 Actions Page
+
+## Pre-Deployment ✅
+
+- [x] Built API Docker image: `leoklemet/applylens-api:v0.4.26`
+- [x] Pushed API image to Docker Hub
+- [x] Built Web Docker image: `leoklemet/applylens-web:v0.4.26`
+- [x] Pushed Web image to Docker Hub
+- [x] Updated `docker-compose.prod.yml` with v0.4.26 tags
+- [x] Created deployment script: `DEPLOY_v0.4.26.sh`
+
 ## Deployment Steps
 
-### 1. Connect to Production Server
-```bash
-ssh root@applylens.app
-```
+**IMPORTANT**: This deployment assumes you're running on the production host that already has `docker-compose.prod.yml`. We do NOT use SSH to a public hostname or run `git pull` as part of deployment.
 
-### 2. Navigate to Project Directory
-```bash
-cd /root/ApplyLens
-```
+### On the production host where docker-compose.prod.yml exists:
 
-### 3. Pull Latest Code
 ```bash
-git pull origin demo
-```
-
-### 4. Pull Docker Images
-```bash
+# 1. Pull latest images
 docker compose -f docker-compose.prod.yml pull api web
-```
 
-### 5. Deploy New Containers
-```bash
+# 2. Recreate containers with new versions
 docker compose -f docker-compose.prod.yml up -d --force-recreate api web
-```
 
-### 6. Restart Nginx (Clear DNS Cache)
-```bash
+# 3. Restart nginx to clear DNS cache
 docker restart applylens-nginx-prod
+
+# 4. Verify health
+curl https://applylens.app/api/healthz
+
+# 5. Visit Actions page in browser
+# https://applylens.app/web/inbox-actions
 ```
 
-### 7. Verify Deployment
+**Success Criteria**: If Actions page shows only "Explain why" button and no 403 errors, deploy is good.
+
+### Alternative: Use the deployment script
+
 ```bash
-# Check container status
-docker ps --filter "name=applylens-api-prod" --filter "name=applylens-web-prod"
-
-# Check API health
-curl https://applylens.app/api/ready
-
-# Check API logs
-docker logs applylens-api-prod --tail 50
+./DEPLOY_v0.4.26.sh
 ```
 
 ## Post-Deployment Testing

@@ -608,8 +608,33 @@ export type ActionRow = {
   allowed_actions: string[]
 }
 
+export type MessageDetail = {
+  message_id: string
+  from_name?: string
+  from_email?: string
+  to_email?: string
+  subject: string
+  received_at: string
+  risk_score?: number
+  quarantined?: boolean
+  category?: string
+  html_body?: string | null
+  text_body?: string | null
+}
+
+// Helper to get CSRF token from meta tag
+function getCsrf(): string {
+  return (
+    document
+      .querySelector('meta[name="csrf-token"]')
+      ?.getAttribute('content') || ''
+  )
+}
+
 export async function fetchActionsInbox(): Promise<ActionRow[]> {
-  const r = await fetch('/api/actions/inbox')
+  const r = await fetch('/api/actions/inbox', {
+    credentials: 'include',
+  })
   if (!r.ok) throw new Error(`Fetch actions inbox failed: ${r.status}`)
   return r.json()
 }
@@ -618,20 +643,104 @@ export type ExplainActionResponse = {
   summary: string
 }
 
-export async function explainAction(message_id: string): Promise<ExplainActionResponse> {
+export async function explainMessage(message_id: string): Promise<ExplainActionResponse> {
   const r = await fetch('/api/actions/explain', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrf(),
+    },
     body: JSON.stringify({ message_id })
   })
   if (!r.ok) throw new Error(`Explain action failed: ${r.status}`)
   return r.json()
 }
 
+// Keep old name for backward compatibility
+export const explainAction = explainMessage
+
+export async function fetchMessageDetail(message_id: string): Promise<MessageDetail> {
+  const r = await fetch(`/api/actions/message/${message_id}`, {
+    credentials: 'include',
+  })
+  if (!r.ok) throw new Error(`Fetch message detail failed: ${r.status}`)
+  return r.json()
+}
+
+export type ActionMutationResponse = {
+  ok: boolean
+  message_id?: string
+  new_risk_score?: number
+  quarantined?: boolean
+  archived?: boolean
+}
+
+export async function postArchive(message_id: string): Promise<ActionMutationResponse> {
+  const r = await fetch('/api/actions/archive', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrf(),
+    },
+    body: JSON.stringify({ message_id })
+  })
+  if (!r.ok) throw new Error(`Archive failed: ${r.status}`)
+  return r.json()
+}
+
+export async function postMarkSafe(message_id: string): Promise<ActionMutationResponse> {
+  const r = await fetch('/api/actions/mark_safe', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrf(),
+    },
+    body: JSON.stringify({ message_id })
+  })
+  if (!r.ok) throw new Error(`Mark safe failed: ${r.status}`)
+  return r.json()
+}
+
+export async function postMarkSuspicious(message_id: string): Promise<ActionMutationResponse> {
+  const r = await fetch('/api/actions/mark_suspicious', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrf(),
+    },
+    body: JSON.stringify({ message_id })
+  })
+  if (!r.ok) throw new Error(`Mark suspicious failed: ${r.status}`)
+  return r.json()
+}
+
+export async function postUnsubscribe(message_id: string): Promise<ActionMutationResponse> {
+  const r = await fetch('/api/actions/unsubscribe', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrf(),
+    },
+    body: JSON.stringify({ message_id })
+  })
+  if (!r.ok) throw new Error(`Unsubscribe failed: ${r.status}`)
+  return r.json()
+}
+
+// Old interface for backward compatibility
 async function performAction(action: string, message_id: string): Promise<{ ok: boolean }> {
   const r = await fetch(`/api/actions/${action}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrf(),
+    },
+    credentials: 'include',
     body: JSON.stringify({ message_id })
   })
   if (!r.ok) {

@@ -66,6 +66,26 @@ class ActionResponse(BaseModel):
     """Response from action."""
 
     ok: bool
+    message_id: Optional[str] = None
+    new_risk_score: Optional[int] = None
+    quarantined: Optional[bool] = None
+    archived: Optional[bool] = None
+
+
+class MessageDetailResponse(BaseModel):
+    """Full message detail for drawer view."""
+
+    message_id: str
+    from_name: Optional[str] = None
+    from_email: Optional[str] = None
+    to_email: Optional[str] = None
+    subject: str
+    received_at: str
+    risk_score: Optional[int] = None
+    quarantined: Optional[bool] = None
+    category: Optional[str] = None
+    html_body: Optional[str] = None
+    text_body: Optional[str] = None
 
 
 # ===== Helper Functions =====
@@ -142,6 +162,66 @@ def build_signals(
         signals.append("Matches bulk email pattern")
 
     return signals
+
+
+def generate_explanation_for_message(
+    category: str,
+    signals: List[str],
+    risk_score: int,
+    quarantined: bool,
+) -> str:
+    """
+    Generate a human-readable explanation for why an email needs action.
+
+    Uses deterministic heuristics based on category, signals, risk_score, and quarantined status.
+    No LLM calls - purely rule-based.
+
+    Args:
+        category: Email category (Promotions, Updates, Suspicious, etc.)
+        signals: List of signal strings explaining why it was flagged
+        risk_score: Risk score 0-100
+        quarantined: Whether email is quarantined
+
+    Returns:
+        A 2-4 sentence human-readable explanation
+    """
+    # Determine base explanation based on category
+    cat_lower = category.lower()
+    if "promo" in cat_lower or cat_lower == "promotions":
+        base = "This looks like marketing or promotional content."
+    elif cat_lower == "updates":
+        base = "This looks like an automated update or notification."
+    elif cat_lower == "suspicious" or cat_lower == "spam":
+        base = "This email was flagged as potentially suspicious."
+    elif cat_lower == "forums":
+        base = "This appears to be a forum or community notification."
+    else:
+        base = f"This email was categorized as {category}."
+
+    # Determine risk state
+    if risk_score >= 80 or quarantined:
+        safe_state = "high risk"
+    elif risk_score >= 50:
+        safe_state = "medium risk"
+    else:
+        safe_state = "low risk"
+
+    # Build signals text (take first 3)
+    signals_text = "; ".join(signals[:3]) if signals else "internal signals"
+
+    # Build action hints
+    action_hint = []
+    if quarantined:
+        action_hint.append("Treat with caution.")
+    elif "promo" in cat_lower or cat_lower in ("promotions", "updates"):
+        action_hint.append("You can safely archive it if it's not relevant.")
+    else:
+        action_hint.append("Review before taking action.")
+
+    return (
+        f"{base} It was flagged because: {signals_text}. "
+        f"Risk is {safe_state} (score {risk_score}/100). " + " ".join(action_hint)
+    )
 
 
 # ===== Endpoints =====
@@ -255,7 +335,7 @@ async def explain_action(
     """
     Explain why an email needs action.
 
-    Returns a human-readable summary based on email metadata.
+    Returns a human-readable summary based on email metadata using deterministic heuristics.
     """
     try:
         if not ES_ENABLED or es is None:
@@ -295,34 +375,111 @@ async def explain_action(
         risk_score = src.get("risk_score", 0)
         quarantined = src.get("quarantined", False)
 
-        # Build explanation
+        # Build explanation using our helper
         category = categorize_email(labels, risk_score, quarantined)
         signals = build_signals(category, labels, risk_score, src.get("sender"))
-
-        # Create summary
-        summary_parts = [
-            f"This email is categorized as {category}",
-            "because it " + " and ".join(signals[:2]).lower(),
-        ]
-
-        if risk_score:
-            risk_level = (
-                "low" if risk_score < 30 else "medium" if risk_score < 70 else "high"
-            )
-            summary_parts.append(f"Risk score is {risk_level} ({int(risk_score)}/100)")
-
-        if quarantined:
-            summary_parts.append("and has been quarantined for review")
-        else:
-            summary_parts.append("so it's likely safe but noisy")
-
-        summary = ", ".join(summary_parts) + "."
+        summary = generate_explanation_for_message(
+            category=category,
+            signals=signals,
+            risk_score=int(risk_score) if risk_score else 0,
+            quarantined=quarantined,
+        )
 
         return ExplainResponse(summary=summary)
 
     except Exception as e:
         logger.exception(f"Explain action failed: {e}")
         return ExplainResponse(summary=f"Error explaining email: {str(e)}")
+
+
+@router.get("/message/{message_id}")
+async def get_message_detail(
+    message_id: str,
+    user_email: str = Depends(get_current_user_email),
+) -> MessageDetailResponse:
+    """
+    Get full message detail for drawer view.
+
+    Returns complete email information including body (HTML/text) for display.
+    """
+    try:
+        if not ES_ENABLED or es is None:
+            raise HTTPException(status_code=503, detail="Search service unavailable")
+
+        # Fetch full email from ES
+        result = es.search(
+            index=INDEX,
+            body={
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"term": {"owner_email.keyword": user_email}},
+                            {"term": {"gmail_id": message_id}},
+                        ]
+                    }
+                },
+                "size": 1,
+                "_source": [
+                    "gmail_id",
+                    "id",
+                    "sender",
+                    "recipient",
+                    "subject",
+                    "received_at",
+                    "labels",
+                    "risk_score",
+                    "quarantined",
+                    "body_html",
+                    "body_text",
+                    "body",
+                ],
+            },
+        )
+
+        hits = result.get("hits", {}).get("hits", [])
+        if not hits:
+            raise HTTPException(status_code=404, detail="Message not found")
+
+        src = hits[0].get("_source", {})
+
+        # Extract sender info
+        sender = src.get("sender", "")
+        from_name = sender.split("<")[0].strip() if "<" in sender else sender
+        from_email = sender.split("<")[1].split(">")[0] if "<" in sender else sender
+
+        # Extract body (try different field names)
+        html_body = src.get("body_html") or src.get("body")
+        text_body = src.get("body_text") or src.get("body")
+
+        # If we have HTML, clear text_body to avoid duplication
+        if html_body and text_body == html_body:
+            text_body = None
+
+        # Build categorization for context
+        labels = src.get("labels", [])
+        risk_score = src.get("risk_score")
+        quarantined = src.get("quarantined", False)
+        category = categorize_email(labels, risk_score, quarantined)
+
+        return MessageDetailResponse(
+            message_id=message_id,
+            from_name=from_name if from_name != from_email else None,
+            from_email=from_email,
+            to_email=src.get("recipient"),
+            subject=src.get("subject", ""),
+            received_at=src.get("received_at", ""),
+            risk_score=int(risk_score) if risk_score is not None else None,
+            quarantined=quarantined,
+            category=category,
+            html_body=html_body,
+            text_body=text_body,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Get message detail failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get message: {str(e)}")
 
 
 @router.post("/mark_safe")
@@ -355,7 +512,12 @@ async def mark_safe(
         )
 
         logger.info(f"Marked {req.message_id} as safe by {user_email}")
-        return ActionResponse(ok=True)
+        return ActionResponse(
+            ok=True,
+            message_id=req.message_id,
+            new_risk_score=10,
+            quarantined=False,
+        )
 
     except Exception as e:
         logger.exception(f"Mark safe failed: {e}")
@@ -392,7 +554,12 @@ async def mark_suspicious(
         )
 
         logger.info(f"Marked {req.message_id} as suspicious by {user_email}")
-        return ActionResponse(ok=True)
+        return ActionResponse(
+            ok=True,
+            message_id=req.message_id,
+            new_risk_score=95,
+            quarantined=True,
+        )
 
     except Exception as e:
         logger.exception(f"Mark suspicious failed: {e}")
@@ -429,7 +596,11 @@ async def archive_email(
         )
 
         logger.info(f"Archived {req.message_id} by {user_email}")
-        return ActionResponse(ok=True)
+        return ActionResponse(
+            ok=True,
+            message_id=req.message_id,
+            archived=True,
+        )
 
     except Exception as e:
         logger.exception(f"Archive failed: {e}")
@@ -476,7 +647,10 @@ async def unsubscribe(
 
         # TODO: In future, maintain a list of muted senders per user
         logger.info(f"Unsubscribed from {sender} for {user_email}")
-        return ActionResponse(ok=True)
+        return ActionResponse(
+            ok=True,
+            message_id=req.message_id,
+        )
 
     except Exception as e:
         logger.exception(f"Unsubscribe failed: {e}")
