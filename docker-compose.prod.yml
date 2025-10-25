@@ -181,6 +181,7 @@ services:
 
       # Feature Flags
       CHAT_STREAMING_ENABLED: ${CHAT_STREAMING_ENABLED:-true}  # Canary toggle for SSE streaming
+      ALLOW_ACTION_MUTATIONS: "false"  # Read-only mode for Actions page in production
 
       # Security - Token Encryption (Added 2025-10-20)
       APPLYLENS_AES_KEY_BASE64: ${APPLYLENS_AES_KEY_BASE64}
