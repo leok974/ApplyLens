@@ -624,11 +624,15 @@ export type MessageDetail = {
 
 // Helper to get CSRF token from meta tag
 function getCsrf(): string {
-  return (
-    document
-      .querySelector('meta[name="csrf-token"]')
-      ?.getAttribute('content') || ''
-  )
+  // Read CSRF token from cookie (backend sets it via CSRFMiddleware)
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') {
+      return decodeURIComponent(value)
+    }
+  }
+  return ''
 }
 
 export async function fetchActionsInbox(): Promise<ActionRow[]> {
