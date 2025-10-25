@@ -137,10 +137,11 @@ services:
     build:
       context: ./services/api
       dockerfile: Dockerfile.prod
+    # v0.4.28: Polished interactive triage console with optimistic UI updates
     # v0.4.27: Enhanced Actions page with drawer, explanations, and optimistic UI updates
     # v0.4.26: Implemented Actions page with real backend endpoints
     # v0.4.25: Added /api/tracker endpoint for Gmail-derived applications
-    image: leoklemet/applylens-api:v0.4.27
+    image: leoklemet/applylens-api:v0.4.28
     container_name: applylens-api-prod
     environment:
       # Database
@@ -181,7 +182,7 @@ services:
 
       # Feature Flags
       CHAT_STREAMING_ENABLED: ${CHAT_STREAMING_ENABLED:-true}  # Canary toggle for SSE streaming
-      ALLOW_ACTION_MUTATIONS: "false"  # Read-only mode for Actions page in production
+      ALLOW_ACTION_MUTATIONS: "true"  # v0.4.28: Enable interactive triage actions
 
       # Security - Token Encryption (Added 2025-10-20)
       APPLYLENS_AES_KEY_BASE64: ${APPLYLENS_AES_KEY_BASE64}
@@ -243,10 +244,11 @@ services:
     # v0.4.12 (Selective trailing slash fix)
     # v0.4.11 (Auto-trailing slash - broke /auth/me)
     # v0.4.10 (Cache headers + version banner + apiUrl)
+    # v0.4.28: Polished interactive triage console with optimistic UI updates
     # v0.4.27: Enhanced Actions page with drawer, inline explanations, optimistic updates
     # v0.4.26: Actions page with real backend functionality
     # v0.4.25: Tracker page shows real Gmail data + OAuth fix
-    image: leoklemet/applylens-web:v0.4.27
+    image: leoklemet/applylens-web:v0.4.28
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production

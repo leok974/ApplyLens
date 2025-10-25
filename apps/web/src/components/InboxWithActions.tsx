@@ -12,21 +12,60 @@ import {
 } from '../lib/api'
 import { safeFormatDate } from '../lib/date'
 import { Alert, AlertDescription } from './ui/alert'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet'
+import { Badge } from './ui/badge'
 import { Info } from 'lucide-react'
+import { cn } from '../lib/utils'
+
+// Helper: ActionButton component
+function ActionButton({
+  label,
+  onClick,
+  disabled,
+  tone = 'default',
+}: {
+  label: string
+  onClick: (e: React.MouseEvent) => void
+  disabled?: boolean
+  tone?: 'default' | 'success' | 'warn' | 'danger' | 'ghost'
+}) {
+  const base =
+    'px-2 py-1 rounded text-[11px] border flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+  const toneClass = {
+    default: 'bg-muted/20 hover:bg-muted/30 border-border',
+    success:
+      'bg-emerald-600/20 text-emerald-200 border-emerald-700 hover:bg-emerald-600/30',
+    warn: 'bg-amber-600/20 text-amber-200 border-amber-700 hover:bg-amber-600/30',
+    danger:
+      'bg-red-700/20 text-red-200 border-red-800 hover:bg-red-700/30',
+    ghost:
+      'bg-transparent border-border hover:bg-muted/20 text-foreground',
+  }[tone]
+
+  return (
+    <button
+      type="button"
+      className={`${base} ${toneClass}`}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  )
+}
 
 export default function InboxWithActions() {
   const [rows, setRows] = useState<ActionRow[]>([])
   const [loading, setLoading] = useState(false)
+  const [rowLoading, setRowLoading] = useState<Record<string, boolean>>({})
   const [explanations, setExplanations] = useState<Record<string, string>>({})
-  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
   const [error, setError] = useState<string | null>(null)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   // Drawer state
   const [openMessageId, setOpenMessageId] = useState<string | null>(null)
-  const [messageDetail, setMessageDetail] = useState<Record<string, MessageDetail>>({})
-  const [loadingMessageId, setLoadingMessageId] = useState<string | null>(null)
+  const [messageDetail, setMessageDetail] = useState<
+    Record<string, MessageDetail>
+  >({})
+  const [detailLoading, setDetailLoading] = useState<boolean>(false)
 
   const loadInbox = async () => {
     setLoading(true)
@@ -35,7 +74,7 @@ export default function InboxWithActions() {
       const data = await fetchActionsInbox()
       setRows(data)
     } catch (err) {
-      setError('Failed to load inbox:' + String(err))
+      setError('Failed to load inbox: ' + String(err))
     } finally {
       setLoading(false)
     }
@@ -45,31 +84,31 @@ export default function InboxWithActions() {
     loadInbox()
   }, [])
 
-  // Handle opening message drawer
-  const handleOpenMessage = async (message_id: string, e?: React.MouseEvent) => {
-    // Don't open if clicking on buttons
-    if (e && (e.target as HTMLElement).closest('button')) {
-      return
-    }
+  // Helper: set row busy state
+  function setRowBusy(id: string, busy: boolean) {
+    setRowLoading(prev => ({ ...prev, [id]: busy }))
+  }
 
+  // Handle opening message drawer
+  const handleOpenMessage = async (message_id: string) => {
     setOpenMessageId(message_id)
 
     // Fetch detail if not already loaded
     if (!messageDetail[message_id]) {
-      setLoadingMessageId(message_id)
+      setDetailLoading(true)
       try {
         const detail = await fetchMessageDetail(message_id)
         setMessageDetail(prev => ({ ...prev, [message_id]: detail }))
       } catch (err) {
         setError('Failed to load message detail: ' + String(err))
       } finally {
-        setLoadingMessageId(null)
+        setDetailLoading(false)
       }
     }
   }
 
   // Handle explain action (toggle)
-  const handleExplain = async (row: ActionRow, e: React.MouseEvent) => {
+  const handleExplain = async (e: React.MouseEvent, row: ActionRow) => {
     e.stopPropagation()
 
     // If already showing, collapse it
@@ -84,7 +123,10 @@ export default function InboxWithActions() {
 
     try {
       const result = await explainMessage(row.message_id)
-      setExplanations(prev => ({ ...prev, [row.message_id]: result.summary }))
+      setExplanations(prev => ({
+        ...prev,
+        [row.message_id]: result.summary,
+      }))
     } catch (err) {
       setError('Explain failed: ' + String(err))
     }
@@ -93,432 +135,357 @@ export default function InboxWithActions() {
   // Handle archive action
   const handleArchive = async (e: React.MouseEvent, row: ActionRow) => {
     e.stopPropagation()
-    setActionLoading(prev => ({ ...prev, [row.message_id]: true }))
-    setError(null)
-    setSuccessMsg(null)
-
+    setRowBusy(row.message_id, true)
     try {
       const res = await postArchive(row.message_id)
       if (res.ok) {
-        setSuccessMsg('✅ Email archived')
-        setTimeout(() => setSuccessMsg(null), 3000)
         setRows(prev => prev.filter(r => r.message_id !== row.message_id))
         if (openMessageId === row.message_id) setOpenMessageId(null)
       }
-    } catch (err: any) {
-      const errorMsg = err.message || String(err)
-      if (errorMsg.includes('read-only') || errorMsg.includes('403')) {
-        setError('⚠️ Actions are read-only in production')
-      } else {
-        setError('Archive failed: ' + errorMsg)
-      }
+    } catch (err) {
+      setError('Archive failed: ' + String(err))
     } finally {
-      setActionLoading(prev => ({ ...prev, [row.message_id]: false }))
+      setRowBusy(row.message_id, false)
     }
   }
 
   // Handle mark safe action
   const handleMarkSafe = async (e: React.MouseEvent, row: ActionRow) => {
     e.stopPropagation()
-    setActionLoading(prev => ({ ...prev, [row.message_id]: true }))
-    setError(null)
-    setSuccessMsg(null)
-
+    setRowBusy(row.message_id, true)
     try {
       const res = await postMarkSafe(row.message_id)
       if (res.ok) {
-        setSuccessMsg('✅ Marked as safe')
-        setTimeout(() => setSuccessMsg(null), 3000)
-        setRows(prev => prev.map(r => {
-          if (r.message_id === row.message_id) {
-            return {
-              ...r,
-              reason: {
-                ...r.reason,
-                risk_score: res.new_risk_score ?? 10,
-                quarantined: false,
-                signals: ['Manually marked safe', ...r.reason.signals],
-              },
+        setRows(prev =>
+          prev.map(r => {
+            if (r.message_id === row.message_id) {
+              return {
+                ...r,
+                reason: {
+                  ...r.reason,
+                  risk_score: res.new_risk_score ?? r.reason.risk_score,
+                  quarantined: false,
+                  signals: ['Manually marked safe', ...r.reason.signals],
+                },
+              }
             }
-          }
-          return r
-        }))
+            return r
+          })
+        )
       }
-    } catch (err: any) {
-      const errorMsg = err.message || String(err)
-      if (errorMsg.includes('read-only') || errorMsg.includes('403')) {
-        setError('⚠️ Actions are read-only in production')
-      } else {
-        setError('Mark safe failed: ' + errorMsg)
-      }
+    } catch (err) {
+      setError('Mark safe failed: ' + String(err))
     } finally {
-      setActionLoading(prev => ({ ...prev, [row.message_id]: false }))
+      setRowBusy(row.message_id, false)
     }
   }
 
   // Handle mark suspicious action
-  const handleMarkSuspicious = async (e: React.MouseEvent, row: ActionRow) => {
+  const handleMarkSuspicious = async (
+    e: React.MouseEvent,
+    row: ActionRow
+  ) => {
     e.stopPropagation()
-    setActionLoading(prev => ({ ...prev, [row.message_id]: true }))
-    setError(null)
-    setSuccessMsg(null)
-
+    setRowBusy(row.message_id, true)
     try {
       const res = await postMarkSuspicious(row.message_id)
       if (res.ok) {
-        setSuccessMsg('✅ Marked as suspicious')
-        setTimeout(() => setSuccessMsg(null), 3000)
-        setRows(prev => prev.map(r => {
-          if (r.message_id === row.message_id) {
-            return {
-              ...r,
-              reason: {
-                ...r.reason,
-                risk_score: res.new_risk_score ?? 95,
-                quarantined: res.quarantined ?? true,
-                signals: ['Flagged suspicious by user', ...r.reason.signals],
-              },
+        setRows(prev =>
+          prev.map(r => {
+            if (r.message_id === row.message_id) {
+              return {
+                ...r,
+                reason: {
+                  ...r.reason,
+                  risk_score: res.new_risk_score ?? r.reason.risk_score,
+                  quarantined: res.quarantined ?? true,
+                  signals: [
+                    'Flagged suspicious by user',
+                    ...r.reason.signals,
+                  ],
+                },
+              }
             }
-          }
-          return r
-        }))
+            return r
+          })
+        )
       }
-    } catch (err: any) {
-      const errorMsg = err.message || String(err)
-      if (errorMsg.includes('read-only') || errorMsg.includes('403')) {
-        setError('⚠️ Actions are read-only in production')
-      } else {
-        setError('Mark suspicious failed: ' + errorMsg)
-      }
+    } catch (err) {
+      setError('Mark suspicious failed: ' + String(err))
     } finally {
-      setActionLoading(prev => ({ ...prev, [row.message_id]: false }))
+      setRowBusy(row.message_id, false)
     }
   }
 
   // Handle unsubscribe action
   const handleUnsub = async (e: React.MouseEvent, row: ActionRow) => {
     e.stopPropagation()
-    setActionLoading(prev => ({ ...prev, [row.message_id]: true }))
-    setError(null)
-    setSuccessMsg(null)
-
+    setRowBusy(row.message_id, true)
     try {
       const res = await postUnsubscribe(row.message_id)
       if (res.ok) {
-        setSuccessMsg('✅ Unsubscribed from sender')
-        setTimeout(() => setSuccessMsg(null), 3000)
-        // Remove from actionable list like archive
+        // treat unsubscribe same as archive: remove from actionable list
         setRows(prev => prev.filter(r => r.message_id !== row.message_id))
         if (openMessageId === row.message_id) setOpenMessageId(null)
       }
-    } catch (err: any) {
-      const errorMsg = err.message || String(err)
-      if (errorMsg.includes('read-only') || errorMsg.includes('403')) {
-        setError('⚠️ Actions are read-only in production')
-      } else {
-        setError('Unsubscribe failed: ' + errorMsg)
-      }
+    } catch (err) {
+      setError('Unsubscribe failed: ' + String(err))
     } finally {
-      setActionLoading(prev => ({ ...prev, [row.message_id]: false }))
+      setRowBusy(row.message_id, false)
     }
   }
 
-  const btn = (label: string, onClick: (e: React.MouseEvent) => void, disabled = false, show = true) => {
-    if (!show) return null
+  // Render action buttons for a given message
+  function renderActionButtonsFor(message_id: string | null) {
+    if (!message_id) return null
+    const row = rows.find(r => r.message_id === message_id)
+    if (!row) return null
+
+    const disabled = !!rowLoading[message_id]
+    const allow = (action: string) => row.allowed_actions.includes(action)
+
     return (
-      <button
-        className="px-2 py-1 text-xs rounded border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-        onClick={onClick}
-        disabled={disabled}
-      >
-        {label}
-      </button>
+      <>
+        {allow('archive') && (
+          <ActionButton
+            label="Archive"
+            onClick={e => handleArchive(e, row)}
+            disabled={disabled}
+            tone="default"
+          />
+        )}
+        {allow('mark_safe') && (
+          <ActionButton
+            label="Safe"
+            onClick={e => handleMarkSafe(e, row)}
+            disabled={disabled}
+            tone="success"
+          />
+        )}
+        {allow('mark_suspicious') && (
+          <ActionButton
+            label="Suspicious"
+            onClick={e => handleMarkSuspicious(e, row)}
+            disabled={disabled}
+            tone="warn"
+          />
+        )}
+        {allow('unsubscribe') && (
+          <ActionButton
+            label="Unsub"
+            onClick={e => handleUnsub(e, row)}
+            disabled={disabled}
+            tone="danger"
+          />
+        )}
+        {allow('explain') && (
+          <ActionButton
+            label={
+              explanations[message_id] ? 'Hide why' : 'Explain why'
+            }
+            onClick={e => handleExplain(e, row)}
+            disabled={false}
+            tone="ghost"
+          />
+        )}
+      </>
+    )
+  }
+
+  // Render detail pane
+  function renderDetailPane() {
+    if (!openMessageId) {
+      return (
+        <div className="text-sm text-muted-foreground border border-border rounded-lg p-4">
+          Select an email to see details.
+        </div>
+      )
+    }
+
+    const detail = messageDetail[openMessageId]
+    const loading = detailLoading && !detail
+
+    return (
+      <div className="border border-border rounded-lg bg-card text-card-foreground flex flex-col max-h-[80vh]">
+        <div className="p-4 border-b border-border flex flex-col gap-2">
+          <div className="text-sm font-semibold">Email Detail</div>
+          {loading && (
+            <div className="text-xs text-muted-foreground">Loading…</div>
+          )}
+          {!loading && detail && (
+            <>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>
+                  <span className="font-medium">From:</span>{' '}
+                  {detail.from_name} &lt;{detail.from_email}&gt;
+                </div>
+                <div>
+                  <span className="font-medium">To:</span> {detail.to_email}
+                </div>
+                <div>
+                  <span className="font-medium">Subject:</span>{' '}
+                  {detail.subject}
+                </div>
+                <div>
+                  <span className="font-medium">Date:</span>{' '}
+                  {safeFormatDate(detail.received_at)}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                {detail.category && (
+                  <Badge variant="secondary">{detail.category}</Badge>
+                )}
+                {typeof detail.risk_score === 'number' && (
+                  <Badge variant="outline">Risk: {detail.risk_score}</Badge>
+                )}
+                {detail.quarantined && (
+                  <Badge variant="destructive">Quarantined</Badge>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 text-xs leading-relaxed bg-background/40">
+          {loading && (
+            <div className="text-muted-foreground">Loading…</div>
+          )}
+          {!loading && detail && (
+            <>
+              {detail.html_body ? (
+                <div
+                  className="prose prose-invert max-w-none text-sm"
+                  dangerouslySetInnerHTML={{ __html: detail.html_body }}
+                />
+              ) : (
+                <pre className="whitespace-pre-wrap text-sm bg-muted/10 p-3 rounded border border-border">
+                  {detail.text_body}
+                </pre>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-border flex flex-wrap gap-2 text-xs">
+          {renderActionButtonsFor(openMessageId)}
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="p-4 grid gap-4">
-      <div>
-        <h1 className="text-2xl font-bold">📬 Inbox Actions</h1>
-        <p className="text-sm text-gray-600">Take quick actions on promotional and bulk emails</p>
-      </div>
+    <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">📧 Inbox Actions</h1>
+        <p className="text-sm text-muted-foreground">
+          Take quick actions on promotional and bulk emails
+        </p>
+      </header>
 
       {error && (
-        <div className="p-3 rounded bg-red-50 text-red-800 text-sm border border-red-200">
-          {error}
-        </div>
-      )}
-      {successMsg && (
-        <div className="p-3 rounded bg-green-50 text-green-800 text-sm border border-green-200">
-          {successMsg}
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          {loading ? 'Loading...' : rows.length + ' actionable emails'}
+      {loading && rows.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Loading inbox...
         </div>
-        <button
-          className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition font-medium"
-          onClick={loadInbox}
-          disabled={loading}
-        >
-          {loading ? '⏳ Loading…' : '🔄 Refresh'}
-        </button>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b-2 border-gray-300">
-              <th className="text-left py-3 px-2 font-semibold text-gray-700">From</th>
-              <th className="text-left py-3 px-2 font-semibold text-gray-700">Subject</th>
-              <th className="text-left py-3 px-2 font-semibold text-gray-700">Received</th>
-              <th className="text-left py-3 px-2 font-semibold text-gray-700">Reason</th>
-              <th className="text-left py-3 px-2 font-semibold text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !loading && (
-              <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-500">
-                  🎉 No actionable emails found! Your inbox is clean.
-                </td>
-              </tr>
-            )}
-            {rows.map(r => {
-              const messageId = r.message_id
-              const explanation = explanations[messageId]
-              const isActionLoading = actionLoading[messageId]
-              const allowedActions = r.allowed_actions || []
-
-              return (
-                <>
-                  <tr
-                    key={messageId}
-                    className="border-b border-gray-200 hover:bg-gray-50 align-top cursor-pointer"
-                    onClick={(e) => handleOpenMessage(messageId, e)}
-                  >
-                    <td className="py-3 px-2 text-sm">
-                      <div className="text-gray-700 font-medium">{r.from_name || '—'}</div>
-                      {r.from_email && <div className="text-xs text-gray-500">{r.from_email}</div>}
-                    </td>
-
-                    <td className="py-3 px-2">
-                      <div className="font-medium text-gray-900">{r.subject}</div>
-                      {r.labels && r.labels.length > 0 && (
-                        <div className="mt-1 flex gap-1 flex-wrap">
-                          {r.labels.slice(0, 3).map((lbl, i) => (
-                            <span key={i} className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700">
-                              {lbl.replace('CATEGORY_', '')}
-                            </span>
-                          ))}
-                          {r.labels.length > 3 && <span className="text-xs text-gray-500">+{r.labels.length - 3}</span>}
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-2 text-sm text-gray-500">
-                      {safeFormatDate(r.received_at) ?? '—'}
-                    </td>
-
-                    <td className="py-3 px-2">
-                      <div>
-                        <div className="text-sm text-gray-700 mb-1">
-                          <span className="font-medium">{r.reason.category}</span>
-                          {r.reason.quarantined && (
-                            <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700">Quarantined</span>
-                          )}
-                          {r.reason.risk_score > 50 && (
-                            <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">Risk: {r.reason.risk_score}</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500">{r.reason.signals.slice(0, 2).join(' • ')}</div>
-                        {allowedActions.includes('explain') && (
-                          <button
-                            className="text-xs text-blue-600 hover:underline mt-1"
-                            onClick={(e) => handleExplain(r, e)}
-                          >
-                            {explanation ? '▼ Hide explanation' : '🔍 Explain why'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-2">
-                      <div className="flex gap-1 flex-wrap">
-                        {btn('📥 Archive', (e) => handleArchive(e, r), isActionLoading, allowedActions.includes('archive'))}
-                        {btn('✅ Safe', (e) => handleMarkSafe(e, r), isActionLoading, allowedActions.includes('mark_safe'))}
-                        {btn('⚠️ Suspicious', (e) => handleMarkSuspicious(e, r), isActionLoading, allowedActions.includes('mark_suspicious'))}
-                        {btn('🚫 Unsub', (e) => handleUnsub(e, r), isActionLoading, allowedActions.includes('unsubscribe'))}
-                      </div>
-                      {isActionLoading && <div className="text-xs text-gray-500 mt-1">Processing...</div>}
-                    </td>
+      ) : rows.length === 0 ? (
+        <Alert className="max-w-md">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            No actionable emails found. All clean! 🎉
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <div className="flex gap-4">
+          {/* Left: Table */}
+          <div className="flex-1 min-w-0">
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 border-b border-border">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium">From</th>
+                    <th className="px-4 py-2 text-left font-medium">
+                      Subject
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium">
+                      Received
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium">
+                      Reason
+                    </th>
+                    <th className="px-4 py-2 text-left font-medium">
+                      Actions
+                    </th>
                   </tr>
-
-                  {explanation && (
-                    <tr key={`${messageId}-explain`}>
-                      <td colSpan={5} className="px-2 pb-3">
-                        <div className="rounded border border-border bg-muted/20 p-3 text-sm">
-                          <strong className="text-gray-900">Explanation:</strong> {explanation}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Message Detail Drawer */}
-      <Sheet open={!!openMessageId} onOpenChange={(open) => !open && setOpenMessageId(null)}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          {openMessageId && (
-            <>
-              <SheetHeader>
-                <SheetTitle>Email Detail</SheetTitle>
-              </SheetHeader>
-
-              {loadingMessageId === openMessageId ? (
-                <div className="py-8 text-center text-gray-500">Loading...</div>
-              ) : messageDetail[openMessageId] ? (
-                <div className="mt-4 space-y-4">
-                  {/* Header Info */}
-                  <div className="space-y-2 border-b pb-4">
-                    <div>
-                      <span className="text-xs text-gray-500">From:</span>
-                      <div className="text-sm">
-                        {messageDetail[openMessageId].from_name && (
-                          <span className="font-medium">{messageDetail[openMessageId].from_name} </span>
+                </thead>
+                <tbody>
+                  {rows.map(row => (
+                    <>
+                      <tr
+                        key={row.message_id}
+                        onClick={() => handleOpenMessage(row.message_id)}
+                        className={cn(
+                          'cursor-pointer hover:bg-muted/20 border-b border-border',
+                          openMessageId === row.message_id &&
+                            'bg-muted/30 ring-1 ring-border'
                         )}
-                        <span className="text-gray-600">&lt;{messageDetail[openMessageId].from_email}&gt;</span>
-                      </div>
-                    </div>
-                    {messageDetail[openMessageId].to_email && (
-                      <div>
-                        <span className="text-xs text-gray-500">To:</span>
-                        <div className="text-sm text-gray-600">{messageDetail[openMessageId].to_email}</div>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-xs text-gray-500">Subject:</span>
-                      <div className="text-sm font-medium">{messageDetail[openMessageId].subject}</div>
-                    </div>
-                    <div>
-                      <span className="text-xs text-gray-500">Date:</span>
-                      <div className="text-sm text-gray-600">
-                        {safeFormatDate(messageDetail[openMessageId].received_at) ?? '—'}
-                      </div>
-                    </div>
-
-                    {/* Risk Badges */}
-                    <div className="flex gap-2 flex-wrap pt-2">
-                      {messageDetail[openMessageId].category && (
-                        <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
-                          {messageDetail[openMessageId].category}
-                        </span>
+                      >
+                        <td className="px-4 py-3">{row.from_name}</td>
+                        <td className="px-4 py-3">{row.subject}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {safeFormatDate(row.received_at)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="text-xs space-y-1">
+                            <div className="font-medium">
+                              {row.reason.category}
+                            </div>
+                            <div className="text-muted-foreground">
+                              Risk: {row.reason.risk_score}/100
+                              {row.reason.quarantined && (
+                                <span className="ml-2 text-red-400">
+                                  🔒 Quarantined
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {renderActionButtonsFor(row.message_id)}
+                          </div>
+                        </td>
+                      </tr>
+                      {explanations[row.message_id] && (
+                        <tr className="bg-muted/10">
+                          <td
+                            colSpan={5}
+                            className="px-4 py-3 border-b border-border"
+                          >
+                            <div className="text-xs rounded-md border border-border bg-background/60 p-3 leading-relaxed">
+                              {explanations[row.message_id]}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                      {messageDetail[openMessageId].risk_score !== undefined && messageDetail[openMessageId].risk_score! > 50 && (
-                        <span className="text-xs px-2 py-1 rounded bg-orange-100 text-orange-700">
-                          Risk: {messageDetail[openMessageId].risk_score}
-                        </span>
-                      )}
-                      {messageDetail[openMessageId].quarantined && (
-                        <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
-                          Quarantined
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              {rows.length} actionable email{rows.length !== 1 ? 's' : ''}
+            </div>
+          </div>
 
-                  {/* Email Body */}
-                  <div className="border rounded p-4 bg-white">
-                    {messageDetail[openMessageId].html_body ? (
-                      <div
-                        className="prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: messageDetail[openMessageId].html_body! }}
-                      />
-                    ) : messageDetail[openMessageId].text_body ? (
-                      <pre className="whitespace-pre-wrap text-sm font-sans">
-                        {messageDetail[openMessageId].text_body}
-                      </pre>
-                    ) : (
-                      <div className="text-sm text-gray-500 italic">No email body available</div>
-                    )}
-                  </div>
-
-                  {/* Action Buttons in Drawer */}
-                  {(() => {
-                    const row = rows.find(r => r.message_id === openMessageId)
-                    if (!row) return null
-                    const allowed = row.allowed_actions || []
-                    const isLoading = actionLoading[openMessageId]
-
-                    return (
-                      <div className="border-t pt-4">
-                        <div className="text-sm font-medium mb-2">Actions:</div>
-                        <div className="flex gap-2 flex-wrap">
-                          {allowed.includes('archive') && (
-                            <button
-                              className="px-3 py-1.5 text-sm rounded border hover:bg-gray-50 disabled:opacity-50 transition"
-                              onClick={(e) => handleArchive(e, row)}
-                              disabled={isLoading}
-                            >
-                              📥 Archive
-                            </button>
-                          )}
-                          {allowed.includes('mark_safe') && (
-                            <button
-                              className="px-3 py-1.5 text-sm rounded border hover:bg-gray-50 disabled:opacity-50 transition"
-                              onClick={(e) => handleMarkSafe(e, row)}
-                              disabled={isLoading}
-                            >
-                              ✅ Mark Safe
-                            </button>
-                          )}
-                          {allowed.includes('mark_suspicious') && (
-                            <button
-                              className="px-3 py-1.5 text-sm rounded border hover:bg-gray-50 disabled:opacity-50 transition"
-                              onClick={(e) => handleMarkSuspicious(e, row)}
-                              disabled={isLoading}
-                            >
-                              ⚠️ Mark Suspicious
-                            </button>
-                          )}
-                          {allowed.includes('unsubscribe') && (
-                            <button
-                              className="px-3 py-1.5 text-sm rounded border hover:bg-gray-50 disabled:opacity-50 transition"
-                              onClick={(e) => handleUnsub(e, row)}
-                              disabled={isLoading}
-                            >
-                              🚫 Unsubscribe
-                            </button>
-                          )}
-                        </div>
-                        {isLoading && <div className="text-xs text-gray-500 mt-2">Processing...</div>}
-                      </div>
-                    )
-                  })()}
-                </div>
-              ) : (
-                <div className="py-8 text-center text-gray-500">Email not found</div>
-              )}
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      <Alert className="mt-4">
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Actions:</strong> Mark emails as safe/suspicious to train the risk model. Archive removes them from this view. Unsubscribe marks the sender as muted.
-          {!rows.some(r => r.allowed_actions.includes('archive')) && (
-            <span className="ml-2 text-orange-700">(Mutations are read-only in production)</span>
-          )}
-        </AlertDescription>
-      </Alert>
+          {/* Right: Detail pane */}
+          <aside className="w-[380px] shrink-0">{renderDetailPane()}</aside>
+        </div>
+      )}
     </div>
   )
 }
