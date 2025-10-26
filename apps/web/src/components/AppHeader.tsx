@@ -17,7 +17,7 @@ import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { ActionsTray } from "@/components/ActionsTray"
 import { fetchTray } from "@/lib/actionsClient"
-import { Sparkles, LogOut, User, X } from "lucide-react"
+import { Sparkles, LogOut, User, ShieldCheck, X } from "lucide-react"
 import { logout, getCurrentUser, type User as UserType } from "@/api/auth"
 import { cn } from "@/lib/utils"
 import { useJobPoller } from "@/hooks/useJobPoller"
@@ -398,12 +398,26 @@ export function AppHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+
+                  {/* Settings Section */}
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Settings
                     </Link>
                   </DropdownMenuItem>
+
+                  {/* Sender Controls */}
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings/senders" className="cursor-pointer" data-testid="settings-senders-link">
+                      <ShieldCheck className="mr-2 h-4 w-4 text-green-400" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Sender Controls</span>
+                        <span className="text-xs text-muted-foreground">Trusted / muted senders</span>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />

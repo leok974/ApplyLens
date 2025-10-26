@@ -7,14 +7,19 @@ import {
   postMarkSafe,
   postMarkSuspicious,
   postUnsubscribe,
+  postRestore,
+  fetchInboxSummary,
   ActionRow,
   MessageDetail,
+  InboxSummary,
 } from '../lib/api'
 import { safeFormatDate } from '../lib/date'
 import { Alert, AlertDescription } from './ui/alert'
 import { Badge } from './ui/badge'
 import { Info } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { HeaderSettingsDropdown } from './HeaderSettingsDropdown'
+import { NavTabs } from './NavTabs'
 
 // Helper: ActionButton component
 function ActionButton({
@@ -59,6 +64,9 @@ export default function InboxWithActions() {
   const [rowLoading, setRowLoading] = useState<Record<string, boolean>>({})
   const [explanations, setExplanations] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'review' | 'quarantined' | 'archived'>('review')
+  const [summary, setSummary] = useState<InboxSummary | null>(null)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
 
   // Drawer state
   const [openMessageId, setOpenMessageId] = useState<string | null>(null)
@@ -67,11 +75,11 @@ export default function InboxWithActions() {
   >({})
   const [detailLoading, setDetailLoading] = useState<boolean>(false)
 
-  const loadInbox = async () => {
+  const loadInbox = async (mode: 'review' | 'quarantined' | 'archived' = viewMode) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchActionsInbox()
+      const data = await fetchActionsInbox(mode)
       setRows(data)
     } catch (err) {
       setError('Failed to load inbox: ' + String(err))
@@ -82,7 +90,39 @@ export default function InboxWithActions() {
 
   useEffect(() => {
     loadInbox()
+    // Load summary metrics with error handling
+    let ignore = false
+    async function loadSummary() {
+      try {
+        const data = await fetchInboxSummary()
+        if (!ignore) {
+          setSummary(data)
+          setSummaryError(null)
+        }
+      } catch (err) {
+        if (!ignore) {
+          setSummaryError('Failed to load insights')
+          console.error('Inbox summary error:', err)
+        }
+      }
+    }
+    loadSummary()
+    return () => {
+      ignore = true
+    }
   }, [])
+
+  // Handle tab change
+  const handleChangeMode = async (mode: 'review' | 'quarantined' | 'archived') => {
+    setViewMode(mode)
+    await loadInbox(mode)
+    // If currently open message is no longer in this mode, close the detail panel
+    setOpenMessageId(prev => {
+      if (!prev) return prev
+      const stillThere = rows.find(r => r.message_id === prev)
+      return stillThere ? prev : null
+    })
+  }
 
   // Helper: set row busy state
   function setRowBusy(id: string, busy: boolean) {
@@ -156,22 +196,9 @@ export default function InboxWithActions() {
     try {
       const res = await postMarkSafe(row.message_id)
       if (res.ok) {
-        setRows(prev =>
-          prev.map(r => {
-            if (r.message_id === row.message_id) {
-              return {
-                ...r,
-                reason: {
-                  ...r.reason,
-                  risk_score: res.new_risk_score ?? r.reason.risk_score,
-                  quarantined: false,
-                  signals: ['Manually marked safe', ...r.reason.signals],
-                },
-              }
-            }
-            return r
-          })
-        )
+        // Mark Safe moves item to Archived - remove from current view
+        setRows(prev => prev.filter(r => r.message_id !== row.message_id))
+        if (openMessageId === row.message_id) setOpenMessageId(null)
       }
     } catch (err) {
       setError('Mark safe failed: ' + String(err))
@@ -190,25 +217,9 @@ export default function InboxWithActions() {
     try {
       const res = await postMarkSuspicious(row.message_id)
       if (res.ok) {
-        setRows(prev =>
-          prev.map(r => {
-            if (r.message_id === row.message_id) {
-              return {
-                ...r,
-                reason: {
-                  ...r.reason,
-                  risk_score: res.new_risk_score ?? r.reason.risk_score,
-                  quarantined: res.quarantined ?? true,
-                  signals: [
-                    'Flagged suspicious by user',
-                    ...r.reason.signals,
-                  ],
-                },
-              }
-            }
-            return r
-          })
-        )
+        // Mark Suspicious moves item to Quarantined - remove from current view
+        setRows(prev => prev.filter(r => r.message_id !== row.message_id))
+        if (openMessageId === row.message_id) setOpenMessageId(null)
       }
     } catch (err) {
       setError('Mark suspicious failed: ' + String(err))
@@ -230,6 +241,24 @@ export default function InboxWithActions() {
       }
     } catch (err) {
       setError('Unsubscribe failed: ' + String(err))
+    } finally {
+      setRowBusy(row.message_id, false)
+    }
+  }
+
+  // Handle restore to review action
+  const handleRestore = async (e: React.MouseEvent, row: ActionRow) => {
+    e.stopPropagation()
+    setRowBusy(row.message_id, true)
+    try {
+      const res = await postRestore(row.message_id)
+      if (res.ok) {
+        // Remove from current view (Quarantined or Archived)
+        setRows(prev => prev.filter(r => r.message_id !== row.message_id))
+        if (openMessageId === row.message_id) setOpenMessageId(null)
+      }
+    } catch (err) {
+      setError('Restore failed: ' + String(err))
     } finally {
       setRowBusy(row.message_id, false)
     }
@@ -286,6 +315,15 @@ export default function InboxWithActions() {
             onClick={e => handleExplain(e, row)}
             disabled={false}
             tone="ghost"
+          />
+        )}
+        {/* Show Restore button only in Quarantined and Archived views */}
+        {(viewMode === 'quarantined' || viewMode === 'archived') && allow('archive') && (
+          <ActionButton
+            label="Restore to Review"
+            onClick={e => handleRestore(e, row)}
+            disabled={disabled}
+            tone="default"
           />
         )}
       </>
@@ -375,12 +413,87 @@ export default function InboxWithActions() {
 
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">📧 Inbox Actions</h1>
-        <p className="text-sm text-muted-foreground">
-          Take quick actions on promotional and bulk emails
-        </p>
+      <header className="mb-6 flex items-start justify-between px-4 pt-4 pb-2 border-b border-border/50 bg-background/60 backdrop-blur-xl rounded-t-lg">
+        <div className="flex flex-col gap-2">
+          <NavTabs />
+          <p className="text-[11px] text-muted-foreground">
+            Review offers, track pipeline, mute junk.
+          </p>
+        </div>
+        <HeaderSettingsDropdown />
       </header>
+
+      {/* View Mode Tabs */}
+      <div className="flex items-center gap-2 text-xs mb-4">
+        <button
+          className={
+            viewMode === 'review'
+              ? 'px-2 py-1 rounded bg-primary text-primary-foreground border border-primary text-[11px]'
+              : 'px-2 py-1 rounded bg-muted/20 border border-border hover:bg-muted/30 text-[11px]'
+          }
+          onClick={() => handleChangeMode('review')}
+        >
+          Needs Review
+        </button>
+
+        <button
+          className={
+            viewMode === 'quarantined'
+              ? 'px-2 py-1 rounded bg-primary text-primary-foreground border border-primary text-[11px]'
+              : 'px-2 py-1 rounded bg-muted/20 border border-border hover:bg-muted/30 text-[11px]'
+          }
+          onClick={() => handleChangeMode('quarantined')}
+        >
+          Quarantined
+        </button>
+
+        <button
+          className={
+            viewMode === 'archived'
+              ? 'px-2 py-1 rounded bg-primary text-primary-foreground border border-primary text-[11px]'
+              : 'px-2 py-1 rounded bg-muted/20 border border-border hover:bg-muted/30 text-[11px]'
+          }
+          onClick={() => handleChangeMode('archived')}
+        >
+          Archived
+        </button>
+      </div>
+
+      {/* Summary Metrics Card */}
+      {summaryError ? (
+        <div className="text-[11px] text-red-400/80 border border-red-400/20 rounded-md p-3 mb-4 max-w-xl">
+          {summaryError}
+        </div>
+      ) : summary ? (
+        <div className="text-[11px] text-muted-foreground border border-border rounded-md p-3 leading-relaxed mb-4 max-w-xl">
+          <div className="flex flex-wrap gap-4">
+            <div>
+              <div className="font-semibold text-foreground text-xs">
+                {summary.quarantined}
+              </div>
+              <div className="text-[11px]">Quarantined</div>
+            </div>
+            <div>
+              <div className="font-semibold text-foreground text-xs">
+                {summary.archived}
+              </div>
+              <div className="text-[11px]">Archived</div>
+            </div>
+            <div>
+              <div className="font-semibold text-foreground text-xs">
+                {summary.muted_senders}
+              </div>
+              <div className="text-[11px] whitespace-nowrap">Muted senders</div>
+            </div>
+            <div>
+              <div className="font-semibold text-foreground text-xs">
+                {summary.safe_senders}
+              </div>
+              <div className="text-[11px] whitespace-nowrap">Safe senders</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {error && (
         <Alert variant="destructive" className="mb-4">
@@ -435,7 +548,26 @@ export default function InboxWithActions() {
                         )}
                       >
                         <td className="px-4 py-3">{row.from_name}</td>
-                        <td className="px-4 py-3">{row.subject}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>{row.subject}</span>
+                            {row.quarantined && (
+                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                                Quarantined
+                              </Badge>
+                            )}
+                            {row.user_overrode_safe && (
+                              <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-emerald-600/20 text-emerald-200 border-emerald-700">
+                                Safe by you
+                              </Badge>
+                            )}
+                            {row.muted && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                Muted
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {safeFormatDate(row.received_at)}
                         </td>
@@ -486,6 +618,20 @@ export default function InboxWithActions() {
           <aside className="w-[380px] shrink-0">{renderDetailPane()}</aside>
         </div>
       )}
+
+      {/* Lifecycle Model Explanation */}
+      <div className="mt-6 text-[11px] text-muted-foreground border border-border rounded-md p-3 leading-relaxed max-w-3xl">
+        <span className="font-medium">Views:</span>
+        <br />
+        <span className="font-semibold">Needs Review</span>: Bulk, promo, or
+        risky mail we think you should look at.
+        <br />
+        <span className="font-semibold">Quarantined</span>: Messages you or the
+        system flagged as suspicious. We keep them away from your main view.
+        <br />
+        <span className="font-semibold">Archived</span>: Messages you've handled
+        (archived, marked safe, or muted). We won't bug you about them again.
+      </div>
     </div>
   )
 }

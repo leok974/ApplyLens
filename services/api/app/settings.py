@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Application
     ENV: str = "dev"
+    APP_VERSION: str = "0.4.42"  # API version (frontend adds 'v' prefix)
     API_PORT: int = 8003
     API_PREFIX: str = "/api"
     CORS_ORIGINS: str = "http://localhost:5175"

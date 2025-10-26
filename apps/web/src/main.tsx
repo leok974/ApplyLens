@@ -12,9 +12,9 @@ import { installGlobalReloadGuard } from './lib/reload-guard'
 
 // Version banner for debugging
 console.info(
-  '%c🔍 ApplyLens Web v0.4.28%c\n' +
-  'Build: 2025-10-24\n' +
-  'Features: Polished interactive triage console with optimistic UI updates',
+  '%c🔍 ApplyLens Web v0.4.47e%c\n' +
+  'Build: 2025-10-26\n' +
+  'Features: Small talk improvements + standardized assistant rendering + E2E tests',
   'color: #10b981; font-weight: bold; font-size: 14px;',
   'color: #6b7280; font-size: 11px;'
 )

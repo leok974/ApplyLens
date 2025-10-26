@@ -117,6 +117,23 @@ def metrics():
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
+# Runtime config endpoint - Frontend feature flags
+@app.get("/config")
+def get_runtime_config():
+    """
+    Get runtime configuration for frontend feature flags.
+
+    Returns:
+        - readOnly: Whether destructive actions (mute/delete/archive) are disabled
+        - version: Current API version (e.g., "v0.4.35")
+    """
+    allow_mutations = os.getenv("ALLOW_ACTION_MUTATIONS", "true").lower() == "true"
+    return {
+        "readOnly": not allow_mutations,
+        "version": settings.APP_VERSION,
+    }
+
+
 # Health endpoints (include new enhanced module)
 app.include_router(health.router)
 
@@ -178,14 +195,20 @@ app.include_router(policy.router)
 # Phase 4 - Agentic Actions & Approval Loop
 from .routers import actions  # noqa: E402
 from .routers import inbox_actions  # noqa: E402
+from .routers import senders  # noqa: E402
+from .routers import tracker  # noqa: E402
 
 app.include_router(actions.router)
 app.include_router(inbox_actions.router)
+app.include_router(senders.router)  # /settings/senders
+app.include_router(tracker.router)  # /tracker
 
 # Phase 5 - Chat Assistant
 from .routers import chat  # noqa: E402
+from .routers import assistant  # noqa: E402
 
 app.include_router(chat.router)
+app.include_router(assistant.router)  # /assistant/query
 
 # Email Statistics (with Redis caching)
 from .routers import emails_stats  # noqa: E402

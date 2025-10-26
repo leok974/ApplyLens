@@ -11,7 +11,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, Sparkles, AlertCircle, Mail, Play } from 'lucide-react'
 import { sendChatMessage, Message, ChatResponse } from '@/lib/chatClient'
+import { queryMailboxAssistant, AssistantQueryResponse, draftReply, DraftReplyResponse } from '@/lib/api'
 import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
+import { ReplyDraftModal } from '@/components/ReplyDraftModal'
 import { sync7d, sync60d } from '@/lib/api'
 import { useNavigate } from 'react-router-dom'
 
@@ -66,7 +68,46 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 interface ConversationMessage extends Message {
   response?: ChatResponse
+  assistantResponse?: AssistantQueryResponse
   error?: string
+  timestamp?: string  // ISO 8601 timestamp for confirmation messages
+  meta?: {
+    kind?: "draft_ready" | "sent_confirm"
+    sender?: string
+    subject?: string
+  }
+}
+
+// Helper component for conversational follow-up suggestions (v0.4.47)
+function AssistantFollowupBlock({
+  nextSteps,
+  followupPrompt,
+}: {
+  nextSteps?: string
+  followupPrompt?: string
+}) {
+  if (!nextSteps && !followupPrompt) return null
+
+  return (
+    <div className="mt-3 rounded-md bg-neutral-900/60 border border-neutral-800 p-3 text-[13px] text-neutral-200 leading-relaxed space-y-2">
+      {nextSteps && (
+        <div className="">
+          {nextSteps}
+        </div>
+      )}
+
+      {followupPrompt && (
+        <div className="text-[12px] text-neutral-400">
+          <div className="font-medium text-neutral-300 mb-1">
+            You could ask:
+          </div>
+          <div className="italic text-neutral-400">
+            "{followupPrompt}"
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function MailChat() {
@@ -101,6 +142,11 @@ export default function MailChat() {
   const [isStreamAlive, setIsStreamAlive] = useState(false)
   const streamHeartbeatRef = useRef<number | null>(null)
   const currentEventSourceRef = useRef<EventSource | null>(null)
+
+  // Draft Reply Modal State (Phase 1.5)
+  const [draftModal, setDraftModal] = useState<(DraftReplyResponse & { _emailId?: string; _senderEmail?: string }) | null>(null)
+  const [draftingFor, setDraftingFor] = useState<string | null>(null)
+
   async function loadDupes() {
     try {
       const r = await fetch('/api/money/duplicates')
@@ -557,11 +603,225 @@ export default function MailChat() {
     }
   }
 
+  // Helper: Check if user input is casual small talk (v0.4.47c)
+  function looksLikeSmallTalk(raw: string) {
+    const t = raw.trim().toLowerCase()
+    if (!t) return false
+    return (
+      t === "hi" ||
+      t === "hey" ||
+      t === "hello" ||
+      t === "yo" ||
+      t === "sup" ||
+      t === "help" ||
+      t === "help?" ||
+      t === "what can you do" ||
+      t === "what can you do?" ||
+      t === "what do you do" ||
+      t === "what do you do?" ||
+      t === "who are you" ||
+      t === "who are you?" ||
+      t === "what are you" ||
+      t === "what are you?" ||
+      t === "what can you help with" ||
+      t === "what can you help with?"
+    )
+  }
+
+    async function sendViaAssistant(explicitText?: string) {
+    const userText = (explicitText ?? input).trim()
+    if (!userText) return
+
+    // push user message itself first
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "user",
+        content: userText,
+        timestamp: new Date().toISOString(),
+      },
+    ])
+
+    // clear the input box
+    setInput("")
+
+    // 🔥 SMALL TALK SHORT-CIRCUIT
+    if (looksLikeSmallTalk(userText)) {
+      const now = new Date().toISOString()
+
+      const friendlyIntro =
+        "Hi 👋 I'm your mailbox assistant.\n\n" +
+        "I can:\n" +
+        "• Find unpaid bills or invoices\n" +
+        "• Show suspicious / risky emails and quarantine them\n" +
+        "• Find recruiters you owe a reply, and draft follow-ups for you\n" +
+        "• Unsubscribe you from promo blasts you're tired of\n\n" +
+        'You could ask: "Who do I still owe a reply to this week?"'
+
+      const stubAssistantResponse = {
+        intent: "greeting",
+        summary:
+          "I'm here to help with your inbox, even if nothing urgent is showing yet.",
+        next_steps:
+          "Ask me about bills, suspicious emails, recruiter follow-ups, or newsletters to unsubscribe.",
+        followup_prompt: "Who do I still owe a reply to this week?",
+        sources: [],
+        suggested_actions: [],
+        actions_performed: [],
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: friendlyIntro,
+          timestamp: now,
+          assistantResponse: stubAssistantResponse,
+        },
+      ])
+
+      // DO NOT CALL BACKEND
+      return
+    }
+
+    // NORMAL PATH: hit backend
+    setBusy(true)
+    try {
+      const resp = await queryMailboxAssistant({
+        user_query: userText,
+        account: userEmail,
+        mode: fileActions ? 'run' : 'off',
+        memory_opt_in: remember,
+        time_window_days: windowDays,
+      })
+
+      const now = new Date().toISOString()
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content: resp.summary || "(No summary returned)",
+          timestamp: now,
+          assistantResponse: resp,
+        },
+      ])
+    } catch (err) {
+      const now = new Date().toISOString()
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "I'm having trouble talking to your inbox right now. Please try again in a moment.",
+          timestamp: now,
+          assistantResponse: {
+            intent: "error",
+            summary:
+              "Temporary error when querying your inbox. No actions performed.",
+            next_steps:
+              "Try again in a few seconds or refresh. If this keeps happening, let us know.",
+            followup_prompt: "Show suspicious emails from this week",
+            sources: [],
+            suggested_actions: [],
+            actions_performed: [],
+          },
+        },
+      ])
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Draft Reply Handler (Phase 1.5)
+  async function handleDraftReply(emailId: string, sender: string, subject: string, senderEmail?: string) {
+    setDraftingFor(emailId)
+    try {
+      const draft = await draftReply({
+        email_id: emailId,
+        sender: sender,
+        subject: subject,
+        account: userEmail,
+      })
+      setDraftModal({
+        ...draft,
+        _emailId: emailId,
+        _senderEmail: senderEmail,
+      })
+
+      // Add confirmation message to chat with timestamp and subject
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `✅ Draft ready for ${sender}${subject ? ` (Re: ${subject})` : ""}`,
+        timestamp: new Date().toISOString(),
+        meta: {
+          kind: "draft_ready",
+          sender: sender,
+          subject: subject ?? "",
+        },
+      }])
+    } catch (err: any) {
+      console.error('Failed to draft reply:', err)
+      setError(err.message || 'Failed to generate draft')
+    } finally {
+      setDraftingFor(null)
+    }
+  }
+
+  // Confirm Sent Follow-up Handler (logs when user opens draft in Gmail)
+  function handleConfirmSentFollowup(sender: string, subject?: string) {
+    setMessages(prev => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: `📨 Sent follow-up to ${sender}${subject ? ` (Re: ${subject})` : ""}`,
+        timestamp: new Date().toISOString(),
+        meta: {
+          kind: "sent_confirm",
+          sender,
+          subject: subject ?? "",
+        },
+      },
+    ])
+  }
+
   function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      send(input, { propose: fileActions, explain, remember })
+      sendViaAssistant()
     }
+  }
+
+  function AssistantFollowupBlock({
+    nextSteps,
+    followupPrompt,
+  }: {
+    nextSteps?: string
+    followupPrompt?: string
+  }) {
+    if (!nextSteps && !followupPrompt) return null
+
+    return (
+      <div className="mt-3 rounded-md bg-neutral-900/60 border border-neutral-800 p-3 text-[13px] text-neutral-200 leading-relaxed space-y-2">
+        {nextSteps && (
+          <div className="">
+            {nextSteps}
+          </div>
+        )}
+
+        {followupPrompt && (
+          <div className="text-[12px] text-neutral-400">
+            <div className="font-medium text-neutral-300 mb-1">
+              Try asking:
+            </div>
+            <div className="italic text-neutral-400">
+              “{followupPrompt}”
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -585,7 +845,7 @@ export default function MailChat() {
         {QUICK_ACTIONS.map((action) => (
           <button
             key={action.label}
-            onClick={() => send(action.text)}
+            onClick={() => sendViaAssistant(action.text)}
             disabled={busy}
             className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
@@ -663,7 +923,9 @@ export default function MailChat() {
               }`}
             >
               {/* Message content with markdown-style formatting */}
-              <div className="whitespace-pre-wrap break-words">
+              <div className={`whitespace-pre-wrap break-words ${
+                msg.meta?.kind === "sent_confirm" ? "italic text-green-400" : ""
+              }`}>
                 {msg.content.split('\n').map((line, lineIdx) => {
                   // Handle bold **text**
                   const boldParts = line.split(/(\*\*.*?\*\*)/)
@@ -704,7 +966,21 @@ export default function MailChat() {
                 })}
               </div>
 
-              {/* Response metadata (for debugging) */}
+              {/* Timestamp for confirmation messages */}
+              {msg.timestamp && (
+                <div className="mt-1 text-[11px] text-neutral-500">
+                  {new Date(msg.timestamp).toLocaleString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </div>
+              )}
+
+              {/* Response metadata */}
               {msg.response && (
                 <div className="mt-2 pt-2 border-t border-neutral-700 text-xs text-neutral-500">
                   <div className="flex items-center gap-2">
@@ -715,6 +991,111 @@ export default function MailChat() {
                     </span>
                   </div>
                 </div>
+              )}
+
+              {/* Assistant response metadata */}
+              {msg.assistantResponse && (
+                <>
+                  <div className="mt-2 pt-2 border-t border-neutral-700 text-xs text-neutral-500">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3 h-3" />
+                      <span>
+                        {msg.assistantResponse.sources.length} emails found • {msg.assistantResponse.intent} intent
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Suggested Actions (Phase 1.5) */}
+                  {msg.assistantResponse.suggested_actions && msg.assistantResponse.suggested_actions.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <div className="text-xs text-neutral-400 font-medium">Suggested Actions:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {msg.assistantResponse.suggested_actions.map((action, idx) => (
+                          <div key={idx}>
+                            {action.kind === 'draft_reply' && action.email_id && action.sender && action.subject ? (
+                              <button
+                                onClick={() => handleDraftReply(action.email_id!, action.sender!, action.subject!, action.sender_email)}
+                                disabled={draftingFor === action.email_id}
+                                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700
+                                         text-white text-xs transition-colors font-medium
+                                         disabled:opacity-50 disabled:cursor-not-allowed
+                                         flex items-center gap-1.5"
+                              >
+                                <Mail className="w-3 h-3" />
+                                <span>{draftingFor === action.email_id ? 'Drafting...' : action.label}</span>
+                              </button>
+                            ) : (
+                              <button
+                                className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700
+                                         text-white text-xs transition-colors"
+                              >
+                                {action.label}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty State with Conversational Suggestions (v0.4.47) */}
+                  {msg.assistantResponse.sources.length === 0 && (
+                    <div className="mt-4 text-[13px] leading-relaxed text-neutral-200">
+                      {/* main summary / headline */}
+                      {msg.assistantResponse.summary ? (
+                        <div className="whitespace-pre-line">
+                          {msg.assistantResponse.summary}
+                        </div>
+                      ) : (
+                        <div>
+                          I looked through the last {windowDays} days of mail for{" "}
+                          <span className="font-medium text-white">{userEmail}</span> and
+                          didn't see anything urgent.
+                        </div>
+                      )}
+
+                      {/* smart follow-up coaching */}
+                      <AssistantFollowupBlock
+                        nextSteps={msg.assistantResponse.next_steps}
+                        followupPrompt={msg.assistantResponse.followup_prompt}
+                      />
+
+                      {/* secondary controls like Sync 7 / Sync 60 / Open Search */}
+                      <div className="mt-4 flex flex-wrap items-center gap-2 text-[12px] text-neutral-400">
+                        <button
+                          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300"
+                          onClick={() => handleSync(7)}
+                        >
+                          Sync 7 days
+                        </button>
+                        <button
+                          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300"
+                          onClick={() => handleSync(60)}
+                        >
+                          Sync 60 days
+                        </button>
+                        <button
+                          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300"
+                          onClick={openSearchPrefilled}
+                        >
+                          Open Search
+                        </button>
+
+                        <div className="text-neutral-600 text-[11px] ml-2">
+                          (No sensitive content was changed.)
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Non-empty: Show conversational guidance inline (v0.4.47) */}
+                  {msg.assistantResponse.sources.length > 0 && (
+                    <AssistantFollowupBlock
+                      nextSteps={msg.assistantResponse.next_steps}
+                      followupPrompt={msg.assistantResponse.followup_prompt}
+                    />
+                  )}
+                </>
               )}
 
               {/* Timing Footer */}
@@ -729,35 +1110,6 @@ export default function MailChat() {
                   {typeof timing.es_ms === 'number' && <span>ES: {Math.round(timing.es_ms)} ms</span>}
                   {typeof timing.llm_ms === 'number' && <span>{' · '}LLM: {Math.round(timing.llm_ms)} ms</span>}
                   {typeof timing.client_ms === 'number' && <span>{' · '}Client: {Math.round(timing.client_ms)} ms</span>}
-                </div>
-              )}
-
-              {/* Empty State - Show sync buttons when no results */}
-              {msg.response && msg.response.search_stats.returned_results === 0 && (
-                <div className="rounded-xl bg-neutral-900 p-4 border border-neutral-800 mt-3">
-                  <div className="text-sm">
-                    🕵️ No emails found in the last {windowDays} days for <b>{userEmail}</b>.
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
-                      onClick={() => handleSync(7)}
-                    >
-                      Sync 7 days
-                    </button>
-                    <button
-                      className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
-                      onClick={() => handleSync(60)}
-                    >
-                      Sync 60 days
-                    </button>
-                    <button
-                      className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 transition-colors"
-                      onClick={openSearchPrefilled}
-                    >
-                      Open Search
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -801,7 +1153,7 @@ export default function MailChat() {
           disabled={busy}
         />
         <button
-          onClick={() => send(input, { propose: fileActions, explain, remember })}
+          onClick={() => sendViaAssistant()}
           disabled={busy || !input.trim()}
           className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
@@ -947,6 +1299,23 @@ export default function MailChat() {
           </div>
         </div>
       </div>
+
+      {/* Reply Draft Modal (Phase 1.5) */}
+      {draftModal && (
+        <ReplyDraftModal
+          draft={draftModal}
+          onClose={() => setDraftModal(null)}
+          emailId={(draftModal as any)._emailId}
+          account={userEmail}
+          senderEmail={(draftModal as any)._senderEmail}
+          onOpenedInGmail={() => {
+            handleConfirmSentFollowup(
+              draftModal.sender,
+              draftModal.subject
+            )
+          }}
+        />
+      )}
     </div>
   )
 }

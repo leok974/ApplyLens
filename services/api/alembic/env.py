@@ -15,7 +15,9 @@ config = context.config
 # Override with DATABASE_URL from environment if present
 database_url = os.getenv("DATABASE_URL")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+    # Escape % characters for configparser (replace % with %%)
+    database_url_escaped = database_url.replace("%", "%%")
+    config.set_main_option("sqlalchemy.url", database_url_escaped)
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:

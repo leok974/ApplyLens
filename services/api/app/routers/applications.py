@@ -1,4 +1,15 @@
 # services/api/app/routers/applications.py
+"""
+Applications API - Internal/legacy endpoint for job applications
+
+NOTE: This is now considered an internal/legacy API.
+For the stable public contract that the UI should use, see /api/tracker instead.
+
+The /tracker endpoint returns a simpler schema (company, role, stage, source, last_activity_at)
+optimized for the UI, while this endpoint provides full pagination and filtering capabilities
+for internal use cases or future advanced features.
+"""
+
 from __future__ import annotations
 
 import base64
@@ -14,7 +25,7 @@ from pydantic import BaseModel
 from ..deps.user import get_current_user_email
 from ..es import ES_ENABLED, INDEX, es
 
-router = APIRouter(prefix="/api", tags=["applications"])
+router = APIRouter(prefix="/applications", tags=["applications"])
 logger = logging.getLogger(__name__)
 
 # ---------- Pydantic Models ----------
@@ -278,7 +289,7 @@ def _list_applications_es(
 # ---------- Router Endpoint ----------
 
 
-@router.get("/applications", response_model=ApplicationListResponse)
+@router.get("", response_model=ApplicationListResponse)
 def list_applications(
     limit: int = Query(25, ge=1, le=200),
     status: Optional[str] = Query(None, description="Filter by status"),

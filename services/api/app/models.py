@@ -26,6 +26,7 @@ from .db import Base
 
 class User(Base):
     """User accounts for multi-user authentication."""
+
     __tablename__ = "users"
     id = Column(String(64), primary_key=True)  # UUID or generated ID
     email = Column(String(320), nullable=False, unique=True, index=True)
@@ -33,14 +34,22 @@ class User(Base):
     picture_url = Column(Text, nullable=True)
     is_demo = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), onupdate=func.now(), server_default=func.now()
+    )
 
 
 class Session(Base):
     """User sessions for cookie-based authentication."""
+
     __tablename__ = "sessions"
     id = Column(String(64), primary_key=True)  # Session token
-    user_id = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        String(64),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=False)
     user = relationship("User", backref="sessions")
@@ -49,9 +58,16 @@ class Session(Base):
 class OAuthToken(Base):
     __tablename__ = "oauth_tokens"
     id = Column(Integer, primary_key=True)
-    user_id = Column(String(64), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)  # New: link to User
+    user_id = Column(
+        String(64),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )  # New: link to User
     provider = Column(String(32), nullable=False, index=True)  # "google"
-    user_email = Column(String(320), nullable=False, index=True)  # Keep for backward compatibility
+    user_email = Column(
+        String(320), nullable=False, index=True
+    )  # Keep for backward compatibility
     access_token = Column(LargeBinary, nullable=False)  # Encrypted with AES-GCM
     refresh_token = Column(LargeBinary, nullable=True)  # Encrypted with AES-GCM
     token_uri = Column(Text, nullable=False)
@@ -571,93 +587,111 @@ class PolicyStats(Base):
 
 class AgentAuditLog(Base):
     """Agent execution audit log.
-    
+
     Tracks all agent runs for observability, debugging, and compliance.
     Stores plan, execution status, timing, and artifacts.
     """
-    
+
     __tablename__ = "agent_audit_log"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     run_id = Column(String(128), unique=True, nullable=False, index=True)
     agent = Column(String(128), nullable=False, index=True)
     objective = Column(String(512), nullable=False)
-    status = Column(String(32), nullable=False, index=True)  # queued, running, succeeded, failed, canceled
-    
+    status = Column(
+        String(32), nullable=False, index=True
+    )  # queued, running, succeeded, failed, canceled
+
     # Timestamps
     started_at = Column(DateTime(timezone=True), nullable=False, index=True)
     finished_at = Column(DateTime(timezone=True), nullable=True)
     duration_ms = Column(Float, nullable=True)
-    
+
     # Execution details
     plan = Column(JSONB, nullable=True)
     artifacts = Column(JSONB, nullable=True)
     error = Column(String(2048), nullable=True)
-    
+
     # Metadata
     user_email = Column(String(320), nullable=True, index=True)  # Who triggered it
     dry_run = Column(Boolean, default=True, nullable=False)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     __table_args__ = (
-        Index('ix_agent_audit_log_agent_status', 'agent', 'status'),
-        Index('ix_agent_audit_log_started_at_desc', started_at.desc()),
+        Index("ix_agent_audit_log_agent_status", "agent", "status"),
+        Index("ix_agent_audit_log_started_at_desc", started_at.desc()),
     )
-    
+
     def __repr__(self):
         return f"<AgentAuditLog(run_id={self.run_id}, agent={self.agent}, status={self.status})>"
 
 
 class AgentApproval(Base):
     """Agent action approval requests with HMAC signatures.
-    
+
     Tracks approval lifecycle for agent actions that require human review.
     Includes HMAC signatures for secure approval links and nonce protection.
     """
-    
+
     __tablename__ = "agent_approvals"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     request_id = Column(String(128), unique=True, nullable=False, index=True)
-    
+
     # Agent context
     agent = Column(String(128), nullable=False, index=True)
     action = Column(String(128), nullable=False)
     context = Column(JSONB, nullable=False, default=dict)  # Action parameters
-    
+
     # Policy decision
     policy_rule_id = Column(String(128), nullable=True)
     reason = Column(String(1024), nullable=False)
-    
+
     # Approval lifecycle
-    status = Column(String(32), nullable=False, default="pending", index=True)  # pending, approved, rejected, canceled, expired
-    requested_by = Column(String(320), nullable=True, index=True)  # User email who triggered the action
-    requested_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    
+    status = Column(
+        String(32), nullable=False, default="pending", index=True
+    )  # pending, approved, rejected, canceled, expired
+    requested_by = Column(
+        String(320), nullable=True, index=True
+    )  # User email who triggered the action
+    requested_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
     reviewed_by = Column(String(320), nullable=True)  # User email who approved/rejected
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
-    
-    expires_at = Column(DateTime(timezone=True), nullable=True, index=True)  # Auto-expire after N hours
-    
+
+    expires_at = Column(
+        DateTime(timezone=True), nullable=True, index=True
+    )  # Auto-expire after N hours
+
     # Security
-    signature = Column(String(128), nullable=False, unique=True)  # HMAC-SHA256 signature
-    nonce = Column(String(64), nullable=False, unique=True, index=True)  # One-time use nonce
+    signature = Column(
+        String(128), nullable=False, unique=True
+    )  # HMAC-SHA256 signature
+    nonce = Column(
+        String(64), nullable=False, unique=True, index=True
+    )  # One-time use nonce
     nonce_used = Column(Boolean, default=False, nullable=False)
-    
+
     # Execution tracking
     executed = Column(Boolean, default=False, nullable=False)
     executed_at = Column(DateTime(timezone=True), nullable=True)
-    execution_result = Column(JSONB, nullable=True)  # Result of executing the approved action
-    
+    execution_result = Column(
+        JSONB, nullable=True
+    )  # Result of executing the approved action
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    __table_args__ = (
-        Index('ix_agent_approvals_agent_status', 'agent', 'status'),
-        Index('ix_agent_approvals_requested_at_desc', requested_at.desc()),
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    
+
+    __table_args__ = (
+        Index("ix_agent_approvals_agent_status", "agent", "status"),
+        Index("ix_agent_approvals_requested_at_desc", requested_at.desc()),
+    )
+
     def __repr__(self):
         return f"<AgentApproval(request_id={self.request_id}, agent={self.agent}, status={self.status})>"
 
@@ -667,76 +701,109 @@ class AgentApproval(Base):
 
 class AgentMetricsDaily(Base):
     """Daily aggregated metrics for agent quality tracking.
-    
+
     Captures production quality signals:
     - Success/failure rates
     - User feedback (thumbs up/down)
     - Quality scores from online eval
     - Latency and cost metrics
     - Red-team attack detection
-    
+
     Used for:
     - Trend analysis and regression detection
     - Weekly intelligence reports
     - Dashboard metrics
     - Budget enforcement
     """
-    
+
     __tablename__ = "agent_metrics_daily"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     agent = Column(String(128), nullable=False, index=True)
     date = Column(DateTime(timezone=True), nullable=False, index=True)
-    
+
     # Execution metrics
     total_runs = Column(Integer, default=0, nullable=False)
     successful_runs = Column(Integer, default=0, nullable=False)
     failed_runs = Column(Integer, default=0, nullable=False)
     success_rate = Column(Float, nullable=True)  # successful_runs / total_runs
-    
+
     # Quality metrics
     avg_quality_score = Column(Float, nullable=True)  # 0-100 from judges
     median_quality_score = Column(Float, nullable=True)
     p95_quality_score = Column(Float, nullable=True)
     quality_samples = Column(Integer, default=0)  # How many runs were evaluated
-    
+
     # User feedback
     thumbs_up = Column(Integer, default=0, nullable=False)
     thumbs_down = Column(Integer, default=0, nullable=False)
-    feedback_rate = Column(Float, nullable=True)  # (thumbs_up + thumbs_down) / total_runs
-    satisfaction_rate = Column(Float, nullable=True)  # thumbs_up / (thumbs_up + thumbs_down)
-    
+    feedback_rate = Column(
+        Float, nullable=True
+    )  # (thumbs_up + thumbs_down) / total_runs
+    satisfaction_rate = Column(
+        Float, nullable=True
+    )  # thumbs_up / (thumbs_up + thumbs_down)
+
     # Performance metrics
     avg_latency_ms = Column(Float, nullable=True)
     median_latency_ms = Column(Float, nullable=True)
     p95_latency_ms = Column(Float, nullable=True)
     p99_latency_ms = Column(Float, nullable=True)
-    
+
     # Cost tracking
     total_cost_weight = Column(Float, default=0.0)  # Relative cost units
     avg_cost_per_run = Column(Float, nullable=True)
-    
+
     # Invariant tracking
     invariants_passed = Column(Integer, default=0)
     invariants_failed = Column(Integer, default=0)
-    failed_invariant_ids = Column(ARRAY(Text), nullable=True)  # List of failed invariant IDs
-    
+    failed_invariant_ids = Column(
+        ARRAY(Text), nullable=True
+    )  # List of failed invariant IDs
+
     # Red-team tracking
     redteam_attacks_detected = Column(Integer, default=0)
     redteam_attacks_missed = Column(Integer, default=0)
     redteam_false_positives = Column(Integer, default=0)
-    
+
     # Breakdown by difficulty (JSON)
-    quality_by_difficulty = Column(JSONB, nullable=True)  # {"easy": 95.0, "medium": 80.0, "hard": 65.0}
-    
+    quality_by_difficulty = Column(
+        JSONB, nullable=True
+    )  # {"easy": 95.0, "medium": 80.0, "hard": 65.0}
+
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    __table_args__ = (
-        Index('ix_agent_metrics_daily_agent_date', 'agent', 'date', unique=True),
-        Index('ix_agent_metrics_daily_date_desc', date.desc()),
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    
+
+    __table_args__ = (
+        Index("ix_agent_metrics_daily_agent_date", "agent", "date", unique=True),
+        Index("ix_agent_metrics_daily_date_desc", date.desc()),
+    )
+
     def __repr__(self):
         return f"<AgentMetricsDaily(agent={self.agent}, date={self.date.date()}, success_rate={self.success_rate:.2%})>"
+
+
+class UserSenderOverride(Base):
+    """User-specific sender overrides for adaptive classification."""
+
+    __tablename__ = "user_sender_overrides"
+
+    id = Column(String(36), primary_key=True)  # UUID
+    user_id = Column(String(255), nullable=False, index=True)
+    sender = Column(String(512), nullable=False, index=True)
+    muted = Column(Boolean, server_default="false", nullable=False)
+    safe = Column(Boolean, server_default="false", nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        Index("idx_user_sender_unique", "user_id", "sender", unique=True),
+    )
+
+    def __repr__(self):
+        return f"<UserSenderOverride(user={self.user_id}, sender={self.sender}, safe={self.safe}, muted={self.muted})>"

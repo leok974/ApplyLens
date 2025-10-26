@@ -1,9 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Inbox from './pages/Inbox'
-import Tracker from './pages/Tracker'
+import TrackerPage from './pages/TrackerPage'
 import Applications from './pages/Applications'
 import Settings from './pages/Settings'
 import SettingsSecurity from './pages/SettingsSecurity'
+import SettingsSendersPage from './pages/SettingsSendersPage'
 import Landing from './pages/Landing'
 import LoginGuard from './pages/LoginGuard'
 import { AppHeader } from './components/AppHeader'
@@ -40,11 +41,12 @@ export default function App() {
                   <Route path="/inbox-actions" element={<InboxWithActions />} />
                   <Route path="/search" element={<Search />} />
                   <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/tracker" element={<Tracker />} />
+                  <Route path="/tracker" element={<TrackerPage />} />
                   <Route path="/profile" element={<ProfileSummary />} />
                   <Route path="/applications" element={<Applications />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/settings/security" element={<SettingsSecurity />} />
+                  <Route path="/settings/senders" element={<SettingsSendersPage />} />
                   <Route path="/policy-studio" element={<PolicyStudio />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

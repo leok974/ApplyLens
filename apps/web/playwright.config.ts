@@ -22,7 +22,8 @@ export default defineConfig({
     "e2e/search-derived-and-tooltip.spec.ts",
     "e2e/prod-search-smoke.spec.ts",  // Production-safe smoke tests
     "ui/header-logo.spec.ts",
-    "search.interactions.spec.ts"
+    "search.interactions.spec.ts",
+    "mailboxAssistant.spec.ts"  // Small talk and conversational suggestions
   ],
   testIgnore: ["**/e2e-new/**"],
   timeout: 30_000,

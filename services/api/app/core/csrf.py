@@ -22,6 +22,12 @@ CSRF_EXEMPT_PATHS = {
     "/api/ux/heartbeat",  # Direct API access (for testing/monitoring)
     "/ux/chat/opened",  # Chat engagement metric (via nginx)
     "/api/ux/chat/opened",  # Direct API access
+    "/chat",  # Chat endpoint (without /api prefix)
+    "/chat/stream",  # EventSource (SSE) - can't send custom headers
+    "/api/chat",  # Chat endpoint (with /api prefix, for nginx)
+    "/api/chat/stream",  # EventSource via nginx
+    "/assistant/query",  # Assistant query endpoint
+    "/api/assistant/query",  # Assistant via nginx
 }
 
 

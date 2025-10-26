@@ -17,9 +17,12 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from ..db import get_db
 from ..deps.user import get_current_user_email
 from ..es import ES_ENABLED, INDEX, es
+from .senders import get_overrides_for_user, upsert_sender_override_safe
 
 router = APIRouter(prefix="/actions", tags=["inbox_actions"])
 logger = logging.getLogger(__name__)
@@ -42,6 +45,14 @@ class ActionRow(BaseModel):
     labels: List[str]
     reason: Dict[str, Any]
     allowed_actions: List[str]
+    # Lifecycle flags for UI
+    archived: bool = False
+    quarantined: bool = False
+    muted: bool = False
+    user_overrode_safe: bool = False
+    # Actionability signals
+    risk_score: int = 0
+    unread: bool = True
 
 
 class ExplainRequest(BaseModel):
@@ -70,6 +81,8 @@ class ActionResponse(BaseModel):
     new_risk_score: Optional[int] = None
     quarantined: Optional[bool] = None
     archived: Optional[bool] = None
+    muted: Optional[bool] = None
+    user_overrode_safe: Optional[bool] = None
 
 
 class MessageDetailResponse(BaseModel):
@@ -229,34 +242,70 @@ def generate_explanation_for_message(
 
 @router.get("/inbox")
 async def get_inbox_actions(
+    mode: str = "review",
     user_email: str = Depends(get_current_user_email),
 ) -> List[ActionRow]:
     """
     Get actionable emails that need cleanup/attention.
 
-    Returns emails flagged as promotions, bulk, risky, or unread.
+    Args:
+        mode: Filter mode - "review" (default), "quarantined", or "archived"
+        user_email: Current user's email
+
+    Returns:
+        - review: Emails needing triage (not archived/muted/safe, excluding quarantined)
+        - quarantined: Emails marked suspicious or high-risk
+        - archived: Emails user has handled (archived/safe/muted)
     """
     try:
         if not ES_ENABLED or es is None:
             logger.info("Inbox actions: ES disabled, returning empty list")
             return []
 
+        # Build query based on mode
+        must_clauses = [{"term": {"owner_email.keyword": user_email}}]
+        must_not_clauses = []
+        should_clauses = []
+
+        if mode == "quarantined":
+            # Show only quarantined emails
+            must_clauses.append({"term": {"quarantined": True}})
+        elif mode == "archived":
+            # Show archived, safe, or muted emails
+            should_clauses = [
+                {"term": {"user_archived": True}},
+                {"term": {"user_overrode_safe": True}},
+                {"term": {"user_unsubscribed": True}},
+            ]
+        else:  # mode == "review" (default)
+            # Show emails that need review: not handled yet, and either unread OR risky
+            # Exclude items that have been explicitly handled
+            must_not_clauses = [
+                {"term": {"user_archived": True}},
+                {"term": {"user_overrode_safe": True}},
+                {"term": {"user_unsubscribed": True}},
+                {"term": {"quarantined": True}},
+            ]
+            # Much looser criteria: unread OR risk >= 40
+            # This will be further filtered in Python after fetching
+            should_clauses = [
+                {"term": {"labels": "UNREAD"}},
+                {"range": {"risk_score": {"gte": 40}}},
+                {"term": {"labels": "PROMOTIONS"}},
+                {"term": {"labels": "CATEGORY_PROMOTIONS"}},
+            ]
+
+        query_body = {"must": must_clauses}
+        if must_not_clauses:
+            query_body["must_not"] = must_not_clauses
+        if should_clauses:
+            query_body["should"] = should_clauses
+            query_body["minimum_should_match"] = 1
+
         # Query ES for actionable emails
         body = {
             "size": 50,
-            "query": {
-                "bool": {
-                    "must": [{"term": {"owner_email.keyword": user_email}}],
-                    "should": [
-                        {"term": {"labels": "PROMOTIONS"}},
-                        {"term": {"labels": "CATEGORY_PROMOTIONS"}},
-                        {"term": {"labels": "UNREAD"}},
-                        {"range": {"risk_score": {"gte": 50}}},
-                        {"term": {"quarantined": True}},
-                    ],
-                    "minimum_should_match": 1,
-                }
-            },
+            "query": {"bool": query_body},
             "sort": [{"received_at": {"order": "desc"}}],
             "_source": [
                 "gmail_id",
@@ -268,6 +317,9 @@ async def get_inbox_actions(
                 "risk_score",
                 "quarantined",
                 "label_heuristics",
+                "user_archived",
+                "user_overrode_safe",
+                "user_unsubscribed",
             ],
         }
 
@@ -289,9 +341,37 @@ async def get_inbox_actions(
             # Get labels
             labels = src.get("labels", [])
 
-            # Build reason
-            risk_score = src.get("risk_score")
+            # Extract lifecycle flags with proper defaults
+            risk_score = src.get("risk_score", 0)
+            if risk_score is None:
+                risk_score = 0
+
+            # Check if unread - default to True if missing (assume new/unseen)
+            unread = "UNREAD" in labels or src.get("unread", True)
+            if unread is None:
+                unread = True
+
+            # Lifecycle flags
+            archived = src.get("user_archived", False) or src.get("archived", False)
             quarantined = src.get("quarantined", False)
+            muted = src.get("user_unsubscribed", False) or src.get("muted", False)
+            user_overrode_safe = src.get("user_overrode_safe", False) or src.get(
+                "marked_safe", False
+            )
+
+            # For review mode, apply Python-side filtering
+            if mode == "review":
+                # Skip if user already handled this
+                already_handled = archived or muted or user_overrode_safe or quarantined
+                if already_handled:
+                    continue
+
+                # Must be unread OR risky (>= 40)
+                is_actionable = unread or risk_score >= 40
+                if not is_actionable:
+                    continue
+
+            # Build reason
             category = categorize_email(labels, risk_score, quarantined)
             signals = build_signals(category, labels, risk_score, sender)
 
@@ -309,16 +389,24 @@ async def get_inbox_actions(
                 message_id=str(message_id),
                 from_name=from_name,
                 from_email=from_email,
-                subject=src.get("subject", ""),
+                subject=src.get("subject", "(no subject)"),
                 received_at=src.get("received_at", ""),
                 labels=labels,
                 reason=reason,
                 allowed_actions=allowed_actions,
+                # Lifecycle flags
+                archived=archived,
+                quarantined=quarantined,
+                muted=muted,
+                user_overrode_safe=user_overrode_safe,
+                # Actionability signals
+                risk_score=int(risk_score),
+                unread=unread,
             )
             rows.append(row)
 
         logger.info(
-            f"Inbox actions: Found {len(rows)} actionable emails for {user_email}"
+            f"Inbox actions [{mode}]: Found {len(rows)} actionable emails for {user_email}"
         )
         return rows
 
@@ -486,11 +574,16 @@ async def get_message_detail(
 async def mark_safe(
     req: ActionRequest,
     user_email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db),
 ) -> ActionResponse:
     """
     Mark an email as safe (user-approved).
 
-    Updates the email's risk score and clears quarantine flag.
+    Updates the email's risk score, clears quarantine, and marks as archived.
+    Safe emails go to the Archived view.
+
+    Also records a sender-level override in Postgres so future emails from
+    this sender are trusted and won't clutter Needs Review (adaptive classification).
     """
     if not ALLOW_ACTION_MUTATIONS:
         raise HTTPException(403, "Actions are read-only in production")
@@ -499,24 +592,41 @@ async def mark_safe(
         if not ES_ENABLED or es is None:
             raise HTTPException(503, "Search service unavailable")
 
+        # Get the email to extract sender
+        msg = es.get(index=INDEX, id=req.message_id)
+        sender_email = msg["_source"].get("from_email") or msg["_source"].get("sender")
+
         # Update email in ES
         es.update(
             index=INDEX,
             id=req.message_id,
             body={
                 "script": {
-                    "source": "ctx._source.risk_score = Math.min(ctx._source.risk_score ?: 100, 10); ctx._source.quarantined = false; ctx._source.user_overrode_safe = true",
+                    "source": """
+                        ctx._source.risk_score = 5;
+                        ctx._source.quarantined = false;
+                        ctx._source.user_overrode_safe = true;
+                        if (ctx._source.labels == null) { ctx._source.labels = [] }
+                        if (!ctx._source.labels.contains('ARCHIVED')) { ctx._source.labels.add('ARCHIVED') }
+                    """,
                     "lang": "painless",
                 }
             },
         )
 
+        # Record sender-level override for adaptive classification
+        if sender_email:
+            upsert_sender_override_safe(db, user_email, sender_email)
+            logger.info(f"Recorded safe override for sender {sender_email}")
+
         logger.info(f"Marked {req.message_id} as safe by {user_email}")
         return ActionResponse(
             ok=True,
             message_id=req.message_id,
-            new_risk_score=10,
+            new_risk_score=5,
             quarantined=False,
+            archived=True,
+            user_overrode_safe=True,
         )
 
     except Exception as e:
@@ -615,6 +725,7 @@ async def unsubscribe(
     """
     Unsubscribe from sender (mark as muted).
 
+    Marks the email as muted/unsubscribed and archives it.
     For now, just marks sender as unsubscribed in our DB.
     Doesn't actually click unsubscribe links yet.
     """
@@ -632,13 +743,18 @@ async def unsubscribe(
         if not sender:
             raise HTTPException(400, "Cannot unsubscribe: no sender found")
 
-        # Update email - mark as unsubscribed
+        # Update email - mark as unsubscribed and archived
         es.update(
             index=INDEX,
             id=req.message_id,
             body={
                 "script": {
-                    "source": "ctx._source.user_unsubscribed = true; ctx._source.unsubscribed_at = params.now",
+                    "source": """
+                        ctx._source.user_unsubscribed = true;
+                        ctx._source.unsubscribed_at = params.now;
+                        if (ctx._source.labels == null) { ctx._source.labels = [] }
+                        if (!ctx._source.labels.contains('ARCHIVED')) { ctx._source.labels.add('ARCHIVED') }
+                    """,
                     "lang": "painless",
                     "params": {"now": datetime.utcnow().isoformat()},
                 }
@@ -650,8 +766,152 @@ async def unsubscribe(
         return ActionResponse(
             ok=True,
             message_id=req.message_id,
+            archived=True,
+            muted=True,
         )
 
     except Exception as e:
         logger.exception(f"Unsubscribe failed: {e}")
         raise HTTPException(500, f"Failed to unsubscribe: {str(e)}")
+
+
+@router.post("/restore")
+async def restore_to_review(
+    req: ActionRequest,
+    user_email: str = Depends(get_current_user_email),
+) -> ActionResponse:
+    """
+    Restore an email back to Needs Review.
+
+    Clears all lifecycle flags so email appears in review mode again.
+    Useful for undoing accidental actions.
+    """
+    if not ALLOW_ACTION_MUTATIONS:
+        raise HTTPException(403, "Actions are read-only in production")
+
+    try:
+        if not ES_ENABLED or es is None:
+            raise HTTPException(503, "Search service unavailable")
+
+        # Clear all lifecycle flags
+        es.update(
+            index=INDEX,
+            id=req.message_id,
+            body={
+                "script": {
+                    "source": """
+                        ctx._source.user_archived = false;
+                        ctx._source.user_overrode_safe = false;
+                        ctx._source.user_unsubscribed = false;
+                        ctx._source.quarantined = false;
+                        if (ctx._source.labels != null) {
+                            ctx._source.labels.removeIf(label -> label == 'ARCHIVED');
+                        }
+                    """,
+                    "lang": "painless",
+                }
+            },
+        )
+
+        logger.info(f"Restored {req.message_id} to review by {user_email}")
+        return ActionResponse(
+            ok=True,
+            message_id=req.message_id,
+            archived=False,
+            quarantined=False,
+        )
+
+    except Exception as e:
+        logger.exception(f"Restore failed: {e}")
+        raise HTTPException(500, f"Failed to restore: {str(e)}")
+
+
+# ===== Metrics / Insights =====
+
+
+class InboxSummary(BaseModel):
+    """Summary metrics for inbox actions."""
+
+    archived: int
+    quarantined: int
+    muted_senders: int
+    safe_senders: int
+
+
+@router.get("/metrics/summary", response_model=InboxSummary)
+async def inbox_actions_summary(
+    user_email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db),
+) -> InboxSummary:
+    """
+    Return high-level triage stats for this user.
+
+    These values come from Elasticsearch (archived/quarantined counts) and
+    Postgres (sender override counts). Provides at-a-glance visibility into
+    user's classification behavior.
+    """
+    try:
+        if not ES_ENABLED or es is None:
+            # Return zeros if ES unavailable
+            return InboxSummary(
+                archived=0,
+                quarantined=0,
+                muted_senders=0,
+                safe_senders=0,
+            )
+
+        # Count archived emails (user_archived=true OR user_overrode_safe=true OR muted=true)
+        archived_query = {
+            "query": {
+                "bool": {
+                    "filter": [{"term": {"owner": user_email}}],
+                    "should": [
+                        {"term": {"user_archived": True}},
+                        {"term": {"user_overrode_safe": True}},
+                        {"term": {"muted": True}},
+                        {"term": {"user_unsubscribed": True}},
+                    ],
+                    "minimum_should_match": 1,
+                }
+            },
+            "size": 0,
+        }
+        archived_resp = es.search(index=INDEX, body=archived_query)
+        archived_count = archived_resp["hits"]["total"]["value"]
+
+        # Count quarantined emails
+        quarantined_query = {
+            "query": {
+                "bool": {
+                    "filter": [
+                        {"term": {"owner": user_email}},
+                        {"term": {"quarantined": True}},
+                    ]
+                }
+            },
+            "size": 0,
+        }
+        quarantined_resp = es.search(index=INDEX, body=quarantined_query)
+        quarantined_count = quarantined_resp["hits"]["total"]["value"]
+
+        # Count sender overrides from Postgres
+        user_overrides = get_overrides_for_user(db, user_email)
+        muted_senders = sum(1 for ov in user_overrides if ov["muted"])
+        safe_senders = sum(1 for ov in user_overrides if ov["safe"])
+
+        return InboxSummary(
+            archived=archived_count,
+            quarantined=quarantined_count,
+            muted_senders=muted_senders,
+            safe_senders=safe_senders,
+        )
+
+    except Exception as e:
+        logger.exception(f"Failed to get inbox summary: {e}")
+        # Return zeros on error (graceful degradation)
+        return InboxSummary(
+            archived=0,
+            quarantined=0,
+            muted_senders=0,
+            safe_senders=0,
+        )

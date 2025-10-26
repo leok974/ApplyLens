@@ -606,6 +606,14 @@ export type ActionRow = {
   labels: string[]
   reason: ActionReason
   allowed_actions: string[]
+  // Lifecycle flags
+  archived?: boolean
+  quarantined?: boolean
+  muted?: boolean
+  user_overrode_safe?: boolean
+  // Actionability signals
+  risk_score?: number
+  unread?: boolean
 }
 
 export type MessageDetail = {
@@ -635,8 +643,8 @@ function getCsrf(): string {
   return ''
 }
 
-export async function fetchActionsInbox(): Promise<ActionRow[]> {
-  const r = await fetch('/api/actions/inbox', {
+export async function fetchActionsInbox(mode: "review" | "quarantined" | "archived" = "review"): Promise<ActionRow[]> {
+  const r = await fetch(`/api/actions/inbox?mode=${mode}`, {
     credentials: 'include',
   })
   if (!r.ok) throw new Error(`Fetch actions inbox failed: ${r.status}`)
@@ -678,6 +686,8 @@ export type ActionMutationResponse = {
   new_risk_score?: number
   quarantined?: boolean
   archived?: boolean
+  muted?: boolean
+  user_overrode_safe?: boolean
 }
 
 export async function postArchive(message_id: string): Promise<ActionMutationResponse> {
@@ -733,6 +743,167 @@ export async function postUnsubscribe(message_id: string): Promise<ActionMutatio
     body: JSON.stringify({ message_id })
   })
   if (!r.ok) throw new Error(`Unsubscribe failed: ${r.status}`)
+  return r.json()
+}
+
+export async function postRestore(message_id: string): Promise<ActionMutationResponse> {
+  const r = await fetch('/api/actions/restore', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrf(),
+    },
+    body: JSON.stringify({ message_id })
+  })
+  if (!r.ok) throw new Error(`Restore failed: ${r.status}`)
+  return r.json()
+}
+
+// ===== Sender Overrides =====
+
+export type SenderOverride = {
+  id: string
+  sender: string
+  muted: boolean
+  safe: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type SenderOverrideListResponse = {
+  overrides: SenderOverride[]
+}
+
+export type InboxMetricsSummary = {
+  archived: number
+  quarantined: number
+  muted_senders: number
+  safe_senders: number
+}
+
+export type RuntimeConfig = {
+  readOnly: boolean
+  version?: string
+}
+
+export type TrackerApplication = {
+  id: string
+  company: string
+  role: string
+  stage: string
+  source?: string | null
+  last_activity_at?: string | null
+}
+
+export type TrackerResponse = {
+  applications: TrackerApplication[]
+}
+
+// --- Fetch helpers ---
+
+// Runtime config (read-only mode, version banner, etc.)
+export async function fetchRuntimeConfig(): Promise<RuntimeConfig> {
+  const res = await fetch("/api/config", {
+    method: "GET",
+    credentials: "include",
+  })
+  if (!res.ok) {
+    throw new Error("Failed to load runtime config")
+  }
+  return res.json()
+}
+
+// Inbox insights metrics summary card
+export async function fetchInboxMetrics(): Promise<InboxMetricsSummary> {
+  const res = await fetch("/api/actions/metrics/summary", {
+    method: "GET",
+    credentials: "include",
+  })
+  if (!res.ok) {
+    throw new Error("Failed to load inbox metrics")
+  }
+  return res.json()
+}
+
+// Tracker data (pipeline / applications list)
+export async function fetchTracker(): Promise<TrackerResponse> {
+  const res = await fetch("/api/tracker", {
+    method: "GET",
+    credentials: "include",
+  })
+  if (!res.ok) {
+    throw new Error("Failed to load tracker data")
+  }
+  return res.json()
+}
+
+// Sender override list
+export async function fetchSenderOverrides(): Promise<SenderOverrideListResponse> {
+  const res = await fetch("/api/settings/senders", {
+    method: "GET",
+    credentials: "include",
+  })
+  if (!res.ok) {
+    throw new Error("Failed to load sender overrides")
+  }
+  return res.json()
+}
+
+// Add muted override
+export async function addMutedSender(sender: string): Promise<SenderOverride> {
+  const res = await fetch("/api/settings/senders/mute", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sender }),
+  })
+  if (!res.ok) {
+    throw new Error("Failed to mute sender")
+  }
+  return res.json()
+}
+
+// Add safe override
+export async function addSafeSender(sender: string): Promise<SenderOverride> {
+  const res = await fetch("/api/settings/senders/safe", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sender }),
+  })
+  if (!res.ok) {
+    throw new Error("Failed to mark sender safe")
+  }
+  return res.json()
+}
+
+// Delete override
+export async function deleteSenderOverride(id: string): Promise<void> {
+  const res = await fetch(`/api/settings/senders/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  })
+  if (!res.ok) {
+    throw new Error("Failed to delete sender override")
+  }
+}
+
+// ===== Inbox Metrics (Legacy) =====
+
+export type InboxSummary = {
+  archived: number
+  quarantined: number
+  muted_senders: number
+  safe_senders: number
+}
+
+export async function fetchInboxSummary(): Promise<InboxSummary> {
+  const r = await fetch('/api/actions/metrics/summary', {
+    method: 'GET',
+    credentials: 'include',
+  })
+  if (!r.ok) throw new Error('Failed to fetch summary')
   return r.json()
 }
 
@@ -972,4 +1143,100 @@ export async function fetchTrackerApplications(): Promise<TrackerRow[]> {
     console.error('Failed to fetch tracker applications:', error)
     return []
   }
+}
+
+// ============================================================================
+// Mailbox Assistant API
+// ============================================================================
+
+export type AssistantEmailSource = {
+  id: string
+  sender: string
+  subject: string
+  timestamp: string
+  risk_score?: number
+  quarantined?: boolean
+  amount?: number
+  due_date?: string
+  unsubscribe_candidate?: boolean
+  reply_needed?: boolean
+}
+
+export type AssistantSuggestedAction = {
+  label: string
+  kind: "external_link" | "unsubscribe" | "mark_safe" | "archive" | "follow_up" | "draft_reply"
+  email_id?: string
+  link?: string
+  sender?: string
+  sender_email?: string
+  subject?: string
+}
+
+export type AssistantActionPerformed = {
+  type: string
+  status: string
+  target?: string
+}
+
+export type AssistantQueryResponse = {
+  intent: string
+  summary: string
+  sources: AssistantEmailSource[]
+  suggested_actions: AssistantSuggestedAction[]
+  actions_performed: AssistantActionPerformed[]
+  next_steps?: string
+  followup_prompt?: string
+}
+
+export async function queryMailboxAssistant(opts: {
+  user_query: string
+  time_window_days: number // 7 | 30 | 60
+  mode: "off" | "run"
+  memory_opt_in: boolean
+  account: string
+}): Promise<AssistantQueryResponse> {
+  const res = await fetch("/api/assistant/query", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(opts),
+  })
+  if (!res.ok) {
+    throw new Error("Mailbox Assistant query failed")
+  }
+  return res.json()
+}
+
+// Draft Reply API (Phase 1.5)
+// ============================================================================
+
+export type DraftReplyRequest = {
+  email_id: string
+  sender: string
+  subject: string
+  account: string
+  thread_summary?: string
+  tone?: "warmer" | "more_direct" | "formal" | "casual"
+}
+
+export type DraftReplyResponse = {
+  email_id: string
+  sender: string
+  subject: string
+  draft: string
+  sender_email?: string
+}
+
+export async function draftReply(req: DraftReplyRequest): Promise<DraftReplyResponse> {
+  const res = await fetch("/api/assistant/draft-reply", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    const errorText = await res.text()
+    throw new Error(`Failed to draft reply: ${errorText}`)
+  }
+  return res.json()
 }
