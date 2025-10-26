@@ -29,6 +29,10 @@ DS_MARTS = os.getenv("BQ_MARTS_DATASET", "gmail_marts")
 DS_STAGING = os.getenv("BQ_STAGING_DATASET", "gmail_raw_stg_gmail_raw_stg")
 USE_WAREHOUSE = os.getenv("USE_WAREHOUSE_METRICS", "0") == "1"
 CACHE_TTL_SECONDS = 300  # 5 minutes
+SUMMARY_CACHE_TTL = 60  # 1 minute for summary endpoint
+
+# Active account email (TODO: Get from auth context)
+DEFAULT_ACCOUNT = "leoklemet.pa@gmail.com"
 
 # Initialize BigQuery client (lazy)
 _bq_client = None
@@ -99,7 +103,7 @@ def get_activity_daily(days: int = Query(default=90, ge=1, le=365)):
         return cached  # Already deserialized by cache_get
 
     sql = f"""
-        SELECT 
+        SELECT
             day,
             messages_count,
             unique_senders,
@@ -150,7 +154,7 @@ def get_top_senders_30d(limit: int = Query(default=20, ge=1, le=100)):
         return cached  # Already deserialized by cache_get
 
     sql = f"""
-        SELECT 
+        SELECT
             from_email,
             messages_30d,
             total_size_mb,
@@ -200,7 +204,7 @@ def get_categories_30d():
         return cached  # Already deserialized by cache_get
 
     sql = f"""
-        SELECT 
+        SELECT
             category,
             messages_30d,
             pct_of_total,
@@ -245,7 +249,7 @@ def get_data_freshness():
         return cached  # Already deserialized by cache_get
 
     sql = f"""
-        SELECT 
+        SELECT
             MAX(synced_at) as last_sync_at,
             TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), MAX(synced_at), MINUTE) as minutes_since_sync
         FROM `{BQ_PROJECT}.{DS_STAGING}.stg_gmail__messages`
@@ -265,3 +269,140 @@ def get_data_freshness():
 
     cache_set(cache_key, payload, 60)  # Cache for 1 minute
     return payload
+
+
+@router.get("/summary")
+def get_profile_summary():
+    """
+    Unified profile summary aggregating warehouse mart data.
+
+    Returns:
+    - account: User email address
+    - totals: all_time_emails, last_30d_emails
+    - top_senders_30d: Top 3 senders (sender, email, count)
+    - top_categories_30d: Top 3 categories (category, count)
+    - top_interests: Top 3 interests/keywords (keyword, count)
+
+    Cache: 60 seconds
+    Error handling: Returns 200 with empty arrays on failure (graceful degradation)
+    """
+    if not USE_WAREHOUSE:
+        return {
+            "account": "leoklemet.pa@gmail.com",
+            "totals": {"all_time_emails": 0, "last_30d_emails": 0},
+            "top_senders_30d": [],
+            "top_categories_30d": [],
+            "top_interests": [],
+        }
+
+    cache_key = "metrics:profile_summary"
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+
+    result = {
+        "account": "leoklemet.pa@gmail.com",  # TODO: Get from auth context
+        "totals": {"all_time_emails": 0, "last_30d_emails": 0},
+        "top_senders_30d": [],
+        "top_categories_30d": [],
+        "top_interests": [],
+    }
+
+    # Fetch totals from mart_email_activity_daily
+    try:
+        totals_sql = f"""
+        SELECT
+            SUM(message_count) as all_time_emails,
+            SUM(CASE WHEN activity_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+                THEN message_count ELSE 0 END) as last_30d_emails
+        FROM `{BQ_PROJECT}.{DS_MARTS}.mart_email_activity_daily`
+        """
+        totals_rows = query_bq(totals_sql)
+        if totals_rows and totals_rows[0]:
+            result["totals"]["all_time_emails"] = int(
+                totals_rows[0].get("all_time_emails") or 0
+            )
+            result["totals"]["last_30d_emails"] = int(
+                totals_rows[0].get("last_30d_emails") or 0
+            )
+    except Exception as e:
+        logger.warning(f"Error fetching totals: {e}")
+
+    # Fetch top 3 senders from mart_top_senders_30d
+    try:
+        senders_sql = f"""
+        SELECT
+            from_name as sender,
+            from_email as email,
+            messages_30d as count
+        FROM `{BQ_PROJECT}.{DS_MARTS}.mart_top_senders_30d`
+        ORDER BY messages_30d DESC
+        LIMIT 3
+        """
+        senders_rows = query_bq(senders_sql)
+        result["top_senders_30d"] = [
+            {
+                "sender": row.get("sender") or row.get("email", "Unknown"),
+                "email": row.get("email", ""),
+                "count": int(row.get("count") or 0),
+            }
+            for row in senders_rows
+        ]
+    except Exception as e:
+        logger.warning(f"Error fetching top senders: {e}")
+
+    # Fetch top 3 categories from mart_categories_30d
+    try:
+        categories_sql = f"""
+        SELECT
+            category,
+            messages_30d as count
+        FROM `{BQ_PROJECT}.{DS_MARTS}.mart_categories_30d`
+        WHERE category IS NOT NULL
+        ORDER BY messages_30d DESC
+        LIMIT 3
+        """
+        categories_rows = query_bq(categories_sql)
+        result["top_categories_30d"] = [
+            {
+                "category": row.get("category", "Unknown"),
+                "count": int(row.get("count") or 0),
+            }
+            for row in categories_rows
+        ]
+    except Exception as e:
+        logger.warning(f"Error fetching top categories: {e}")
+
+    # Fetch top 3 interests/keywords
+    # TODO: Create mart_interests_30d in dbt for better performance
+    try:
+        interests_sql = f"""
+        SELECT
+            keyword,
+            COUNT(*) as count
+        FROM (
+            SELECT
+                LOWER(SPLIT(subject, ' ')[SAFE_OFFSET(0)]) as keyword
+            FROM `{BQ_PROJECT}.{DS_STAGING}.stg_gmail__messages`
+            WHERE received_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
+                AND subject IS NOT NULL
+                AND LENGTH(subject) > 3
+        )
+        WHERE keyword IS NOT NULL
+            AND LENGTH(keyword) > 3
+            AND keyword NOT IN ('re:', 'fwd:', 'the', 'your', 'new', 'update', 'from')
+        GROUP BY keyword
+        ORDER BY count DESC
+        LIMIT 3
+        """
+        interests_rows = query_bq(interests_sql)
+        result["top_interests"] = [
+            {"keyword": row.get("keyword", ""), "count": int(row.get("count") or 0)}
+            for row in interests_rows
+        ]
+    except Exception as e:
+        logger.warning(f"Error fetching top interests: {e}")
+
+    # Cache for 60 seconds
+    cache_set(cache_key, result, SUMMARY_CACHE_TTL)
+    return result

@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 
 export function NavTabs() {
   const { pathname } = useLocation();
-  
+
   const active = (p: string) =>
     pathname.startsWith(p)
       ? "text-white border-b-2 border-white"

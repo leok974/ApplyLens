@@ -11,6 +11,7 @@ export default defineConfig({
     "search.spec.ts",
     "highlight.spec.ts",
     "profile.spec.ts",
+    "profile-warehouse.spec.ts",  // Warehouse-backed profile page
     "**/auth.*.spec.ts",  // Must include glob pattern
     "e2e/email-risk-banner.spec.ts",
     "e2e/ux-heartbeat.spec.ts",

@@ -12,10 +12,10 @@ import { useState, useEffect, useRef } from 'react'
 import { Send, Sparkles, AlertCircle, Mail, Play } from 'lucide-react'
 import { sendChatMessage, Message, ChatResponse } from '@/lib/chatClient'
 import { queryMailboxAssistant, AssistantQueryResponse, draftReply, DraftReplyResponse } from '@/lib/api'
-import PolicyAccuracyPanel from '@/components/PolicyAccuracyPanel'
 import { ReplyDraftModal } from '@/components/ReplyDraftModal'
 import { sync7d, sync60d } from '@/lib/api'
 import { useNavigate } from 'react-router-dom'
+import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 
 interface QuickAction {
   label: string
@@ -78,41 +78,13 @@ interface ConversationMessage extends Message {
   }
 }
 
-// Helper component for conversational follow-up suggestions (v0.4.47)
-function AssistantFollowupBlock({
-  nextSteps,
-  followupPrompt,
-}: {
-  nextSteps?: string
-  followupPrompt?: string
-}) {
-  if (!nextSteps && !followupPrompt) return null
-
-  return (
-    <div className="mt-3 rounded-md bg-neutral-900/60 border border-neutral-800 p-3 text-[13px] text-neutral-200 leading-relaxed space-y-2">
-      {nextSteps && (
-        <div className="">
-          {nextSteps}
-        </div>
-      )}
-
-      {followupPrompt && (
-        <div className="text-[12px] text-neutral-400">
-          <div className="font-medium text-neutral-300 mb-1">
-            You could ask:
-          </div>
-          <div className="italic text-neutral-400">
-            "{followupPrompt}"
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function MailChat() {
   const navigate = useNavigate()
+  const { config } = useRuntimeConfig()
   const [userEmail] = useState('leoklemet.pa@gmail.com') // TODO: Read from auth context
+
+  // Dev mode flag: show internal/debug controls
+  const isDev = config.readOnly === true || import.meta.env.DEV
 
   // Time window with localStorage persistence
   const [windowDays, setWindowDays] = useState<number>(() => {
@@ -132,38 +104,27 @@ export default function MailChat() {
   const [fileActions, setFileActions] = useState(false)
   const [explain, setExplain] = useState(false)
   const [remember, setRemember] = useState(false)
-  const [mode, setMode] = useState<'' | 'networking' | 'money'>('')
+  const [mode, setMode] = useState<'off' | 'run'>('off')  // Actions mode: Preview only / Apply changes
   const [intentTokens, setIntentTokens] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [dupes, setDupes] = useState<any[] | null>(null)
-  const [summary, setSummary] = useState<any | null>(null)
   const [timing, setTiming] = useState<{es_ms?: number; llm_ms?: number; client_ms?: number}>({})
   const [isStreamAlive, setIsStreamAlive] = useState(false)
   const streamHeartbeatRef = useRef<number | null>(null)
   const currentEventSourceRef = useRef<EventSource | null>(null)
 
+  // Phase 3: Typing indicator for conversational feel
+  const [isAssistantTyping, setIsAssistantTyping] = useState(false)
+
+  // Phase 3: Short-term memory for follow-up context
+  const [lastResultContext, setLastResultContext] = useState<null | {
+    intent: string
+    emails: { id: string; sender?: string }[]
+  }>(null)
+
   // Draft Reply Modal State (Phase 1.5)
   const [draftModal, setDraftModal] = useState<(DraftReplyResponse & { _emailId?: string; _senderEmail?: string }) | null>(null)
   const [draftingFor, setDraftingFor] = useState<string | null>(null)
-
-  async function loadDupes() {
-    try {
-      const r = await fetch('/api/money/duplicates')
-      setDupes(await r.json())
-    } catch (err) {
-      console.error('Failed to load duplicates:', err)
-    }
-  }
-
-  async function loadSummary() {
-    try {
-      const r = await fetch('/api/money/summary')
-      setSummary(await r.json())
-    } catch (err) {
-      console.error('Failed to load summary:', err)
-    }
-  }
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -628,6 +589,21 @@ export default function MailChat() {
     )
   }
 
+  // Phase 3: Detect anaphora (references to previous results)
+  function looksLikeAnaphora(raw: string) {
+    const t = raw.trim().toLowerCase()
+    return (
+      t.includes("them") ||
+      t.includes("those") ||
+      t.includes("all of them") ||
+      t.includes("all those") ||
+      t.includes("mute them") ||
+      t.includes("unsubscribe them") ||
+      t.includes("delete them") ||
+      t.includes("archive them")
+    )
+  }
+
     async function sendViaAssistant(explicitText?: string) {
     const userText = (explicitText ?? input).trim()
     if (!userText) return
@@ -686,14 +662,30 @@ export default function MailChat() {
 
     // NORMAL PATH: hit backend
     setBusy(true)
+    setIsAssistantTyping(true)  // Phase 3: Show typing indicator
+    console.debug('[Chat] typing...')  // Development debug
     try {
+      // Phase 3: Include context hint if query looks like anaphora
+      const contextHint = looksLikeAnaphora(userText) && lastResultContext
+        ? {
+            previous_intent: lastResultContext.intent,
+            previous_email_ids: lastResultContext.emails.map(e => e.id),
+          }
+        : undefined
+
       const resp = await queryMailboxAssistant({
         user_query: userText,
         account: userEmail,
-        mode: fileActions ? 'run' : 'off',
+        mode: mode,  // Use the mode state directly: 'off' or 'run'
         memory_opt_in: remember,
         time_window_days: windowDays,
+        context_hint: contextHint,
       })
+
+      // Phase 3: Log which LLM provider was used for telemetry
+      if (resp.llm_used) {
+        console.debug(`[Chat] LLM provider: ${resp.llm_used}`)
+      }
 
       const now = new Date().toISOString()
 
@@ -706,6 +698,12 @@ export default function MailChat() {
           assistantResponse: resp,
         },
       ])
+
+      // Phase 3: Save context for next follow-up
+      setLastResultContext({
+        intent: resp.intent,
+        emails: resp.sources?.map(e => ({ id: e.id, sender: e.sender })) ?? [],
+      })
     } catch (err) {
       const now = new Date().toISOString()
 
@@ -731,6 +729,8 @@ export default function MailChat() {
       ])
     } finally {
       setBusy(false)
+      setIsAssistantTyping(false)  // Phase 3: Hide typing indicator
+      console.debug('[Chat] typing complete')
     }
   }
 
@@ -1116,6 +1116,18 @@ export default function MailChat() {
           </div>
         ))}
 
+        {/* Phase 3: Typing indicator for conversational feel */}
+        {isAssistantTyping && (
+          <div className="text-left">
+            <div className="inline-block bg-neutral-800/50 rounded-2xl px-4 py-2.5">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground/80 italic">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div>Assistant is thinking…</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Loading indicator */}
         {busy && (
           <div className="text-left">
@@ -1145,6 +1157,7 @@ export default function MailChat() {
       {/* Input Bar */}
       <div className="flex flex-wrap gap-2 items-center">
         <input
+          data-testid="mailbox-input"
           className="flex-1 min-w-[200px] rounded-xl bg-neutral-900 border border-neutral-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 placeholder:text-neutral-500"
           placeholder="Ask your mailbox anything..."
           value={input}
@@ -1153,6 +1166,7 @@ export default function MailChat() {
           disabled={busy}
         />
         <button
+          data-testid="mailbox-send"
           onClick={() => sendViaAssistant()}
           disabled={busy || !input.trim()}
           className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
@@ -1167,25 +1181,7 @@ export default function MailChat() {
           )}
         </button>
 
-        {/* Action Controls */}
-        <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
-          <input
-            type="checkbox"
-            checked={fileActions}
-            onChange={(e) => setFileActions(e.target.checked)}
-            className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
-          />
-          file actions to Approvals
-        </label>
-        <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
-          <input
-            type="checkbox"
-            checked={explain}
-            onChange={(e) => setExplain(e.target.checked)}
-            className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
-          />
-          explain my intent
-        </label>
+        {/* Remember sender preferences (was "remember exceptions") */}
         <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
           <input
             type="checkbox"
@@ -1193,49 +1189,59 @@ export default function MailChat() {
             onChange={(e) => setRemember(e.target.checked)}
             className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
           />
-          remember exceptions
+          Remember sender preferences
         </label>
 
-        {/* Mode Selector */}
+        {/* Actions Mode Dropdown (was "mode") */}
         <label className="text-xs flex items-center gap-2 px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
-          <span className="opacity-70">mode</span>
+          <span className="opacity-70">Actions mode</span>
           <select
             value={mode}
-            onChange={(e) => setMode(e.target.value as '' | 'networking' | 'money')}
+            onChange={(e) => setMode(e.target.value as 'off' | 'run')}
             className="bg-neutral-900 text-xs border border-neutral-800 rounded px-2 py-1"
-            aria-label="assistant mode"
+            aria-label="actions mode"
           >
-            <option value="">off</option>
-            <option value="networking">networking</option>
-            <option value="money">money</option>
+            <option value="off">Preview only</option>
+            <option value="run">Apply changes</option>
           </select>
         </label>
 
-        {/* Money Mode: Export Receipts Link */}
-        {mode === 'money' && (
-          <a
-            href="/api/money/receipts.csv"
-            className="px-3 py-1 rounded-xl bg-neutral-800 text-xs underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Export receipts (CSV)
-          </a>
+        {/* DEV-ONLY CONTROLS - Hidden in production */}
+        {isDev && (
+          <>
+            <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
+              <input
+                type="checkbox"
+                checked={fileActions}
+                onChange={(e) => setFileActions(e.target.checked)}
+                className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
+              />
+              file actions to Approvals
+            </label>
+            <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
+              <input
+                type="checkbox"
+                checked={explain}
+                onChange={(e) => setExplain(e.target.checked)}
+                className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
+              />
+              explain my intent
+            </label>
+            <button
+              onClick={() => lastQuery && send(lastQuery, { propose: true })}
+              disabled={busy || !lastQuery}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              title="Replay last query with actions filed to the Approvals tray"
+            >
+              <Play className="w-4 h-4" />
+              <span className="text-sm font-medium">Run actions now</span>
+            </button>
+          </>
         )}
-
-        <button
-          onClick={() => lastQuery && send(lastQuery, { propose: true })}
-          disabled={busy || !lastQuery}
-          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          title="Replay last query with actions filed to the Approvals tray"
-        >
-          <Play className="w-4 h-4" />
-          <span className="text-sm font-medium">Run actions now</span>
-        </button>
       </div>
 
-      {/* Intent Tokens (if explain is enabled and tokens exist) */}
-      {intentTokens.length > 0 && (
+      {/* Intent Tokens (DEV-ONLY - if explain is enabled and tokens exist) */}
+      {isDev && intentTokens.length > 0 && (
         <details className="mt-3 text-sm">
           <summary className="text-xs text-neutral-400 underline cursor-pointer">
             Intent tokens ({intentTokens.length})
@@ -1254,49 +1260,12 @@ export default function MailChat() {
       )}
 
       {/* Tips */}
-      <div className="text-xs text-neutral-500 text-center">
-        💡 Try asking about specific time ranges, senders, or categories. The
-        assistant will cite source emails.
-      </div>
+      <div className="text-xs text-neutral-500 text-center space-y-1">
+        <div>💡 Try asking:</div>
+        <div className="text-neutral-400">
+          "Who do I still owe a reply to?" • "Show risky emails" • "Summarize this week's inbox"
         </div>
-
-        {/* Right Sidebar - Policy Accuracy Panel */}
-        <div className="lg:col-span-1 space-y-3">
-          <PolicyAccuracyPanel />
-
-          {/* Money Tools Panel */}
-          <div className="rounded-2xl border border-neutral-800 p-3 bg-neutral-900">
-            <div className="text-sm font-semibold mb-2">Money tools</div>
-            <div className="flex gap-2">
-              <button
-                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700"
-                onClick={loadDupes}
-              >
-                View duplicates
-              </button>
-              <button
-                className="px-3 py-1 rounded-xl bg-neutral-800 text-xs hover:bg-neutral-700"
-                onClick={loadSummary}
-              >
-                Spending summary
-              </button>
-            </div>
-            {dupes === null && summary === null && (
-              <div className="text-sm text-neutral-500 mt-2">
-                No data yet — try "Sync 60 days."
-              </div>
-            )}
-            {dupes && (
-              <pre className="mt-2 text-[11px] overflow-auto max-h-40 bg-neutral-950 p-2 rounded border border-neutral-800">
-                {JSON.stringify(dupes, null, 2)}
-              </pre>
-            )}
-            {summary && (
-              <pre className="mt-2 text-[11px] overflow-auto max-h-40 bg-neutral-950 p-2 rounded border border-neutral-800">
-                {JSON.stringify(summary, null, 2)}
-              </pre>
-            )}
-          </div>
+      </div>
         </div>
       </div>
 

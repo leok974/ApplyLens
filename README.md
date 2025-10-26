@@ -1103,6 +1103,12 @@ All documentation has been organized in the [`docs/`](./docs/) folder:
 - **[Production Deployment](./docs/PRODUCTION_SETUP.md)** - Hardening & security
 - **[Testing](./docs/RUNNING_TESTS.md)** - Unit & E2E tests
 
+### 🚨 Incident Runbooks
+
+Production incident response procedures:
+
+- **[503 Upstream Stale IP](./runbooks/503_upstream_stale.md)** - Nginx caching stale container IPs (2-5 min resolution)
+
 📖 **See the [Documentation Index](./docs/README.md) for the complete list of 70+ guides.**
 
 ## 🔧 Monitoring & Observability

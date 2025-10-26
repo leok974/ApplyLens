@@ -71,7 +71,7 @@ export default function TrackerPage() {
                     <span className="text-white font-semibold">
                       {app.company}
                     </span>
-                    <Badge 
+                    <Badge
                       variant={getStageVariant(app.stage)}
                       className={isOfferStage(app.stage) ? "bg-green-600/20 text-green-200 border-green-700" : ""}
                     >

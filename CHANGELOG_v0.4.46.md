@@ -1,7 +1,7 @@
 # ApplyLens v0.4.46 - Complete Outreach Tracking
 
-**Deployed:** October 25, 2025  
-**Status:** ✅ Production Deployment Complete  
+**Deployed:** October 25, 2025
+**Status:** ✅ Production Deployment Complete
 **Docker Tag:** `leoklemet/applylens-web:v0.4.46`
 
 ---
@@ -107,13 +107,13 @@ function handleConfirmSentFollowup(sender: string, subject?: string) {
 ```typescript
 const handleOpenGmail = () => {
   const recipientEmail = draft.sender_email || senderEmail || draft.sender
-  const finalSubject = draft.subject?.toLowerCase().startsWith("re:") 
-    ? draft.subject 
+  const finalSubject = draft.subject?.toLowerCase().startsWith("re:")
+    ? draft.subject
     : `Re: ${draft.subject || ""}`
-  
+
   const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(finalSubject)}&body=${encodeURIComponent(editedDraft)}`
   window.open(gmailUrl, '_blank', 'noopener,noreferrer')
-  
+
   // NEW: log the send
   if (onOpenedInGmail) {
     onOpenedInGmail()
@@ -171,7 +171,7 @@ const handleOpenGmail = () => {
 Found 3 recruiters who haven't replied:
 
 1. Sarah Johnson - Platform Engineer role
-2. Mike Chen - Backend Developer position  
+2. Mike Chen - Backend Developer position
 3. Lisa Rodriguez - Full Stack Engineer opening
 
 [Suggested Actions]

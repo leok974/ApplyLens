@@ -37,7 +37,7 @@ try {
         -Method Post `
         -ContentType "application/json" `
         -Body $testPayload1
-    
+
     Write-Host "   Draft generated:" -ForegroundColor Green
     Write-Host "   $($response1.draft)" -ForegroundColor White
 } catch {
@@ -65,7 +65,7 @@ try {
         -Method Post `
         -ContentType "application/json" `
         -Body $testPayload2
-    
+
     Write-Host "   Draft generated:" -ForegroundColor Green
     Write-Host "   $($response2.draft)" -ForegroundColor White
 } catch {

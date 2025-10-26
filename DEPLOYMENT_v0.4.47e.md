@@ -205,6 +205,6 @@ Test: hey, hello, help, help?, what can you do, who are you
 ```
 
 ---
-**Deployed by:** GitHub Copilot AI Assistant  
-**Date:** October 26, 2025  
+**Deployed by:** GitHub Copilot AI Assistant
+**Date:** October 26, 2025
 **Production URL:** https://applylens.app

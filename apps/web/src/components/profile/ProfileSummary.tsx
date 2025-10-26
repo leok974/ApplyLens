@@ -1,237 +1,189 @@
-import { useEffect, useState } from "react"
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { API_BASE } from "@/lib/apiBase"
-import { getEmailCount, getEmailStats, EmailStatsResponse } from "@/lib/api"
+import { useEffect, useState } from 'react'
+import { Card, CardHeader, CardContent } from '../ui/card'
+import { fetchProfileSummary, type ProfileSummaryResponse } from '../../lib/api'
+import { Mail, TrendingUp, Tag, Heart } from 'lucide-react'
 
-const USER_EMAIL = "leoklemet.pa@gmail.com" // TODO: Read from auth context
-
-type ProfileData = {
-  user_email: string
-  top_senders: Array<{
-    domain: string
-    total: number
-    categories: Record<string, number>
-    open_rate: number
-  }>
-  categories: Array<{
-    category: string
-    total: number
-  }>
-  interests: Array<{
-    keyword: string
-    score: number
-  }>
-}
-
+/**
+ * ProfileSummary: Warehouse-backed profile dashboard
+ *
+ * Data source: BigQuery marts via /api/metrics/profile/summary
+ * - Totals from mart_email_activity_daily
+ * - Top senders from mart_top_senders_30d
+ * - Top categories from mart_categories_30d
+ * - Top interests from keyword extraction
+ *
+ * Cache: 60s backend, graceful degradation on failure
+ */
 export function ProfileSummary() {
-  const [data, setData] = useState<ProfileData | null>(null)
-  const [emailStats, setEmailStats] = useState<EmailStatsResponse | null>(null)
+  const [data, setData] = useState<ProfileSummaryResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [statsLoading, setStatsLoading] = useState(true)
 
   useEffect(() => {
-    // Load email stats (fast cached endpoint)
-    Promise.all([getEmailCount(), getEmailStats()])
-      .then(([_count, stats]) => {
-        setEmailStats(stats)
-      })
-      .catch((err) => {
-        console.error('Failed to load email stats:', err)
-      })
-      .finally(() => setStatsLoading(false))
-
-    // Load profile data
-    fetch(`${API_BASE}/profile/db-summary?user_email=${encodeURIComponent(USER_EMAIL)}`)
-      .then((r) => r.json())
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    async function loadData() {
+      setLoading(true)
+      const summary = await fetchProfileSummary()
+      setData(summary)
+      setLoading(false)
+    }
+    loadData()
   }, [])
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-5 w-32" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="p-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-48 bg-gray-200 rounded" />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!data) {
     return (
-      <div className="text-center text-muted-foreground py-8">
-        No profile data available. Click "Sync" to build your profile.
+      <div className="p-8">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-800">
+            Unable to load profile data. Please try again later.
+          </p>
+        </div>
       </div>
     )
   }
 
+  const { totals, top_senders_30d, top_categories_30d, top_interests } = data
+
   return (
-    <div className="space-y-4">
-      {/* Fast Email Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+    <div className="p-8 max-w-6xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Profile Summary</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Account: {data.account}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Card 1: Email Activity */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Total Emails</CardTitle>
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <Mail className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold">Email Activity</h2>
           </CardHeader>
           <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-20" />
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-gray-600">Total Emails (All Time)</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {totals.all_time_emails.toLocaleString()}
+                </p>
+              </div>
+              <div className="pt-3 border-t">
+                <p className="text-sm text-gray-600">Last 30 Days</p>
+                <p className="text-2xl font-semibold text-blue-600">
+                  {totals.last_30d_emails.toLocaleString()}
+                </p>
+              </div>
+              <div className="pt-3 border-t">
+                <p className="text-xs text-gray-500">
+                  Active account • Data refreshed hourly
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Card 2: Top Senders */}
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <TrendingUp className="h-5 w-5 text-green-600" />
+            <h2 className="text-lg font-semibold">Top Senders (Last 30 Days)</h2>
+          </CardHeader>
+          <CardContent>
+            {top_senders_30d.length === 0 ? (
+              <p className="text-sm text-gray-500">No data yet</p>
             ) : (
-              <div className="text-3xl font-bold">{emailStats?.total ?? '—'}</div>
+              <div className="space-y-3">
+                {top_senders_30d.map((sender, idx) => (
+                  <div key={idx} className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {sender.sender}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {sender.email}
+                      </p>
+                    </div>
+                    <span className="ml-2 text-sm font-semibold text-green-600 flex-shrink-0">
+                      {sender.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
-        
+
+        {/* Card 3: Top Categories */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Last 30 Days</CardTitle>
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <Tag className="h-5 w-5 text-purple-600" />
+            <h2 className="text-lg font-semibold">Top Categories (Last 30 Days)</h2>
           </CardHeader>
           <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-20" />
+            {top_categories_30d.length === 0 ? (
+              <p className="text-sm text-gray-500">No data yet</p>
             ) : (
-              <div className="text-3xl font-bold">{emailStats?.last_30d ?? '—'}</div>
+              <div className="space-y-3">
+                {top_categories_30d.map((cat, idx) => (
+                  <div key={idx} className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-900 capitalize">
+                      {cat.category}
+                    </span>
+                    <span className="text-sm font-semibold text-purple-600">
+                      {cat.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
-        
+
+        {/* Card 4: Top Interests */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Active Account</CardTitle>
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <Heart className="h-5 w-5 text-pink-600" />
+            <h2 className="text-lg font-semibold">Top Interests</h2>
           </CardHeader>
           <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-6 w-40" />
+            {top_interests.length === 0 ? (
+              <p className="text-sm text-gray-500">No data yet</p>
             ) : (
-              <div className="text-sm font-medium truncate">{emailStats?.owner_email ?? '—'}</div>
+              <div className="space-y-3">
+                {top_interests.map((interest, idx) => (
+                  <div key={idx} className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-900 capitalize">
+                      {interest.keyword}
+                    </span>
+                    <span className="text-sm font-semibold text-pink-600">
+                      {interest.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Top Senders from Stats Endpoint */}
-      {emailStats && emailStats.top_senders.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top Senders (Last 30 Days)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {emailStats.top_senders.map((sender) => (
-              <div
-                key={sender.sender}
-                className="flex justify-between text-sm items-center"
-              >
-                <span className="truncate flex-1 font-mono text-xs">
-                  {sender.sender}
-                </span>
-                <span className="text-muted-foreground ml-2">
-                  {sender.count}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Top Categories from Stats Endpoint */}
-      {emailStats && emailStats.top_categories.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top Categories</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {emailStats.top_categories.map((cat) => (
-              <div
-                key={cat.category}
-                className="flex justify-between text-sm items-center"
-              >
-                <span className="capitalize">{cat.category}</span>
-                <span className="text-muted-foreground">{cat.count}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Original Profile Data */}
-      <div className="grid gap-4 md:grid-cols-3">
-      {/* Top Senders */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Top Senders (All Time)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {data?.top_senders?.slice(0, 10).map((sender) => (
-            <div
-              key={sender.domain}
-              className="flex justify-between text-sm items-center"
-            >
-              <span className="truncate flex-1 font-mono text-xs">
-                {sender.domain}
-              </span>
-              <span className="text-muted-foreground ml-2">
-                {sender.total}
-              </span>
-            </div>
-          ))}
-          {(!data?.top_senders || data.top_senders.length === 0) && (
-            <p className="text-sm text-muted-foreground">No senders found</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Top Categories */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Top Categories (All Time)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {data?.categories?.slice(0, 10).map((cat) => (
-            <div
-              key={cat.category}
-              className="flex justify-between text-sm items-center"
-            >
-              <span className="capitalize">{cat.category}</span>
-              <span className="text-muted-foreground">{cat.total}</span>
-            </div>
-          ))}
-          {(!data?.categories || data.categories.length === 0) && (
-            <p className="text-sm text-muted-foreground">No categories found</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Interests */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Top Interests</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {data?.interests?.slice(0, 10).map((interest) => (
-            <div
-              key={interest.keyword}
-              className="flex justify-between text-sm items-center"
-            >
-              <span className="truncate flex-1">{interest.keyword}</span>
-              <span className="text-muted-foreground ml-2">
-                {Math.round(interest.score)}
-              </span>
-            </div>
-          ))}
-          {(!data?.interests || data.interests.length === 0) && (
-            <p className="text-sm text-muted-foreground">No interests found</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-800">
+          📊 Warehouse analytics • Fivetran + BigQuery
+        </p>
       </div>
     </div>
   )

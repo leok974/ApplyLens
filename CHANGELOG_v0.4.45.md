@@ -1,7 +1,7 @@
 # ApplyLens v0.4.45 - UX Polish for Draft Replies
 
-**Deployed:** October 25, 2025  
-**Status:** ✅ Production Deployment Complete  
+**Deployed:** October 25, 2025
+**Status:** ✅ Production Deployment Complete
 **Docker Tag:** `leoklemet/applylens-web:v0.4.45`
 
 ---
@@ -31,12 +31,12 @@ This release adds two quality-of-life improvements to the draft reply feature, m
 // apps/web/src/components/ReplyDraftModal.tsx
 const handleOpenGmail = () => {
   const recipientEmail = draft.sender_email || senderEmail || draft.sender
-  
+
   // Auto-prefix "Re:" if not already present (prevents looking like cold outreach)
-  const finalSubject = draft.subject?.toLowerCase().startsWith("re:") 
-    ? draft.subject 
+  const finalSubject = draft.subject?.toLowerCase().startsWith("re:")
+    ? draft.subject
     : `Re: ${draft.subject || ""}`
-  
+
   const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(finalSubject)}&body=${encodeURIComponent(editedDraft)}`
   window.open(gmailUrl, '_blank')
 }
@@ -110,7 +110,7 @@ setMessages(prev => [...prev, {
 ### Frontend (`apps/web/`)
 - **`src/components/ReplyDraftModal.tsx`**
   - Added "Re:" auto-prefix logic in `handleOpenGmail()`
-  
+
 - **`src/components/MailChat.tsx`**
   - Updated `ConversationMessage` interface with `timestamp?: string`
   - Added timestamp to confirmation messages in `handleDraftReply()`

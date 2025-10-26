@@ -106,7 +106,7 @@ Draft a short, professional follow-up that:
 - Does NOT include subject line or signature (just body)
 
 Example tone:
-"Hi [Name] — Just checking back regarding next steps for the [role] position. 
+"Hi [Name] — Just checking back regarding next steps for the [role] position.
 I remain very interested and would love to hear if there's any update. Thanks!"
 
 Draft reply:
@@ -163,8 +163,8 @@ class DraftReplyResponse(BaseModel):
 6. Second-guesses tone
 7. Finally sends
 
-**Time:** 5-10 minutes per email  
-**Cognitive Load:** High  
+**Time:** 5-10 minutes per email
+**Cognitive Load:** High
 **Completion Rate:** 30-40% (many get forgotten)
 
 ### After (Automated)
@@ -174,8 +174,8 @@ class DraftReplyResponse(BaseModel):
 4. Clicks "Send" or edits slightly
 5. Done
 
-**Time:** 30 seconds per email  
-**Cognitive Load:** Minimal  
+**Time:** 30 seconds per email
+**Cognitive Load:** Minimal
 **Completion Rate:** 90%+ (friction removed)
 
 ## Growth Hook: "This Assistant Gets Me Interviews"
@@ -434,10 +434,10 @@ function DraftReplyButton({ email }: { email: FollowUpEmail }) {
 
 ---
 
-**Status**: ✅ DEPLOYED  
-**API Version**: 0.4.42  
-**Deployment Date**: 2025-10-25  
-**Health**: Ready (DB: OK, ES: OK)  
+**Status**: ✅ DEPLOYED
+**API Version**: 0.4.42
+**Deployment Date**: 2025-10-25
+**Health**: Ready (DB: OK, ES: OK)
 **Feature**: Auto-draft follow-up replies via LLM
 
 **This is the "growth hook" feature that turns ApplyLens from a tracker into an assistant that actively helps you land interviews.** 🚀

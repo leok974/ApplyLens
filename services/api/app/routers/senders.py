@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class SenderOverride(BaseModel):
     """Sender override preference."""
+
     id: str
     sender: str
     muted: bool
@@ -45,16 +46,19 @@ class SenderOverride(BaseModel):
 
 class SenderOverrideListResponse(BaseModel):
     """List response wrapper."""
+
     overrides: List[SenderOverride]
 
 
 class SenderOverrideCreateRequest(BaseModel):
     """Request to create/update a sender override."""
+
     sender: str  # Can be full email or domain-like string (@example.com)
 
 
 class SenderOverrideDeleteResponse(BaseModel):
     """Delete response."""
+
     ok: bool
     deleted_id: str
 
@@ -69,11 +73,11 @@ def list_overrides(
 ) -> SenderOverrideListResponse:
     """
     List all sender overrides for current user.
-    
+
     Returns both muted and safe senders from Postgres.
     """
     rows = list_overrides_db(db, user_email)
-    
+
     # Don't leak user_id in response
     clean = [
         {
@@ -86,7 +90,7 @@ def list_overrides(
         }
         for r in rows
     ]
-    
+
     return SenderOverrideListResponse(overrides=clean)
 
 
@@ -98,16 +102,16 @@ def mute_sender(
 ) -> SenderOverride:
     """
     Mute a sender (auto-archive future emails).
-    
+
     Creates or updates an override with muted=true in Postgres.
     """
     if not body.sender:
         raise HTTPException(status_code=400, detail="Sender is required")
-    
+
     row = upsert_override_db(db, user_email, body.sender, muted=True, safe=False)
-    
+
     logger.info(f"Muted sender {body.sender} for {user_email}")
-    
+
     return SenderOverride(
         id=row["id"],
         sender=row["sender"],
@@ -126,16 +130,16 @@ def safe_sender(
 ) -> SenderOverride:
     """
     Mark a sender as safe (trusted, not spammy).
-    
+
     Creates or updates an override with safe=true in Postgres.
     """
     if not body.sender:
         raise HTTPException(status_code=400, detail="Sender is required")
-    
+
     row = upsert_override_db(db, user_email, body.sender, muted=False, safe=True)
-    
+
     logger.info(f"Marked sender {body.sender} as safe for {user_email}")
-    
+
     return SenderOverride(
         id=row["id"],
         sender=row["sender"],
@@ -154,16 +158,16 @@ def delete_override(
 ) -> SenderOverrideDeleteResponse:
     """
     Remove a sender override.
-    
+
     Returns 404 if override not found for this user.
     """
     ok = delete_override_db(db, user_email, override_id)
-    
+
     if not ok:
         raise HTTPException(status_code=404, detail="Override not found")
-    
+
     logger.info(f"Deleted sender override {override_id} for {user_email}")
-    
+
     return SenderOverrideDeleteResponse(ok=True, deleted_id=override_id)
 
 
@@ -173,7 +177,7 @@ def delete_override(
 def upsert_sender_override_safe(db: Session, user_id: str, sender: str):
     """
     Helper for mark_safe in inbox_actions to record sender-level override.
-    
+
     This is how adaptive classification works - mark one email safe,
     and future emails from that sender won't be flagged.
     """
@@ -184,7 +188,7 @@ def upsert_sender_override_safe(db: Session, user_id: str, sender: str):
 def get_overrides_for_user(db: Session, user_id: str) -> list[dict]:
     """
     Helper for metrics endpoint to count overrides.
-    
+
     Returns raw list of override dicts (not Pydantic, not cleaned).
     Used by inbox_actions.py for metrics/summary endpoint.
     """

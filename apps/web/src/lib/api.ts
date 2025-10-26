@@ -1186,6 +1186,7 @@ export type AssistantQueryResponse = {
   actions_performed: AssistantActionPerformed[]
   next_steps?: string
   followup_prompt?: string
+  llm_used?: string  // Phase 3: "ollama", "openai", or "fallback"
 }
 
 export async function queryMailboxAssistant(opts: {
@@ -1194,6 +1195,10 @@ export async function queryMailboxAssistant(opts: {
   mode: "off" | "run"
   memory_opt_in: boolean
   account: string
+  context_hint?: {  // Phase 3: Short-term memory
+    previous_intent?: string
+    previous_email_ids: string[]
+  }
 }): Promise<AssistantQueryResponse> {
   const res = await fetch("/api/assistant/query", {
     method: "POST",
@@ -1239,4 +1244,59 @@ export async function draftReply(req: DraftReplyRequest): Promise<DraftReplyResp
     throw new Error(`Failed to draft reply: ${errorText}`)
   }
   return res.json()
+}
+
+// ============================================================================
+// Profile Summary API (Warehouse-backed)
+// ============================================================================
+
+export type ProfileSummaryResponse = {
+  account: string
+  totals: {
+    all_time_emails: number
+    last_30d_emails: number
+  }
+  top_senders_30d: Array<{
+    sender: string
+    email: string
+    count: number
+  }>
+  top_categories_30d: Array<{
+    category: string
+    count: number
+  }>
+  top_interests: Array<{
+    keyword: string
+    count: number
+  }>
+}
+
+/**
+ * Fetch unified profile summary from BigQuery warehouse marts.
+ * Returns totals, top senders, categories, and interests.
+ * Cache: 60 seconds backend
+ * Error handling: Returns fallback object with zeros and empty arrays on failure
+ */
+export async function fetchProfileSummary(): Promise<ProfileSummaryResponse> {
+  const fallback: ProfileSummaryResponse = {
+    account: "leoklemet.pa@gmail.com",
+    totals: { all_time_emails: 0, last_30d_emails: 0 },
+    top_senders_30d: [],
+    top_categories_30d: [],
+    top_interests: []
+  }
+
+  try {
+    const res = await fetch("/api/metrics/profile/summary", {
+      credentials: "include"
+    })
+    if (!res.ok) {
+      console.warn(`Profile summary API returned ${res.status}`)
+      return fallback
+    }
+    return res.json()
+  } catch (error) {
+    console.error("Failed to fetch profile summary:", error)
+    return fallback
+  }
 }

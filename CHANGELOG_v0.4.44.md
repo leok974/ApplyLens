@@ -1,7 +1,7 @@
 # ApplyLens v0.4.44 - Phase 1.5 Enhancements
 
-**Deployed:** January 25, 2025  
-**Status:** ✅ Production Deployment Complete  
+**Deployed:** January 25, 2025
+**Status:** ✅ Production Deployment Complete
 **Docker Tags:** `leoklemet/applylens-api:v0.4.44`, `leoklemet/applylens-web:v0.4.44`
 
 ---
@@ -112,7 +112,7 @@ async function handleDraftReply(emailId: string, sender: string, subject: string
   try {
     const draft = await draftReply({ email_id: emailId, sender, subject, account: userEmail })
     setDraftModal({ ...draft, _emailId: emailId, _senderEmail: senderEmail })
-    
+
     // Add confirmation to chat
     setMessages(prev => [...prev, {
       role: 'assistant',

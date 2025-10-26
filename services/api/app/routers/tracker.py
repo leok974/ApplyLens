@@ -10,7 +10,6 @@ This is a skeleton implementation that returns empty list until migration is add
 
 import logging
 from typing import List, Optional
-from datetime import datetime
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -28,16 +27,18 @@ logger = logging.getLogger(__name__)
 
 class ApplicationRow(BaseModel):
     """Single application in tracker view."""
+
     id: str  # Changed from int to str to match frontend expectations
     company: str
     role: str
     stage: str  # e.g. "applied", "interview", "offer", "rejected", "ghosted"
     source: Optional[str]
     last_activity_at: Optional[str]  # ISO 8601 datetime string
-    
+
 
 class TrackerListResponse(BaseModel):
     """List of applications."""
+
     applications: List[ApplicationRow]
 
 
@@ -51,24 +52,24 @@ def get_tracker(
 ) -> TrackerListResponse:
     """
     List all job applications for the current user.
-    
+
     Returns applications sorted by most recent activity first.
     This is the stable public contract for the UI - frontend should call /api/tracker.
-    
+
     NOTE: Currently returns demo data. Will query real applications table
     after migration adds user_id column.
     """
     try:
         # TODO: Uncomment after applications table gets user_id column
         # from ..models.application import Application
-        # 
+        #
         # applications = (
         #     db.query(Application)
         #     .filter(Application.user_id == user_email)
         #     .order_by(Application.updated_at.desc())
         #     .all()
         # )
-        # 
+        #
         # rows = [
         #     ApplicationRow(
         #         id=str(app.id),  # Convert int to str for frontend
@@ -80,7 +81,7 @@ def get_tracker(
         #     )
         #     for app in applications
         # ]
-        
+
         # Demo data for now (sorted by most recent activity)
         logger.info(f"Tracker requested by {user_email} (returning demo data)")
         rows = [
@@ -90,7 +91,7 @@ def get_tracker(
                 role="Senior Backend Engineer",
                 stage="offer",
                 source="LinkedIn",
-                last_activity_at="2025-10-05T00:00:00"
+                last_activity_at="2025-10-05T00:00:00",
             ),
             ApplicationRow(
                 id="app_2",
@@ -98,7 +99,7 @@ def get_tracker(
                 role="Full-Stack Developer",
                 stage="interview",
                 source="Lever",
-                last_activity_at="2025-10-01T00:00:00"
+                last_activity_at="2025-10-01T00:00:00",
             ),
             ApplicationRow(
                 id="app_3",
@@ -106,7 +107,7 @@ def get_tracker(
                 role="ML Engineer",
                 stage="applied",
                 source="Greenhouse",
-                last_activity_at="2025-09-20T00:00:00"
+                last_activity_at="2025-09-20T00:00:00",
             ),
             ApplicationRow(
                 id="app_4",
@@ -114,12 +115,12 @@ def get_tracker(
                 role="DevOps Engineer",
                 stage="rejected",
                 source="Indeed",
-                last_activity_at="2025-09-01T00:00:00"
+                last_activity_at="2025-09-01T00:00:00",
             ),
         ]
-        
+
         return TrackerListResponse(applications=rows)
-    
+
     except Exception as e:
         logger.exception(f"Failed to get tracker applications: {e}")
         # Graceful degradation - return empty list

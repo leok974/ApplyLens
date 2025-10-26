@@ -49,16 +49,16 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
   const handleOpenGmail = () => {
     // Use sender_email from draft response or senderEmail prop, fallback to sender display name
     const recipientEmail = draft.sender_email || senderEmail || draft.sender
-    
+
     // Auto-prefix "Re:" if not already present (prevents looking like cold outreach)
-    const finalSubject = draft.subject?.toLowerCase().startsWith("re:") 
-      ? draft.subject 
+    const finalSubject = draft.subject?.toLowerCase().startsWith("re:")
+      ? draft.subject
       : `Re: ${draft.subject || ""}`
-    
+
     // Gmail compose URL with pre-filled fields
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(finalSubject)}&body=${encodeURIComponent(editedDraft)}`
     window.open(gmailUrl, '_blank', 'noopener,noreferrer')
-    
+
     // NEW: let MailChat know we "sent" it
     if (onOpenedInGmail) {
       onOpenedInGmail()
@@ -144,13 +144,13 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
           <textarea
             value={editedDraft}
             onChange={(e) => setEditedDraft(e.target.value)}
-            className="w-full h-full min-h-[200px] p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+            className="w-full h-full min-h-[200px] p-3 border border-gray-300 dark:border-gray-600 rounded-lg
                      focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none
                      bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                      placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Your draft will appear here..."
           />
-          
+
           {/* AI Badge */}
           <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
@@ -164,7 +164,7 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex gap-3">
           <button
             onClick={handleCopy}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2
                      border border-gray-300 dark:border-gray-600 rounded-lg
                      hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
                      text-gray-700 dark:text-gray-300 font-medium"
@@ -184,7 +184,7 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
 
           <button
             onClick={handleOpenGmail}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2
                      bg-blue-600 hover:bg-blue-700 text-white rounded-lg
                      transition-colors font-medium shadow-sm"
           >

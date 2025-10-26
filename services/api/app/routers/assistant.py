@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Literal, List, Optional, Dict, Any
 import datetime as dt
@@ -6,7 +6,7 @@ import os
 import httpx
 
 from elasticsearch import Elasticsearch
-from app.llm_provider import generate_llm_text
+from app.llm_provider import generate_llm_text, generate_assistant_text
 
 router = APIRouter(prefix="/assistant", tags=["assistant"])
 
@@ -23,12 +23,20 @@ def get_es_client() -> Elasticsearch:
     return Elasticsearch(ES_URL)
 
 
+class ContextHint(BaseModel):
+    """Short-term memory hint from previous interaction."""
+
+    previous_intent: Optional[str] = None
+    previous_email_ids: List[str] = []
+
+
 class AssistantQueryRequest(BaseModel):
     user_query: str
     time_window_days: int = 30  # 7 | 30 | 60 etc.
     mode: Literal["off", "run"] = "off"
     memory_opt_in: bool = False
     account: str  # gmail account / user identity context
+    context_hint: Optional[ContextHint] = None  # Phase 3: short-term memory
 
 
 class AssistantEmailSource(BaseModel):
@@ -46,7 +54,14 @@ class AssistantEmailSource(BaseModel):
 
 class AssistantSuggestedAction(BaseModel):
     label: str
-    kind: Literal["external_link", "unsubscribe", "mark_safe", "archive", "follow_up", "draft_reply"]
+    kind: Literal[
+        "external_link",
+        "unsubscribe",
+        "mark_safe",
+        "archive",
+        "follow_up",
+        "draft_reply",
+    ]
     email_id: Optional[str] = None
     link: Optional[str] = None
     sender: Optional[str] = None
@@ -65,8 +80,11 @@ class AssistantQueryResponse(BaseModel):
     sources: List[AssistantEmailSource]
     suggested_actions: List[AssistantSuggestedAction]
     actions_performed: List[AssistantActionPerformed] = []
-    next_steps: Optional[str] = None         # conversational CTA
-    followup_prompt: Optional[str] = None    # "You can also ask me ..."
+    next_steps: Optional[str] = None  # conversational CTA
+    followup_prompt: Optional[str] = None  # "You can also ask me ..."
+    llm_used: Optional[str] = (
+        None  # "ollama", "openai", "fallback" - telemetry for LLM usage
+    )
 
 
 @router.post("/query", response_model=AssistantQueryResponse)
@@ -106,7 +124,7 @@ async def assistant_query(payload: AssistantQueryRequest):
 
     # 4. Generate polished summary with LLM (graceful fallback to base summary)
     base_summary = fetched["summary"]
-    polished = await generate_polished_summary(
+    final_summary, llm_used = await generate_polished_summary(
         intent=intent,
         base_summary=base_summary,
         emails=fetched["emails"],
@@ -114,19 +132,22 @@ async def assistant_query(payload: AssistantQueryRequest):
         mode=payload.mode,
         days=payload.time_window_days,
     )
-    final_summary = polished if polished else base_summary
 
     # 5. Build response
     return AssistantQueryResponse(
         intent=intent,
         summary=final_summary,
         sources=[AssistantEmailSource(**e) for e in fetched["emails"]],
-        suggested_actions=[AssistantSuggestedAction(**a) for a in fetched["suggested_actions"]],
+        suggested_actions=[
+            AssistantSuggestedAction(**a) for a in fetched["suggested_actions"]
+        ],
         actions_performed=actions_performed,
+        llm_used=llm_used,  # Phase 3: telemetry for LLM usage
     )
 
 
 # -------- Draft Reply Endpoint --------
+
 
 class DraftReplyRequest(BaseModel):
     email_id: str
@@ -148,24 +169,24 @@ class DraftReplyResponse(BaseModel):
 async def draft_reply(payload: DraftReplyRequest):
     """
     Generate a polite follow-up reply draft for a specific email.
-    
+
     This is the "close the loop" feature that bridges:
     Inbox → Tracker → Reply
-    
+
     Perfect for job seekers to stay in the "I'm actively interviewing" loop.
     """
-    
+
     # Build context for LLM
     context_parts = [
         f"Sender: {payload.sender}",
         f"Subject: {payload.subject}",
     ]
-    
+
     if payload.thread_summary:
         context_parts.append(f"Context: {payload.thread_summary}")
-    
+
     context = "\n".join(context_parts)
-    
+
     # Determine tone instructions
     tone_instruction = ""
     if payload.tone == "warmer":
@@ -176,7 +197,7 @@ async def draft_reply(payload: DraftReplyRequest):
         tone_instruction = "- Use a more formal, professional tone\n"
     elif payload.tone == "casual":
         tone_instruction = "- Use a more casual, relaxed tone\n"
-    
+
     # Build LLM prompt for drafting reply
     prompt = (
         "You are helping a job seeker draft a polite follow-up email.\n\n"
@@ -189,14 +210,14 @@ async def draft_reply(payload: DraftReplyRequest):
         "- Uses a friendly but professional tone\n"
         "- Does NOT include subject line or signature (just body)\n\n"
         "Example tone:\n"
-        "\"Hi [Name] — Just checking back regarding next steps for the [role] position. "
+        '"Hi [Name] — Just checking back regarding next steps for the [role] position. '
         "I remain very interested and would love to hear if there's any update. Thanks!\"\n\n"
         "Draft reply:"
     )
-    
+
     # Generate draft with LLM
     draft_text = await generate_llm_text(prompt)
-    
+
     # Fallback if LLM unavailable
     if not draft_text:
         # Extract first name from sender if possible
@@ -205,7 +226,7 @@ async def draft_reply(payload: DraftReplyRequest):
             f"Hi {sender_name} — Just checking back regarding next steps. "
             f"I remain very interested and would love to hear if there's any update. Thanks!"
         )
-    
+
     return DraftReplyResponse(
         email_id=payload.email_id,
         draft=draft_text.strip(),
@@ -287,11 +308,14 @@ async def generate_polished_summary(
     actions_performed: list[AssistantActionPerformed],
     mode: str,
     days: int,
-) -> Optional[str]:
+) -> tuple[str, str]:
     """
     Use LLM to generate a more natural, user-friendly summary.
     Falls back to base_summary if LLM unavailable.
-    
+
+    Returns:
+        Tuple of (summary_text, llm_used) where llm_used is "ollama", "openai", or "fallback"
+
     Safety: Only sends structured metadata, never raw email bodies.
     """
     # Build compact email preview (top 3 for context)
@@ -302,9 +326,11 @@ async def generate_polished_summary(
         subject = e.get("subject", "No subject")[:50]
         risk = e.get("ml_category", "unknown")
         email_previews.append(f"- From: {sender}, Subject: {subject}..., Risk: {risk}")
-    
-    emails_block = "\n".join(email_previews) if email_previews else "No emails to preview."
-    
+
+    emails_block = (
+        "\n".join(email_previews) if email_previews else "No emails to preview."
+    )
+
     # Build actions transcript
     actions_block = ""
     if actions_performed:
@@ -316,7 +342,7 @@ async def generate_polished_summary(
         actions_block = "\n".join(action_lines)
     else:
         actions_block = "No actions performed."
-    
+
     # Build LLM prompt
     prompt = (
         "You are an inbox assistant summarizing results for a user.\n"
@@ -333,9 +359,12 @@ async def generate_polished_summary(
         "- Stays grounded in the data provided (no speculation)\n"
         "Return only the summary text, nothing else."
     )
-    
-    llm_summary = await generate_llm_text(prompt)
-    return llm_summary  # Will be None if LLM fails
+
+    # Phase 3: Use new hybrid helper with guaranteed fallback
+    summary, llm_used = await generate_assistant_text(
+        kind="summary", prompt=prompt, fallback_template=base_summary
+    )
+    return (summary, llm_used)
 
 
 async def run_intent_plan(intent: str, days: int, account: str):
@@ -376,13 +405,13 @@ async def plan_list_bills_due(days: int, account: str) -> dict:
     Return summary, emails[], suggested_actions[].
     """
     hits = []
-    
+
     if ES_ENABLED:
         try:
             es = get_es_client()
             now = dt.datetime.utcnow()
             since = (now - dt.timedelta(days=days)).isoformat() + "Z"
-            
+
             # Query for bills/invoices/receipts
             body = {
                 "size": 10,
@@ -404,11 +433,17 @@ async def plan_list_bills_due(days: int, account: str) -> dict:
                 },
                 "sort": [{"received_at": "asc"}],
                 "_source": [
-                    "message_id", "gmail_id", "from_addr", "sender", "subject",
-                    "received_at", "risk_score", "body_text"
+                    "message_id",
+                    "gmail_id",
+                    "from_addr",
+                    "sender",
+                    "subject",
+                    "received_at",
+                    "risk_score",
+                    "body_text",
                 ],
             }
-            
+
             result = es.search(index=ES_INDEX, body=body)
             hits = result.get("hits", {}).get("hits", [])
         except Exception as e:
@@ -417,18 +452,22 @@ async def plan_list_bills_due(days: int, account: str) -> dict:
     emails = []
     for h in hits[:10]:
         src = h.get("_source", {})
-        emails.append({
-            "id": src.get("message_id") or src.get("gmail_id") or h.get("_id", "unknown"),
-            "sender": src.get("sender") or src.get("from_addr", ""),
-            "subject": src.get("subject", ""),
-            "timestamp": src.get("received_at", ""),
-            "risk_score": src.get("risk_score", 0),
-            "quarantined": src.get("quarantined", False),
-            "amount": None,  # TODO: parse from body_text if available
-            "due_date": None,  # TODO: parse from body_text if available
-            "unsubscribe_candidate": False,
-            "reply_needed": False,
-        })
+        emails.append(
+            {
+                "id": src.get("message_id")
+                or src.get("gmail_id")
+                or h.get("_id", "unknown"),
+                "sender": src.get("sender") or src.get("from_addr", ""),
+                "subject": src.get("subject", ""),
+                "timestamp": src.get("received_at", ""),
+                "risk_score": src.get("risk_score", 0),
+                "quarantined": src.get("quarantined", False),
+                "amount": None,  # TODO: parse from body_text if available
+                "due_date": None,  # TODO: parse from body_text if available
+                "unsubscribe_candidate": False,
+                "reply_needed": False,
+            }
+        )
 
     # Build human summary
     if emails:
@@ -441,11 +480,13 @@ async def plan_list_bills_due(days: int, account: str) -> dict:
 
     suggested_actions = []
     if emails:
-        suggested_actions.append({
-            "label": "Review invoices and schedule payments",
-            "kind": "follow_up",
-            "email_id": emails[0]["id"],
-        })
+        suggested_actions.append(
+            {
+                "label": "Review invoices and schedule payments",
+                "kind": "follow_up",
+                "email_id": emails[0]["id"],
+            }
+        )
 
     found_count = len(emails)
     next_steps = (
@@ -469,13 +510,13 @@ async def plan_list_suspicious(days: int, account: str) -> dict:
     High-risk or quarantined messages in last N days.
     """
     hits = []
-    
+
     if ES_ENABLED:
         try:
             es = get_es_client()
             now = dt.datetime.utcnow()
             since = (now - dt.timedelta(days=days)).isoformat() + "Z"
-            
+
             # Query for high-risk emails (risk_score >= 70 or quarantined)
             body = {
                 "size": 10,
@@ -493,11 +534,17 @@ async def plan_list_suspicious(days: int, account: str) -> dict:
                 },
                 "sort": [{"received_at": "desc"}],
                 "_source": [
-                    "message_id", "gmail_id", "from_addr", "sender", "subject",
-                    "received_at", "risk_score", "quarantined"
+                    "message_id",
+                    "gmail_id",
+                    "from_addr",
+                    "sender",
+                    "subject",
+                    "received_at",
+                    "risk_score",
+                    "quarantined",
                 ],
             }
-            
+
             result = es.search(index=ES_INDEX, body=body)
             hits = result.get("hits", {}).get("hits", [])
         except Exception as e:
@@ -506,30 +553,38 @@ async def plan_list_suspicious(days: int, account: str) -> dict:
     emails = []
     for h in hits[:10]:
         src = h.get("_source", {})
-        emails.append({
-            "id": src.get("message_id") or src.get("gmail_id") or h.get("_id", "unknown"),
-            "sender": src.get("sender") or src.get("from_addr", ""),
-            "subject": src.get("subject", ""),
-            "timestamp": src.get("received_at", ""),
-            "risk_score": src.get("risk_score", 0),
-            "quarantined": src.get("quarantined", False),
-            "unsubscribe_candidate": False,
-            "reply_needed": False,
-        })
+        emails.append(
+            {
+                "id": src.get("message_id")
+                or src.get("gmail_id")
+                or h.get("_id", "unknown"),
+                "sender": src.get("sender") or src.get("from_addr", ""),
+                "subject": src.get("subject", ""),
+                "timestamp": src.get("received_at", ""),
+                "risk_score": src.get("risk_score", 0),
+                "quarantined": src.get("quarantined", False),
+                "unsubscribe_candidate": False,
+                "reply_needed": False,
+            }
+        )
 
     if emails:
-        summary = f"I found {len(emails)} suspicious / high-risk emails in the last {days}d."
+        summary = (
+            f"I found {len(emails)} suspicious / high-risk emails in the last {days}d."
+        )
     else:
         summary = f"No suspicious emails in the last {days}d."
 
     suggested_actions = []
     if emails:
-        suggested_actions.append({
-            "label": "Mark these as suspicious and quarantine them",
-            "kind": "follow_up",
-            "email_id": emails[0]["id"],
-            "sender": emails[0]["sender"],
-        })
+        suggested_actions.append(
+            {
+                "label": "Mark these as suspicious and quarantine them",
+                "kind": "follow_up",
+                "email_id": emails[0]["id"],
+                "sender": emails[0]["sender"],
+            }
+        )
 
     found_count = len(emails)
     next_steps = (
@@ -553,13 +608,13 @@ async def plan_list_followups(days: int, account: str) -> dict:
     Threads waiting on the user (recruiters, hiring loops, nudges like 'checking in?').
     """
     hits = []
-    
+
     if ES_ENABLED:
         try:
             es = get_es_client()
             now = dt.datetime.utcnow()
             since = (now - dt.timedelta(days=days)).isoformat() + "Z"
-            
+
             # Query for follow-up indicators
             body = {
                 "size": 10,
@@ -585,11 +640,16 @@ async def plan_list_followups(days: int, account: str) -> dict:
                 },
                 "sort": [{"received_at": "desc"}],
                 "_source": [
-                    "message_id", "gmail_id", "from_addr", "sender", "subject",
-                    "received_at", "risk_score"
+                    "message_id",
+                    "gmail_id",
+                    "from_addr",
+                    "sender",
+                    "subject",
+                    "received_at",
+                    "risk_score",
                 ],
             }
-            
+
             result = es.search(index=ES_INDEX, body=body)
             hits = result.get("hits", {}).get("hits", [])
         except Exception as e:
@@ -598,17 +658,21 @@ async def plan_list_followups(days: int, account: str) -> dict:
     emails = []
     for h in hits[:10]:
         src = h.get("_source", {})
-        emails.append({
-            "id": src.get("message_id") or src.get("gmail_id") or h.get("_id", "unknown"),
-            "sender": src.get("sender") or src.get("from_addr", ""),
-            "sender_email": src.get("from_addr", ""),  # Add actual email address
-            "subject": src.get("subject", ""),
-            "timestamp": src.get("received_at", ""),
-            "risk_score": src.get("risk_score", 0),
-            "quarantined": src.get("quarantined", False),
-            "unsubscribe_candidate": False,
-            "reply_needed": True,  # this is the whole point of followups
-        })
+        emails.append(
+            {
+                "id": src.get("message_id")
+                or src.get("gmail_id")
+                or h.get("_id", "unknown"),
+                "sender": src.get("sender") or src.get("from_addr", ""),
+                "sender_email": src.get("from_addr", ""),  # Add actual email address
+                "subject": src.get("subject", ""),
+                "timestamp": src.get("received_at", ""),
+                "risk_score": src.get("risk_score", 0),
+                "quarantined": src.get("quarantined", False),
+                "unsubscribe_candidate": False,
+                "reply_needed": True,  # this is the whole point of followups
+            }
+        )
 
     if emails:
         summary = f"{len(emails)} conversation(s) are waiting on you to reply."
@@ -619,14 +683,16 @@ async def plan_list_followups(days: int, account: str) -> dict:
     if emails:
         # Add draft_reply action for each follow-up email
         for email in emails[:3]:  # Limit to top 3 for UI clarity
-            suggested_actions.append({
-                "label": f"Draft reply to {email['sender']}",
-                "kind": "draft_reply",
-                "email_id": email["id"],
-                "sender": email["sender"],
-                "sender_email": email["sender_email"],  # Add email address
-                "subject": email["subject"],
-            })
+            suggested_actions.append(
+                {
+                    "label": f"Draft reply to {email['sender']}",
+                    "kind": "draft_reply",
+                    "email_id": email["id"],
+                    "sender": email["sender"],
+                    "sender_email": email["sender_email"],  # Add email address
+                    "subject": email["subject"],
+                }
+            )
 
     found_count = len(emails)
     next_steps = (
@@ -650,13 +716,13 @@ async def plan_list_interviews(days: int, account: str) -> dict:
     Interview invites / scheduling / next-step emails.
     """
     hits = []
-    
+
     if ES_ENABLED:
         try:
             es = get_es_client()
             now = dt.datetime.utcnow()
             since = (now - dt.timedelta(days=days)).isoformat() + "Z"
-            
+
             # Query for interview-related content
             body = {
                 "size": 10,
@@ -681,11 +747,16 @@ async def plan_list_interviews(days: int, account: str) -> dict:
                 },
                 "sort": [{"received_at": "desc"}],
                 "_source": [
-                    "message_id", "gmail_id", "from_addr", "sender", "subject",
-                    "received_at", "risk_score"
+                    "message_id",
+                    "gmail_id",
+                    "from_addr",
+                    "sender",
+                    "subject",
+                    "received_at",
+                    "risk_score",
                 ],
             }
-            
+
             result = es.search(index=ES_INDEX, body=body)
             hits = result.get("hits", {}).get("hits", [])
         except Exception as e:
@@ -694,16 +765,20 @@ async def plan_list_interviews(days: int, account: str) -> dict:
     emails = []
     for h in hits[:10]:
         src = h.get("_source", {})
-        emails.append({
-            "id": src.get("message_id") or src.get("gmail_id") or h.get("_id", "unknown"),
-            "sender": src.get("sender") or src.get("from_addr", ""),
-            "subject": src.get("subject", ""),
-            "timestamp": src.get("received_at", ""),
-            "risk_score": src.get("risk_score", 0),
-            "quarantined": src.get("quarantined", False),
-            "unsubscribe_candidate": False,
-            "reply_needed": True,
-        })
+        emails.append(
+            {
+                "id": src.get("message_id")
+                or src.get("gmail_id")
+                or h.get("_id", "unknown"),
+                "sender": src.get("sender") or src.get("from_addr", ""),
+                "subject": src.get("subject", ""),
+                "timestamp": src.get("received_at", ""),
+                "risk_score": src.get("risk_score", 0),
+                "quarantined": src.get("quarantined", False),
+                "unsubscribe_candidate": False,
+                "reply_needed": True,
+            }
+        )
 
     if emails:
         summary = f"{len(emails)} interview-related thread(s) in the last {days}d."
@@ -712,11 +787,13 @@ async def plan_list_interviews(days: int, account: str) -> dict:
 
     suggested_actions = []
     if emails:
-        suggested_actions.append({
-            "label": "Add to Tracker",
-            "kind": "follow_up",
-            "email_id": emails[0]["id"],
-        })
+        suggested_actions.append(
+            {
+                "label": "Add to Tracker",
+                "kind": "follow_up",
+                "email_id": emails[0]["id"],
+            }
+        )
 
     found_count = len(emails)
     next_steps = (
@@ -740,13 +817,13 @@ async def plan_cleanup_promotions(days: int, account: str) -> dict:
     Bulk/promo/newsletter content. Candidates for unsubscribe/mute.
     """
     hits = []
-    
+
     if ES_ENABLED:
         try:
             es = get_es_client()
             now = dt.datetime.utcnow()
             since = (now - dt.timedelta(days=days)).isoformat() + "Z"
-            
+
             # Query for promotional emails
             body = {
                 "size": 20,
@@ -766,11 +843,16 @@ async def plan_cleanup_promotions(days: int, account: str) -> dict:
                 },
                 "sort": [{"received_at": "desc"}],
                 "_source": [
-                    "message_id", "gmail_id", "from_addr", "sender", "subject",
-                    "received_at", "risk_score"
+                    "message_id",
+                    "gmail_id",
+                    "from_addr",
+                    "sender",
+                    "subject",
+                    "received_at",
+                    "risk_score",
                 ],
             }
-            
+
             result = es.search(index=ES_INDEX, body=body)
             hits = result.get("hits", {}).get("hits", [])
         except Exception as e:
@@ -780,16 +862,20 @@ async def plan_cleanup_promotions(days: int, account: str) -> dict:
     for h in hits[:20]:
         src = h.get("_source", {})
         sender_addr = src.get("sender") or src.get("from_addr", "")
-        emails.append({
-            "id": src.get("message_id") or src.get("gmail_id") or h.get("_id", "unknown"),
-            "sender": sender_addr,
-            "subject": src.get("subject", ""),
-            "timestamp": src.get("received_at", ""),
-            "risk_score": src.get("risk_score", 0),
-            "quarantined": src.get("quarantined", False),
-            "unsubscribe_candidate": True,
-            "reply_needed": False,
-        })
+        emails.append(
+            {
+                "id": src.get("message_id")
+                or src.get("gmail_id")
+                or h.get("_id", "unknown"),
+                "sender": sender_addr,
+                "subject": src.get("subject", ""),
+                "timestamp": src.get("received_at", ""),
+                "risk_score": src.get("risk_score", 0),
+                "quarantined": src.get("quarantined", False),
+                "unsubscribe_candidate": True,
+                "reply_needed": False,
+            }
+        )
 
     if emails:
         summary = (
@@ -801,11 +887,13 @@ async def plan_cleanup_promotions(days: int, account: str) -> dict:
 
     suggested_actions = []
     if emails:
-        suggested_actions.append({
-            "label": f"Unsubscribe from {emails[0]['sender']}",
-            "kind": "unsubscribe",
-            "sender": emails[0]["sender"],
-        })
+        suggested_actions.append(
+            {
+                "label": f"Unsubscribe from {emails[0]['sender']}",
+                "kind": "unsubscribe",
+                "sender": emails[0]["sender"],
+            }
+        )
 
     found_count = len(emails)
     next_steps = (
@@ -852,11 +940,13 @@ async def plan_summarize_activity(days: int, account: str) -> dict:
     # For summarize_activity, we don't need to dump all emails (we can return empty list for now).
     suggested_actions = []
     if sus["emails"]:
-        suggested_actions.append({
-            "label": "Review suspicious email(s)",
-            "kind": "follow_up",
-            "email_id": sus["emails"][0]["id"],
-        })
+        suggested_actions.append(
+            {
+                "label": "Review suspicious email(s)",
+                "kind": "follow_up",
+                "email_id": sus["emails"][0]["id"],
+            }
+        )
 
     # Smart next_steps based on what's active
     has_activity = len(summary_parts) > 0
@@ -968,7 +1058,9 @@ async def maybe_apply_bulk_actions(
       If that's different in prod, update BASE_INTERNAL_API accordingly.
     """
 
-    BASE_INTERNAL_API = os.getenv("ASSISTANT_INTERNAL_API_BASE", "http://localhost:8003")
+    BASE_INTERNAL_API = os.getenv(
+        "ASSISTANT_INTERNAL_API_BASE", "http://localhost:8003"
+    )
 
     results: list[AssistantActionPerformed] = []
 

@@ -131,6 +131,12 @@ services:
       - applylens-prod
 
   # =============================================================================
+  # OLLAMA (Local LLM Service)
+  # PRODUCTION NOTE: Using existing infra-ollama-1 container via external infra_net
+  # DO NOT add a new ollama service here - we share the infra container
+  # =============================================================================
+
+  # =============================================================================
   # API (FastAPI Backend)
   # =============================================================================
   api:
@@ -152,11 +158,18 @@ services:
     # v0.4.31: Actionability fix - loosened review filter (unread OR risk >= 40)
     # v0.4.30: Status chips + Restore to Review (undo actions)
     # v0.4.29: Inbox Actions lifecycle with Needs Review / Quarantined / Archived views
+    # v0.4.48: Phase 3 - Hybrid LLM provider (Ollama→OpenAI→fallback) + short-term memory context hints
+    # v0.4.47: Mailbox Assistant with conversational suggestions (next_steps + followup_prompt)
+    # v0.4.42: Auto-draft follow-up replies endpoint - /api/assistant/draft-reply
+    # v0.4.40: Sender overrides (safe/mute) for adaptive classification
+    # v0.4.33: Runtime config endpoint + basic tracker endpoint
+    # v0.4.30: Status chips + Restore to Review (undo actions)
+    # v0.4.29: Inbox Actions lifecycle with Needs Review / Quarantined / Archived views
     # v0.4.28: Polished interactive triage console with optimistic UI updates
     # v0.4.27: Enhanced Actions page with drawer, explanations, and optimistic UI updates
     # v0.4.26: Implemented Actions page with real backend endpoints
     # v0.4.25: Added /api/tracker endpoint for Gmail-derived applications
-    image: leoklemet/applylens-api:v0.4.47
+    image: leoklemet/applylens-api:v0.4.48
     container_name: applylens-api-prod
     environment:
       # Database
@@ -178,9 +191,12 @@ services:
       # Redis (Caching)
       REDIS_URL: redis://redis:6379/0
 
-      # LLM Integration (Phase 1.4)
-      OLLAMA_BASE: ${OLLAMA_BASE:-http://ollama:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-gpt-oss-20b}
+      # LLM Integration (Phase 3 - Production Ollama)
+      # CRITICAL: Using shared infra-ollama-1 container on infra_net network
+      # DO NOT change to http://localhost:11434 - must use container hostname
+      # DO NOT change model back to gpt-oss:20b - too slow for production
+      OLLAMA_BASE: "http://infra-ollama-1:11434"
+      OLLAMA_MODEL: "llama3:latest"  # 4.7GB, 2-4s response time (quoted for YAML colon handling)
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
 
@@ -254,6 +270,7 @@ services:
       applylens-prod:
         aliases:
           - applylens-api.internal
+      infra_net:  # Connect to infra network for Ollama access
 
   # =============================================================================
   # WEB (Frontend)
@@ -275,9 +292,11 @@ services:
     # v0.4.46: Outreach tracking - Subject in confirmations + "Sent follow-up" logs + styled sent messages
     # v0.4.45: UX polish - Auto-prefix "Re:" in subject line + timestamp confirmation messages
     # v0.4.44: Phase 1.5 Enhancements - Regenerate button with tone options, Gmail pre-fill, in-chat confirmations
+    # v0.4.48: 🧠 PHASE 3 INTELLIGENCE - Hybrid LLM (Ollama→OpenAI→fallback) + typing indicator + short-term memory
+    # v0.4.49: 🎨 UI CLEANUP - Simplified MailChat interface (removed PolicyAccuracyPanel, cleaner controls, dev mode guards)
+    # v0.4.47e: 🎉 CONVERSATIONAL UX STABLE - Small talk detection + standardized assistant rendering + E2E tests
     # v0.4.43: Auto-draft follow-up replies UI - ReplyDraftModal + draft_reply action buttons in MailChat
     # v0.4.38: Mailbox Assistant integration - chip clicks use /api/assistant/query
-    # v0.4.47e: 🎉 CONVERSATIONAL UX STABLE - Small talk detection + standardized assistant rendering + E2E tests
     # v0.4.37: Added NavTabs component for Inbox/Tracker navigation
     # v0.4.36: TrackerPage visual polish - consistent badge variants + improved timestamp display
     # v0.4.33: SettingsSendersPage + TrackerPage + runtime config integration
@@ -288,7 +307,7 @@ services:
     # v0.4.27: Enhanced Actions page with drawer, inline explanations, optimistic updates
     # v0.4.26: Actions page with real backend functionality
     # v0.4.25: Tracker page shows real Gmail data + OAuth fix
-    image: leoklemet/applylens-web:v0.4.47e
+    image: leoklemet/applylens-web:v0.4.49
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
@@ -442,3 +461,5 @@ networks:
     ipam:
       config:
         - subnet: 172.25.0.0/16
+  infra_net:
+    external: true  # Use existing infra network with Ollama
