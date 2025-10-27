@@ -246,4 +246,13 @@ html.dark ::-webkit-scrollbar-thumb {
            bg-zinc-100 text-zinc-900 border-zinc-300
            dark:bg-zinc-800/60 dark:text-zinc-100 dark:border-zinc-700;
   }
+
+  /* Density utilities for consistent padding */
+  .density-x {
+    @apply px-3 md:px-4;
+  }
+
+  .density-y {
+    @apply py-2 md:py-3;
+  }
 }

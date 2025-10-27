@@ -296,7 +296,7 @@ export default function Search() {
 
       {/* ML-powered category filters - now controlled */}
       <div className="mb-3">
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3">
+        <div className="surface-panel p-3 flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground">Filter by:</span>
           {(['ats', 'bills', 'banks', 'events', 'promotions'] as const).map((cat) => (
             <Button
@@ -421,8 +421,9 @@ export default function Search() {
 
       {/* Error state */}
       {error && !loading && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
-          <strong>Error:</strong> {error}
+        <div className="surface-panel p-4 border-red-300 dark:border-red-700">
+          <strong className="text-red-700 dark:text-red-300">Error:</strong>{' '}
+          <span className="text-red-800 dark:text-red-200">{error}</span>
         </div>
       )}
 
@@ -437,8 +438,11 @@ export default function Search() {
 
           {/* Show helpful message for 422 errors */}
           {lastStatus === 422 && (
-            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-              <strong>Note:</strong> Search requires a query. We sent <code className="px-1 py-0.5 bg-amber-100 dark:bg-amber-900/40 rounded">*</code> (match-all) automatically.
+            <div className="surface-panel mb-4 p-3 text-sm border-amber-300 dark:border-amber-700">
+              <strong className="text-amber-800 dark:text-amber-300">Note:</strong>{' '}
+              <span className="text-amber-700 dark:text-amber-200">
+                Search requires a query. We sent <code className="px-1 py-0.5 surface-panel rounded">*</code> (match-all) automatically.
+              </span>
               <br />
               <span className="text-xs opacity-80">If you're seeing this, the search index may be empty. Try syncing data first.</span>
             </div>
@@ -551,14 +555,14 @@ export default function Search() {
 
                   {/* Expiry Badge (Phase 35) */}
                   {h.expires_at && (
-                    <Badge data-testid="badge-expires" className="bg-amber-100 text-amber-900 border-amber-300 text-[10px] h-5">
+                    <Badge data-testid="badge-expires" className="bg-amber-100/80 text-amber-800 border-amber-300/50 text-[10px] h-5 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700">
                       ⏰ {formatDistanceToNowStrict(new Date(h.expires_at), { addSuffix: true })}
                     </Badge>
                   )}
 
                   {/* Event Badge (Phase 35) */}
                   {h.event_start_at && (
-                    <Badge data-testid="badge-event" className="bg-sky-100 text-sky-900 border-sky-300 text-[10px] h-5">
+                    <Badge data-testid="badge-event" className="bg-sky-100/80 text-sky-800 border-sky-300/50 text-[10px] h-5 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-700">
                       📅 {format(new Date(h.event_start_at), "MMM d")}
                     </Badge>
                   )}
@@ -567,8 +571,8 @@ export default function Search() {
                     title={h.first_user_reply_at ? `Replied ${ttrText} after receipt` : (h.replied ? 'Replied' : 'No reply yet')}
                     className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
                       h.replied
-                        ? 'border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
-                        : 'border-gray-300 bg-gray-100 text-gray-700 opacity-80 dark:border-gray-700 dark:bg-gray-800/40 dark:text-gray-300'
+                        ? 'border-blue-300/50 bg-blue-100/80 text-blue-800 dark:border-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
+                        : 'border-gray-300/50 bg-gray-100/80 text-gray-700 opacity-80 dark:border-gray-700 dark:bg-gray-800/40 dark:text-gray-300'
                     }`}
                   >
                     {h.replied ? `TTR ${ttrText}` : 'No reply'}

@@ -31,25 +31,23 @@ export default function App() {
           <Route path="/*" element={
             <LoginGuard>
               <AppShell>
-                <div className="mx-auto max-w-6xl px-4 py-6">
-                  <Routes>
-                    <Route path="/" element={<Inbox />} />
-                    <Route path="/inbox" element={<Inbox />} />
-                    <Route path="/inbox-polished" element={<InboxPolished />} />
-                    <Route path="/inbox-polished-demo" element={<InboxPolishedDemo />} />
-                    <Route path="/inbox-actions" element={<InboxWithActions />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/chat" element={<ChatPage />} />
-                    <Route path="/tracker" element={<TrackerPage />} />
-                    <Route path="/profile" element={<ProfileSummary />} />
-                    <Route path="/applications" element={<Applications />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/settings/security" element={<SettingsSecurity />} />
-                    <Route path="/settings/senders" element={<SettingsSendersPage />} />
-                    <Route path="/policy-studio" element={<PolicyStudio />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </div>
+                <Routes>
+                  <Route path="/" element={<Inbox />} />
+                  <Route path="/inbox" element={<Inbox />} />
+                  <Route path="/inbox-polished" element={<InboxPolished />} />
+                  <Route path="/inbox-polished-demo" element={<InboxPolishedDemo />} />
+                  <Route path="/inbox-actions" element={<InboxWithActions />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/tracker" element={<TrackerPage />} />
+                  <Route path="/profile" element={<ProfileSummary />} />
+                  <Route path="/applications" element={<Applications />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/settings/security" element={<SettingsSecurity />} />
+                  <Route path="/settings/senders" element={<SettingsSendersPage />} />
+                  <Route path="/policy-studio" element={<PolicyStudio />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
               </AppShell>
             </LoginGuard>
           } />

@@ -240,7 +240,7 @@ export default function Tracker() {
 
       {/* Applications Table */}
       <div className="surface-card overflow-hidden">
-        <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-[color:hsl(var(--border))] bg-[color:hsl(var(--muted))] px-3 py-2 text-xs font-medium">
+        <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 surface-panel px-3 py-2 text-xs font-medium border-b border-zinc-300 dark:border-zinc-700">
           <div className="col-span-3">Company</div>
           <div className="col-span-3">Role</div>
           <div className="col-span-2">Source</div>
@@ -248,25 +248,25 @@ export default function Tracker() {
           <div className="col-span-2 text-right">Actions</div>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-sm text-[color:hsl(var(--muted-foreground))]">Loading…</div>
+          <div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading…</div>
         ) : (
-          <div className="divide-y divide-[color:hsl(var(--border))]">
+          <div className="divide-y divide-zinc-300 dark:divide-zinc-700">
             {applications.map((r) => (
               <div
                 key={`app-${r.id}`}
-                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm surface-card hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
+                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
                 data-testid="tracker-row"
                 data-id={r.id}
               >
-                <div className="col-span-3 font-semibold text-[color:hsl(var(--foreground))]">{r.company}</div>
-                <div className="col-span-3 text-[color:hsl(var(--foreground))]">{r.role}</div>
-                <div className="col-span-2 text-[color:hsl(var(--muted-foreground))]">{r.source || '—'}</div>
+                <div className="col-span-3 font-semibold text-zinc-900 dark:text-zinc-100">{r.company}</div>
+                <div className="col-span-3 text-zinc-900 dark:text-zinc-100">{r.role}</div>
+                <div className="col-span-2 text-zinc-500 dark:text-zinc-400">{r.source || '—'}</div>
                 <div className="col-span-2">
                   <div className="flex items-center gap-2">
                     <StatusChip status={r.status} />
                     <select
                       aria-label={`Change status for ${r.company}`}
-                      className="rounded border border-[color:hsl(var(--border))] bg-[color:hsl(var(--card))] px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[color:hsl(var(--ring))]"
+                      className="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                       value={r.status}
                       data-testid={`status-select-${r.id}`}
                       onChange={(e) => updateRow(r.id, { status: e.target.value as AppStatus }, r)}
@@ -325,23 +325,23 @@ export default function Tracker() {
                 {trackerRows.map((row, idx) => (
                   <div
                     key={`tracker-${idx}`}
-                    className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-[color:hsl(var(--muted))]/30 transition"
+                    className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
                     data-testid="tracker-row-readonly"
                   >
-                    <div className="col-span-3 font-semibold text-[color:hsl(var(--foreground))]">{row.company}</div>
-                    <div className="col-span-3 text-[color:hsl(var(--foreground))]">{row.role}</div>
-                    <div className="col-span-2 text-[color:hsl(var(--muted-foreground))]">{row.source}</div>
+                    <div className="col-span-3 font-semibold text-zinc-900 dark:text-zinc-100">{row.company}</div>
+                    <div className="col-span-3 text-zinc-900 dark:text-zinc-100">{row.role}</div>
+                    <div className="col-span-2 text-zinc-500 dark:text-zinc-400">{row.source}</div>
                     <div className="col-span-2">
-                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
+                      <span className="inline-flex items-center rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs">
                         {row.status}
                       </span>
                     </div>
-                    <div className="col-span-2 text-right text-xs text-[color:hsl(var(--muted-foreground))]">
+                    <div className="col-span-2 text-right text-xs text-zinc-500 dark:text-zinc-400">
                       {new Date(row.last_update).toLocaleString()}
                     </div>
                   </div>
                 ))}
-                <div className="p-6 text-center text-sm text-[color:hsl(var(--muted-foreground))]">
+                <div className="p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
                   <p>
                     📧 Showing {trackerRows.length} application{trackerRows.length !== 1 ? 's' : ''} from your Gmail inbox.
                   </p>

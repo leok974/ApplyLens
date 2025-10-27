@@ -110,7 +110,7 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
             <button
               onClick={() => handleRegenerate('warmer')}
               disabled={regenerating}
-              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-100/80 text-blue-800 border border-blue-300/50 rounded-full hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-900/50 transition-colors"
             >
               {regenerating && currentTone === 'warmer' && <RefreshCw className="h-3 w-3 animate-spin" />}
               Warmer
@@ -118,7 +118,7 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
             <button
               onClick={() => handleRegenerate('more_direct')}
               disabled={regenerating}
-              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-purple-50 text-purple-700 rounded-full hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50 transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-purple-100/80 text-purple-800 border border-purple-300/50 rounded-full hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700 dark:hover:bg-purple-900/50 transition-colors"
             >
               {regenerating && currentTone === 'more_direct' && <RefreshCw className="h-3 w-3 animate-spin" />}
               More Direct
@@ -126,7 +126,7 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
             <button
               onClick={() => handleRegenerate('formal')}
               disabled={regenerating}
-              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-gray-50 text-gray-700 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-gray-100/80 text-gray-800 border border-gray-300/50 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-800 transition-colors"
             >
               {regenerating && currentTone === 'formal' && <RefreshCw className="h-3 w-3 animate-spin" />}
               Formal
@@ -134,7 +134,7 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
             <button
               onClick={() => handleRegenerate('casual')}
               disabled={regenerating}
-              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-green-50 text-green-700 rounded-full hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-green-100/80 text-green-800 border border-green-300/50 rounded-full hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-900/40 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-900/50 transition-colors"
             >
               {regenerating && currentTone === 'casual' && <RefreshCw className="h-3 w-3 animate-spin" />}
               Casual
@@ -153,7 +153,7 @@ export function ReplyDraftModal({ draft, onClose, emailId, account, senderEmail,
 
           {/* AI Badge */}
           <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+            <span className="px-2 py-1 bg-blue-100/80 border border-blue-300/50 text-blue-800 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300 rounded-full">
               ✨ AI-Generated
             </span>
             <span>Feel free to edit before sending</span>
