@@ -1304,3 +1304,33 @@ export async function fetchProfileSummary(): Promise<ProfileSummaryResponse> {
     return fallback
   }
 }
+
+// ============================================================================
+// Logout Helper
+// ============================================================================
+
+/**
+ * Log out the current user.
+ * Attempts to call backend logout endpoint, then redirects to home page.
+ * This is resilient - even if backend logout fails, we still redirect.
+ * DO NOT throw from this helper.
+ */
+export async function logoutUser(): Promise<void> {
+  try {
+    // If we have a backend logout endpoint, call it first.
+    // Try /api/auth/logout with credentials included.
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+  } catch (_) {
+    // swallow; we still clear local state
+  }
+
+  // Clear any locally stored auth/session data so UI behaves logged-out.
+  // (For now: remove any tokens or cached session keys if we store them.
+  // If we don't store anything client-side, leave this empty.)
+
+  // Finally, navigate user back to "/" or a login screen.
+  window.location.href = "/";
+}

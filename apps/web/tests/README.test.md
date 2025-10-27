@@ -15,6 +15,7 @@ These tests use `page.route()` mocks and do NOT require:
 **Tests in this category:**
 - `profile-warehouse.spec.ts` - Warehouse-backed profile page with mocked BigQuery data
 - `mailboxAssistant.spec.ts` - Mailbox assistant with mocked responses
+- `settings-logout.spec.ts` - Settings page logout flow with mocked auth endpoints
 
 #### How to Run Mock-Based Tests
 
@@ -33,7 +34,7 @@ npx playwright test tests/profile-warehouse.spec.ts --reporter=line
 
 # Or run all mock-based tests
 $env:SKIP_AUTH='1'
-npx playwright test tests/profile-warehouse.spec.ts tests/mailboxAssistant.spec.ts --reporter=line
+npx playwright test tests/profile-warehouse.spec.ts tests/mailboxAssistant.spec.ts tests/settings-logout.spec.ts --reporter=line
 ```
 
 **Why `SKIP_AUTH=1`?**
@@ -149,6 +150,51 @@ await expect(page.getByText(/Dataset:/i)).toBeVisible();
 // Verify appropriate empty state message
 await expect(page.getByText(/No data in the last 30 days\./i)).toBeVisible();
 ```
+
+## Logout Flow
+
+The Settings page includes a logout button that can be tested without backend infrastructure.
+
+### How It Works
+
+**Frontend (`apps/web/src/lib/api.ts`):**
+- `logoutUser()` function attempts to call `/api/auth/logout` endpoint
+- Even if backend call fails, it redirects user to home page ("/")
+- This ensures logout always works from user perspective
+
+**Test (`tests/settings-logout.spec.ts`):**
+- Mocks `/api/auth/me` to simulate logged-in user
+- Mocks `/api/auth/logout` to return success (or failure for resilience test)
+- Clicks button with `data-testid="logout-button"`
+- Asserts redirect to home page
+
+### Test Assertions
+
+```typescript
+// Verify account card shows email
+await expect(page.getByText(/Signed in as/i)).toBeVisible();
+await expect(page.getByText("leoklemet.pa@gmail.com")).toBeVisible();
+
+// Verify logout button exists
+const logoutButton = page.getByTestId("logout-button");
+await expect(logoutButton).toBeVisible();
+
+// Click and verify redirect
+await logoutButton.click();
+expect(page.url()).toMatch(/http:\/\/localhost:5175\/?$/);
+```
+
+### Running Logout Tests
+
+```powershell
+cd d:\ApplyLens\apps\web
+$env:SKIP_AUTH='1'
+npm run dev  # In separate terminal
+
+npx playwright test tests/settings-logout.spec.ts --reporter=line
+```
+
+**Note:** These tests are `[prodSafe]` - they use mocks only and don't require backend, database, or any infrastructure.
 
 ## Debugging Tests
 
