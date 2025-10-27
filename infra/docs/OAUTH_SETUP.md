@@ -181,19 +181,19 @@ http://127.0.0.1:5175
    # Google OAuth Client Credentials
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=your-client-secret
-   
+
    # OAuth Redirect URI (local development)
    GOOGLE_REDIRECT_URI_DEV=http://localhost:8003/auth/google/callback
-   
+
    # OAuth State Secret (generate a random 32+ character string)
    OAUTH_STATE_SECRET=your-random-32-character-or-longer-string
-   
+
    # Legacy OAuth config (backward compatibility)
    OAUTH_REDIRECT_URI=http://localhost:8003/auth/google/callback
-   
+
    # Google credentials file
    GOOGLE_CREDENTIALS=/secrets/google.json
-   
+
    # OAuth scopes
    GOOGLE_OAUTH_SCOPES=https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email openid
    ```
@@ -209,10 +209,10 @@ http://127.0.0.1:5175
    ```bash
    # Using OpenSSL
    openssl rand -hex 32
-   
+
    # Or using Python
    python -c "import secrets; print(secrets.token_hex(32))"
-   
+
    # Or using PowerShell
    -join ((1..32) | ForEach-Object { '{0:x}' -f (Get-Random -Max 16) })
    ```
@@ -232,19 +232,19 @@ http://127.0.0.1:5175
    # Google OAuth Client Credentials
    GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET=your-client-secret
-   
+
    # OAuth Redirect URI (production)
    GOOGLE_REDIRECT_URI=https://api.applylens.app/auth/google/callback
-   
+
    # OAuth State Secret (MUST be different from dev!)
    OAUTH_STATE_SECRET=production-random-32-character-or-longer-string
-   
+
    # Legacy OAuth config (backward compatibility)
    OAUTH_REDIRECT_URI=https://api.applylens.app/auth/google/callback
-   
+
    # Google credentials file
    GOOGLE_CREDENTIALS=/secrets/google.json
-   
+
    # OAuth scopes
    GOOGLE_OAUTH_SCOPES=https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email openid
    ```
@@ -316,7 +316,7 @@ Run the automated smoke tests to verify OAuth configuration:
 
 ```text
 Error 400: redirect_uri_mismatch
-The redirect URI in the request, http://localhost:8003/auth/google/callback, 
+The redirect URI in the request, http://localhost:8003/auth/google/callback,
 does not match the ones authorized for the OAuth client.
 ```text
 
@@ -359,7 +359,7 @@ does not match the ones authorized for the OAuth client.
    ```bash
    # View API logs
    docker compose logs -f api
-   
+
    # Look for OAuth debug messages:
    # [OAuth] Initiating login flow with redirect_uri: http://localhost:8003/auth/google/callback
    # [OAuth] Callback received with redirect_uri: http://localhost:8003/auth/google/callback
@@ -370,7 +370,7 @@ does not match the ones authorized for the OAuth client.
    ```bash
    # Test login endpoint
    curl -I http://localhost:8003/auth/google/login
-   
+
    # Should return 302 redirect to accounts.google.com
    # Check Location header for redirect_uri parameter
    ```
@@ -573,6 +573,118 @@ For additional help, see:
 
 ---
 
-**Last Updated**: 2025-10-11  
-**Version**: 1.0  
-**Status**: Production Ready
+## Quick Start - First Time Authentication
+
+### For Production (applylens.app)
+
+**Step 1: Visit Welcome Page**
+Navigate to: **https://applylens.app/web/welcome**
+
+**Step 2: Sign In with Google**
+Click **"Sign in with Google"** button
+
+**What happens:**
+- Redirects to Google OAuth consent screen
+- With `prompt=consent`, you'll see the consent screen every time
+- This guarantees a fresh refresh token
+
+**Step 3: Grant Permissions**
+Accept the following permissions:
+- ✅ Read your email messages and settings
+- ✅ View your email address
+- ✅ View your basic profile info
+
+**Step 4: Verify Token Saved**
+```powershell
+docker exec applylens-db-prod psql -U postgres -d applylens `
+  -c "SELECT user_email, created_at FROM oauth_tokens ORDER BY created_at DESC LIMIT 1;"
+```
+
+### Test Gmail Sync
+
+```powershell
+curl -X POST "https://applylens.app/api/gmail/backfill?days=2&user_email=your@email.com" -w "\nStatus: %{http_code}\n"
+```
+
+**Expected:** `{"inserted": 42, ...}` with Status: 200
+
+---
+
+## Reauth / Token Refresh
+
+### Automatic Token Invalidation
+
+The API automatically detects and deletes invalid OAuth tokens when:
+- Google returns `invalid_grant` error
+- Refresh token has expired
+- Token has been revoked
+
+**What Happens Automatically:**
+1. ✅ **Detect** the error in `_get_creds()`
+2. ✅ **Delete** the invalid token from database
+3. ✅ **Prompt** user with: "Please re-authenticate at /api/auth/google/login"
+
+### Manual Re-Authentication Steps
+
+**Step 1: Delete Old Token (Optional)**
+```powershell
+docker exec applylens-db-prod psql -U postgres -d applylens `
+  -c "DELETE FROM oauth_tokens WHERE user_email='your@email.com';"
+```
+
+**Step 2: Visit Welcome Page**
+Navigate to: **https://applylens.app/web/welcome**
+
+**Step 3: Sign In Again**
+Click **"Sign in with Google"** and grant permissions
+
+**Step 4: Verify New Token**
+```powershell
+docker exec applylens-db-prod psql -U postgres -d applylens `
+  -c "SELECT user_email, updated_at FROM oauth_tokens ORDER BY updated_at DESC LIMIT 1;"
+```
+
+### Token Refresh Troubleshooting
+
+**Issue: Consent screen doesn't appear**
+- Solution: Revoke app access at https://myaccount.google.com/permissions
+- Then re-authenticate
+
+**Issue: Still getting invalid_grant**
+- Check OAuth app publishing status in Google Cloud Console
+- **Testing mode**: Tokens expire after 7 days
+- **Production mode**: Tokens don't expire
+- Solution: Publish app to Production or add yourself as test user
+
+**Issue: Token not saved after auth**
+- Check OAuth callback logs: `docker logs applylens-api-prod --tail 50 | Select-String "OAuth"`
+- Verify redirect URI matches: `https://applylens.app/api/auth/google/callback`
+
+### Verification Commands
+
+**Check Token Status:**
+```powershell
+docker exec applylens-db-prod psql -U postgres -d applylens `
+  -c "SELECT user_email, refresh_token IS NOT NULL as has_refresh, expiry, updated_at FROM oauth_tokens;"
+```
+
+**Check Gmail Connection:**
+```powershell
+curl "https://applylens.app/api/gmail/status?user_email=your@email.com"
+```
+
+**Expected Response:**
+```json
+{
+  "connected": true,
+  "user_email": "your@email.com",
+  "provider": "google",
+  "has_refresh_token": true
+}
+```
+
+---
+
+**Last Updated**: 2025-10-22
+**Version**: 1.1
+**Status**: Production Ready with Auto-Reauth

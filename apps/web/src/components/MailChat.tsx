@@ -864,8 +864,6 @@ export default function MailChat() {
         <div className="flex items-center gap-2">
           <span>Time window:</span>
           <select
-            className="bg-neutral-900 border border-neutral-800/80 rounded-md px-2 py-1 text-neutral-200
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600"
             value={windowDays}
             onChange={(e) => changeWindowDays(Number(e.target.value))}
             aria-label="Time window (days)"
@@ -1198,7 +1196,6 @@ export default function MailChat() {
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as 'off' | 'run')}
-            className="bg-neutral-900 text-xs border border-neutral-800 rounded px-2 py-1"
             aria-label="actions mode"
           >
             <option value="off">Preview only</option>

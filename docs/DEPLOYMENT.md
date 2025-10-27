@@ -347,3 +347,201 @@ For issues or questions:
 2. Review this guide's troubleshooting section
 3. Check Git history: `git log --oneline -10`
 4. Contact: [Your support channel]
+
+---
+
+## Production Deployment to applylens.app
+
+### Prerequisites Checklist
+
+Before deploying to production, ensure you have:
+
+- [ ] **Production Server** with SSH access
+- [ ] **Docker & Docker Compose** installed on the server
+- [ ] **Domain**: applylens.app configured in Cloudflare
+- [ ] **Google OAuth Credentials** for production
+- [ ] **Server Resources**: Minimum 4GB RAM, 20GB disk space
+
+### Cloudflare Tunnel Setup
+
+#### Install cloudflared
+
+```bash
+curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared.deb
+cloudflared --version
+```
+
+#### Create and Configure Tunnel
+
+```bash
+# Authenticate
+cloudflared tunnel login
+
+# Create tunnel
+cloudflared tunnel create applylens
+
+# Configure tunnel
+sudo mkdir -p /etc/cloudflared
+sudo nano /etc/cloudflared/config.yml
+```
+
+Tunnel configuration:
+```yaml
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /root/.cloudflared/YOUR_TUNNEL_ID.json
+
+ingress:
+  - hostname: applylens.app
+    service: http://localhost:80
+  - hostname: www.applylens.app
+    service: http://localhost:80
+  - service: http_status:404
+```
+
+#### Route DNS and Start Service
+
+```bash
+# Route DNS
+cloudflared tunnel route dns applylens applylens.app
+cloudflared tunnel route dns applylens www.applylens.app
+
+# Install as service
+sudo cloudflared service install
+sudo systemctl start cloudflared
+sudo systemctl enable cloudflared
+```
+
+### Production Environment Configuration
+
+Create `infra/.env.prod`:
+
+```bash
+# Domain
+DOMAIN=applylens.app
+API_URL=https://applylens.app
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=https://applylens.app/auth/google/callback
+
+# Secrets (generate with: openssl rand -hex 32)
+SECRET_KEY=<generate>
+SESSION_SECRET=<generate>
+OAUTH_STATE_SECRET=<generate>
+
+# Database
+POSTGRES_USER=applylens_user
+POSTGRES_PASSWORD=<generate-secure-password>
+POSTGRES_DB=applylens_prod
+DATABASE_URL=postgresql://applylens_user:<password>@db:5432/applylens_prod
+
+# Elasticsearch
+ELASTIC_PASSWORD=<generate>
+
+# Monitoring
+GRAFANA_ADMIN_PASSWORD=<generate>
+PROMETHEUS_PASSWORD=<generate>
+```
+
+### Deploy to Production
+
+```bash
+# Make scripts executable
+chmod +x deploy-to-server.sh health-check.sh rollback.sh
+
+# Run deployment
+./deploy-to-server.sh
+```
+
+The deployment script will:
+1. Validate all required files
+2. Check Docker installation
+3. Build production images
+4. Stop old containers
+5. Start production stack
+6. Run database migrations
+7. Perform health checks
+
+### Verify Deployment
+
+```bash
+# Run automated health checks
+./health-check.sh
+
+# Manual verification
+curl -I https://applylens.app/
+curl -I https://applylens.app/docs/
+curl -I https://applylens.app/web/
+```
+
+### Post-Deployment Tasks
+
+#### Set Up Automated Backups
+
+Create `~/backup-applylens.sh`:
+```bash
+#!/bin/bash
+BACKUP_DIR="/home/$USER/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+mkdir -p $BACKUP_DIR
+
+docker compose -f ~/applylens/docker-compose.prod.yml exec -T db \
+  pg_dump -U applylens_user applylens_prod | gzip > \
+  $BACKUP_DIR/db_backup_$DATE.sql.gz
+
+find $BACKUP_DIR -name "db_backup_*.sql.gz" -mtime +30 -delete
+```
+
+Add to crontab (daily at 2 AM):
+```bash
+chmod +x ~/backup-applylens.sh
+crontab -e
+# Add: 0 2 * * * /home/$USER/backup-applylens.sh >> /var/log/applylens-backup.log 2>&1
+```
+
+#### Configure Firewall
+
+```bash
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw enable
+```
+
+### Production Troubleshooting
+
+#### Services won't start
+```bash
+docker compose -f docker-compose.prod.yml logs
+docker compose -f docker-compose.prod.yml logs api
+```
+
+#### Can't access via domain
+```bash
+# Check Cloudflare Tunnel
+sudo systemctl status cloudflared
+cloudflared tunnel info applylens
+
+# Check DNS propagation
+dig applylens.app
+```
+
+#### OAuth not working
+1. Verify Google OAuth redirect URI: `https://applylens.app/auth/google/callback`
+2. Check `.env.prod` has correct `GOOGLE_REDIRECT_URI`
+3. Restart API: `docker compose -f docker-compose.prod.yml restart api`
+
+### Service URLs
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Frontend | https://applylens.app/web/ | Google OAuth |
+| API | https://applylens.app/ | N/A |
+| API Docs | https://applylens.app/docs/ | N/A |
+| Grafana | https://applylens.app/grafana/ | admin / from .env.prod |
+| Kibana | https://applylens.app/kibana/ | elastic / from .env.prod |
+| Prometheus | https://applylens.app/prometheus/ | admin / from .env.prod |
+
+For complete production deployment guide, see `DEPLOY_TO_PRODUCTION.md`.

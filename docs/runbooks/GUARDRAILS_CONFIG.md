@@ -142,7 +142,7 @@ REQUIRED_PARAMS["custom_action"] = ["param1", "param2"]
 def _validate_required_params(action, context, plan):
     """Validate required parameters present."""
     required = REQUIRED_PARAMS.get(action, [])
-    
+
     for param in required:
         if param not in context and param not in plan:
             raise GuardrailViolation(
@@ -317,7 +317,7 @@ warning: Post-execution guardrail violation: ops_count must be non-negative inte
 REQUIRED_PARAMS = {
     # Existing...
     "quarantine": ["email_id"],
-    
+
     # Add new action
     "send_notification": ["recipient", "message"],
     "archive_emails": ["email_ids", "archive_name"],
@@ -333,7 +333,7 @@ def test_send_notification_requires_params():
     rules = [PolicyRule(id="allow", agent="*", action="*", effect="allow")]
     engine = PolicyEngine(rules)
     guardrails = ExecutionGuardrails(engine)
-    
+
     # Missing recipient
     with pytest.raises(GuardrailViolation) as exc:
         guardrails.validate_pre_execution(
@@ -342,7 +342,7 @@ def test_send_notification_requires_params():
             context={"message": "Hello"},  # Missing recipient
             plan={}
         )
-    
+
     assert "recipient" in exc.value.message
 ```
 
@@ -352,11 +352,11 @@ def test_send_notification_requires_params():
 def send_notification_handler(plan):
     """
     Send notification to recipient.
-    
+
     Required params:
         - recipient: Email or user ID
         - message: Notification text
-    
+
     Optional params:
         - priority: "low" | "normal" | "high"
         - attachment: File path
@@ -385,10 +385,10 @@ def send_email_handler(plan):
     recipient = plan["recipient"]  # Required
     subject = plan["subject"]      # Required
     body = plan["body"]            # Required
-    
+
     priority = plan.get("priority", "normal")  # Optional with default
     attachments = plan.get("attachments", [])  # Optional
-    
+
     ...
 ```
 
@@ -552,12 +552,12 @@ from app.agents.guardrails import ExecutionGuardrails, GuardrailViolation
 
 class CustomGuardrails(ExecutionGuardrails):
     """Extended guardrails with custom checks."""
-    
+
     def validate_pre_execution(self, agent, action, context, plan):
         """Add custom pre-execution checks."""
         # Call parent validation
         decision = super().validate_pre_execution(agent, action, context, plan)
-        
+
         # Custom check: Rate limiting
         if self._check_rate_limit_exceeded(agent):
             raise GuardrailViolation(
@@ -565,7 +565,7 @@ class CustomGuardrails(ExecutionGuardrails):
                 violation_type="rate_limit_exceeded",
                 details={"agent": agent, "limit": 100}
             )
-        
+
         # Custom check: Business hours
         if not self._is_business_hours() and action == "send_email":
             raise GuardrailViolation(
@@ -573,14 +573,14 @@ class CustomGuardrails(ExecutionGuardrails):
                 violation_type="outside_business_hours",
                 details={"current_time": datetime.now().isoformat()}
             )
-        
+
         return decision
-    
+
     def _check_rate_limit_exceeded(self, agent):
         """Check if agent exceeded rate limit."""
         # Implementation...
         return False
-    
+
     def _is_business_hours(self):
         """Check if current time is business hours."""
         from datetime import datetime
@@ -604,7 +604,7 @@ VIOLATION_TYPES = {
     "missing_parameter": "Required parameter missing",
     "invalid_result": "Result structure invalid",
     "invalid_metric": "Resource metric invalid",
-    
+
     # Custom types
     "rate_limit_exceeded": "Rate limit exceeded",
     "outside_business_hours": "Outside business hours",
@@ -714,8 +714,137 @@ print(f"Validation took {elapsed*1000:.2f}ms")
 9. **Warn on post-execution** (action already done)
 10. **Make approval thresholds configurable** (tune per environment)
 
+## Chaos Testing & Safe Production Testing
+
+### Dry-Run Mode
+
+ApplyLens supports dry-run mode for testing agent actions safely in production without executing actual changes:
+
+**Configuration:**
+```python
+from app.agents.executor import Executor
+
+# Enable dry-run mode
+executor = Executor(dry_run=True)
+
+# Execute actions (no mutations)
+result = executor.execute(agent="inbox_triage", action="quarantine", context={...})
+
+# Result includes what would have happened
+{
+  "dry_run": true,
+  "would_execute": {
+    "agent": "inbox_triage",
+    "action": "quarantine",
+    "email_id": "123"
+  },
+  "estimated_impact": "Email 123 would be quarantined"
+}
+```
+
+**Use Cases:**
+- Testing new agent behaviors in production
+- Validating policy changes before enforcement
+- Training and demonstration
+- Compliance audits
+
+### Chaos Engineering for Resilience Testing
+
+ApplyLens includes chaos engineering capabilities to validate system resilience:
+
+**Chaos Types:**
+- **API Outage**: Simulate external API failures (503, 500 errors)
+- **High Latency**: Inject artificial delays (slow database, network congestion)
+- **Rate Limiting**: Simulate API rate limits (429 errors)
+- **Database Errors**: Connection pool exhaustion, network partitions
+- **Timeout**: Request timeout simulation
+
+**Example:**
+```python
+from app.chaos.injector import chaos_injector, ChaosType
+
+# Enable chaos for testing (NEVER in production!)
+chaos_injector.enable_experiment_mode()
+
+try:
+    # Inject API outage with 30% probability
+    with chaos_injector.inject(ChaosType.API_OUTAGE, probability=0.3):
+        result = external_api_call()
+except ChaosException:
+    result = fallback_handler()
+finally:
+    chaos_injector.disable_experiment_mode()
+```
+
+**Safety Principles:**
+1. **NEVER enable chaos in production** - Only use in dev/staging
+2. **Start small** - Low probability (10%), short duration (5 min)
+3. **Increase gradually** - Build confidence over weeks
+4. **Monitor SLOs** - Error rate <2%, P95 latency within targets
+5. **Automated recovery** - System must self-heal without intervention
+
+**Scheduled Chaos Testing:**
+- Weekly automated runs on Sundays at 2 AM UTC
+- Staging environment only
+- 10-minute duration testing all chaos types
+- Alerts on Slack #chaos-engineering if SLO violations occur
+
+For detailed chaos engineering procedures, see the full Chaos Engineering Guide in `docs/CHAOS_TESTING.md`.
+
+### Rollback Procedures
+
+When guardrail violations or unexpected behavior occurs, use rollback procedures:
+
+**Automatic Rollback Triggers:**
+- Error rate >5% for 5 minutes
+- P95 latency >3x SLO target
+- Circuit breaker tripped on critical service
+- Multiple approval requirement violations
+
+**Manual Rollback:**
+```bash
+# Revert to previous deployment
+./scripts/rollback.sh
+
+# Or specific version
+./scripts/rollback.sh v1.2.3
+```
+
+**Testing Rollback:**
+Use chaos testing to validate rollback procedures work under failure conditions.
+
+### Safe In-Production Testing Guidelines
+
+**E2E Testing on Production:**
+1. Use dedicated test accounts with minimal privileges
+2. Tag tests with `@prodSafe` (read-only) vs `@devOnly` (mutations)
+3. Implement network guards to block mutations
+4. Use manual triggers only (never automatic)
+5. Run during low-traffic periods
+6. Monitor for test account activity in audit logs
+
+**Production Guard Example:**
+```typescript
+// Block all mutations except specific allowlist
+if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
+  return route.continue();
+}
+
+// Allow specific safe endpoints
+if (method === "POST" && /\/api\/ux\/(heartbeat|beacon)$/.test(url)) {
+  return route.continue();
+}
+
+// Block all other mutations
+return route.abort('failed');
+```
+
+For detailed production testing procedures, see the Production-Safe Testing Guide in `docs/production-safe-testing.md`.
+
 ## See Also
 
 - [Policy Management Runbook](./POLICY_MANAGEMENT.md)
 - [Approval Workflows Runbook](./APPROVAL_WORKFLOWS.md)
 - [Phase 4 Troubleshooting](./PHASE4_TROUBLESHOOTING.md)
+- [Chaos Engineering Guide](../CHAOS_TESTING.md)
+- [Production-Safe Testing Guide](../production-safe-testing.md)

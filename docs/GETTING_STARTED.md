@@ -212,6 +212,68 @@ curl http://localhost:9200/_cluster/health
 - [Testing](./TESTING.md) - Run and write tests
 - [Gmail Setup](./GMAIL_SETUP.md) - Configure email sync
 
+---
+
+## Quick Start (One Command)
+
+For rapid development, start all services with one command:
+
+```powershell
+# Start backend services and frontend
+cd d:/ApplyLens/infra && docker compose up -d && cd ../apps/web && npm run dev
+```
+
+**This will start:**
+- ✅ API (FastAPI) - Port 8003
+- ✅ Database (PostgreSQL) - Port 5433
+- ✅ Elasticsearch - Port 9200
+- ✅ Ollama (LLM) - Port 11434
+- ✅ Web UI (Vite) - Port 5175
+
+**Access:** <http://localhost:5175>
+
+### Check Service Status
+
+```powershell
+# Backend services
+cd d:/ApplyLens/infra
+docker compose ps
+
+# Frontend
+Get-Process -Name node -ErrorAction SilentlyContinue
+```
+
+### Health Checks
+
+```powershell
+# API
+curl http://localhost:8003/docs
+
+# Database
+docker compose exec db pg_isready -U applylens
+
+# Elasticsearch
+curl http://localhost:9200/_cluster/health
+
+# Frontend
+curl http://localhost:5175
+```
+
+### Stop All Services
+
+```powershell
+# Stop backend
+cd d:/ApplyLens/infra
+docker compose down
+
+# Stop frontend (Ctrl+C in terminal or)
+taskkill /F /IM node.exe
+```
+
+For detailed service management, see [RUN_FULL_STACK.md](./RUN_FULL_STACK.md).
+
+---
+
 ## Support
 
 For issues and questions:

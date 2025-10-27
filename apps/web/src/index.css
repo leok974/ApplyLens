@@ -256,29 +256,87 @@ html.dark ::-webkit-scrollbar-thumb {
     @apply py-2 md:py-3;
   }
 
-  /* Filter pill - interactive category/label filters */
+  /* Base filter pill - neutral toggles for panels (reply status, generic toggles) */
   .filter-pill {
-    @apply rounded-full border px-3 py-1 text-sm font-medium cursor-pointer transition-colors;
-    @apply border-zinc-300/60 bg-zinc-100/80 text-zinc-700;
+    @apply inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium
+           transition-colors select-none cursor-pointer;
+    /* default / inactive state on dark-ish panel */
+    @apply bg-zinc-800/80 border-zinc-600/70 text-zinc-100;
   }
 
-  .filter-pill:hover {
-    @apply bg-zinc-200/80 border-zinc-400/60;
+  .light .filter-pill {
+    /* you're in light mode BUT the panel bg is still dark navy.
+       So we STILL treat it like 'dark surface' for contrast */
+    @apply bg-zinc-800/80 border-zinc-600/70 text-zinc-100;
   }
 
   .filter-pill-active {
-    @apply border-emerald-500/60 bg-emerald-100/80 text-emerald-700 font-semibold;
+    /* active/selected state = brighter ring + slightly lighter fill */
+    @apply bg-zinc-700 border-zinc-400 text-white shadow-[0_0_6px_rgba(255,255,255,0.4)];
   }
 
-  .dark .filter-pill {
-    @apply border-zinc-500/40 bg-zinc-800/50 text-zinc-100;
+  .light .filter-pill-active {
+    @apply bg-zinc-700 border-zinc-300 text-white shadow-[0_0_6px_rgba(255,255,255,0.4)];
   }
 
-  .dark .filter-pill:hover {
-    @apply bg-zinc-700/70 border-zinc-400/50;
+  /* Semantic pills (Offer / Interview / Rejection) - category chips that need to pop */
+  .filter-pill-offer {
+    @apply bg-amber-500/20 border-amber-400/60 text-amber-200;
   }
 
-  .dark .filter-pill-active {
-    @apply border-emerald-400/60 bg-emerald-400/20 text-emerald-200 font-semibold;
+  .light .filter-pill-offer {
+    @apply bg-amber-500/25 border-amber-400 text-amber-100;
+  }
+
+  .filter-pill-interview {
+    @apply bg-emerald-500/20 border-emerald-400/60 text-emerald-200;
+  }
+
+  .light .filter-pill-interview {
+    @apply bg-emerald-500/25 border-emerald-400 text-emerald-100;
+  }
+
+  .filter-pill-rejection {
+    @apply bg-red-500/20 border-red-400/60 text-red-200;
+  }
+
+  .light .filter-pill-rejection {
+    @apply bg-red-500/25 border-red-400 text-red-100;
+  }
+
+  /* When semantic pill is active/selected, punch it harder */
+  .filter-pill-semantic-active {
+    @apply brightness-125 ring-1 ring-white/40;
+  }
+
+  /* Global select field styling - theme-aware for light/dark modes */
+  select,
+  .select-field {
+    @apply rounded-md border px-3 py-1.5 text-sm font-medium cursor-pointer transition-colors;
+    /* Light mode default: light control on light backgrounds */
+    @apply bg-zinc-100 border-zinc-300 text-zinc-800;
+  }
+
+  /* Dark mode override: dark control on dark backgrounds */
+  .dark select,
+  .dark .select-field {
+    @apply bg-zinc-800/90 border-zinc-600/70 text-zinc-100;
+  }
+
+  /* Focus states */
+  select:focus,
+  .select-field:focus {
+    @apply outline-none ring-2 ring-emerald-500/50;
+  }
+
+  /* Options dropdown list styling */
+  select option,
+  .select-field option {
+    @apply bg-zinc-100 text-zinc-800;
+  }
+
+  .dark select option,
+  .dark .select-field option {
+    @apply bg-zinc-900 text-zinc-100;
   }
 }

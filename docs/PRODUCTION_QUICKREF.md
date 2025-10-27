@@ -1,10 +1,41 @@
 # ApplyLens Production Quick Reference
 
+## 🚀 Current Production Status
+
+**Version:** v0.4.1
+**Git SHA:** 461336d
+**Deployed:** 2025-10-23
+
+**Image Digests (Immutable):**
+```
+API: leoklemet/applylens-api@sha256:99a07206dfb3987c7c8f3775af0f61a405b298d4db54c9877ac567528ab1bc7a
+Web: leoklemet/applylens-web@sha256:f069ea49758048488766ee191b423b27bb4d8c02920084d0154aca560772d61e
+```
+
 ## 🚀 Essential Commands
 
-### Deploy / Update
+### Build New Version (Development)
+```powershell
+# Build and tag both services
+.\scripts\build-and-tag.ps1 -Version "v0.4.2"
+
+# Build, tag, and push to registry
+.\scripts\build-and-tag.ps1 -Version "v0.4.2" -Push
+```
+
+### Deploy / Update (Production)
 ```bash
 cd /opt/applylens && git pull && docker compose -f docker-compose.prod.yml --env-file infra/.env.prod up -d --build
+```
+
+### Quick Deploy (Force Recreate)
+```powershell
+docker-compose -f docker-compose.prod.yml up -d --force-recreate api web
+```
+
+### Rollback (30 seconds)
+```powershell
+.\scripts\rollback.ps1 -Version "v0.4.0"
 ```
 
 ### Health Check (One-Liner)
@@ -12,9 +43,22 @@ cd /opt/applylens && git pull && docker compose -f docker-compose.prod.yml --env
 curl -fsSL https://applylens.app/api/healthz && echo "✓" || echo "✗"
 ```
 
+### Verify Services
+```powershell
+curl http://localhost:8003/healthz  # API
+curl http://localhost:5175/          # Web
+```
+
 ### View Logs (Live)
 ```bash
 cd /opt/applylens && docker compose -f docker-compose.prod.yml logs -f
+```
+
+### Monitor Containers
+```powershell
+docker ps --filter "name=applylens-" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+docker logs applylens-api-prod --tail 50
+docker logs applylens-web-prod --tail 50
 ```
 
 ### Restart Everything

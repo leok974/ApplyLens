@@ -16,6 +16,7 @@ import { toMarkedHTML } from '@/lib/highlight'
 import { useSearchModel } from '../hooks/useSearchModel'
 import { mapHit } from '@/lib/searchMap'
 import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 // Default filter values to reset to
 const DEFAULT_FILTERS = {
@@ -310,9 +311,10 @@ export default function Search() {
                 // Trigger search after filter change
                 setTimeout(() => runSearch(), 0)
               }}
-              className={`filter-pill capitalize ${
-                filters.categories?.[cat] ? 'filter-pill-active' : ''
-              }`}
+              className={cn(
+                "filter-pill capitalize",
+                filters.categories?.[cat] && "filter-pill-active"
+              )}
               data-testid={`filter-${cat}`}
             >
               {cat}
@@ -326,9 +328,10 @@ export default function Search() {
                 setFilters(f => ({ ...f, hideExpired: !f.hideExpired }))
                 setTimeout(() => runSearch(), 0)
               }}
-              className={`filter-pill ${
-                filters.hideExpired ? 'filter-pill-active' : ''
-              }`}
+              className={cn(
+                "filter-pill",
+                filters.hideExpired && "filter-pill-active"
+              )}
               data-testid="filter-hide-expired"
             >
               {filters.hideExpired ? "✓ Hide expired" : "Hide expired"}

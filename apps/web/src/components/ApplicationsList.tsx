@@ -3,7 +3,7 @@ import { listApplicationsPaged, type ApplicationRow, type AppsSort, type AppsOrd
 
 /**
  * ApplicationsList - Paginated applications list with Load More
- * 
+ *
  * Uses the new /api/applications endpoint with cursor-based pagination
  * and sorting support.
  */
@@ -50,7 +50,6 @@ export default function ApplicationsList() {
           <select
             value={sort}
             onChange={e => setSort(e.target.value as AppsSort)}
-            className="border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="updated_at">Updated</option>
             <option value="applied_at">Applied</option>
@@ -64,7 +63,6 @@ export default function ApplicationsList() {
           <select
             value={order}
             onChange={e => setOrder(e.target.value as AppsOrder)}
-            className="border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="desc">Descending</option>
             <option value="asc">Ascending</option>
@@ -76,7 +74,6 @@ export default function ApplicationsList() {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All</option>
             <option value="applied">Applied</option>
@@ -156,7 +153,7 @@ export default function ApplicationsList() {
         >
           {loading ? "Loading…" : cursor ? "Load more" : "No more results"}
         </button>
-        
+
         {cursor && !loading && (
           <span className="text-sm text-gray-500">
             Showing {rows.length} {total !== null ? `of ${total}` : ''}

@@ -1,4 +1,5 @@
 import { sortLabelsByImpact, labelTitle } from "../lib/searchScoring";
+import { cn } from "@/lib/utils";
 
 const ALL = ["offer", "interview", "rejection"] as const;
 type L = (typeof ALL)[number];
@@ -31,14 +32,13 @@ export function LabelFilterChips({
             type="button"
             onClick={() => toggle(l)}
             data-testid={`filter-label-${l}`}
-            className={
-              "inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 transition " +
-              (l === "offer"
-                ? "ring-yellow-300 " + (active ? "bg-yellow-200" : "bg-yellow-100")
-                : l === "interview"
-                ? "ring-green-300 " + (active ? "bg-green-200" : "bg-green-100")
-                : "ring-gray-300 " + (active ? "bg-gray-200" : "bg-gray-100"))
-            }
+            className={cn(
+              "filter-pill",
+              l === "offer" && "filter-pill-offer",
+              l === "interview" && "filter-pill-interview",
+              l === "rejection" && "filter-pill-rejection",
+              active && "filter-pill-semantic-active"
+            )}
             title={labelTitle(l)}
           >
             {labelTitle(l)}

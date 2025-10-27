@@ -10,9 +10,9 @@ import { installGlobalReloadGuard } from './lib/reload-guard'
 
 // Version banner for debugging
 console.info(
-  '%c🔍 ApplyLens Web v0.4.62%c\n' +
-  'Build: 2025-10-27\n' +
-  'Features: Filter pills + working category filters',
+  '%c🔍 ApplyLens Web v0.4.64%c\n' +
+  'Build: 2025-01-27\n' +
+  'Features: Theme-aware select fields for light/dark modes',
   'color: #10b981; font-weight: bold; font-size: 14px;',
   'color: #6b7280; font-size: 11px;'
 )

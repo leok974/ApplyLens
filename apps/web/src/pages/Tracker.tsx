@@ -217,7 +217,6 @@ export default function Tracker() {
           Search
         </button>
         <select
-          className="border rounded px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as AppStatus | '')}
           data-testid="tracker-status-filter"
@@ -266,7 +265,6 @@ export default function Tracker() {
                     <StatusChip status={r.status} />
                     <select
                       aria-label={`Change status for ${r.company}`}
-                      className="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
                       value={r.status}
                       data-testid={`status-select-${r.id}`}
                       onChange={(e) => updateRow(r.id, { status: e.target.value as AppStatus }, r)}
