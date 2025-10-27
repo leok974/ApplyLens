@@ -18,7 +18,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { ActionsTray } from "@/components/ActionsTray"
 import { fetchTray } from "@/lib/actionsClient"
 import { Sparkles, LogOut, User, ShieldCheck, X } from "lucide-react"
-import { logout, getCurrentUser, type User as UserType } from "@/api/auth"
+import { logout, getCurrentUser, fetchAndCacheCurrentUser, type User as UserType } from "@/api/auth"
 import { cn } from "@/lib/utils"
 import { useJobPoller } from "@/hooks/useJobPoller"
 
@@ -38,11 +38,20 @@ export function AppHeader() {
 
   // Load user info
   useEffect(() => {
-    getCurrentUser()
-      .then(setUser)
-      .catch(() => {
-        // Not authenticated, ignore
-      })
+    // Try cached first (fast path)
+    const cached = getCurrentUser()
+    if (cached) {
+      setUser(cached)
+      return
+    }
+
+    // Fallback: fetch from API and cache it
+    (async () => {
+      const fresh = await fetchAndCacheCurrentUser()
+      if (fresh) {
+        setUser(fresh)
+      }
+    })()
   }, [])
 
   // Poll for pending actions count
@@ -214,14 +223,15 @@ export function AppHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
-      <div className="mx-auto max-w-7xl px-3 sm:px-4">
-        <div className="flex h-16 items-center gap-4">
-          {/* BRAND — never shrink, bigger logo, tight tracking */}
-          <Link
-            to="/"
-            className="group flex items-center gap-3 shrink-0 select-none"
-            data-testid="header-brand"
+    <>
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4">
+          <div className="flex h-16 items-center gap-4">
+            {/* BRAND — never shrink, bigger logo, tight tracking */}
+            <Link
+              to="/"
+              className="group flex items-center gap-3 shrink-0 select-none"
+              data-testid="header-brand"
             aria-label="ApplyLens Home"
           >
             <img
@@ -429,10 +439,11 @@ export function AppHeader() {
           </div>
         </div>
       </div>
-
-      {/* Actions Tray */}
-      <ActionsTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} />
     </header>
+
+    {/* Actions Tray - Rendered outside header as fixed overlay */}
+    <ActionsTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} />
+  </>
   )
 }
 

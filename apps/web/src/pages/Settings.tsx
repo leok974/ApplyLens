@@ -9,19 +9,30 @@ import { ProfileMetrics } from '../components/ProfileMetrics'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { logoutUser } from '@/lib/api'
-import { getCurrentUser, type User } from '@/api/auth'
+import { getCurrentUser, fetchAndCacheCurrentUser } from '@/api/auth'
 
 export default function Settings() {
   const [scale, setScale] = useState<RecencyScale>(getRecencyScale())
-  const [user, setUser] = useState<User | null>(null)
+  const [accountEmail, setAccountEmail] = useState<string | null>(null)
 
-  // Load user info
+  // Load user email
   useEffect(() => {
-    getCurrentUser()
-      .then(setUser)
-      .catch(() => {
-        // Not authenticated, ignore
-      })
+    // Try cached first (fast path)
+    const cached = getCurrentUser()
+    if (cached?.email) {
+      setAccountEmail(cached.email)
+      return
+    }
+
+    // Fallback: fetch from API and cache it
+    (async () => {
+      const fresh = await fetchAndCacheCurrentUser()
+      if (fresh?.email) {
+        setAccountEmail(fresh.email)
+      } else {
+        setAccountEmail(null)
+      }
+    })()
   }, [])
 
   function onChangeScale(value: RecencyScale) {
@@ -48,7 +59,7 @@ export default function Settings() {
             </div>
             <div className="flex flex-col leading-tight">
               <span className="text-zinc-300">Signed in as</span>
-              <span className="text-white font-medium break-all">{user?.email ?? "Unknown user"}</span>
+              <span className="text-white font-medium break-all">{accountEmail ?? "Loading..."}</span>
             </div>
           </div>
 

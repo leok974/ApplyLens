@@ -27,6 +27,53 @@ export interface AuthStatusResponse {
 let cachedUser: User | null = null;
 
 /**
+ * Get cached user (synchronous, no API call)
+ * Returns null if user not yet fetched
+ */
+export function getCurrentUser(): User | null {
+  return cachedUser;
+}
+
+/**
+ * Clear cached user data
+ * Call this before logout to prevent stale user info from being displayed
+ */
+export function clearCurrentUser(): void {
+  cachedUser = null;
+  // Clear any localStorage if we use it in the future
+  // localStorage.removeItem('user');
+}
+
+/**
+ * Fetch current user from API and cache the result
+ * Use this in components that need to ensure user data is loaded
+ */
+export async function fetchAndCacheCurrentUser(): Promise<User | null> {
+  // Return cached user if already available
+  if (cachedUser?.email) {
+    return cachedUser;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/auth/me`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      return cachedUser;
+    }
+
+    const data = await response.json();
+    cachedUser = data;
+    return cachedUser;
+  } catch (error) {
+    console.error("Failed to fetch current user:", error);
+    return cachedUser;
+  }
+}
+
+/**
  * Start a demo session
  */
 export async function startDemo(): Promise<SessionResponse> {
@@ -55,36 +102,6 @@ export async function logout(): Promise<void> {
   await api("/auth/logout", {
     method: "POST",
   });
-}
-
-/**
- * Get current user info
- */
-export async function getCurrentUser(): Promise<User> {
-  // Return cached user if available
-  if (cachedUser) {
-    return cachedUser;
-  }
-
-  const response = await api("/auth/me");
-
-  if (!response.ok) {
-    throw new Error("Not authenticated");
-  }
-
-  const user = await response.json();
-  cachedUser = user; // Cache the user
-  return user;
-}
-
-/**
- * Clear cached user data
- * Call this before logout to prevent stale user info from being displayed
- */
-export function clearCurrentUser(): void {
-  cachedUser = null;
-  // Clear any localStorage if we use it in the future
-  // localStorage.removeItem('user');
 }
 
 /**
