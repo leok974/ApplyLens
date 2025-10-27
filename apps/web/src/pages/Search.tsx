@@ -612,6 +612,8 @@ export default function Search() {
         goPrev={thread.goPrev}
         goNext={thread.goNext}
         advanceAfterAction={thread.advanceAfterAction}
+        items={thread.items}
+        selectedIndex={thread.selectedIndex}
       />
     </div>
   )

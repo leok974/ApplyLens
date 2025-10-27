@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { X, ExternalLink, Shield, Archive, AlertTriangle, RefreshCw } from 'lucide-react';
 import { fetchThreadDetail, fetchThreadAnalysis, MessageDetail } from '../lib/api';
 import { ThreadRiskAnalysis } from '../types/thread';
+import { ThreadViewerItem } from '../hooks/useThreadViewer';
 import { safeFormatDate } from '../lib/date';
 import { Badge } from './ui/badge';
 import { cn } from '../lib/utils';
 import { RiskAnalysisSection } from './RiskAnalysisSection';
 import { ThreadActionBar } from './ThreadActionBar';
+import { toast } from 'sonner';
 
 export interface ThreadViewerProps {
   emailId: string | null;
@@ -17,6 +19,10 @@ export interface ThreadViewerProps {
   goPrev: () => void;
   goNext: () => void;
   advanceAfterAction: () => void;
+
+  // NEW for Phase 2.5 progress tracking:
+  items?: ThreadViewerItem[];
+  selectedIndex?: number | null;
 
   onArchive?: (id: string) => void;
   onMarkSafe?: (id: string) => void;
@@ -30,6 +36,8 @@ export function ThreadViewer({
   goPrev,
   goNext,
   advanceAfterAction,
+  items = [],
+  selectedIndex = null,
   onArchive,
   onMarkSafe,
   onQuarantine,
@@ -71,6 +79,9 @@ export function ThreadViewer({
           : prev
       );
       // await api.post(`/messages/${threadData.message_id}/mark-safe`)  <-- future
+      toast.success('✅ Marked as safe', {
+        description: 'Email marked as safe and removed from review queue'
+      });
     } finally {
       setIsMutating(false);
     }
@@ -90,6 +101,9 @@ export function ThreadViewer({
           : prev
       );
       // await api.post(`/messages/${threadData.message_id}/quarantine`) <-- future
+      toast.warning('🔒 Quarantined', {
+        description: 'Email quarantined. Visible in Actions page.'
+      });
     } finally {
       setIsMutating(false);
     }
@@ -109,6 +123,9 @@ export function ThreadViewer({
           : prev
       );
       // await api.post(`/messages/${threadData.message_id}/archive`) <-- future
+      toast.success('📥 Archived and advanced', {
+        description: 'Email archived successfully'
+      });
     } finally {
       setIsMutating(false);
       // OPTIONAL NICE TOUCH:
@@ -260,9 +277,18 @@ export function ThreadViewer({
               {loading ? 'Loading...' : threadData?.subject || 'Email Detail'}
             </h2>
             {threadData && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {safeFormatDate(threadData.received_at)}
-              </p>
+              <>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {safeFormatDate(threadData.received_at)}
+                </p>
+                {/* Progress counter */}
+                {items.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-1 font-medium">
+                    {items.filter(i => i.archived || i.quarantined).length} of {items.length} handled
+                    {selectedIndex !== null && ` • ${selectedIndex + 1}/${items.length}`}
+                  </p>
+                )}
+              </>
             )}
           </div>
           <button

@@ -542,6 +542,8 @@ export default function InboxWithActions() {
         goPrev={thread.goPrev}
         goNext={thread.goNext}
         advanceAfterAction={thread.advanceAfterAction}
+        items={thread.items}
+        selectedIndex={thread.selectedIndex}
         onArchive={(id) => {
           const row = rows.find(r => r.message_id === id);
           if (row) handleArchive({ stopPropagation: () => {} } as React.MouseEvent, row);

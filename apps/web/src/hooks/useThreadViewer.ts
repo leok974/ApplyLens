@@ -1,12 +1,19 @@
 import { useState, useCallback } from 'react';
 
+// Item type for progress tracking
+export interface ThreadViewerItem {
+  id: string;
+  archived?: boolean;
+  quarantined?: boolean;
+}
+
 /**
  * Hook for managing thread viewer state across pages
  * Provides consistent selection and open/close behavior
  * Now with keyboard navigation support (Phase 3)
  */
-export function useThreadViewer(initialItems?: { id: string }[]) {
-  const [items, setItems] = useState<{ id: string }[]>(initialItems ?? []);
+export function useThreadViewer(initialItems?: ThreadViewerItem[]) {
+  const [items, setItems] = useState<ThreadViewerItem[]>(initialItems ?? []);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
