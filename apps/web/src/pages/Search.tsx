@@ -17,6 +17,8 @@ import { useSearchModel } from '../hooks/useSearchModel'
 import { mapHit } from '@/lib/searchMap'
 import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ThreadViewer } from '../components/ThreadViewer'
+import { useThreadViewer } from '../hooks/useThreadViewer'
 
 // Default filter values to reset to
 const DEFAULT_FILTERS = {
@@ -38,6 +40,9 @@ export default function Search() {
   const suggestionTimer = useRef<number | null>(null)
   const suggestionAbortController = useRef<AbortController | null>(null)
   const hydratedRef = useRef(false)
+
+  // Thread viewer state
+  const thread = useThreadViewer()
 
   // Debug mode for score visibility (controlled via URL: ?debugScore=1)
   const debugScore = searchParams.get('debugScore') === '1' || searchParams.get('debugScore') === 'true'
@@ -506,11 +511,13 @@ export default function Search() {
               role="article"
               aria-label={`Email: ${h.subject}`}
               className="surface-card density-x density-y transition-all hover:shadow-lg focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+              onClick={() => h.id && thread.showThread(String(h.id))}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  // Could open email detail view here
-                  console.log('Selected email:', h.id)
+                  if (h.id) {
+                    thread.showThread(String(h.id))
+                  }
                 }
               }}
             >
@@ -591,6 +598,13 @@ export default function Search() {
           })}
         </ul>
       )}
+
+      {/* Thread Viewer Drawer */}
+      <ThreadViewer
+        emailId={thread.selectedId}
+        isOpen={thread.isOpen}
+        onClose={thread.closeThread}
+      />
     </div>
   )
 }

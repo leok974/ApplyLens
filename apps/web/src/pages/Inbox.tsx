@@ -4,6 +4,8 @@ import EmailCard from '../components/EmailCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, AlertCircle } from 'lucide-react'
+import { ThreadViewer } from '../components/ThreadViewer'
+import { useThreadViewer } from '../hooks/useThreadViewer'
 
 const LABEL_FILTERS = [
   { value: '', label: 'All' },
@@ -22,6 +24,9 @@ export default function Inbox() {
   const [labelFilter, setLabelFilter] = useState('')
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+
+  // Thread viewer state
+  const thread = useThreadViewer()
 
   // Check connection status on mount
   useEffect(() => {
@@ -154,7 +159,13 @@ export default function Inbox() {
           ) : (
             <div className="space-y-3">
               {emails.map(e => (
-                <EmailCard key={e.id} e={e} />
+                <div
+                  key={e.id}
+                  onClick={() => thread.showThread(String(e.id))}
+                  className="cursor-pointer"
+                >
+                  <EmailCard e={e} />
+                </div>
               ))}
             </div>
           )}
@@ -182,6 +193,13 @@ export default function Inbox() {
             </div>
           )}
       </div>
+
+      {/* Thread Viewer Drawer */}
+      <ThreadViewer
+        emailId={thread.selectedId}
+        isOpen={thread.isOpen}
+        onClose={thread.closeThread}
+      />
     </div>
   )
 }

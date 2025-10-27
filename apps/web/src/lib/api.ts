@@ -966,6 +966,19 @@ export async function getThread(threadId: string) {
   return r.json(); // expect { messages: [{id, from, date, snippet, body_html, body_text}, ...] oldest..newest }
 }
 
+/**
+ * Unified thread viewer API - fetches message detail for ThreadViewer component
+ * Works with any message_id from Inbox, Search, Actions, etc.
+ */
+export async function fetchThreadDetail(messageId: string): Promise<MessageDetail> {
+  // Try the actions endpoint first (has most detail)
+  const r = await fetch(`/api/actions/message/${messageId}`, {
+    credentials: 'include',
+  });
+  if (!r.ok) throw new Error(`Failed to fetch thread detail: ${r.status}`);
+  return r.json();
+}
+
 // Quick Actions (dry-run mode)
 
 export type ActionResponse = {

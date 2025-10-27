@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import {
   fetchActionsInbox,
   explainMessage,
-  fetchMessageDetail,
   postArchive,
   postMarkSafe,
   postMarkSuspicious,
@@ -10,7 +9,6 @@ import {
   postRestore,
   fetchInboxSummary,
   ActionRow,
-  MessageDetail,
   InboxSummary,
 } from '../lib/api'
 import { safeFormatDate } from '../lib/date'
@@ -20,6 +18,8 @@ import { Info } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { HeaderSettingsDropdown } from './HeaderSettingsDropdown'
 import { NavTabs } from './NavTabs'
+import { ThreadViewer } from './ThreadViewer'
+import { useThreadViewer } from '../hooks/useThreadViewer'
 
 // Helper: ActionButton component
 function ActionButton({
@@ -68,12 +68,8 @@ export default function InboxWithActions() {
   const [summary, setSummary] = useState<InboxSummary | null>(null)
   const [summaryError, setSummaryError] = useState<string | null>(null)
 
-  // Drawer state
-  const [openMessageId, setOpenMessageId] = useState<string | null>(null)
-  const [messageDetail, setMessageDetail] = useState<
-    Record<string, MessageDetail>
-  >({})
-  const [detailLoading, setDetailLoading] = useState<boolean>(false)
+  // Thread viewer state (replaces old drawer state)
+  const thread = useThreadViewer()
 
   const loadInbox = async (mode: 'review' | 'quarantined' | 'archived' = viewMode) => {
     setLoading(true)
@@ -117,11 +113,12 @@ export default function InboxWithActions() {
     setViewMode(mode)
     await loadInbox(mode)
     // If currently open message is no longer in this mode, close the detail panel
-    setOpenMessageId(prev => {
-      if (!prev) return prev
-      const stillThere = rows.find(r => r.message_id === prev)
-      return stillThere ? prev : null
-    })
+    if (thread.selectedId) {
+      const stillThere = rows.find(r => r.message_id === thread.selectedId)
+      if (!stillThere) {
+        thread.closeThread()
+      }
+    }
   }
 
   // Helper: set row busy state
@@ -129,22 +126,9 @@ export default function InboxWithActions() {
     setRowLoading(prev => ({ ...prev, [id]: busy }))
   }
 
-  // Handle opening message drawer
-  const handleOpenMessage = async (message_id: string) => {
-    setOpenMessageId(message_id)
-
-    // Fetch detail if not already loaded
-    if (!messageDetail[message_id]) {
-      setDetailLoading(true)
-      try {
-        const detail = await fetchMessageDetail(message_id)
-        setMessageDetail(prev => ({ ...prev, [message_id]: detail }))
-      } catch (err) {
-        setError('Failed to load message detail: ' + String(err))
-      } finally {
-        setDetailLoading(false)
-      }
-    }
+  // Handle opening message drawer - now uses shared ThreadViewer
+  const handleOpenMessage = (message_id: string) => {
+    thread.showThread(message_id)
   }
 
   // Handle explain action (toggle)
@@ -180,7 +164,7 @@ export default function InboxWithActions() {
       const res = await postArchive(row.message_id)
       if (res.ok) {
         setRows(prev => prev.filter(r => r.message_id !== row.message_id))
-        if (openMessageId === row.message_id) setOpenMessageId(null)
+        if (thread.selectedId === row.message_id) thread.closeThread()
       }
     } catch (err) {
       setError('Archive failed: ' + String(err))
@@ -198,7 +182,7 @@ export default function InboxWithActions() {
       if (res.ok) {
         // Mark Safe moves item to Archived - remove from current view
         setRows(prev => prev.filter(r => r.message_id !== row.message_id))
-        if (openMessageId === row.message_id) setOpenMessageId(null)
+        if (thread.selectedId === row.message_id) thread.closeThread()
       }
     } catch (err) {
       setError('Mark safe failed: ' + String(err))
@@ -219,7 +203,7 @@ export default function InboxWithActions() {
       if (res.ok) {
         // Mark Suspicious moves item to Quarantined - remove from current view
         setRows(prev => prev.filter(r => r.message_id !== row.message_id))
-        if (openMessageId === row.message_id) setOpenMessageId(null)
+        if (thread.selectedId === row.message_id) thread.closeThread()
       }
     } catch (err) {
       setError('Mark suspicious failed: ' + String(err))
@@ -237,7 +221,7 @@ export default function InboxWithActions() {
       if (res.ok) {
         // treat unsubscribe same as archive: remove from actionable list
         setRows(prev => prev.filter(r => r.message_id !== row.message_id))
-        if (openMessageId === row.message_id) setOpenMessageId(null)
+        if (thread.selectedId === row.message_id) thread.closeThread()
       }
     } catch (err) {
       setError('Unsubscribe failed: ' + String(err))
@@ -255,7 +239,7 @@ export default function InboxWithActions() {
       if (res.ok) {
         // Remove from current view (Quarantined or Archived)
         setRows(prev => prev.filter(r => r.message_id !== row.message_id))
-        if (openMessageId === row.message_id) setOpenMessageId(null)
+        if (thread.selectedId === row.message_id) thread.closeThread()
       }
     } catch (err) {
       setError('Restore failed: ' + String(err))
@@ -331,86 +315,6 @@ export default function InboxWithActions() {
   }
 
   // Render detail pane
-  function renderDetailPane() {
-    if (!openMessageId) {
-      return (
-        <div className="text-sm text-muted-foreground border border-border rounded-lg p-4">
-          Select an email to see details.
-        </div>
-      )
-    }
-
-    const detail = messageDetail[openMessageId]
-    const loading = detailLoading && !detail
-
-    return (
-      <div className="border border-border rounded-lg bg-card text-card-foreground flex flex-col max-h-[80vh]">
-        <div className="p-4 border-b border-border flex flex-col gap-2">
-          <div className="text-sm font-semibold">Email Detail</div>
-          {loading && (
-            <div className="text-xs text-muted-foreground">Loading…</div>
-          )}
-          {!loading && detail && (
-            <>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>
-                  <span className="font-medium">From:</span>{' '}
-                  {detail.from_name} &lt;{detail.from_email}&gt;
-                </div>
-                <div>
-                  <span className="font-medium">To:</span> {detail.to_email}
-                </div>
-                <div>
-                  <span className="font-medium">Subject:</span>{' '}
-                  {detail.subject}
-                </div>
-                <div>
-                  <span className="font-medium">Date:</span>{' '}
-                  {safeFormatDate(detail.received_at)}
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                {detail.category && (
-                  <Badge variant="secondary">{detail.category}</Badge>
-                )}
-                {typeof detail.risk_score === 'number' && (
-                  <Badge variant="outline">Risk: {detail.risk_score}</Badge>
-                )}
-                {detail.quarantined && (
-                  <Badge variant="destructive">Quarantined</Badge>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 text-xs leading-relaxed bg-background/40">
-          {loading && (
-            <div className="text-muted-foreground">Loading…</div>
-          )}
-          {!loading && detail && (
-            <>
-              {detail.html_body ? (
-                <div
-                  className="prose prose-invert max-w-none text-sm"
-                  dangerouslySetInnerHTML={{ __html: detail.html_body }}
-                />
-              ) : (
-                <pre className="whitespace-pre-wrap text-sm bg-muted/10 p-3 rounded border border-border">
-                  {detail.text_body}
-                </pre>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-border flex flex-wrap gap-2 text-xs">
-          {renderActionButtonsFor(openMessageId)}
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
       <header className="mb-6 flex items-start justify-between px-4 pt-4 pb-2 border-b border-border/50 bg-background/60 backdrop-blur-xl rounded-t-lg">
@@ -543,7 +447,7 @@ export default function InboxWithActions() {
                         onClick={() => handleOpenMessage(row.message_id)}
                         className={cn(
                           'cursor-pointer hover:bg-muted/20 border-b border-border',
-                          openMessageId === row.message_id &&
+                          thread.selectedId === row.message_id &&
                             'bg-muted/30 ring-1 ring-border'
                         )}
                       >
@@ -613,9 +517,6 @@ export default function InboxWithActions() {
               {rows.length} actionable email{rows.length !== 1 ? 's' : ''}
             </div>
           </div>
-
-          {/* Right: Detail pane */}
-          <aside className="w-[380px] shrink-0">{renderDetailPane()}</aside>
         </div>
       )}
 
@@ -632,6 +533,25 @@ export default function InboxWithActions() {
         <span className="font-semibold">Archived</span>: Messages you've handled
         (archived, marked safe, or muted). We won't bug you about them again.
       </div>
+
+      {/* Thread Viewer Drawer */}
+      <ThreadViewer
+        emailId={thread.selectedId}
+        isOpen={thread.isOpen}
+        onClose={thread.closeThread}
+        onArchive={(id) => {
+          const row = rows.find(r => r.message_id === id);
+          if (row) handleArchive({ stopPropagation: () => {} } as React.MouseEvent, row);
+        }}
+        onMarkSafe={(id) => {
+          const row = rows.find(r => r.message_id === id);
+          if (row) handleMarkSafe({ stopPropagation: () => {} } as React.MouseEvent, row);
+        }}
+        onQuarantine={(id) => {
+          const row = rows.find(r => r.message_id === id);
+          if (row) handleMarkSuspicious({ stopPropagation: () => {} } as React.MouseEvent, row);
+        }}
+      />
     </div>
   )
 }
