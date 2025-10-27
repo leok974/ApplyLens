@@ -23,6 +23,9 @@ export interface AuthStatusResponse {
   user?: User;
 }
 
+// In-memory cache for current user (to prevent flashing stale data after logout)
+let cachedUser: User | null = null;
+
 /**
  * Start a demo session
  */
@@ -58,13 +61,30 @@ export async function logout(): Promise<void> {
  * Get current user info
  */
 export async function getCurrentUser(): Promise<User> {
+  // Return cached user if available
+  if (cachedUser) {
+    return cachedUser;
+  }
+
   const response = await api("/auth/me");
 
   if (!response.ok) {
     throw new Error("Not authenticated");
   }
 
-  return response.json();
+  const user = await response.json();
+  cachedUser = user; // Cache the user
+  return user;
+}
+
+/**
+ * Clear cached user data
+ * Call this before logout to prevent stale user info from being displayed
+ */
+export function clearCurrentUser(): void {
+  cachedUser = null;
+  // Clear any localStorage if we use it in the future
+  // localStorage.removeItem('user');
 }
 
 /**

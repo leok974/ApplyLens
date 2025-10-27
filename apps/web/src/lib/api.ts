@@ -1,5 +1,6 @@
 import { API_BASE } from './apiBase'
 import { apiUrl } from './apiUrl'
+import { clearCurrentUser } from '@/api/auth'
 
 // Helper to get CSRF token from cookie
 function getCsrfToken(): string | null {
@@ -1327,9 +1328,8 @@ export async function logoutUser(): Promise<void> {
     // swallow; we still clear local state
   }
 
-  // Clear any locally stored auth/session data so UI behaves logged-out.
-  // (For now: remove any tokens or cached session keys if we store them.
-  // If we don't store anything client-side, leave this empty.)
+  // Clear cached user data to prevent stale UI after logout
+  clearCurrentUser();
 
   // Finally, navigate user back to "/" or a login screen.
   window.location.href = "/";
