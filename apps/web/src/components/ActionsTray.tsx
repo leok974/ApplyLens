@@ -164,11 +164,11 @@ export function ActionsTray({ isOpen, onClose }: ActionsTrayProps) {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - Click to close */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 pointer-events-auto"
+        className="fixed inset-0 bg-black/50 z-40 cursor-pointer"
         onClick={onClose}
-        aria-hidden={false}
+        aria-label="Close actions tray"
       />
 
       {/* Tray */}

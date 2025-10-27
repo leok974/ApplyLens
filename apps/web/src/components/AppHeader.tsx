@@ -369,12 +369,9 @@ export function AppHeader() {
               <Sparkles className="h-4 w-4 mr-1" />
               Actions
               {pendingCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="ml-2 px-1.5 py-0 text-xs h-5 min-w-5"
-                >
+                <span className="ml-2 rounded-full bg-red-600 text-white text-[10px] px-1.5 py-[2px] leading-none">
                   {pendingCount}
-                </Badge>
+                </span>
               )}
             </Button>
 
