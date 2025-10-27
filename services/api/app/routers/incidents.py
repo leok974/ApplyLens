@@ -12,6 +12,7 @@ Endpoints:
 - POST /incidents/:id/resolve - Mark as resolved
 - POST /incidents/:id/close - Close incident
 """
+
 import logging
 import asyncio
 from datetime import datetime
@@ -21,28 +22,32 @@ from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
+from sqlalchemy import desc
 from pydantic import BaseModel, Field
 
 from app.db import get_db
-from app.models_incident import Incident, IncidentAction
+from app.models_incident import Incident
 
 logger = logging.getLogger(__name__)
 
 # Import SSE helpers (optional - graceful if not available)
 try:
     from app.routers.sse import publish_incident_updated
+
     SSE_AVAILABLE = True
 except ImportError:
     logger.warning("SSE module not available - events will not be published")
     SSE_AVAILABLE = False
+
     async def publish_incident_updated(*args, **kwargs):
         pass
 
-router = APIRouter(prefix="/api/incidents", tags=["incidents"])
+
+router = APIRouter(prefix="/incidents", tags=["incidents"])
 
 
 # === Pydantic Models ===
+
 
 class IncidentStatus(str, Enum):
     OPEN = "open"
@@ -113,6 +118,7 @@ class StateTransitionRequest(BaseModel):
 
 # === Endpoints ===
 
+
 @router.get("", response_model=IncidentListResponse)
 def list_incidents(
     status: Optional[str] = Query(None),
@@ -125,7 +131,7 @@ def list_incidents(
 ):
     """
     List incidents with optional filters.
-    
+
     Query params:
     - status: Filter by status (open, acknowledged, etc.)
     - severity: Filter by severity (sev1-sev4)
@@ -135,7 +141,7 @@ def list_incidents(
     - per_page: Results per page
     """
     query = db.query(Incident)
-    
+
     # Apply filters
     if status:
         query = query.filter(Incident.status == status)
@@ -145,20 +151,16 @@ def list_incidents(
         query = query.filter(Incident.kind == kind)
     if assigned_to:
         query = query.filter(Incident.assigned_to == assigned_to)
-    
+
     # Count total
     total = query.count()
-    
+
     # Paginate
     offset = (page - 1) * per_page
     incidents = (
-        query
-        .order_by(desc(Incident.created_at))
-        .offset(offset)
-        .limit(per_page)
-        .all()
+        query.order_by(desc(Incident.created_at)).offset(offset).limit(per_page).all()
     )
-    
+
     return IncidentListResponse(
         incidents=[IncidentResponse(**inc.to_dict()) for inc in incidents],
         total=total,
@@ -174,10 +176,10 @@ def get_incident(
 ):
     """Get incident details by ID."""
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
-    
+
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    
+
     return IncidentResponse(**incident.to_dict())
 
 
@@ -189,39 +191,39 @@ def acknowledge_incident(
 ):
     """
     Acknowledge incident (someone is looking at it).
-    
+
     Transition: open → acknowledged
     """
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
-    
+
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    
+
     if incident.status != "open":
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot acknowledge incident in {incident.status} state"
+            detail=f"Cannot acknowledge incident in {incident.status} state",
         )
-    
+
     incident.status = "acknowledged"
     incident.acknowledged_at = datetime.utcnow()
-    
+
     if request.assigned_to:
         incident.assigned_to = request.assigned_to
-    
+
     if request.notes:
         incident.incident_metadata = incident.incident_metadata or {}
         incident.incident_metadata["ack_notes"] = request.notes
-    
+
     db.commit()
     db.refresh(incident)
-    
+
     logger.info(f"Incident {incident_id} acknowledged")
-    
+
     # Publish SSE event
     if SSE_AVAILABLE:
         asyncio.create_task(publish_incident_updated(incident, "acknowledged"))
-    
+
     return {"success": True, "incident": IncidentResponse(**incident.to_dict())}
 
 
@@ -233,32 +235,32 @@ def mitigate_incident(
 ):
     """
     Mark incident as mitigated (temporary fix applied).
-    
+
     Transition: acknowledged → mitigated
     """
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
-    
+
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    
+
     if incident.status not in ["open", "acknowledged"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot mitigate incident in {incident.status} state"
+            detail=f"Cannot mitigate incident in {incident.status} state",
         )
-    
+
     incident.status = "mitigated"
     incident.mitigated_at = datetime.utcnow()
-    
+
     if request.notes:
         incident.incident_metadata = incident.incident_metadata or {}
         incident.incident_metadata["mitigation_notes"] = request.notes
-    
+
     db.commit()
     db.refresh(incident)
-    
+
     logger.info(f"Incident {incident_id} mitigated")
-    
+
     return {"success": True, "incident": IncidentResponse(**incident.to_dict())}
 
 
@@ -270,32 +272,32 @@ def resolve_incident(
 ):
     """
     Mark incident as resolved (root cause fixed).
-    
+
     Transition: mitigated → resolved
     """
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
-    
+
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    
+
     if incident.status not in ["acknowledged", "mitigated"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot resolve incident in {incident.status} state"
+            detail=f"Cannot resolve incident in {incident.status} state",
         )
-    
+
     incident.status = "resolved"
     incident.resolved_at = datetime.utcnow()
-    
+
     if request.notes:
         incident.incident_metadata = incident.incident_metadata or {}
         incident.incident_metadata["resolution_notes"] = request.notes
-    
+
     db.commit()
     db.refresh(incident)
-    
+
     logger.info(f"Incident {incident_id} resolved")
-    
+
     return {"success": True, "incident": IncidentResponse(**incident.to_dict())}
 
 
@@ -307,32 +309,31 @@ def close_incident(
 ):
     """
     Close incident (verified no longer occurring).
-    
+
     Transition: resolved → closed
     """
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
-    
+
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    
+
     if incident.status not in ["resolved", "mitigated"]:
         raise HTTPException(
-            status_code=400,
-            detail=f"Cannot close incident in {incident.status} state"
+            status_code=400, detail=f"Cannot close incident in {incident.status} state"
         )
-    
+
     incident.status = "closed"
     incident.closed_at = datetime.utcnow()
-    
+
     if request.notes:
         incident.incident_metadata = incident.incident_metadata or {}
         incident.incident_metadata["close_notes"] = request.notes
-    
+
     db.commit()
     db.refresh(incident)
-    
+
     logger.info(f"Incident {incident_id} closed")
-    
+
     return {"success": True, "incident": IncidentResponse(**incident.to_dict())}
 
 
@@ -344,10 +345,10 @@ def update_incident(
 ):
     """Update incident fields (summary, assigned_to, playbooks, metadata)."""
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
-    
+
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    
+
     if update.summary is not None:
         incident.summary = update.summary
     if update.assigned_to is not None:
@@ -355,11 +356,14 @@ def update_incident(
     if update.playbooks is not None:
         incident.playbooks = update.playbooks
     if update.metadata is not None:
-        incident.incident_metadata = {**(incident.incident_metadata or {}), **update.metadata}
-    
+        incident.incident_metadata = {
+            **(incident.incident_metadata or {}),
+            **update.metadata,
+        }
+
     db.commit()
     db.refresh(incident)
-    
+
     return {"success": True, "incident": IncidentResponse(**incident.to_dict())}
 
 
@@ -367,20 +371,21 @@ def update_incident(
 async def incidents_sse(db: Session = Depends(get_db)):
     """
     Server-Sent Events stream for live incident updates.
-    
+
     Emits events when incidents are created or updated.
     (Placeholder - full implementation would use pubsub)
     """
+
     async def event_generator():
         # Placeholder for SSE stream
         # In production, this would subscribe to a Redis/NATS pubsub
-        yield "data: {\"type\": \"connected\"}\n\n"
-    
+        yield 'data: {"type": "connected"}\n\n'
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
-        }
+        },
     )

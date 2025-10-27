@@ -21,7 +21,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/metrics/profile", tags=["metrics", "warehouse"])
+router = APIRouter(prefix="/metrics/profile", tags=["metrics", "warehouse"])
 
 # Configuration
 BQ_PROJECT = os.getenv("GCP_PROJECT")

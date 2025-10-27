@@ -3,6 +3,7 @@ Playbooks Router - Phase 5.4 PR3
 
 API endpoints for executing remediation actions.
 """
+
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -14,23 +15,26 @@ from app.intervene.executor import PlaybookExecutor
 from app.intervene.actions.base import ActionStatus
 
 # Import actions to register them
-from app.intervene.actions import dbt
-from app.intervene.actions import elastic
-from app.intervene.actions import planner
 
-router = APIRouter(prefix="/api/playbooks", tags=["playbooks"])
+router = APIRouter(prefix="/playbooks", tags=["playbooks"])
 
 
 # Pydantic models
 class ActionRequest(BaseModel):
     """Request to execute an action."""
+
     action_type: str = Field(..., description="Type of action to execute")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Action parameters")
-    approved_by: Optional[str] = Field(None, description="User who approved (required if approval needed)")
+    params: Dict[str, Any] = Field(
+        default_factory=dict, description="Action parameters"
+    )
+    approved_by: Optional[str] = Field(
+        None, description="User who approved (required if approval needed)"
+    )
 
 
 class ActionResponse(BaseModel):
     """Response from action execution."""
+
     status: str
     message: str
     details: Dict[str, Any]
@@ -45,6 +49,7 @@ class ActionResponse(BaseModel):
 
 class AvailableAction(BaseModel):
     """Available action for incident."""
+
     action_type: str
     display_name: str
     description: str
@@ -54,6 +59,7 @@ class AvailableAction(BaseModel):
 
 class ActionHistoryItem(BaseModel):
     """Historical action execution."""
+
     id: int
     action_type: str
     params: Dict[str, Any]
@@ -72,7 +78,7 @@ def list_available_actions(
 ):
     """
     List available remediation actions for incident.
-    
+
     Returns recommended actions based on incident type and playbooks.
     """
     # Get incident
@@ -82,11 +88,11 @@ def list_available_actions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Incident {incident_id} not found",
         )
-    
+
     # Get available actions
     executor = PlaybookExecutor(db)
     actions = executor.list_available_actions(incident)
-    
+
     return actions
 
 
@@ -98,7 +104,7 @@ def dry_run_action(
 ):
     """
     Dry-run an action without making changes.
-    
+
     Shows:
     - What changes would be made
     - Estimated duration and cost
@@ -111,7 +117,7 @@ def dry_run_action(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Incident {incident_id} not found",
         )
-    
+
     # Execute dry-run
     executor = PlaybookExecutor(db)
     result = executor.dry_run_action(
@@ -119,7 +125,7 @@ def dry_run_action(
         action_type=request.action_type,
         params=request.params,
     )
-    
+
     return ActionResponse(**result.to_dict())
 
 
@@ -131,7 +137,7 @@ def execute_action(
 ):
     """
     Execute a remediation action.
-    
+
     Requires approval if action is high-risk.
     """
     # Get incident
@@ -141,7 +147,7 @@ def execute_action(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Incident {incident_id} not found",
         )
-    
+
     # Execute action
     executor = PlaybookExecutor(db)
     result = executor.execute_action(
@@ -150,18 +156,21 @@ def execute_action(
         params=request.params,
         approved_by=request.approved_by,
     )
-    
+
     # Return error status if failed
     if result.status == ActionStatus.FAILED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=result.message,
         )
-    
+
     return ActionResponse(**result.to_dict())
 
 
-@router.post("/incidents/{incident_id}/actions/{action_id}/rollback", response_model=ActionResponse)
+@router.post(
+    "/incidents/{incident_id}/actions/{action_id}/rollback",
+    response_model=ActionResponse,
+)
 def rollback_action(
     incident_id: int,
     action_id: int,
@@ -169,7 +178,7 @@ def rollback_action(
 ):
     """
     Rollback a previous action.
-    
+
     Only works for reversible actions.
     """
     # Get incident
@@ -179,28 +188,30 @@ def rollback_action(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Incident {incident_id} not found",
         )
-    
+
     # Rollback
     executor = PlaybookExecutor(db)
     result = executor.rollback_action(incident, action_id)
-    
+
     if result.status == ActionStatus.FAILED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=result.message,
         )
-    
+
     return ActionResponse(**result.to_dict())
 
 
-@router.get("/incidents/{incident_id}/actions/history", response_model=List[ActionHistoryItem])
+@router.get(
+    "/incidents/{incident_id}/actions/history", response_model=List[ActionHistoryItem]
+)
 def get_action_history(
     incident_id: int,
     db: Session = Depends(get_db),
 ):
     """
     Get execution history for incident.
-    
+
     Shows all past dry-runs and executions.
     """
     # Get incident
@@ -210,9 +221,9 @@ def get_action_history(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Incident {incident_id} not found",
         )
-    
+
     # Get history
     executor = PlaybookExecutor(db)
     history = executor.get_action_history(incident)
-    
+
     return history
