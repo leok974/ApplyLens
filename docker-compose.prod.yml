@@ -316,7 +316,8 @@ services:
     # v0.4.58: Keyboard accessibility (Esc to close tray) + real light/dark theme toggle
     # v0.4.59: Theme-aware pages and components (header, Settings, Tracker, Chat, Search)
     # v0.4.60: AppShell wrapper + surface utility classes + softer status pills
-    image: leoklemet/applylens-web:v0.4.60
+    # v0.4.61: Theme System v1.0 - complete light/dark refinement with semantic surfaces
+    image: leoklemet/applylens-web:v0.4.61
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
