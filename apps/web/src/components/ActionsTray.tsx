@@ -69,6 +69,19 @@ export function ActionsTray({ isOpen, onClose }: ActionsTrayProps) {
     }
   }, [isOpen])
 
+  // Escape key to close tray
+  useEffect(() => {
+    if (!isOpen) return
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        onClose()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [isOpen, onClose])
+
   async function handleApprove(action: ProposedAction) {
     setProcessing(action.id)
     try {
@@ -162,12 +175,22 @@ export function ActionsTray({ isOpen, onClose }: ActionsTrayProps) {
 
   if (!isOpen) return null
 
+  const handleBackdropKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      onClose()
+    }
+  }
+
   return (
     <>
       {/* Backdrop - Click to close */}
       <div
         className="fixed inset-0 bg-black/50 z-40 cursor-pointer"
         onClick={onClose}
+        onKeyDown={handleBackdropKeyDown}
+        role="button"
+        tabIndex={0}
         aria-label="Close actions tray"
       />
 
