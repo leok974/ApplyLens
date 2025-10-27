@@ -310,7 +310,8 @@ services:
     # v0.4.25: Tracker page shows real Gmail data + OAuth fix
     # v0.4.53: Logout UX polish - Clear cached user data to prevent stale UI flash after logout
     # v0.4.54: Settings Account card with user icon avatar and improved email display
-    image: leoklemet/applylens-web:v0.4.54
+    # v0.4.55: Settings Account card styling polish for better contrast (zinc colors)
+    image: leoklemet/applylens-web:v0.4.55
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
