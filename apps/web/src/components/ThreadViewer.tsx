@@ -9,6 +9,9 @@ import { cn } from '../lib/utils';
 import { RiskAnalysisSection } from './RiskAnalysisSection';
 import { ThreadActionBar } from './ThreadActionBar';
 import { toast } from 'sonner';
+import { track } from '../lib/analytics';
+import { ThreadSummarySection } from './ThreadSummarySection';
+import { ConversationTimelineSection } from './ConversationTimelineSection';
 
 export interface ThreadViewerProps {
   emailId: string | null;
@@ -24,6 +27,19 @@ export interface ThreadViewerProps {
   items?: ThreadViewerItem[];
   selectedIndex?: number | null;
 
+  // NEW Phase 4 props
+  autoAdvance: boolean;
+  setAutoAdvance: (val: boolean) => void;
+
+  handledCount: number;
+  totalCount: number;
+
+  bulkCount: number;
+  onBulkArchive: () => void;
+  onBulkMarkSafe: () => void;
+  onBulkQuarantine: () => void;
+  isBulkMutating?: boolean;
+
   onArchive?: (id: string) => void;
   onMarkSafe?: (id: string) => void;
   onQuarantine?: (id: string) => void;
@@ -38,6 +54,15 @@ export function ThreadViewer({
   advanceAfterAction,
   items = [],
   selectedIndex = null,
+  autoAdvance,
+  setAutoAdvance,
+  handledCount,
+  totalCount,
+  bulkCount,
+  onBulkArchive,
+  onBulkMarkSafe,
+  onBulkQuarantine,
+  isBulkMutating = false,
   onArchive,
   onMarkSafe,
   onQuarantine,
@@ -368,6 +393,17 @@ export function ThreadViewer({
                   error={analysisError}
                   analysis={analysis}
                 />
+
+                {/* TODO(thread-viewer v1.5):
+                    summary + timeline come from backend (or fallback mock in fetchThreadDetail()).
+                    The goal is "I can understand this thread in 10 seconds.
+                    I don't have to scroll 40 quoted replies to know what's happening." */}
+
+                {/* Rolling summary of the conversation */}
+                <ThreadSummarySection summary={threadData?.summary} />
+
+                {/* Timeline of interaction */}
+                <ConversationTimelineSection timeline={threadData?.timeline} />
               </div>
 
               {/* Message body */}
@@ -388,6 +424,11 @@ export function ThreadViewer({
                 )}
 
                 {/* Inline Action Bar */}
+                {/* TODO(thread-viewer v1.4):
+                     - handledCount, bulkCount, etc. will come from parent page state.
+                       For now, parent can just stub them (0, items.length, selectedBulkIds.size).
+                     - autoAdvance is user preference; we persist it in hook state.
+                */}
                 <ThreadActionBar
                   disabled={isMutating}
                   quarantined={Boolean(threadData?.quarantined)}
@@ -395,6 +436,19 @@ export function ThreadViewer({
                   onQuarantine={handleQuarantine}
                   onArchive={handleArchive}
                   onOpenExternal={handleOpenExternal}
+                  autoAdvance={autoAdvance}
+                  onToggleAutoAdvance={() => {
+                    const newValue = !autoAdvance;
+                    setAutoAdvance(newValue);
+                    track({ name: 'auto_advance_toggle', enabled: newValue });
+                  }}
+                  handledCount={handledCount}
+                  totalCount={totalCount}
+                  bulkCount={bulkCount}
+                  onBulkArchive={onBulkArchive}
+                  onBulkMarkSafe={onBulkMarkSafe}
+                  onBulkQuarantine={onBulkQuarantine}
+                  isBulkMutating={isBulkMutating}
                 />
               </div>
             </>

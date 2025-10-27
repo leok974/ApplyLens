@@ -71,6 +71,18 @@ export default function InboxWithActions() {
   // Thread viewer state (replaces old drawer state)
   const thread = useThreadViewer(rows.map(r => ({ id: r.message_id })))
 
+  // Phase 4: derived values for ThreadViewer
+  const totalCount = thread.items.length;
+  // TODO(thread-viewer v1.4.5):
+  // handledCount is now driven by local optimistic state.
+  // Eventually this should come from the canonical row model (server-sourced),
+  // but this is good enough for operator UX.
+  const handledCount = thread.items.filter(
+    (it: any) => it.archived || it.quarantined
+  ).length;
+
+  const bulkCount = thread.selectedBulkIds.size;
+
   const loadInbox = async (mode: 'review' | 'quarantined' | 'archived' = viewMode) => {
     setLoading(true)
     setError(null)
@@ -424,6 +436,9 @@ export default function InboxWithActions() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
+                    <th className="px-2 py-2 w-8">
+                      {/* TODO(thread-viewer v1.4): Add "select all" checkbox here */}
+                    </th>
                     <th className="px-4 py-2 text-left font-medium">From</th>
                     <th className="px-4 py-2 text-left font-medium">
                       Subject
@@ -444,15 +459,27 @@ export default function InboxWithActions() {
                     <>
                       <tr
                         key={row.message_id}
-                        onClick={() => handleOpenMessage(row.message_id)}
                         className={cn(
                           'cursor-pointer hover:bg-muted/20 border-b border-border',
                           thread.selectedId === row.message_id &&
                             'bg-muted/30 ring-1 ring-border'
                         )}
                       >
-                        <td className="px-4 py-3">{row.from_name}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-2 py-3">
+                          {/* TODO(thread-viewer v1.4):
+                              bulk triage selection checkbox.
+                              Eventually we'll hide this unless we're in "batch mode" UI.
+                          */}
+                          <input
+                            type="checkbox"
+                            className="h-3 w-3 rounded border-zinc-400 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+                            checked={thread.selectedBulkIds.has(row.message_id)}
+                            onChange={() => thread.toggleBulkSelect(row.message_id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                        <td className="px-4 py-3" onClick={() => handleOpenMessage(row.message_id)}>{row.from_name}</td>
+                        <td className="px-4 py-3" onClick={() => handleOpenMessage(row.message_id)}>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span>{row.subject}</span>
                             {row.quarantined && (
@@ -472,10 +499,10 @@ export default function InboxWithActions() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
+                        <td className="px-4 py-3 text-muted-foreground" onClick={() => handleOpenMessage(row.message_id)}>
                           {safeFormatDate(row.received_at)}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3" onClick={() => handleOpenMessage(row.message_id)}>
                           <div className="text-xs space-y-1">
                             <div className="font-medium">
                               {row.reason.category}
@@ -499,7 +526,7 @@ export default function InboxWithActions() {
                       {explanations[row.message_id] && (
                         <tr className="bg-muted/10">
                           <td
-                            colSpan={5}
+                            colSpan={6}
                             className="px-4 py-3 border-b border-border"
                           >
                             <div className="text-xs rounded-md border border-border bg-background/60 p-3 leading-relaxed">
@@ -544,6 +571,14 @@ export default function InboxWithActions() {
         advanceAfterAction={thread.advanceAfterAction}
         items={thread.items}
         selectedIndex={thread.selectedIndex}
+        autoAdvance={thread.autoAdvance}
+        setAutoAdvance={(val) => thread.setAutoAdvance(val)}
+        handledCount={handledCount}
+        totalCount={totalCount}
+        bulkCount={bulkCount}
+        onBulkArchive={thread.bulkArchive}
+        onBulkMarkSafe={thread.bulkMarkSafe}
+        onBulkQuarantine={thread.bulkQuarantine}
         onArchive={(id) => {
           const row = rows.find(r => r.message_id === id);
           if (row) handleArchive({ stopPropagation: () => {} } as React.MouseEvent, row);

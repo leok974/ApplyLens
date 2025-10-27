@@ -28,6 +28,18 @@ export default function Inbox() {
   // Thread viewer state
   const thread = useThreadViewer(emails.map(e => ({ id: String(e.id) })))
 
+  // Phase 4: derived values for ThreadViewer
+  const totalCount = thread.items.length;
+  // TODO(thread-viewer v1.4.5):
+  // handledCount is now driven by local optimistic state.
+  // Eventually this should come from the canonical row model (server-sourced),
+  // but this is good enough for operator UX.
+  const handledCount = thread.items.filter(
+    (it: any) => it.archived || it.quarantined
+  ).length;
+
+  const bulkCount = thread.selectedBulkIds.size;
+
   // Check connection status on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -161,10 +173,25 @@ export default function Inbox() {
               {emails.map(e => (
                 <div
                   key={e.id}
-                  onClick={() => thread.showThread(String(e.id))}
-                  className="cursor-pointer"
+                  className="flex items-start gap-2"
                 >
-                  <EmailCard e={e} />
+                  {/* TODO(thread-viewer v1.4):
+                      bulk triage selection checkbox.
+                      Eventually we'll hide this unless we're in "batch mode" UI.
+                  */}
+                  <input
+                    type="checkbox"
+                    className="h-3 w-3 mt-3 rounded border-zinc-400 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+                    checked={thread.selectedBulkIds.has(String(e.id))}
+                    onChange={() => thread.toggleBulkSelect(String(e.id))}
+                    onClick={(evt) => evt.stopPropagation()}
+                  />
+                  <div
+                    onClick={() => thread.showThread(String(e.id))}
+                    className="cursor-pointer flex-1"
+                  >
+                    <EmailCard e={e} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -204,6 +231,15 @@ export default function Inbox() {
         advanceAfterAction={thread.advanceAfterAction}
         items={thread.items}
         selectedIndex={thread.selectedIndex}
+        autoAdvance={thread.autoAdvance}
+        setAutoAdvance={(val) => thread.setAutoAdvance(val)}
+        handledCount={handledCount}
+        totalCount={totalCount}
+        bulkCount={bulkCount}
+        onBulkArchive={thread.bulkArchive}
+        onBulkMarkSafe={thread.bulkMarkSafe}
+        onBulkQuarantine={thread.bulkQuarantine}
+        isBulkMutating={thread.isBulkMutating}
       />
     </div>
   )

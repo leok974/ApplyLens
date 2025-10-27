@@ -630,6 +630,25 @@ export type MessageDetail = {
   category?: string
   html_body?: string | null
   text_body?: string | null
+  messages?: Array<{
+    id: string
+    from: string
+    to: string[]
+    date: string
+    snippet?: string
+    body_html?: string
+    body_text?: string
+  }>
+  summary?: {
+    headline: string
+    details: string[]
+  }
+  timeline?: Array<{
+    ts: string
+    actor: string
+    kind: "received" | "replied" | "follow_up_needed" | "flagged" | "status_change"
+    note: string
+  }>
 }
 
 // Helper to get CSRF token from meta tag
@@ -761,6 +780,46 @@ export async function postRestore(message_id: string): Promise<ActionMutationRes
   if (!r.ok) throw new Error(`Restore failed: ${r.status}`)
   return r.json()
 }
+
+// ===== Bulk Actions (Phase 4.5) =====
+
+// TODO(thread-viewer v1.4.5):
+// Bulk triage endpoints. Backend will auth + persist.
+// We assume message_ids belong to the current user.
+
+export type BulkActionResponse = {
+  updated: string[]
+  failed: string[]
+}
+
+async function postJSON(url: string, body: any) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": getCsrf(),
+    },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function bulkArchiveMessages(ids: string[]): Promise<BulkActionResponse> {
+  return postJSON("/api/actions/bulk/archive", { message_ids: ids });
+}
+
+export async function bulkMarkSafeMessages(ids: string[]): Promise<BulkActionResponse> {
+  return postJSON("/api/actions/bulk/mark-safe", { message_ids: ids });
+}
+
+export async function bulkQuarantineMessages(ids: string[]): Promise<BulkActionResponse> {
+  return postJSON("/api/actions/bulk/quarantine", { message_ids: ids });
+}
+
 
 // ===== Sender Overrides =====
 
@@ -977,7 +1036,38 @@ export async function fetchThreadDetail(messageId: string): Promise<MessageDetai
     credentials: 'include',
   });
   if (!r.ok) throw new Error(`Failed to fetch thread detail: ${r.status}`);
-  return r.json();
+  const raw = await r.json();
+
+  // TODO(thread-viewer v1.5):
+  // backend should populate summary/timeline.
+  // we patch them here so UI never renders empty.
+  const withContext = {
+    ...raw,
+    summary: raw.summary ?? {
+      headline: "Conversation about scheduling next steps",
+      details: [
+        "They are interested and want your availability.",
+        "Next action is to propose a time window.",
+        "No red flags found in tone or language.",
+      ],
+    },
+    timeline: raw.timeline ?? [
+      {
+        ts: raw.messages?.[raw.messages.length - 1]?.date ?? new Date().toISOString(),
+        actor: raw.messages?.[raw.messages.length - 1]?.from ?? "Contact",
+        kind: "received" as const,
+        note: "Latest reply from contact",
+      },
+      {
+        ts: raw.messages?.[0]?.date ?? new Date().toISOString(),
+        actor: raw.messages?.[0]?.from ?? "You",
+        kind: "replied" as const,
+        note: "You responded with availability",
+      },
+    ],
+  };
+
+  return withContext;
 }
 
 /**

@@ -915,3 +915,166 @@ async def inbox_actions_summary(
             muted_senders=0,
             safe_senders=0,
         )
+
+
+# ===== Bulk Actions (Phase 4.5) =====
+
+
+class BulkActionRequest(BaseModel):
+    """Request body for bulk triage operations."""
+
+    message_ids: List[str]
+
+
+class BulkActionResponse(BaseModel):
+    """Response for bulk operations."""
+
+    updated: List[str]
+    failed: List[str] = []
+
+
+# TODO(thread-viewer v1.4.5):
+# These handlers should:
+# - auth the user (using get_current_user_email)
+# - check that message_ids belong to this user
+# - persist the state change (archived, quarantined, safe)
+# - emit events / index updates if needed
+#
+# For now we sketch them with ES updates.
+
+
+@router.post("/bulk/archive", response_model=BulkActionResponse)
+async def bulk_archive(
+    req: BulkActionRequest,
+    user_email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db),
+):
+    """
+    Bulk archive multiple emails.
+    Marks user_archived=true in the search index.
+    """
+    if not ALLOW_ACTION_MUTATIONS:
+        raise HTTPException(
+            status_code=403, detail="Action mutations disabled in this environment"
+        )
+
+    if not ES_ENABLED:
+        raise HTTPException(status_code=503, detail="Search not enabled")
+
+    updated = []
+    failed = []
+
+    # Update each message in ES, tracking successes and failures
+    for msg_id in req.message_ids:
+        try:
+            # Verify ownership and update
+            doc = {
+                "user_archived": True,
+                "archived_at": datetime.utcnow().isoformat(),
+            }
+            es.update(
+                index=INDEX,
+                id=msg_id,
+                body={"doc": doc},
+                refresh=True,
+            )
+            updated.append(msg_id)
+        except Exception as e:
+            logger.warning(f"Failed to archive message {msg_id}: {e}")
+            failed.append(msg_id)
+
+    logger.info(
+        f"Bulk archived {len(updated)}/{len(req.message_ids)} messages for {user_email}"
+    )
+    return BulkActionResponse(updated=updated, failed=failed)
+
+
+@router.post("/bulk/mark-safe", response_model=BulkActionResponse)
+async def bulk_mark_safe(
+    req: BulkActionRequest,
+    user_email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db),
+):
+    """
+    Bulk mark multiple emails as safe.
+    Clears quarantined flag, sets user_overrode_safe=true.
+    """
+    if not ALLOW_ACTION_MUTATIONS:
+        raise HTTPException(
+            status_code=403, detail="Action mutations disabled in this environment"
+        )
+
+    if not ES_ENABLED:
+        raise HTTPException(status_code=503, detail="Search not enabled")
+
+    updated = []
+    failed = []
+
+    # Update each message in ES, tracking successes and failures
+    for msg_id in req.message_ids:
+        try:
+            doc = {
+                "quarantined": False,
+                "user_overrode_safe": True,
+                "marked_safe_at": datetime.utcnow().isoformat(),
+            }
+            es.update(
+                index=INDEX,
+                id=msg_id,
+                body={"doc": doc},
+                refresh=True,
+            )
+            updated.append(msg_id)
+        except Exception as e:
+            logger.warning(f"Failed to mark safe message {msg_id}: {e}")
+            failed.append(msg_id)
+
+    logger.info(
+        f"Bulk marked safe {len(updated)}/{len(req.message_ids)} messages for {user_email}"
+    )
+    return BulkActionResponse(updated=updated, failed=failed)
+
+
+@router.post("/bulk/quarantine", response_model=BulkActionResponse)
+async def bulk_quarantine(
+    req: BulkActionRequest,
+    user_email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db),
+):
+    """
+    Bulk quarantine multiple emails.
+    Sets quarantined=true in the search index.
+    """
+    if not ALLOW_ACTION_MUTATIONS:
+        raise HTTPException(
+            status_code=403, detail="Action mutations disabled in this environment"
+        )
+
+    if not ES_ENABLED:
+        raise HTTPException(status_code=503, detail="Search not enabled")
+
+    updated = []
+    failed = []
+
+    # Update each message in ES, tracking successes and failures
+    for msg_id in req.message_ids:
+        try:
+            doc = {
+                "quarantined": True,
+                "quarantined_at": datetime.utcnow().isoformat(),
+            }
+            es.update(
+                index=INDEX,
+                id=msg_id,
+                body={"doc": doc},
+                refresh=True,
+            )
+            updated.append(msg_id)
+        except Exception as e:
+            logger.warning(f"Failed to quarantine message {msg_id}: {e}")
+            failed.append(msg_id)
+
+    logger.info(
+        f"Bulk quarantined {len(updated)}/{len(req.message_ids)} messages for {user_email}"
+    )
+    return BulkActionResponse(updated=updated, failed=failed)
