@@ -311,7 +311,8 @@ services:
     # v0.4.53: Logout UX polish - Clear cached user data to prevent stale UI flash after logout
     # v0.4.54: Settings Account card with user icon avatar and improved email display
     # v0.4.55: Settings Account card styling polish for better contrast (zinc colors)
-    image: leoklemet/applylens-web:v0.4.55
+    # v0.4.56: Fix Settings "Unknown user" + Actions tray rendering outside header
+    image: leoklemet/applylens-web:v0.4.56
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
