@@ -13,6 +13,7 @@ export default defineConfig({
     "profile.spec.ts",
     "profile-warehouse.spec.ts",  // Warehouse-backed profile page
     "**/auth.*.spec.ts",  // Must include glob pattern
+    "settings-logout.spec.ts",  // Settings page logout flow [prodSafe]
     "e2e/email-risk-banner.spec.ts",
     "e2e/ux-heartbeat.spec.ts",
     "e2e/search-form.spec.ts",

@@ -3,7 +3,7 @@ import { getRecencyScale, setRecencyScale, RecencyScale } from '../state/searchP
 import { Card } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
-import { Info } from 'lucide-react'
+import { Info, User as UserIcon } from 'lucide-react'
 import { features } from '../config/features'
 import { ProfileMetrics } from '../components/ProfileMetrics'
 import { Button } from '@/components/ui/button'
@@ -40,23 +40,30 @@ export default function Settings() {
       {/* Account Card */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Account</h2>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {user?.email ? (
-                <>Signed in as <span className="font-medium text-foreground">{user.email}</span></>
-              ) : (
-                'Signed in'
-              )}
-            </p>
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          {/* left side: icon + email */}
+          <div className="flex items-start">
+            <div className="flex items-center gap-2 text-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
+                <UserIcon className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-muted-foreground">Signed in as</span>
+                <span className="font-medium break-all">{user?.email ?? "Unknown user"}</span>
+              </div>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            data-testid="logout-button"
-          >
-            Log out
-          </Button>
+
+          {/* right side: logout button */}
+          <div className="flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              data-testid="logout-button"
+            >
+              Log out
+            </Button>
+          </div>
         </div>
       </Card>
 
