@@ -13,6 +13,14 @@ export interface ThreadMessage {
   body_text?: string;
 }
 
+// Thread-level risk/analysis returned by security/agent backend
+export interface ThreadRiskAnalysis {
+  summary: string; // short human-readable verdict from the agent
+  factors: string[]; // bullet-point reasons / signals
+  riskLevel: "low" | "medium" | "high" | "critical";
+  recommendedAction?: string; // e.g. "Quarantine" / "Reply" / "Ignore"
+}
+
 export interface ThreadData {
   message_id: string;
   thread_id?: string;
@@ -32,4 +40,5 @@ export interface ThreadData {
   html_body?: string;
   text_body?: string;
   messages?: ThreadMessage[]; // For multi-message threads
+  analysis?: ThreadRiskAnalysis; // Agent-backed risk analysis
 }

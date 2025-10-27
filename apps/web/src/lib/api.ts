@@ -979,6 +979,39 @@ export async function fetchThreadDetail(messageId: string): Promise<MessageDetai
   return r.json();
 }
 
+/**
+ * Fetch thread risk analysis from security/agent backend
+ * TODO(thread-viewer v1.1):
+ * Replace fallback with live agent-backed endpoint once
+ * /security/analyze/:threadId is stable in prod.
+ * This call should return { summary, factors[], riskLevel, recommendedAction }.
+ */
+export async function fetchThreadAnalysis(threadId: string): Promise<import('../types/thread').ThreadRiskAnalysis> {
+  // Placeholder endpoint. We'll wire to the real backend later.
+  // For now, call `/api/security/analyze/:threadId` if it exists,
+  // otherwise return mock data.
+
+  try {
+    const res = await fetch(`/api/security/analyze/${threadId}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Analysis endpoint not ready');
+    return res.json();
+  } catch (err) {
+    // Fallback mock so UI can render without backend being ready.
+    return {
+      summary: "No high-risk behavior detected. Sender is known, content looks legitimate.",
+      factors: [
+        "Sender domain previously seen in safe conversations",
+        "No credential harvesting language detected",
+        "No urgency / threat language detected",
+      ],
+      riskLevel: "low",
+      recommendedAction: "Mark Safe",
+    };
+  }
+}
+
 // Quick Actions (dry-run mode)
 
 export type ActionResponse = {

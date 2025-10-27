@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { X, ExternalLink, Shield, Archive, AlertTriangle, RefreshCw } from 'lucide-react';
-import { fetchThreadDetail, MessageDetail } from '../lib/api';
+import { fetchThreadDetail, fetchThreadAnalysis, MessageDetail } from '../lib/api';
+import { ThreadRiskAnalysis } from '../types/thread';
 import { safeFormatDate } from '../lib/date';
 import { Badge } from './ui/badge';
 import { cn } from '../lib/utils';
+import { RiskAnalysisSection } from './RiskAnalysisSection';
 
 export interface ThreadViewerProps {
   emailId: string | null;
@@ -25,6 +27,11 @@ export function ThreadViewer({
   const [threadData, setThreadData] = useState<MessageDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Analysis state
+  const [analysis, setAnalysis] = useState<ThreadRiskAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Fetch thread data when opened with an emailId
   useEffect(() => {
@@ -54,6 +61,37 @@ export function ThreadViewer({
       cancelled = true;
     };
   }, [isOpen, emailId]);
+
+  // TODO(thread-viewer v1.1): Once backend supports thread-level analysis,
+  // replace emailId with proper threadId. For now, we fetch analysis per emailId.
+  // Fetch risk analysis after base thread data loads
+  useEffect(() => {
+    if (!isOpen || !emailId || loading || error) {
+      return;
+    }
+
+    let cancelled = false;
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+
+    fetchThreadAnalysis(emailId)
+      .then((data) => {
+        if (!cancelled) {
+          setAnalysis(data);
+          setAnalysisLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setAnalysisError(String(err));
+          setAnalysisLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, emailId, loading, error]);
 
   // Handle Escape key to close
   useEffect(() => {
@@ -172,6 +210,13 @@ export function ThreadViewer({
                     </Badge>
                   )}
                 </div>
+
+                {/* Risk Analysis Section */}
+                <RiskAnalysisSection
+                  loading={analysisLoading}
+                  error={analysisError}
+                  analysis={analysis}
+                />
               </div>
 
               {/* Message body */}
