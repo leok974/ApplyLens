@@ -42,15 +42,13 @@ export default function Settings() {
         <h2 className="text-xl font-semibold mb-4">Account</h2>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           {/* left side: icon + email */}
-          <div className="flex items-start">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
-                <UserIcon className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="text-muted-foreground">Signed in as</span>
-                <span className="font-medium break-all">{user?.email ?? "Unknown user"}</span>
-              </div>
+          <div className="flex items-start gap-3 text-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
+              <UserIcon className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-zinc-300">Signed in as</span>
+              <span className="text-white font-medium break-all">{user?.email ?? "Unknown user"}</span>
             </div>
           </div>
 
