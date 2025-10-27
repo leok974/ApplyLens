@@ -309,7 +309,8 @@ services:
     # v0.4.26: Actions page with real backend functionality
     # v0.4.25: Tracker page shows real Gmail data + OAuth fix
     # v0.4.53: Logout UX polish - Clear cached user data to prevent stale UI flash after logout
-    image: leoklemet/applylens-web:v0.4.53
+    # v0.4.54: Settings Account card with user icon avatar and improved email display
+    image: leoklemet/applylens-web:v0.4.54
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
