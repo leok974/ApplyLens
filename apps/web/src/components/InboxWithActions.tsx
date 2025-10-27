@@ -69,7 +69,7 @@ export default function InboxWithActions() {
   const [summaryError, setSummaryError] = useState<string | null>(null)
 
   // Thread viewer state (replaces old drawer state)
-  const thread = useThreadViewer()
+  const thread = useThreadViewer(rows.map(r => ({ id: r.message_id })))
 
   const loadInbox = async (mode: 'review' | 'quarantined' | 'archived' = viewMode) => {
     setLoading(true)
@@ -539,6 +539,9 @@ export default function InboxWithActions() {
         emailId={thread.selectedId}
         isOpen={thread.isOpen}
         onClose={thread.closeThread}
+        goPrev={thread.goPrev}
+        goNext={thread.goNext}
+        advanceAfterAction={thread.advanceAfterAction}
         onArchive={(id) => {
           const row = rows.find(r => r.message_id === id);
           if (row) handleArchive({ stopPropagation: () => {} } as React.MouseEvent, row);

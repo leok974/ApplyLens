@@ -41,9 +41,6 @@ export default function Search() {
   const suggestionAbortController = useRef<AbortController | null>(null)
   const hydratedRef = useRef(false)
 
-  // Thread viewer state
-  const thread = useThreadViewer()
-
   // Debug mode for score visibility (controlled via URL: ?debugScore=1)
   const debugScore = searchParams.get('debugScore') === '1' || searchParams.get('debugScore') === 'true'
 
@@ -117,6 +114,14 @@ export default function Search() {
     total,
     runSearch,
   } = useSearchModel(initialState.query, initialState.filters, initialState.sort)
+
+  // Thread viewer state - map results to items with ids
+  const thread = useThreadViewer(
+    (Array.isArray(results) ? results : []).map((rawHit: any) => {
+      const h = mapHit(rawHit);
+      return { id: String(h.id || '') };
+    }).filter(item => item.id) // filter out any empty ids
+  )
 
   // Clear all filters and reset to defaults
   const clearAllFilters = useCallback(() => {
@@ -604,6 +609,9 @@ export default function Search() {
         emailId={thread.selectedId}
         isOpen={thread.isOpen}
         onClose={thread.closeThread}
+        goPrev={thread.goPrev}
+        goNext={thread.goNext}
+        advanceAfterAction={thread.advanceAfterAction}
       />
     </div>
   )

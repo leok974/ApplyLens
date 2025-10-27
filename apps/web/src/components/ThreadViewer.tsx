@@ -6,11 +6,18 @@ import { safeFormatDate } from '../lib/date';
 import { Badge } from './ui/badge';
 import { cn } from '../lib/utils';
 import { RiskAnalysisSection } from './RiskAnalysisSection';
+import { ThreadActionBar } from './ThreadActionBar';
 
 export interface ThreadViewerProps {
   emailId: string | null;
   isOpen: boolean;
   onClose: () => void;
+
+  // NEW for Phase 3 navigation:
+  goPrev: () => void;
+  goNext: () => void;
+  advanceAfterAction: () => void;
+
   onArchive?: (id: string) => void;
   onMarkSafe?: (id: string) => void;
   onQuarantine?: (id: string) => void;
@@ -20,6 +27,9 @@ export function ThreadViewer({
   emailId,
   isOpen,
   onClose,
+  goPrev,
+  goNext,
+  advanceAfterAction,
   onArchive,
   onMarkSafe,
   onQuarantine,
@@ -32,6 +42,89 @@ export function ThreadViewer({
   const [analysis, setAnalysis] = useState<ThreadRiskAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  // Optimistic mutation state
+  const [isMutating, setIsMutating] = useState(false);
+
+  // TODO(thread-viewer v1.2):
+  // Wire these actions to real backend endpoints:
+  //  - POST /messages/:id/mark-safe
+  //  - POST /messages/:id/quarantine
+  //  - POST /messages/:id/archive
+  // After mutation:
+  //  - refresh list row state in parent list (Inbox/Search/Actions)
+  //  - show toast confirmation
+  //  - optionally auto-advance to next item
+
+  async function handleMarkSafe() {
+    if (!threadData) return;
+    setIsMutating(true);
+    try {
+      // optimistic UI example: clear any 'quarantined' flag, maybe lower risk badge in UI
+      setThreadData((prev) =>
+        prev
+          ? {
+              ...prev,
+              quarantined: false,
+              // you can also imagine prev.status = "safe"
+            }
+          : prev
+      );
+      // await api.post(`/messages/${threadData.message_id}/mark-safe`)  <-- future
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
+  async function handleQuarantine() {
+    if (!threadData) return;
+    setIsMutating(true);
+    try {
+      // optimistic UI example: set quarantined true in local state
+      setThreadData((prev) =>
+        prev
+          ? {
+              ...prev,
+              quarantined: true,
+            }
+          : prev
+      );
+      // await api.post(`/messages/${threadData.message_id}/quarantine`) <-- future
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
+  async function handleArchive() {
+    if (!threadData) return;
+    setIsMutating(true);
+    try {
+      // optimistic UI: mark archived locally
+      setThreadData((prev) =>
+        prev
+          ? {
+              ...prev,
+              archived: true,
+            }
+          : prev
+      );
+      // await api.post(`/messages/${threadData.message_id}/archive`) <-- future
+    } finally {
+      setIsMutating(false);
+      // OPTIONAL NICE TOUCH:
+      // after archiving, we could auto-close the drawer:
+      // onClose();
+    }
+  }
+
+  function handleOpenExternal() {
+    if (!threadData) return;
+    // assume threadData has something like gmailUrl or externalUrl from backend
+    // fallback: no-op if it doesn't exist yet
+    if ((threadData as any).externalUrl) {
+      window.open((threadData as any).externalUrl, "_blank", "noopener,noreferrer");
+    }
+  }
 
   // Fetch thread data when opened with an emailId
   useEffect(() => {
@@ -93,19 +186,51 @@ export function ThreadViewer({
     };
   }, [isOpen, emailId, loading, error]);
 
-  // Handle Escape key to close
+  // TODO(thread-viewer v1.3):
+  // Keyboard triage mode:
+  //  - ArrowUp / ArrowDown navigate between threads
+  //  - "D" archives current and advances
+  // In the future we can add "Q" for quarantine and "S" for mark safe.
+  // We intentionally do NOT close the drawer on navigation;
+  // we just swap which thread is showing.
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
+    function onKey(e: KeyboardEvent) {
+      // Don't steal keys if user is typing in an input/textarea/select/contentEditable.
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
       }
-    };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        goPrev();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        // Phase 2 gave us handleArchive(); call that, then auto-advance.
+        handleArchive();
+        advanceAfterAction();
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isOpen, onClose, goPrev, goNext, advanceAfterAction, handleArchive]);
 
   if (!isOpen) {
     return null;
@@ -235,6 +360,16 @@ export function ThreadViewer({
                     No message content available.
                   </p>
                 )}
+
+                {/* Inline Action Bar */}
+                <ThreadActionBar
+                  disabled={isMutating}
+                  quarantined={Boolean(threadData?.quarantined)}
+                  onMarkSafe={handleMarkSafe}
+                  onQuarantine={handleQuarantine}
+                  onArchive={handleArchive}
+                  onOpenExternal={handleOpenExternal}
+                />
               </div>
             </>
           )}

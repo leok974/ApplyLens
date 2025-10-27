@@ -626,6 +626,7 @@ export type MessageDetail = {
   received_at: string
   risk_score?: number
   quarantined?: boolean
+  archived?: boolean
   category?: string
   html_body?: string | null
   text_body?: string | null

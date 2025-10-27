@@ -26,7 +26,7 @@ export default function Inbox() {
   const [err, setErr] = useState<string | null>(null)
 
   // Thread viewer state
-  const thread = useThreadViewer()
+  const thread = useThreadViewer(emails.map(e => ({ id: String(e.id) })))
 
   // Check connection status on mount
   useEffect(() => {
@@ -199,6 +199,9 @@ export default function Inbox() {
         emailId={thread.selectedId}
         isOpen={thread.isOpen}
         onClose={thread.closeThread}
+        goPrev={thread.goPrev}
+        goNext={thread.goNext}
+        advanceAfterAction={thread.advanceAfterAction}
       />
     </div>
   )
