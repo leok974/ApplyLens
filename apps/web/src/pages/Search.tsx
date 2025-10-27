@@ -63,8 +63,8 @@ export default function Search() {
     }
 
     // Parse URL params STRICTLY - don't accidentally enable filters
-    const categoryList = (searchParams.get("cat") ?? "").split(",").filter(Boolean)
-    const categories = categoryList.reduce((acc, cat) => ({ ...acc, [cat]: true }), {} as Record<string, boolean>)
+    const categoryParams = searchParams.getAll("categories")
+    const categories = categoryParams.reduce((acc, cat) => ({ ...acc, [cat]: true }), {} as Record<string, boolean>)
 
     // Only enable hideExpired if explicitly set to "true"
     const hideExpired = searchParams.get("hideExpired") === "true"
@@ -223,7 +223,7 @@ export default function Search() {
     // Only set categories if any are active
     if (filters.categories && typeof filters.categories === 'object') {
       const cats = Object.entries(filters.categories).filter(([, v]) => v).map(([k]) => k)
-      if (cats.length) params.set('cat', cats.join(','))
+      cats.forEach(cat => params.append('categories', cat))
     }
 
     const url = `/search?${params.toString()}`
@@ -299,43 +299,40 @@ export default function Search() {
         <div className="surface-panel p-3 flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground">Filter by:</span>
           {(['ats', 'bills', 'banks', 'events', 'promotions'] as const).map((cat) => (
-            <Button
+            <button
               key={cat}
               type="button"
-              variant={filters.categories?.[cat] ? "default" : "outline"}
-              size="sm"
               onClick={() => {
                 setFilters(f => ({
                   ...f,
                   categories: { ...f.categories, [cat]: !f.categories?.[cat] }
                 }))
+                // Trigger search after filter change
+                setTimeout(() => runSearch(), 0)
               }}
-              className={`capitalize h-8 rounded-full transition ${
-                filters.categories?.[cat]
-                  ? 'bg-primary/20 border-primary text-primary font-medium'
-                  : ''
+              className={`filter-pill capitalize ${
+                filters.categories?.[cat] ? 'filter-pill-active' : ''
               }`}
               data-testid={`filter-${cat}`}
             >
               {cat}
-            </Button>
+            </button>
           ))}
 
           <div className="ml-auto flex items-center gap-2">
-            <Button
+            <button
               type="button"
-              variant={filters.hideExpired ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilters(f => ({ ...f, hideExpired: !f.hideExpired }))}
-              className={`rounded-full h-8 transition ${
-                filters.hideExpired
-                  ? 'bg-primary/20 border-primary text-primary font-medium'
-                  : ''
+              onClick={() => {
+                setFilters(f => ({ ...f, hideExpired: !f.hideExpired }))
+                setTimeout(() => runSearch(), 0)
+              }}
+              className={`filter-pill ${
+                filters.hideExpired ? 'filter-pill-active' : ''
               }`}
               data-testid="filter-hide-expired"
             >
               {filters.hideExpired ? "✓ Hide expired" : "Hide expired"}
-            </Button>
+            </button>
           </div>
         </div>
 

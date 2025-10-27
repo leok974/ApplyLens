@@ -255,4 +255,30 @@ html.dark ::-webkit-scrollbar-thumb {
   .density-y {
     @apply py-2 md:py-3;
   }
+
+  /* Filter pill - interactive category/label filters */
+  .filter-pill {
+    @apply rounded-full border px-3 py-1 text-sm font-medium cursor-pointer transition-colors;
+    @apply border-zinc-300/60 bg-zinc-100/80 text-zinc-700;
+  }
+
+  .filter-pill:hover {
+    @apply bg-zinc-200/80 border-zinc-400/60;
+  }
+
+  .filter-pill-active {
+    @apply border-emerald-500/60 bg-emerald-100/80 text-emerald-700 font-semibold;
+  }
+
+  .dark .filter-pill {
+    @apply border-zinc-500/40 bg-zinc-800/50 text-zinc-100;
+  }
+
+  .dark .filter-pill:hover {
+    @apply bg-zinc-700/70 border-zinc-400/50;
+  }
+
+  .dark .filter-pill-active {
+    @apply border-emerald-400/60 bg-emerald-400/20 text-emerald-200 font-semibold;
+  }
 }

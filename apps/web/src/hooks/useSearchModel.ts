@@ -28,8 +28,6 @@ const DEFAULT_FILTERS: SearchFilters = {
   limit: 50,
 }
 
-type AnyJson = Record<string, any>
-
 // Build query params matching backend API expectations
 // Omit defaults to avoid stale URL params silently re-applying strict filters
 // Always send a query - use "*" as fallback to avoid 422 errors
@@ -58,9 +56,13 @@ function toQueryParams({ query, filters, sort }: { query: string; filters: Searc
   if (filters.labels?.length) p.set('labels', filters.labels.join(','))
 
   // Only set categories if any are active
+  // Backend expects 'categories' as a list parameter (not 'cat')
   if (filters.categories) {
     const cats = Object.entries(filters.categories).filter(([, v]) => v).map(([k]) => k)
-    if (cats.length) p.set('cat', cats.join(','))
+    if (cats.length) {
+      // Send each category as a separate 'categories' parameter for FastAPI List[str]
+      cats.forEach(cat => p.append('categories', cat))
+    }
   }
 
   if (filters.dateFrom) p.set('from', filters.dateFrom)
