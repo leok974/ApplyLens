@@ -12,9 +12,9 @@ import { installGlobalReloadGuard } from './lib/reload-guard'
 
 // Version banner for debugging
 console.info(
-  '%c🔍 ApplyLens Web v0.4.48%c\n' +
+  '%c🔍 ApplyLens Web v0.4.55%c\n' +
   'Build: 2025-10-26\n' +
-  'Features: Phase 3 - Hybrid LLM (Ollama→OpenAI→fallback) + typing indicator + short-term memory',
+  'Features: Settings Account card polish + unified Actions badge count',
   'color: #10b981; font-weight: bold; font-size: 14px;',
   'color: #6b7280; font-size: 11px;'
 )
