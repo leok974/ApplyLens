@@ -314,7 +314,8 @@ services:
     # v0.4.56: Fix Settings "Unknown user" + Actions tray rendering outside header
     # v0.4.57: Actions tray backdrop click-to-close + inline badge pill for pending count
     # v0.4.58: Keyboard accessibility (Esc to close tray) + real light/dark theme toggle
-    image: leoklemet/applylens-web:v0.4.58
+    # v0.4.59: Theme-aware pages and components (header, Settings, Tracker, Chat, Search)
+    image: leoklemet/applylens-web:v0.4.59
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production

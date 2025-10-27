@@ -159,45 +159,46 @@ export default function Tracker() {
   }
 
   return (
-    <div className="p-6 space-y-5">
-      {/* Toast notification with variants */}
-      {toast && (
-        <div
-          data-testid="toast"
-          data-variant={toast.variant}
-          role="status"
-          aria-live="polite"
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
-            toast.variant === 'success' ? 'bg-green-600 text-white' :
-            toast.variant === 'error' ? 'bg-red-600 text-white' :
-            toast.variant === 'warning' ? 'bg-yellow-500 text-white' :
-            toast.variant === 'info' ? 'bg-blue-600 text-white' :
-            'bg-gray-800 text-white'
-          }`}>
-          <div className="flex items-center">
-            <span className="mr-2">
-              {toast.variant === 'success' ? '✓' :
-               toast.variant === 'error' ? '✗' :
-               toast.variant === 'warning' ? '⚠' :
-               toast.variant === 'info' ? 'ℹ' : '•'}
-            </span>
-            {(() => {
-              // Split on " — " to separate title and desc
-              const parts = toast.message.split(/\s*—\s*/)
-              if (parts.length > 1) {
-                return (
-                  <div>
-                    <span data-testid="toast-title">{parts[0]}</span>
-                    <span data-testid="toast-desc" className="ml-1">— {parts.slice(1).join(' — ')}</span>
-                  </div>
-                )
-              }
-              // No separator, use full message as title
-              return <span data-testid="toast-title">{toast.message}</span>
-            })()}
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-[#0f172a] dark:text-zinc-100">
+      <div className="p-6 space-y-5">
+        {/* Toast notification with variants */}
+        {toast && (
+          <div
+            data-testid="toast"
+            data-variant={toast.variant}
+            role="status"
+            aria-live="polite"
+            className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+              toast.variant === 'success' ? 'bg-green-600 text-white' :
+              toast.variant === 'error' ? 'bg-red-600 text-white' :
+              toast.variant === 'warning' ? 'bg-yellow-500 text-white' :
+              toast.variant === 'info' ? 'bg-blue-600 text-white' :
+              'bg-gray-800 text-white'
+            }`}>
+            <div className="flex items-center">
+              <span className="mr-2">
+                {toast.variant === 'success' ? '✓' :
+                 toast.variant === 'error' ? '✗' :
+                 toast.variant === 'warning' ? '⚠' :
+                 toast.variant === 'info' ? 'ℹ' : '•'}
+              </span>
+              {(() => {
+                // Split on " — " to separate title and desc
+                const parts = toast.message.split(/\s*—\s*/)
+                if (parts.length > 1) {
+                  return (
+                    <div>
+                      <span data-testid="toast-title">{parts[0]}</span>
+                      <span data-testid="toast-desc" className="ml-1">— {parts.slice(1).join(' — ')}</span>
+                    </div>
+                  )
+                }
+                // No separator, use full message as title
+                return <span data-testid="toast-title">{toast.message}</span>
+              })()}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
@@ -254,7 +255,7 @@ export default function Tracker() {
             {applications.map((r) => (
               <div
                 key={`app-${r.id}`}
-                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-[color:hsl(var(--muted))]/30 transition"
+                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
                 data-testid="tracker-row"
                 data-id={r.id}
               >
@@ -419,6 +420,7 @@ export default function Tracker() {
           </div>
         </div>
       </dialog>
+      </div>
     </div>
   )
 }
