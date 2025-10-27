@@ -278,6 +278,8 @@ def get_profile_summary():
 
     Returns:
     - account: User email address
+    - last_sync_at: ISO8601 timestamp of most recent warehouse sync (from BigQuery data)
+    - dataset: Dataset/table prefix being queried for debugging
     - totals: all_time_emails, last_30d_emails
     - top_senders_30d: Top 3 senders (sender, email, count)
     - top_categories_30d: Top 3 categories (category, count)
@@ -289,6 +291,8 @@ def get_profile_summary():
     if not USE_WAREHOUSE:
         return {
             "account": "leoklemet.pa@gmail.com",
+            "last_sync_at": None,
+            "dataset": f"{BQ_PROJECT}.{DS_MARTS}",
             "totals": {"all_time_emails": 0, "last_30d_emails": 0},
             "top_senders_30d": [],
             "top_categories_30d": [],
@@ -302,11 +306,25 @@ def get_profile_summary():
 
     result = {
         "account": "leoklemet.pa@gmail.com",  # TODO: Get from auth context
+        "last_sync_at": None,
+        "dataset": f"{BQ_PROJECT}.{DS_MARTS}",
         "totals": {"all_time_emails": 0, "last_30d_emails": 0},
         "top_senders_30d": [],
         "top_categories_30d": [],
         "top_interests": [],
     }
+
+    # Fetch last_sync_at from warehouse (most recent data timestamp)
+    try:
+        sync_sql = f"""
+        SELECT MAX(synced_at) as last_sync_at
+        FROM `{BQ_PROJECT}.{DS_STAGING}.stg_gmail__messages`
+        """
+        sync_rows = query_bq(sync_sql)
+        if sync_rows and sync_rows[0] and sync_rows[0].get("last_sync_at"):
+            result["last_sync_at"] = sync_rows[0]["last_sync_at"]
+    except Exception as e:
+        logger.warning(f"Error fetching last_sync_at: {e}")
 
     # Fetch totals from mart_email_activity_daily
     try:

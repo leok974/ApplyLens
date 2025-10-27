@@ -14,6 +14,32 @@ import { Mail, TrendingUp, Tag, Heart } from 'lucide-react'
  *
  * Cache: 60s backend, graceful degradation on failure
  */
+
+// Helper to format relative time (inline, no dependencies)
+function relativeTime(isoString: string | null): string {
+  if (!isoString) return "unknown"
+
+  try {
+    const timestamp = new Date(isoString).getTime()
+    const now = Date.now()
+    const diffMs = now - timestamp
+
+    if (diffMs < 0) return "just now"
+
+    const minutes = Math.floor(diffMs / 60000)
+    if (minutes < 1) return "just now"
+    if (minutes < 60) return `${minutes}m ago`
+
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
+  } catch {
+    return "unknown"
+  }
+}
+
 export function ProfileSummary() {
   const [data, setData] = useState<ProfileSummaryResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,7 +81,25 @@ export function ProfileSummary() {
     )
   }
 
-  const { totals, top_senders_30d, top_categories_30d, top_interests } = data
+  const { totals, top_senders_30d, top_categories_30d, top_interests, last_sync_at } = data
+
+  // Helper to determine if sync is stale (> 30 minutes old)
+  const isSyncStale = (): boolean => {
+    if (!last_sync_at) return false
+    try {
+      const syncTime = new Date(last_sync_at).getTime()
+      const now = Date.now()
+      const diffMinutes = (now - syncTime) / 60000
+      return diffMinutes > 30
+    } catch {
+      return false
+    }
+  }
+
+  // Helper to get "No data" message based on sync status
+  const getNoDataMessage = (): string => {
+    return isSyncStale() ? "No data in the last 30 days." : "No data yet"
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -88,8 +132,9 @@ export function ProfileSummary() {
                 </p>
               </div>
               <div className="pt-3 border-t">
+                <p className="text-xs text-gray-500">Active account</p>
                 <p className="text-xs text-gray-500">
-                  Active account • Data refreshed hourly
+                  Last sync: {relativeTime(last_sync_at)}
                 </p>
               </div>
             </div>
@@ -104,7 +149,7 @@ export function ProfileSummary() {
           </CardHeader>
           <CardContent>
             {top_senders_30d.length === 0 ? (
-              <p className="text-sm text-gray-500">No data yet</p>
+              <p className="text-sm text-gray-500">{getNoDataMessage()}</p>
             ) : (
               <div className="space-y-3">
                 {top_senders_30d.map((sender, idx) => (
@@ -135,7 +180,7 @@ export function ProfileSummary() {
           </CardHeader>
           <CardContent>
             {top_categories_30d.length === 0 ? (
-              <p className="text-sm text-gray-500">No data yet</p>
+              <p className="text-sm text-gray-500">{getNoDataMessage()}</p>
             ) : (
               <div className="space-y-3">
                 {top_categories_30d.map((cat, idx) => (
@@ -161,7 +206,7 @@ export function ProfileSummary() {
           </CardHeader>
           <CardContent>
             {top_interests.length === 0 ? (
-              <p className="text-sm text-gray-500">No data yet</p>
+              <p className="text-sm text-gray-500">{getNoDataMessage()}</p>
             ) : (
               <div className="space-y-3">
                 {top_interests.map((interest, idx) => (
@@ -181,9 +226,16 @@ export function ProfileSummary() {
       </div>
 
       <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
-          📊 Warehouse analytics • Fivetran + BigQuery
-        </p>
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-blue-800">
+            📊 Warehouse analytics • Fivetran + BigQuery
+          </p>
+          {data.dataset && (
+            <p className="text-xs text-blue-600 font-mono">
+              Dataset: {data.dataset}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

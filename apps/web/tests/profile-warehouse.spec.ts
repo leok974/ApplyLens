@@ -31,6 +31,9 @@ test.describe("Profile page (warehouse analytics) [prodSafe]", () => {
     await expect(page.getByText("1,234")).toBeVisible(); // all_time_emails with locale formatting
     await expect(page.getByText("87")).toBeVisible(); // last_30d_emails
 
+    // Verify sync info is displayed
+    await expect(page.getByText(/Last sync:/i)).toBeVisible();
+
     // Verify Top Senders card
     await expect(page.getByText(/Top Senders/i)).toBeVisible();
     await expect(page.getByText("Acme Robotics")).toBeVisible();
@@ -47,6 +50,9 @@ test.describe("Profile page (warehouse analytics) [prodSafe]", () => {
     // Verify warehouse attribution badge
     await expect(page.getByText(/Warehouse analytics/i)).toBeVisible();
     await expect(page.getByText(/Fivetran.*BigQuery/i)).toBeVisible();
+
+    // Verify dataset debug info is displayed
+    await expect(page.getByText(/Dataset:/i)).toBeVisible();
   });
 
   test("handles empty state gracefully", async ({ page }) => {
@@ -77,6 +83,8 @@ test.describe("Profile page (warehouse analytics) [prodSafe]", () => {
         contentType: "application/json",
         body: JSON.stringify({
           account: "leoklemet.pa@gmail.com",
+          last_sync_at: null,
+          dataset: "applylens.gmail_raw",
           totals: { all_time_emails: 0, last_30d_emails: 0 },
           top_senders_30d: [],
           top_categories_30d: [],
@@ -97,6 +105,54 @@ test.describe("Profile page (warehouse analytics) [prodSafe]", () => {
     // Should show "No data yet" for empty lists
     const noDataMessages = page.getByText(/No data yet/i);
     await expect(noDataMessages.first()).toBeVisible();
+  });
+
+  test("shows 'No data in the last 30 days' when sync is stale", async ({ page }) => {
+    // Mock all backend calls with stale sync timestamp (> 30 minutes ago)
+    await page.route("**/api/config", async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ readOnly: false, version: "0.4.50" })
+      });
+    });
+
+    await page.route("**/api/auth/me", async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          email: "leoklemet.pa@gmail.com",
+          display_name: "Leo",
+          connected: true
+        })
+      });
+    });
+
+    // Create a timestamp > 30 minutes ago
+    const staleTimestamp = new Date(Date.now() - 45 * 60 * 1000).toISOString();
+
+    await page.route("**/api/metrics/profile/summary", async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          account: "leoklemet.pa@gmail.com",
+          last_sync_at: staleTimestamp,
+          dataset: "applylens.gmail_raw",
+          totals: { all_time_emails: 0, last_30d_emails: 0 },
+          top_senders_30d: [],
+          top_categories_30d: [],
+          top_interests: []
+        })
+      });
+    });
+
+    await page.goto("http://localhost:5175/profile", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle");
+
+    // Should show "No data in the last 30 days." for stale sync with empty data
+    await expect(page.getByText(/No data in the last 30 days\./i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("handles API failure gracefully with fallback", async ({ page }) => {

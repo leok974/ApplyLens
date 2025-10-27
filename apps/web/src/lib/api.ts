@@ -1252,6 +1252,8 @@ export async function draftReply(req: DraftReplyRequest): Promise<DraftReplyResp
 
 export type ProfileSummaryResponse = {
   account: string
+  last_sync_at: string | null
+  dataset: string
   totals: {
     all_time_emails: number
     last_30d_emails: number
@@ -1280,6 +1282,8 @@ export type ProfileSummaryResponse = {
 export async function fetchProfileSummary(): Promise<ProfileSummaryResponse> {
   const fallback: ProfileSummaryResponse = {
     account: "leoklemet.pa@gmail.com",
+    last_sync_at: null,
+    dataset: "unknown",
     totals: { all_time_emails: 0, last_30d_emails: 0 },
     top_senders_30d: [],
     top_categories_30d: [],

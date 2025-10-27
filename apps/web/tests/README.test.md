@@ -105,6 +105,51 @@ test("my new profile test", async ({ page }) => {
 
 You can customize the mocked data by modifying `tests/utils/mockProfileSession.ts` or creating inline mocks in your test.
 
+## Warehouse Sync Debug
+
+The Profile page now includes observability fields to help debug data freshness issues:
+
+### New API Fields
+
+- **`last_sync_at`**: ISO8601 timestamp of the most recent successful warehouse sync (from BigQuery data)
+- **`dataset`**: Dataset or dataset+table prefix being queried (e.g., `"applylens.gmail_raw"`)
+
+These fields are included in the `/api/metrics/profile/summary` response and cached for 60 seconds.
+
+### UI Indicators
+
+**Email Activity Card:**
+- Shows "Last sync: {time}" (e.g., "Last sync: 12m ago", "Last sync: 2h ago")
+- Helps determine if data is fresh or stale
+
+**Bottom Badge:**
+- Shows "Dataset: {dataset}" for debugging which BigQuery tables are being queried
+
+### Empty State Messages
+
+The Profile page uses defensive rendering to distinguish between "no data yet" vs "no data available":
+
+- **"No data yet"**: Displayed when `last_sync_at` is null OR sync is recent (< 30 minutes)
+  - Indicates data sync might still be in progress
+
+- **"No data in the last 30 days."**: Displayed when sync is stale (> 30 minutes) AND arrays are empty
+  - Indicates the sync completed but there truly was no data in the time window
+
+### Test Assertions
+
+Tests in `profile-warehouse.spec.ts` assert these strings to detect regressions:
+
+```typescript
+// Verify sync info is displayed
+await expect(page.getByText(/Last sync:/i)).toBeVisible();
+
+// Verify dataset debug info
+await expect(page.getByText(/Dataset:/i)).toBeVisible();
+
+// Verify appropriate empty state message
+await expect(page.getByText(/No data in the last 30 days\./i)).toBeVisible();
+```
+
 ## Debugging Tests
 
 ### Run in Headed Mode (See Browser)

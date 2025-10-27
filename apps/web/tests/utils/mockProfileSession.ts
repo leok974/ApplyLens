@@ -42,6 +42,8 @@ export async function mockProfileSession(page: Page) {
       contentType: "application/json",
       body: JSON.stringify({
         account: "leoklemet.pa@gmail.com",
+        last_sync_at: "2025-10-26T13:45:00Z",
+        dataset: "applylens.gmail_raw",
         totals: {
           all_time_emails: 1234,
           last_30d_emails: 87
