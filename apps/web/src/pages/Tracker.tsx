@@ -159,9 +159,8 @@ export default function Tracker() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-[#0f172a] dark:text-zinc-100">
-      <div className="p-6 space-y-5">
-        {/* Toast notification with variants */}
+    <div className="space-y-5">
+      {/* Toast notification with variants */}
         {toast && (
           <div
             data-testid="toast"
@@ -255,7 +254,7 @@ export default function Tracker() {
             {applications.map((r) => (
               <div
                 key={`app-${r.id}`}
-                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
+                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm surface-card hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
                 data-testid="tracker-row"
                 data-id={r.id}
               >
@@ -420,7 +419,6 @@ export default function Tracker() {
           </div>
         </div>
       </dialog>
-      </div>
     </div>
   )
 }

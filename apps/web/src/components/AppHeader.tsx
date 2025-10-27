@@ -224,8 +224,8 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b bg-white/80 text-zinc-900 border-zinc-300 backdrop-blur dark:bg-[#0f172a]/80 dark:text-zinc-100 dark:border-zinc-800">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4">
+      <header className="sticky top-0 z-40 w-full border-b backdrop-blur bg-white/80 text-zinc-900 border-zinc-300 dark:bg-[#0f172a]/80 dark:text-zinc-100 dark:border-zinc-800">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 w-full">
           <div className="flex h-16 items-center gap-4">
             {/* BRAND — never shrink, bigger logo, tight tracking */}
             <Link

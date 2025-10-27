@@ -231,3 +231,19 @@ html.dark ::-webkit-scrollbar-thumb {
     }
   }
 }
+
+@layer components {
+  /* Surface card - primary content containers */
+  .surface-card {
+    @apply rounded-md border
+           bg-white text-zinc-900 border-zinc-300
+           dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700;
+  }
+
+  /* Surface panel - secondary/nested containers */
+  .surface-panel {
+    @apply rounded-md border
+           bg-zinc-100 text-zinc-900 border-zinc-300
+           dark:bg-zinc-800/60 dark:text-zinc-100 dark:border-zinc-700;
+  }
+}

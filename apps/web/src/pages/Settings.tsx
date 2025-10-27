@@ -45,13 +45,12 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-[#0f172a] dark:text-zinc-100">
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
-        <h1 className="text-3xl font-bold">Settings</h1>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <h1 className="text-3xl font-bold">Settings</h1>
 
-        {/* Account Card */}
-        <Card className="p-6 rounded border bg-white text-zinc-900 border-zinc-300 dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700">
-          <h2 className="text-xl font-semibold mb-4">Account</h2>
+      {/* Account Card */}
+      <Card className="p-6 surface-card">
+        <h2 className="text-xl font-semibold mb-4">Account</h2>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             {/* left side: icon + email */}
             <div className="flex items-start gap-3 text-sm">
@@ -82,7 +81,7 @@ export default function Settings() {
           <ProfileMetrics />
         )}
 
-        <Card className="p-6 rounded border bg-white text-zinc-900 border-zinc-300 dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-700">
+        <Card className="p-6 surface-card">
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-xl font-semibold">Search Scoring</h2>
             <Badge variant="secondary" className="text-xs">Experimental</Badge>
@@ -126,7 +125,6 @@ export default function Settings() {
         <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-6">
           More settings coming soon: muted senders, safe senders, data sync controls.
         </div>
-      </div>
     </div>
   )
 }

@@ -231,7 +231,7 @@ export default function Search() {
   }, [hasSearched, loading, error, query, filters, sort])
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-[#0f172a] dark:text-zinc-100 p-4">
+    <div>
       <style>{`
         mark {
           background-color: #ffeb3b;

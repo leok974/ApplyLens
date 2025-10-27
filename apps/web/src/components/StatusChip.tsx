@@ -8,13 +8,13 @@ type Status =
   | 'ghosted'
 
 const COLORS: Record<Status, string> = {
-  applied: 'bg-gray-100 text-gray-800 border-gray-200',
-  hr_screen: 'bg-sky-100 text-sky-800 border-sky-200',
-  interview: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  offer: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  rejected: 'bg-red-100 text-red-800 border-red-200',
-  on_hold: 'bg-amber-100 text-amber-800 border-amber-200',
-  ghosted: 'bg-amber-100 text-amber-800 border-amber-200',
+  applied: 'bg-gray-100/80 text-gray-700 border-gray-300/50 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700',
+  hr_screen: 'bg-sky-100/80 text-sky-700 border-sky-300/50 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-700',
+  interview: 'bg-emerald-100/80 text-emerald-700 border-emerald-300/50 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700',
+  offer: 'bg-emerald-100/80 text-emerald-700 border-emerald-300/50 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700',
+  rejected: 'bg-red-100/80 text-red-700 border-red-300/50 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700',
+  on_hold: 'bg-amber-100/80 text-amber-700 border-amber-300/50 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700',
+  ghosted: 'bg-amber-100/80 text-amber-700 border-amber-300/50 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700',
 }
 
 const LABELS: Record<Status, string> = {
