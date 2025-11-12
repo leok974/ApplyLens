@@ -1,6 +1,14 @@
 import logging
 import os
 
+# Load .env early (dev only) - ensures environment variables are available
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except Exception:
+    pass
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -37,41 +45,7 @@ if os.getenv("APPLYLENS_DEV") == "1":
 
 app = FastAPI(title="ApplyLens API")
 
-# Add rate limiting middleware (before CSRF)
-app.add_middleware(
-    RateLimitMiddleware,
-    capacity=agent_settings.RATE_LIMIT_MAX_REQ,
-    window=agent_settings.RATE_LIMIT_WINDOW_SEC,
-)
-
-# Add CSRF protection middleware (before session middleware)
-app.add_middleware(CSRFMiddleware)
-
-# Add session middleware for OAuth state management
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=agent_settings.SESSION_SECRET,
-    max_age=3600,  # 1 hour for OAuth state
-    same_site="lax",
-    https_only=agent_settings.COOKIE_SECURE == "1",
-)
-
-
-@app.on_event("startup")
-async def _maybe_create_tables():
-    """Create database tables on startup if enabled.
-
-    Prefer Alembic migrations in real environments; this is only for local/dev if enabled.
-    Disabled in test environment to avoid DB connection at import time.
-    """
-    if settings.CREATE_TABLES_ON_STARTUP:
-        Base.metadata.create_all(bind=engine)
-
-
-# Initialize OpenTelemetry tracing (optional, controlled by OTEL_ENABLED)
-init_tracing(app)
-
-# Prometheus middleware for HTTP metrics
+# Prometheus middleware for HTTP metrics (outermost layer)
 app.add_middleware(
     PrometheusMiddleware,
     app_name="applylens_api",
@@ -79,7 +53,7 @@ app.add_middleware(
     prefix="applylens_http",  # e.g. applylens_http_requests_total
 )
 
-# CORS middleware
+# CORS middleware (must be before CSRF to handle preflight OPTIONS requests)
 if os.getenv("APPLYLENS_DEV") == "1":
     # Dev mode: Use regex to support wildcards (chrome-extension://* and localhost:*)
     app.add_middleware(
@@ -99,9 +73,61 @@ else:
         allow_headers=["*"],
     )
 
+# Rate limiting middleware (after CORS, before CSRF)
+app.add_middleware(
+    RateLimitMiddleware,
+    capacity=agent_settings.RATE_LIMIT_MAX_REQ,
+    window=agent_settings.RATE_LIMIT_WINDOW_SEC,
+)
+
+# CSRF protection middleware (after CORS, before session)
+app.add_middleware(CSRFMiddleware)
+
+# Add session middleware for OAuth state management
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=agent_settings.SESSION_SECRET,
+    max_age=3600,  # 1 hour for OAuth state
+    same_site="lax",
+    https_only=agent_settings.COOKIE_SECURE == "1",
+)
+
+
+@app.on_event("startup")
+async def _maybe_create_tables():
+    """Create database tables on startup if enabled.
+
+    Prefer Alembic migrations in real environments; this is only for local/dev if enabled.
+    Disabled in test environment to avoid DB connection at import time.
+    """
+    # Log critical environment variables for debugging
+    log = logging.getLogger("uvicorn")
+    log.info(
+        f"🔧 Runtime config: APPLYLENS_DEV={os.getenv('APPLYLENS_DEV')}, "
+        f"DATABASE_URL={settings.DATABASE_URL[:50]}..., "
+        f"DEVDIAG_BASE={os.getenv('DEVDIAG_BASE')}, "
+        f"DEVDIAG_ENABLED={os.getenv('DEVDIAG_ENABLED')}"
+    )
+
+    if settings.CREATE_TABLES_ON_STARTUP:
+        Base.metadata.create_all(bind=engine)
+
+
+# Initialize OpenTelemetry tracing (optional, controlled by OTEL_ENABLED)
+init_tracing(app)
+
 
 @app.on_event("startup")
 def _startup():
+    # Log key environment variables for troubleshooting
+    logger.info(
+        f"🔧 Runtime config: APPLYLENS_DEV={os.getenv('APPLYLENS_DEV')}, "
+        f"DATABASE_URL={settings.DATABASE_URL[:30]}..., "
+        f"ES_ENABLED={os.getenv('ES_ENABLED', 'true')}, "
+        f"DEVDIAG_BASE={os.getenv('DEVDIAG_BASE')}, "
+        f"DEVDIAG_ENABLED={os.getenv('DEVDIAG_ENABLED')}"
+    )
+
     # Make sure ES index exists (no‑op if disabled)
     ensure_index()
 
