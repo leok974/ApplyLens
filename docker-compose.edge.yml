@@ -1,0 +1,28 @@
+services:
+  edge-nginx:
+    image: nginx:1.27-alpine
+    container_name: edge-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - infra_net
+    volumes:
+      - ./infra/nginx/edge/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/nginx/snippets:/etc/nginx/snippets:ro
+      - ./infra/nginx/edge/www:/var/www/certbot:rw
+      - ./letsencrypt:/etc/letsencrypt:rw
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $$!; done;'"
+    volumes:
+      - ./infra/nginx/edge/www:/var/www/certbot:rw
+      - ./letsencrypt:/etc/letsencrypt:rw
+    restart: unless-stopped
+
+networks:
+  infra_net:
+    external: true

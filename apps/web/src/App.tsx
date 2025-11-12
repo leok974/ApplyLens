@@ -23,9 +23,10 @@ export default function App() {
   return (
     <ToastProvider>
       <TooltipProvider delayDuration={100}>
-        <Routes>
-          {/* Public landing page */}
-          <Route path="/welcome" element={<Landing />} />
+        <div data-testid="app-root">
+          <Routes>
+            {/* Public landing page */}
+            <Route path="/welcome" element={<Landing />} />
 
           {/* Protected routes */}
           <Route path="/*" element={
@@ -51,8 +52,9 @@ export default function App() {
               </AppShell>
             </LoginGuard>
           } />
-        </Routes>
-        <Toaster />
+          </Routes>
+          <Toaster />
+        </div>
       </TooltipProvider>
     </ToastProvider>
   )

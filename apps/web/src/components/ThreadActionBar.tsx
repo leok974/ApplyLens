@@ -45,6 +45,7 @@ export function ThreadActionBar({
   // - auto-advance toggle controls advanceAfterAction() behavior
   return (
     <div
+      data-testid="thread-action-bar"
       className={cn(
         "border-t mt-4 pt-3 flex flex-col gap-3 text-sm",
         "sm:flex-row sm:items-start sm:justify-between"
@@ -55,6 +56,7 @@ export function ThreadActionBar({
         {bulkCount > 1 ? (
           <>
             <button
+              data-testid="action-archive-bulk"
               className={cn(
                 "rounded-md border px-2.5 py-1 text-[11px] font-medium",
                 "bg-zinc-800/80 border-zinc-600/70 text-zinc-100",
@@ -68,6 +70,7 @@ export function ThreadActionBar({
             </button>
 
             <button
+              data-testid="action-mark-safe-bulk"
               className={cn(
                 "rounded-md border px-2.5 py-1 text-[11px] font-medium",
                 "bg-emerald-600/20 text-emerald-200 border-emerald-400/60 hover:bg-emerald-600/30",
@@ -80,6 +83,7 @@ export function ThreadActionBar({
             </button>
 
             <button
+              data-testid="action-quarantine-bulk"
               className={cn(
                 "rounded-md border px-2.5 py-1 text-[11px] font-medium",
                 "bg-red-600/20 text-red-200 border-red-400/60 hover:bg-red-600/30",
@@ -94,6 +98,7 @@ export function ThreadActionBar({
         ) : (
           <>
             <button
+              data-testid="action-mark-safe-single"
               className={cn(
                 "rounded-md border px-2.5 py-1 text-xs font-medium",
                 "bg-zinc-800/80 border-zinc-600/70 text-zinc-100",
@@ -107,6 +112,7 @@ export function ThreadActionBar({
             </button>
 
             <button
+              data-testid="action-quarantine-single"
               className={cn(
                 "rounded-md border px-2.5 py-1 text-xs font-medium",
                 quarantined
@@ -121,6 +127,7 @@ export function ThreadActionBar({
             </button>
 
             <button
+              data-testid="action-archive-single"
               className={cn(
                 "rounded-md border px-2.5 py-1 text-xs font-medium",
                 "bg-zinc-800/80 border-zinc-600/70 text-zinc-100",
@@ -134,6 +141,7 @@ export function ThreadActionBar({
             </button>
 
             <button
+              data-testid="action-open-gmail"
               className={cn(
                 "rounded-md border px-2.5 py-1 text-xs font-medium",
                 "bg-zinc-800/80 border-zinc-600/70 text-zinc-100",
@@ -151,21 +159,27 @@ export function ThreadActionBar({
 
       {/* Right side: status + prefs */}
       <div className="flex flex-col items-start gap-2 text-[11px] text-zinc-400 dark:text-zinc-500 sm:items-end sm:text-right">
-        <div className="text-[11px] leading-none">
+        <div data-testid="handled-progress" className="text-[11px] leading-none">
           {handledCount} of {totalCount} handled
         </div>
 
-        <button
+        <label
+          data-testid="auto-advance-toggle"
           className={cn(
-            "flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-medium",
+            "flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-medium cursor-pointer",
             autoAdvance
               ? "bg-zinc-800/80 text-zinc-100 border-zinc-600/70"
               : "bg-transparent text-zinc-400 border-zinc-700/60",
             "hover:bg-zinc-700 hover:text-zinc-100 hover:border-zinc-500/70"
           )}
-          onClick={onToggleAutoAdvance}
-          disabled={disabled}
         >
+          <input
+            type="checkbox"
+            className="sr-only"
+            checked={autoAdvance}
+            onChange={onToggleAutoAdvance}
+            disabled={disabled}
+          />
           <span
             className={cn(
               "inline-block w-2 h-2 rounded-sm border",
@@ -175,7 +189,7 @@ export function ThreadActionBar({
             )}
           />
           <span>Auto-advance</span>
-        </button>
+        </label>
       </div>
     </div>
   );

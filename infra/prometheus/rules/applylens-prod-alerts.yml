@@ -1,0 +1,72 @@
+# ApplyLens Production Alert Rules
+# Monitors container availability and HTTP errors
+
+groups:
+  - name: applylens-prod
+    interval: 30s
+    rules:
+      # Alert when a container goes down
+      - alert: ContainerDown
+        expr: up{job=~"docker.*|applylens.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          environment: production
+        annotations:
+          summary: "ApplyLens container down: {{ $labels.instance }}"
+          description: "Container {{ $labels.container_name }} has been down for more than 2 minutes."
+
+      # Alert on public 5xx errors
+      - alert: Public5xxErrors
+        expr: sum(rate(nginx_http_requests_total{status=~"5.."}[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          environment: production
+        annotations:
+          summary: "High 5xx error rate on ApplyLens public endpoints"
+          description: "5xx errors detected: {{ $value | humanize }} requests/sec over 5 minutes."
+
+      # Alert when public endpoints are unreachable
+      - alert: PublicEndpointDown
+        expr: probe_success{job="blackbox-applylens"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          environment: production
+        annotations:
+          summary: "ApplyLens public endpoint unreachable: {{ $labels.instance }}"
+          description: "Endpoint {{ $labels.instance }} has been unreachable for 3+ minutes."
+
+      # Alert on slow response times
+      - alert: SlowResponseTime
+        expr: probe_http_duration_seconds{job="blackbox-applylens"} > 5
+        for: 5m
+        labels:
+          severity: warning
+          environment: production
+        annotations:
+          summary: "Slow response time on {{ $labels.instance }}"
+          description: "Response time: {{ $value | humanize }}s (threshold: 5s)"
+
+      # Alert when API ready check fails
+      - alert: APINotReady
+        expr: probe_http_status_code{job="blackbox-applylens", instance="https://applylens.app/api/ready"} != 200
+        for: 2m
+        labels:
+          severity: critical
+          environment: production
+        annotations:
+          summary: "ApplyLens API /ready endpoint failing"
+          description: "API ready check returning non-200 status: {{ $value }}"
+
+      # Alert on container restart loop
+      - alert: ContainerRestartLoop
+        expr: rate(docker_container_restarts_total[10m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          environment: production
+        annotations:
+          summary: "Container restart loop detected: {{ $labels.container_name }}"
+          description: "Container has restarted {{ $value | humanize }} times in 10 minutes."

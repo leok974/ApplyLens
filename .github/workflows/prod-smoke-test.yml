@@ -1,0 +1,76 @@
+name: Production Smoke Test
+
+on:
+  workflow_dispatch: # Manual trigger
+  schedule:
+    - cron: '*/30 * * * *' # Run every 30 minutes
+
+jobs:
+  smoke-test:
+    name: Verify Production Endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check UI Homepage
+        run: |
+          echo "Testing UI endpoint..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://applylens.app/)
+          echo "UI response: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ UI endpoint failed with status $HTTP_CODE"
+            exit 1
+          fi
+          echo "✅ UI endpoint OK"
+
+      - name: Check API Ready Endpoint
+        run: |
+          echo "Testing API /ready endpoint..."
+          RESPONSE=$(curl -s https://applylens.app/api/ready)
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://applylens.app/api/ready)
+          echo "API response: $HTTP_CODE"
+          echo "API body: $RESPONSE"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ API endpoint failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+          # Verify JSON response contains expected fields
+          if echo "$RESPONSE" | grep -q '"status":"ready"'; then
+            echo "✅ API endpoint OK"
+          else
+            echo "❌ API response missing expected status field"
+            exit 1
+          fi
+
+      - name: Check API Health Endpoint
+        run: |
+          echo "Testing API /healthz endpoint..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://applylens.app/api/healthz)
+          echo "Health response: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Health endpoint failed with status $HTTP_CODE"
+            exit 1
+          fi
+          echo "✅ Health endpoint OK"
+
+      - name: Check Response Time
+        run: |
+          echo "Measuring response time..."
+          TIME=$(curl -s -o /dev/null -w "%{time_total}" https://applylens.app/)
+          echo "Response time: ${TIME}s"
+
+          # Alert if response > 5 seconds (but don't fail)
+          if (( $(echo "$TIME > 5.0" | bc -l) )); then
+            echo "⚠️  Warning: Slow response time (${TIME}s > 5s threshold)"
+          else
+            echo "✅ Response time acceptable"
+          fi
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "🚨 Production smoke test FAILED!"
+          echo "Check https://applylens.app for issues"
+          # Add Slack/Discord webhook notification here if needed

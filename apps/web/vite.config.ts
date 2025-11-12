@@ -5,10 +5,11 @@ import path from 'path'
 // Check if we need a proxy (when API_BASE is not explicitly set or is relative)
 const API_BASE = process.env.VITE_API_BASE
 const needsProxy = !API_BASE || API_BASE.startsWith('/')
-const BASE_PATH = process.env.VITE_BASE_PATH || '/'
+// Support ASSET_BASE for CDN, fallback to VITE_BASE_PATH or '/'
+const ASSET_BASE = process.env.ASSET_BASE || process.env.VITE_BASE_PATH || '/'
 
 // Generate build ID from timestamp
-const BUILD_ID = process.env.BUILD_ID || `${Date.now()}`
+const BUILD_ID = process.env.BUILD_ID || ``
 
 // Plugin to inject build ID into HTML
 function buildIdPlugin(): Plugin {
@@ -21,9 +22,8 @@ function buildIdPlugin(): Plugin {
 }
 
 export default defineConfig({
-  // Copilot: Ensure the SPA base is '/web/' so public assets emit under /web
-  // and links like '/web/favicon.ico' resolve correctly in prod builds.
-  base: BASE_PATH,
+  // Use ASSET_BASE for CDN support (e.g., https://cdn.applylens.app/)
+  base: ASSET_BASE,
   plugins: [react(), buildIdPlugin()],
   resolve: {
     alias: {
@@ -51,9 +51,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Add build ID to chunk names for cache busting
-        chunkFileNames: `assets/[name]-${BUILD_ID}.[hash].js`,
-        entryFileNames: `assets/[name]-${BUILD_ID}.[hash].js`,
-        assetFileNames: `assets/[name]-${BUILD_ID}.[hash].[ext]`,
+        chunkFileNames: `assets/[name]-.[hash].js`,
+        entryFileNames: `assets/[name]-.[hash].js`,
+        assetFileNames: `assets/[name]-.[hash].[ext]`,
       }
     }
   }

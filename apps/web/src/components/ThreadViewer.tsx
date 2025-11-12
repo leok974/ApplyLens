@@ -288,6 +288,7 @@ export function ThreadViewer({
 
       {/* Drawer panel */}
       <aside
+        data-testid="thread-viewer"
         className={cn(
           'fixed top-0 right-0 h-full w-full md:w-[480px] bg-card border-l border-border z-50',
           'flex flex-col shadow-2xl',
@@ -400,7 +401,10 @@ export function ThreadViewer({
                     I don't have to scroll 40 quoted replies to know what's happening." */}
 
                 {/* Rolling summary of the conversation */}
-                <ThreadSummarySection summary={threadData?.summary} />
+                <ThreadSummarySection
+                  summary={threadData?.summary}
+                  messageId={emailId}
+                />
 
                 {/* Timeline of interaction */}
                 <ConversationTimelineSection timeline={threadData?.timeline} />

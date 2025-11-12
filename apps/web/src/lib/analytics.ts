@@ -15,7 +15,8 @@ type AnalyticsEvent =
   | { name: 'bulk_action', action: 'archive' | 'mark_safe' | 'quarantine', count: number }
   | { name: 'bulk_action_undo', action: 'archive' | 'mark_safe' | 'quarantine', count: number }
   | { name: 'auto_advance_toggle', enabled: boolean }
-  | { name: 'thread_viewer_navigation', direction: 'next' | 'prev' };
+  | { name: 'thread_viewer_navigation', direction: 'next' | 'prev' }
+  | { name: 'summary_feedback', messageId: string, helpful: boolean };
 
 /**
  * Track an analytics event.

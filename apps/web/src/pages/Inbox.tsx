@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getGmailStatus, getGmailInbox, initiateGmailAuth, Email, GmailConnectionStatus } from '../lib/api'
 import EmailCard from '../components/EmailCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -17,6 +18,7 @@ const LABEL_FILTERS = [
 ]
 
 export default function Inbox() {
+  const [searchParams] = useSearchParams()
   const [status, setStatus] = useState<GmailConnectionStatus | null>(null)
   const [emails, setEmails] = useState<Email[]>([])
   const [total, setTotal] = useState(0)
@@ -39,6 +41,21 @@ export default function Inbox() {
   ).length;
 
   const bulkCount = thread.selectedBulkIds.size;
+
+  // Deep-link support: /inbox?open=<emailId>
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId || !thread.showThread) return
+
+    // Try to open the thread if it exists in current emails
+    const targetEmail = emails.find(e => String(e.id) === openId)
+    if (targetEmail) {
+      thread.showThread(String(targetEmail.id))
+    } else {
+      // Email not in current page - could fetch it or show warning
+      console.warn(`Deep-link target email ${openId} not found in current inbox view`)
+    }
+  }, [searchParams, emails, thread])
 
   // Check connection status on mount
   useEffect(() => {
@@ -173,6 +190,9 @@ export default function Inbox() {
               {emails.map(e => (
                 <div
                   key={e.id}
+                  data-testid="thread-row"
+                  data-thread-id={String(e.id)}
+                  data-selected={thread.selectedId === String(e.id) ? "true" : "false"}
                   className="flex items-start gap-2"
                 >
                   {/* TODO(thread-viewer v1.4):
@@ -181,6 +201,7 @@ export default function Inbox() {
                   */}
                   <input
                     type="checkbox"
+                    data-testid="thread-row-checkbox"
                     className="h-3 w-3 mt-3 rounded border-zinc-400 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
                     checked={thread.selectedBulkIds.has(String(e.id))}
                     onChange={() => thread.toggleBulkSelect(String(e.id))}

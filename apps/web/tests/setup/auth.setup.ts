@@ -1,7 +1,10 @@
 import { request } from "@playwright/test";
 import * as fs from "node:fs";
 
+// In dev mode with Vite proxy, we use the web server which proxies /api to backend
+// In preview mode, we need to hit the API directly
 const BASE = process.env.PW_BASE_URL ?? "http://localhost:5175";
+const API_BASE = process.env.API_BASE_URL ?? BASE; // Falls back to BASE if not set (for dev mode with proxy)
 const STATE = "tests/.auth/demo.json";
 
 export default async () => {
@@ -14,12 +17,13 @@ export default async () => {
   }
 
   console.log("🔐 Setting up demo authentication...");
-  const ctx = await request.newContext({ baseURL: BASE });
+  console.log(`   API: ${API_BASE}`);
+  const ctx = await request.newContext({ baseURL: API_BASE });
 
   try {
     // 1) GET CSRF cookie (same-origin via Vite proxy)
-    console.log("   Fetching CSRF token from /api/auth2/google/csrf");
-    const csrfRes = await ctx.get("/api/auth2/google/csrf");
+    console.log("   Fetching CSRF token from /auth/csrf");
+    const csrfRes = await ctx.get("/auth/csrf");
     if (!csrfRes.ok()) {
       throw new Error(`CSRF endpoint failed: ${csrfRes.status()} ${await csrfRes.text()}`);
     }
@@ -36,8 +40,8 @@ export default async () => {
     }
 
     // 2) POST demo auth with CSRF header
-    console.log("   Starting demo session at /api/auth/demo/start");
-    const login = await ctx.post("/api/auth/demo/start", {
+    console.log("   Starting demo session at /auth/demo/start");
+    const login = await ctx.post("/auth/demo/start", {
       headers: {
         "X-CSRF-Token": token,
         "Content-Type": "application/json"

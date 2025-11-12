@@ -8,6 +8,7 @@ Endpoints for the /inbox-actions page:
 - POST /api/actions/mark_suspicious - Mark email as suspicious
 - POST /api/actions/archive - Archive email
 - POST /api/actions/unsubscribe - Unsubscribe from sender
+- POST /api/actions/summary-feedback - Record summary feedback
 """
 
 import logging
@@ -15,7 +16,7 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -931,6 +932,59 @@ class BulkActionResponse(BaseModel):
 
     updated: List[str]
     failed: List[str] = []
+
+
+class SummaryFeedbackRequest(BaseModel):
+    """Request to record feedback on AI summary quality."""
+
+    message_id: str  # or thread_id if that's your canonical key in the UI
+    helpful: bool
+    reason: Optional[str] = (
+        None  # optional freeform in case we support "why not?" later
+    )
+
+
+class SummaryFeedbackResponse(BaseModel):
+    """Response from summary feedback endpoint."""
+
+    ok: bool
+
+
+@router.post(
+    "/summary-feedback",
+    response_model=SummaryFeedbackResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def post_summary_feedback(
+    payload: SummaryFeedbackRequest,
+    user_email: str = Depends(get_current_user_email),
+):
+    """
+    Record whether the AI summary for a thread was helpful.
+    This is used for tuning/improvement, not user-facing state.
+    """
+
+    # Safety: if we ever care about ownership, enforce that payload.message_id
+    # actually belongs to user_email before accepting.
+    try:
+        logger.info(
+            "summary_feedback user=%s message_id=%s helpful=%s reason=%s",
+            user_email,
+            payload.message_id,
+            payload.helpful,
+            payload.reason,
+        )
+
+        # TODO(phase5.2): persist into db / analytics sink / training queue
+        # For now, just acknowledge
+        return SummaryFeedbackResponse(ok=True)
+
+    except Exception as exc:
+        logger.exception("Error recording summary_feedback: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not record feedback",
+        )
 
 
 # TODO(thread-viewer v1.4.5):

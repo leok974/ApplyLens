@@ -820,6 +820,36 @@ export async function bulkQuarantineMessages(ids: string[]): Promise<BulkActionR
   return postJSON("/api/actions/bulk/quarantine", { message_ids: ids });
 }
 
+/**
+ * Send feedback on thread summary quality.
+ * Used to improve AI summary generation over time.
+ */
+export async function sendThreadSummaryFeedback(opts: {
+  messageId: string;
+  helpful: boolean;
+}): Promise<{ ok: boolean }> {
+  const csrf = getCsrf();
+  const res = await fetch("/api/actions/summary-feedback", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "x-csrf-token": csrf,
+    },
+    body: JSON.stringify({
+      message_id: opts.messageId,
+      helpful: opts.helpful,
+      // reason: (optional, we're not collecting freeform yet)
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to submit summary feedback");
+  }
+
+  return res.json() as Promise<{ ok: boolean }>;
+}
+
 
 // ===== Sender Overrides =====
 
@@ -1468,6 +1498,6 @@ export async function logoutUser(): Promise<void> {
   // Clear cached user data to prevent stale UI after logout
   clearCurrentUser();
 
-  // Finally, navigate user back to "/" or a login screen.
-  window.location.href = "/";
+  // Note: Navigation is now handled by the caller (e.g., Settings page)
+  // to prevent hard page reloads that can crash Playwright tests.
 }

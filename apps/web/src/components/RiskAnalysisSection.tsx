@@ -14,6 +14,7 @@ export function RiskAnalysisSection({
 }: RiskAnalysisSectionProps) {
   return (
     <section
+      data-testid="risk-analysis-section"
       className={cn(
         "surface-panel border text-sm p-3 rounded-md space-y-2",
         // give it some visual identity

@@ -6,6 +6,7 @@ import '@/styles/theme.css'
 import '@/styles/dark-hotfix.css'
 import App from './App'
 import { installGlobalReloadGuard } from './lib/reload-guard'
+import { ensureCsrf } from './lib/csrf'
 // import { registerServiceWorker } from './lib/sw-register'
 
 // Version banner for debugging
@@ -19,6 +20,9 @@ console.info(
 
 // Install reload guard to prevent infinite reload loops
 installGlobalReloadGuard()
+
+// Bootstrap CSRF token (fire-and-forget, don't block render)
+ensureCsrf().catch(console.warn)
 
 // Theme is now initialized by useTheme hook on first render
 // (Keeping this for backwards compatibility during initial load)

@@ -17,6 +17,7 @@ export function ConversationTimelineSection({ timeline }: ConversationTimelineSe
 
   return (
     <section
+      data-testid="conversation-timeline-section"
       className={cn(
         "surface-panel border text-sm p-3 rounded-md space-y-3",
         "mt-4"
@@ -32,6 +33,7 @@ export function ConversationTimelineSection({ timeline }: ConversationTimelineSe
         {timeline.map((evt, idx) => (
           <li
             key={idx}
+            data-testid="timeline-event"
             className={cn(
               "rounded-md border px-2 py-1.5",
               "border-zinc-300 bg-white text-zinc-800",

@@ -11,7 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import ThemeToggle from "@/components/ThemeToggle"
 import { HealthBadge } from "@/components/HealthBadge"
-import { Link, NavLink, useLocation } from "react-router-dom"
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { relabel, rebuildProfile, startBackfillJob, cancelJob } from "@/lib/api"
 import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/use-toast"
@@ -32,6 +32,7 @@ export function AppHeader() {
   const [jobId, setJobId] = useState<string | undefined>()
   const { toast } = useToast()
   const location = useLocation()
+  const navigate = useNavigate()
 
   // Poll job status with exponential backoff
   const jobStatus = useJobPoller(jobId)
@@ -198,11 +199,14 @@ export function AppHeader() {
   }
 
   const handleLogout = async () => {
+    console.log('[AppHeader] handleLogout called - starting logout');
     try {
-      await logout()
-      window.location.href = "/welcome"
+      await logout();
+      console.log('[AppHeader] logout() completed, navigating to /welcome');
+      navigate('/welcome', { replace: true });
+      console.log('[AppHeader] navigate() called');
     } catch (error) {
-      console.error("Logout failed:", error)
+      console.error("[AppHeader] Logout failed:", error);
       toast({
         title: "Logout failed",
         description: "Please try again",

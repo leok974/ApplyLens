@@ -62,6 +62,7 @@ services:
       GOOGLE_REDIRECT_URI_DEV: ${GOOGLE_REDIRECT_URI_DEV}
       # Phase 4: Agent Governance
       HMAC_SECRET: ${HMAC_SECRET}
+      ALLOW_DEV_ROUTES: ${ALLOW_DEV_ROUTES}
     volumes:
       - ../services/api:/app
       - ./secrets:/secrets:ro
@@ -124,7 +125,8 @@ services:
       - kibana
       - prometheus
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # Mount only the dev vhost
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
     ports:
       - "8888:80"  # Local debug port; Cloudflare Tunnel will use nginx:80 internally

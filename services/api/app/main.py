@@ -147,7 +147,25 @@ def debug_500():
     raise HTTPException(status_code=500, detail="Debug error for alert testing")
 
 
-# Include routers
+# Dev routers FIRST - Must be before production routers to win path matches
+# Dev seed router - Test data seeding (dev only)
+from .routers import dev_seed  # noqa: E402
+
+app.include_router(dev_seed.router)
+
+# Dev risk router - Email risk assessment stubs (dev only)
+# MUST BE BEFORE emails.router to win /emails/{id}/risk-advice
+from .routers import dev_risk  # noqa: E402
+
+app.include_router(dev_risk.router)
+app.include_router(dev_risk.emails_risk_router)  # /emails/* paths (no prefix)
+
+# Dev backfill router - Gmail backfill stubs (dev only)
+from .routers import dev_backfill  # noqa: E402
+
+app.include_router(dev_backfill.router)
+
+# Include production routers
 app.include_router(emails.router)
 app.include_router(search.router)
 app.include_router(search_debug.router)  # Debug diagnostics for search
@@ -431,3 +449,16 @@ except Exception as e:
     import traceback
 
     traceback.print_exc()
+
+# Dev-only routes for E2E testing (seed data, etc.)
+# Only available when ALLOW_DEV_ROUTES=1 environment variable is set
+if os.getenv("ALLOW_DEV_ROUTES") == "1":
+    try:
+        from .routers import dev_seed
+
+        app.include_router(dev_seed.router)
+        logger.info("[OK] Dev seed router registered at /api/dev/*")
+    except ImportError as e:
+        logger.error(f"[WARN] Dev seed module import failed: {e}")
+    except Exception as e:
+        logger.error(f"[ERROR] Error loading dev seed router: {e}", exc_info=True)

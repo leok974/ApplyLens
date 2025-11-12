@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getRecencyScale, setRecencyScale, RecencyScale } from '../state/searchPrefs'
 import { Card } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
@@ -8,10 +9,11 @@ import { features } from '../config/features'
 import { ProfileMetrics } from '../components/ProfileMetrics'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { logoutUser } from '@/lib/api'
+import { logout } from '@/api/auth'
 import { getCurrentUser, fetchAndCacheCurrentUser } from '@/api/auth'
 
 export default function Settings() {
+  const navigate = useNavigate()
   const [scale, setScale] = useState<RecencyScale>(getRecencyScale())
   const [accountEmail, setAccountEmail] = useState<string | null>(null)
 
@@ -41,7 +43,15 @@ export default function Settings() {
   }
 
   async function handleLogout() {
-    await logoutUser()
+    console.log('[Settings] handleLogout called - starting logout');
+    try {
+      await logout();
+      console.log('[Settings] logout() completed, navigating to /welcome');
+      navigate('/welcome', { replace: true });
+      console.log('[Settings] navigate() called');
+    } catch (error) {
+      console.error('[Settings] logout failed:', error);
+    }
   }
 
   return (

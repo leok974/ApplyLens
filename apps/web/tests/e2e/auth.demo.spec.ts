@@ -1,5 +1,5 @@
 // apps/web/tests/e2e/auth.demo.spec.ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../setup/console-listeners';
 
 // Helper: starts demo via API to avoid external redirects
 async function startDemo(page: any) {
@@ -18,8 +18,8 @@ test.describe('Demo login flow', () => {
     // Should navigate to inbox
     await page.waitForURL('**/inbox');
 
-    // Verify /auth/me returns demo user
-    const r = await page.request.get('/auth/me');
+    // Verify /auth/me returns demo user (use /api prefix)
+    const r = await page.request.get('/api/auth/me');
     expect(r.ok()).toBeTruthy();
     const me = await r.json();
     expect(me.email).toBeTruthy();

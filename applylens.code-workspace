@@ -1,0 +1,65 @@
+{
+  "folders": [
+    {
+      "name": "web",
+      "path": "apps/web"
+    },
+    {
+      "name": "api",
+      "path": "services/api"
+    }
+  ],
+  "settings": {
+    // 🔒 Keep VS Code from melting down
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/.next/**": true,
+      "**/coverage/**": true,
+      "**/playwright-report/**": true,
+      "**/test-results/**": true,
+      "**/.pytest_cache/**": true,
+      "**/__pycache__/**": true,
+      "**/.mypy_cache/**": true,
+      "**/*.log": true,
+      "**/*.sqlite": true
+    },
+    "search.exclude": {
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/.next/**": true,
+      "**/coverage/**": true,
+      "**/playwright-report/**": true,
+      "**/test-results/**": true,
+      "**/.pytest_cache/**": true,
+      "**/__pycache__/**": true,
+      "**/.mypy_cache/**": true
+    },
+
+    // Give TS more headroom (web)
+    "typescript.tsserver.maxTsServerMemory": 4096,
+
+    // Copilot / LLM extensions: don't slurp giant folders
+    "github.copilot.chat.ignoreFiles": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.next/**",
+      "**/coverage/**",
+      "**/playwright-report/**",
+      "**/test-results/**"
+    ],
+
+    // Python side (api)
+    "python.analysis.exclude": [
+      "**/.venv/**",
+      "**/__pycache__/**",
+      "**/.pytest_cache/**"
+    ],
+
+    // General perf safety
+    "editor.largeFileOptimizations": true,
+    "git.excludeGitIgnore": true
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { loginWithGoogle, startDemo } from "@/api/auth";
 import { Mail, Sparkles, Lock, Database, Shield, Zap } from "lucide-react";
@@ -6,17 +7,21 @@ import { Mail, Sparkles, Lock, Database, Shield, Zap } from "lucide-react";
 export default function Landing() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleDemo = async () => {
     setBusy(true);
     setError(null);
     try {
+      console.log('[Landing] Starting demo login');
       await startDemo();
-      // Redirect to inbox after successful demo login
-      window.location.href = "/inbox";
+      console.log('[Landing] Demo login successful, navigating to /inbox');
+      // Use soft navigation instead of hard redirect
+      navigate("/inbox", { replace: true });
+      console.log('[Landing] navigate() called');
     } catch (err) {
       setError("Failed to start demo. Please try again.");
-      console.error("Demo start failed:", err);
+      console.error("[Landing] Demo start failed:", err);
     } finally {
       setBusy(false);
     }
