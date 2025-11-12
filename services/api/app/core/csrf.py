@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 # HTTP methods that are considered safe and don't require CSRF protection
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
+# Extension API - exempt from CSRF (dev-only endpoints)
+EXTENSION_EXEMPT_PREFIXES = (
+    "/api/extension/",  # All extension endpoints
+    "/extension/",  # Without /api prefix (if nginx strips it)
+    "/api/ops/diag",  # DevDiag diagnostics proxy
+)
+
+EXTENSION_EXEMPT_EXACT = {
+    "/api/profile/me",  # Profile brain (dev only)
+    "/profile/me",  # Without /api prefix
+    "/api/ops/diag/health",  # DevDiag health check
+}
+
 # Paths that are exempt from CSRF protection (e.g., non-sensitive UX metrics)
 CSRF_EXEMPT_PATHS = {
     "/ux/heartbeat",  # Via nginx proxy (strips /api prefix)
@@ -29,10 +42,6 @@ CSRF_EXEMPT_PATHS = {
     "/api/chat/stream",  # EventSource via nginx
     "/assistant/query",  # Assistant query endpoint
     "/api/assistant/query",  # Assistant via nginx
-    "/api/extension/applications",  # Browser extension - log applications (dev-only)
-    "/api/extension/outreach",  # Browser extension - log outreach (dev-only)
-    "/api/extension/generate-form-answers",  # Browser extension - generate form (dev-only)
-    "/api/extension/generate-recruiter-dm",  # Browser extension - generate DM (dev-only)
 }
 
 
@@ -63,9 +72,26 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             token = secrets.token_urlsafe(32)
             logger.debug("Generated new CSRF token")
 
+        path = request.url.path
+
+        # Exempt extension API routes (dev-only endpoints)
+        if path.startswith(EXTENSION_EXEMPT_PREFIXES) or path in EXTENSION_EXEMPT_EXACT:
+            logger.debug(f"CSRF exempt extension path: {request.method} {path}")
+            response = await call_next(request)
+            # Still set cookie for future requests
+            response.set_cookie(
+                key=agent_settings.CSRF_COOKIE_NAME,
+                value=token,
+                httponly=False,
+                secure=agent_settings.COOKIE_SECURE == "1",
+                samesite="lax",
+                path="/",
+            )
+            return response
+
         # Check if path is exempt from CSRF protection
-        if request.url.path in CSRF_EXEMPT_PATHS:
-            logger.debug(f"CSRF exempt path: {request.method} {request.url.path}")
+        if path in CSRF_EXEMPT_PATHS:
+            logger.debug(f"CSRF exempt path: {request.method} {path}")
             response = await call_next(request)
             # Still set cookie for future requests
             response.set_cookie(
@@ -82,54 +108,52 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if request.method not in SAFE_METHODS:
             header_token = request.headers.get(agent_settings.CSRF_HEADER_NAME)
 
+            # Normalize metric label path to ensure consistency
+            # (nginx may strip /api prefix, so normalize for metrics)
+            label_path = (
+                path
+                if path.startswith("/api/")
+                else f"/api{path}"
+                if path.startswith("/extension/") or path.startswith("/profile/")
+                else path
+            )
+
             # Dev mode: Allow cookie-only validation for dev routes
             # This makes Playwright tests and dev ergonomics easier
             is_dev_mode = os.getenv("ALLOW_DEV_ROUTES") == "1"
             is_dev_route = (
-                request.url.path.startswith("/api/dev/")
-                or request.url.path.startswith(
-                    "/dev/"
-                )  # Without /api prefix (nginx strips it)
-                or request.url.path.startswith("/api/security/")
-                or request.url.path.startswith("/security/")  # Without /api prefix
-                or request.url.path.startswith("/api/gmail/backfill/")
-                or request.url.path.startswith(
-                    "/gmail/backfill/"
-                )  # Without /api prefix
-                or "/risk-feedback" in request.url.path  # Email risk feedback endpoint
-                or "/risk-advice" in request.url.path  # Email risk advice endpoint
+                path.startswith("/api/dev/")
+                or path.startswith("/dev/")  # Without /api prefix (nginx strips it)
+                or path.startswith("/api/security/")
+                or path.startswith("/security/")  # Without /api prefix
+                or path.startswith("/api/gmail/backfill/")
+                or path.startswith("/gmail/backfill/")  # Without /api prefix
+                or "/risk-feedback" in path  # Email risk feedback endpoint
+                or "/risk-advice" in path  # Email risk advice endpoint
             )
 
             if is_dev_mode and is_dev_route and not header_token:
                 # In dev mode, dev routes can proceed with cookie-only validation
                 logger.debug(
-                    f"CSRF dev mode: Cookie-only validation for {request.method} {request.url.path}"
+                    f"CSRF dev mode: Cookie-only validation for {request.method} {path}"
                 )
-                csrf_success_total.labels(
-                    path=request.url.path, method=request.method
-                ).inc()
+                csrf_success_total.labels(path=label_path, method=request.method).inc()
                 # Continue to process request - cookie already validated by presence
             elif not header_token:
                 logger.warning(
-                    f"CSRF failure: Missing {agent_settings.CSRF_HEADER_NAME} header for {request.method} {request.url.path}"
+                    f"CSRF failure: Missing {agent_settings.CSRF_HEADER_NAME} header for {request.method} {path}"
                 )
-                csrf_fail_total.labels(
-                    path=request.url.path, method=request.method
-                ).inc()
+                csrf_fail_total.labels(path=label_path, method=request.method).inc()
                 return Response("CSRF token missing", status_code=403)
             elif header_token != token:
                 logger.warning(
-                    f"CSRF failure: Token mismatch for {request.method} {request.url.path}"
+                    f"CSRF failure: Token mismatch for {request.method} {path}"
                 )
-                csrf_fail_total.labels(
-                    path=request.url.path, method=request.method
-                ).inc()
+                csrf_fail_total.labels(path=label_path, method=request.method).inc()
                 return Response("CSRF token invalid", status_code=403)
             else:
-                logger.debug(f"CSRF validated for {request.method} {request.url.path}")
-                csrf_success_total.labels(
-                    path=request.url.path, method=request.method
-                ).inc()
+                logger.debug(f"CSRF validated for {request.method} {path}")
+                csrf_success_total.labels(path=label_path, method=request.method).inc()
 
         # Process request
         response = await call_next(request)

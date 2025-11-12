@@ -12,6 +12,13 @@ scrape_configs:
     static_configs:
       - targets: ["api:8003"]   # API container DNS name from compose
 
+  # DevDiag HTTP - Monitor diagnostic service
+  - job_name: devdiag-http
+    metrics_path: /metrics
+    scheme: https
+    static_configs:
+      - targets: ["${DEVDIAG_HOST:-devdiag.example.com}:443"]
+
   # Blackbox Exporter - Monitor public endpoints
   - job_name: blackbox-applylens
     metrics_path: /probe

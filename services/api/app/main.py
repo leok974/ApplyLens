@@ -249,6 +249,11 @@ from .routers import extension  # noqa: E402
 
 app.include_router(extension.router)  # /api/extension/* + /api/profile/*
 
+# DevDiag Proxy (ops diagnostics)
+from .routers import devdiag_proxy  # noqa: E402
+
+app.include_router(devdiag_proxy.router, prefix="/api")  # /api/ops/diag/*
+
 # Phase 5 - Chat Assistant
 from .routers import chat  # noqa: E402
 from .routers import assistant  # noqa: E402

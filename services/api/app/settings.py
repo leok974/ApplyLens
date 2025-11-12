@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -11,15 +12,30 @@ class Settings(BaseSettings):
     API_PORT: int = 8003
     API_PREFIX: str = "/api"
     CORS_ORIGINS: str = "http://localhost:5175"
-    DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/applylens"
 
-    # Database table creation (disabled in test env to avoid import-time connections)
-    CREATE_TABLES_ON_STARTUP: bool = (
-        os.getenv(
-            "CREATE_TABLES_ON_STARTUP", "0" if os.getenv("ENV") == "test" else "1"
-        )
-        == "1"
+    # Database URL - can be overridden by APPLYLENS_DEV_DB for local dev
+    DATABASE_URL: str = Field(
+        default="postgresql://postgres:postgres@db:5432/applylens",
+        validation_alias="APPLYLENS_DEV_DB",
     )
+
+    @property
+    def is_sqlite(self) -> bool:
+        """Check if using SQLite database."""
+        return "sqlite" in self.DATABASE_URL.lower()
+
+    # Database table creation (disabled in test env and SQLite to avoid import-time connections)
+    CREATE_TABLES_ON_STARTUP: bool = False  # Will be computed based on env
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Disable table creation for test env or SQLite (use migrations instead)
+        if os.getenv("ENV") == "test" or self.is_sqlite:
+            self.CREATE_TABLES_ON_STARTUP = False
+        else:
+            self.CREATE_TABLES_ON_STARTUP = (
+                os.getenv("CREATE_TABLES_ON_STARTUP", "1") == "1"
+            )
 
     # Gmail single-user quick start (optional)
     GMAIL_CLIENT_ID: Optional[str] = None

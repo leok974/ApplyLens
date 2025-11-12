@@ -63,6 +63,12 @@ services:
       # Phase 4: Agent Governance
       HMAC_SECRET: ${HMAC_SECRET}
       ALLOW_DEV_ROUTES: ${ALLOW_DEV_ROUTES}
+      # DevDiag HTTP
+      DEVDIAG_BASE: ${DEVDIAG_BASE}
+      DEVDIAG_JWT: ${DEVDIAG_JWT}
+      DEVDIAG_ENABLED: ${DEVDIAG_ENABLED:-1}
+      DEVDIAG_TIMEOUT_S: ${DEVDIAG_TIMEOUT_S:-120}
+      DEVDIAG_ALLOW_HOSTS: ${DEVDIAG_ALLOW_HOSTS:-applylens.app,.applylens.app,api.applylens.app}
     volumes:
       - ../services/api:/app
       - ./secrets:/secrets:ro

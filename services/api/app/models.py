@@ -22,6 +22,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from .db import Base
+from .settings import settings
+
+# Use JSON for SQLite, JSONB for PostgreSQL
+JSONType = JSON if "sqlite" in settings.DATABASE_URL.lower() else JSONB
 
 
 class User(Base):
@@ -241,7 +245,7 @@ class ActionsAudit(Base):
     confidence = Column(Float, nullable=True)  # Confidence score 0-1
     rationale = Column(Text, nullable=True)  # Human-readable explanation
     payload = Column(
-        JSONB, nullable=True
+        JSONType, nullable=True
     )  # Action-specific data (e.g., {"label": "important"})
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
@@ -608,8 +612,8 @@ class AgentAuditLog(Base):
     duration_ms = Column(Float, nullable=True)
 
     # Execution details
-    plan = Column(JSONB, nullable=True)
-    artifacts = Column(JSONB, nullable=True)
+    plan = Column(JSONType, nullable=True)
+    artifacts = Column(JSONType, nullable=True)
     error = Column(String(2048), nullable=True)
 
     # Metadata
@@ -679,7 +683,7 @@ class AgentApproval(Base):
     executed = Column(Boolean, default=False, nullable=False)
     executed_at = Column(DateTime(timezone=True), nullable=True)
     execution_result = Column(
-        JSONB, nullable=True
+        JSONType, nullable=True
     )  # Result of executing the approved action
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
