@@ -40,16 +40,21 @@ def initialize_health_metrics():
     finally:
         db.close()
 
-    # Check ES connectivity
-    try:
-        es_url = os.getenv("ES_URL", "http://es:9200")
-        es = Elasticsearch(es_url)
-        if es.ping():
-            ES_UP.set(1)
-        else:
+    # Check ES connectivity only if enabled
+    es_enabled = os.getenv("ES_ENABLED", "true").lower() == "true"
+    if es_enabled:
+        try:
+            es_url = os.getenv("ES_URL", "http://es:9200")
+            es = Elasticsearch(es_url)
+            if es.ping():
+                ES_UP.set(1)
+            else:
+                ES_UP.set(0)
+        except Exception:
             ES_UP.set(0)
-    except Exception:
-        ES_UP.set(0)
+    else:
+        # ES disabled - set metric to -1 to indicate "not applicable"
+        ES_UP.set(-1)
 
 
 router = APIRouter(prefix="", tags=["health"])  # Root scope for K8s probes
@@ -104,21 +109,27 @@ def ready():
     finally:
         db.close()
 
-    # Check ES connectivity
-    try:
-        es_url = os.getenv("ES_URL", "http://es:9200")
-        es = Elasticsearch(es_url)
-        if es.ping():
-            es_status = "ok"
-            ES_UP.set(1)
-        else:
+    # Check ES connectivity only if enabled
+    es_enabled = os.getenv("ES_ENABLED", "true").lower() == "true"
+    if es_enabled:
+        try:
+            es_url = os.getenv("ES_URL", "http://es:9200")
+            es = Elasticsearch(es_url)
+            if es.ping():
+                es_status = "ok"
+                ES_UP.set(1)
+            else:
+                es_status = "down"
+                ES_UP.set(0)
+                errors.append("Elasticsearch: ping failed")
+        except Exception as e:
             es_status = "down"
             ES_UP.set(0)
-            errors.append("Elasticsearch: ping failed")
-    except Exception as e:
-        es_status = "down"
-        ES_UP.set(0)
-        errors.append(f"Elasticsearch: {str(e)}")
+            errors.append(f"Elasticsearch: {str(e)}")
+    else:
+        # ES disabled - mark as N/A
+        es_status = "disabled"
+        ES_UP.set(-1)
 
     # Get migration version
     try:
@@ -127,8 +138,8 @@ def ready():
         migration_version = "error"
         errors.append(f"Migration check: {str(e)}")
 
-    # Determine overall readiness
-    is_ready = db_status == "ok" and es_status == "ok"
+    # Determine overall readiness (ES optional in dev mode)
+    is_ready = db_status == "ok" and (es_status in ["ok", "disabled"])
 
     response = {
         "status": "ready" if is_ready else "degraded",
@@ -172,24 +183,30 @@ def status():
     finally:
         db.close()
 
-    # Check ES connectivity
-    try:
-        es_url = os.getenv("ES_URL", "http://es:9200")
-        es = Elasticsearch(es_url)
-        if es.ping():
-            es_status = "ok"
-            ES_UP.set(1)
-        else:
+    # Check ES connectivity only if enabled
+    es_enabled = os.getenv("ES_ENABLED", "true").lower() == "true"
+    if es_enabled:
+        try:
+            es_url = os.getenv("ES_URL", "http://es:9200")
+            es = Elasticsearch(es_url)
+            if es.ping():
+                es_status = "ok"
+                ES_UP.set(1)
+            else:
+                es_status = "down"
+                ES_UP.set(0)
+                errors.append("Elasticsearch: ping failed")
+        except Exception as e:
             es_status = "down"
             ES_UP.set(0)
-            errors.append("Elasticsearch: ping failed")
-    except Exception as e:
-        es_status = "down"
-        ES_UP.set(0)
-        errors.append(f"Elasticsearch: {str(e)}")
+            errors.append(f"Elasticsearch: {str(e)}")
+    else:
+        # ES disabled - mark as N/A
+        es_status = "disabled"
+        ES_UP.set(-1)
 
-    # Determine overall status
-    is_healthy = db_status == "ok" and es_status == "ok"
+    # Determine overall status (ES optional in dev mode)
+    is_healthy = db_status == "ok" and (es_status in ["ok", "disabled"])
 
     # Frontend-friendly response format
     if is_healthy:

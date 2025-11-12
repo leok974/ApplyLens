@@ -124,6 +124,7 @@ es = Elasticsearch(ES_URL) if ES_ENABLED else None
 def ensure_index():
     """Ensure Elasticsearch index exists with retry logic for startup."""
     if not ES_ENABLED or es is None:
+        print("[INFO] Elasticsearch is disabled (ES_ENABLED=false or not configured)")
         return
 
     # Retry logic for ES connection during startup
@@ -131,7 +132,9 @@ def ensure_index():
 
     from elasticsearch.exceptions import ConnectionError
 
-    max_retries = 30
+    # In dev mode, be more lenient with ES failures
+    is_dev = os.getenv("APPLYLENS_DEV") == "1"
+    max_retries = 3 if is_dev else 30
     retry_delay = 1
 
     for attempt in range(max_retries):
@@ -152,7 +155,14 @@ def ensure_index():
                 time.sleep(retry_delay)
                 continue
             else:
-                print(
-                    f"✗ Failed to connect to Elasticsearch after {max_retries} attempts"
-                )
-                raise
+                if is_dev:
+                    print(
+                        f"[WARN] Failed to connect to Elasticsearch after {max_retries} attempts - continuing in dev mode without ES"
+                    )
+                    # In dev mode, don't crash the server if ES is unavailable
+                    return
+                else:
+                    print(
+                        f"✗ Failed to connect to Elasticsearch after {max_retries} attempts"
+                    )
+                    raise
