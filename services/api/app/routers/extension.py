@@ -13,8 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.orm import Session as DBSession
 
-from app.db import get_db
-from app.models import ExtensionApplication, ExtensionOutreach
+from ..db import get_db
+from ..models import ExtensionApplication, ExtensionOutreach
 
 DEV_MODE = os.getenv("APPLYLENS_DEV", "1") == "1"
 

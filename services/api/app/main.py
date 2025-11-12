@@ -221,6 +221,11 @@ app.include_router(inbox_actions.router)
 app.include_router(senders.router)  # /settings/senders
 app.include_router(tracker.router)  # /tracker
 
+# Browser Extension API (dev-only)
+from .routers import extension  # noqa: E402
+
+app.include_router(extension.router)  # /api/extension/* + /api/profile/*
+
 # Phase 5 - Chat Assistant
 from .routers import chat  # noqa: E402
 from .routers import assistant  # noqa: E402

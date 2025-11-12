@@ -807,3 +807,42 @@ class UserSenderOverride(Base):
 
     def __repr__(self):
         return f"<UserSenderOverride(user={self.user_id}, sender={self.sender}, safe={self.safe}, muted={self.muted})>"
+
+
+class ExtensionApplication(Base):
+    """Job applications logged from browser extension."""
+
+    __tablename__ = "extension_applications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_email = Column(String(320), nullable=False, index=True)
+    company = Column(String(255), nullable=False, index=True)
+    role = Column(String(512), nullable=False)
+    job_url = Column(Text, nullable=True)
+    source = Column(String(128), nullable=False, index=True)
+    applied_at = Column(DateTime(timezone=True), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self):
+        return f"<ExtensionApplication(id={self.id}, company={self.company}, role={self.role})>"
+
+
+class ExtensionOutreach(Base):
+    """Recruiter outreach logged from browser extension."""
+
+    __tablename__ = "extension_outreach"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_email = Column(String(320), nullable=False, index=True)
+    company = Column(String(255), nullable=False, index=True)
+    role = Column(String(512), nullable=False)
+    recruiter_name = Column(String(255), nullable=True)
+    recruiter_profile_url = Column(Text, nullable=True)
+    message_preview = Column(Text, nullable=True)
+    source = Column(String(128), nullable=False, index=True)
+    sent_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self):
+        return f"<ExtensionOutreach(id={self.id}, company={self.company}, recruiter={self.recruiter_name})>"
