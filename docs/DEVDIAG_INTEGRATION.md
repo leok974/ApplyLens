@@ -11,12 +11,12 @@ Add these to your `.env.prod` file:
 
 ```bash
 # DevDiag HTTP - Diagnostic Service Integration
-DEVDIAG_BASE=https://devdiag.example.com  # Your DevDiag instance URL
-DEVDIAG_JWT=<your-jwt-token>              # Authentication token
-DEVDIAG_ENABLED=1                         # Enable/disable integration
-DEVDIAG_TIMEOUT_S=120                     # Request timeout (seconds)
+DEVDIAG_BASE=https://devdiag.leoklemet.com  # DevDiag instance URL
+DEVDIAG_JWT=<your-jwt-token>                # Get from DevDiag dashboard
+DEVDIAG_ENABLED=1                           # Enable/disable integration
+DEVDIAG_TIMEOUT_S=120                       # Request timeout (seconds)
 DEVDIAG_ALLOW_HOSTS=applylens.app,.applylens.app,api.applylens.app
-DEVDIAG_HOST=devdiag.example.com          # For Prometheus scraping
+DEVDIAG_HOST=devdiag.leoklemet.com          # For Prometheus scraping
 ```
 
 ### 2. Docker Compose
@@ -61,11 +61,11 @@ The workflow `.github/workflows/devdiag-quickcheck.yml` runs on every pull reque
 Add these secrets in your repository settings:
 
 1. **DEVDIAG_BASE**
-   - Value: `https://devdiag.example.com`
+   - Value: `https://devdiag.leoklemet.com`
    - Used by: CI workflow
 
 2. **DEVDIAG_JWT** (Optional)
-   - Value: Your JWT token
+   - Value: Your JWT token from DevDiag dashboard
    - Used by: CI workflow for authenticated requests
 
 ### Example Workflow Run

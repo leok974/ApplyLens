@@ -17,7 +17,7 @@ scrape_configs:
     metrics_path: /metrics
     scheme: https
     static_configs:
-      - targets: ["${DEVDIAG_HOST:-devdiag.example.com}:443"]
+      - targets: ["devdiag.leoklemet.com:443"]
 
   # Blackbox Exporter - Monitor public endpoints
   - job_name: blackbox-applylens
