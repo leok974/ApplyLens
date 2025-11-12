@@ -23,6 +23,10 @@ from .core.metrics import metrics_router
 # CORS allowlist from environment (comma-separated)
 ALLOWED_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5175").split(",")
 
+# Add chrome extension support for dev mode
+if os.getenv("APPLYLENS_DEV") == "1":
+    ALLOWED_ORIGINS.extend(["chrome-extension://*", "http://localhost:*"])
+
 app = FastAPI(title="ApplyLens API")
 
 # Add rate limiting middleware (before CSRF)

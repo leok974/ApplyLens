@@ -29,6 +29,10 @@ CSRF_EXEMPT_PATHS = {
     "/api/chat/stream",  # EventSource via nginx
     "/assistant/query",  # Assistant query endpoint
     "/api/assistant/query",  # Assistant via nginx
+    "/api/extension/applications",  # Browser extension - log applications (dev-only)
+    "/api/extension/outreach",  # Browser extension - log outreach (dev-only)
+    "/api/extension/generate-form-answers",  # Browser extension - generate form (dev-only)
+    "/api/extension/generate-recruiter-dm",  # Browser extension - generate DM (dev-only)
 }
 
 
