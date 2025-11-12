@@ -1,0 +1,235 @@
+# services/api/app/routers/extension.py
+"""
+Browser extension endpoints for ApplyLens Companion.
+Provides profile data, form generation, and application tracking.
+
+Security: Dev-only mode via APPLYLENS_DEV=1 env var.
+"""
+
+from datetime import datetime
+from typing import List, Optional, Dict, Any
+import os
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, HttpUrl
+from sqlalchemy.orm import Session as DBSession
+
+from app.db import get_db
+from app.models import ExtensionApplication, ExtensionOutreach
+
+DEV_MODE = os.getenv("APPLYLENS_DEV", "1") == "1"
+
+
+def dev_only():
+    """Guard for dev-only endpoints."""
+    if not DEV_MODE:
+        raise HTTPException(status_code=403, detail="Dev-only endpoint")
+    return True
+
+
+router = APIRouter(prefix="/api", tags=["extension"])
+
+
+# ---------- Phase 0: Profile "brain" ----------
+class ProjectLink(BaseModel):
+    demo: Optional[HttpUrl] = None
+    repo: Optional[HttpUrl] = None
+
+
+class Project(BaseModel):
+    name: str
+    one_liner: str
+    bullets: List[str]
+    links: ProjectLink
+
+
+class Profile(BaseModel):
+    name: str
+    headline: str
+    locations: List[str]
+    target_roles: List[str]
+    tech_stack: List[str]
+    projects: List[Project]
+    preferences: Dict[str, Any]
+
+
+PROFILE = Profile(
+    name="Leo Klemet",
+    headline="AI/ML Engineer · Agentic systems · Full-stack",
+    locations=["Remote", "Washington, DC"],
+    target_roles=[
+        "AI Engineer",
+        "Machine Learning Engineer",
+        "Full-Stack AI Engineer",
+    ],
+    tech_stack=[
+        "Python",
+        "FastAPI",
+        "React",
+        "TypeScript",
+        "PostgreSQL",
+        "Elasticsearch",
+        "Docker",
+        "Kubernetes",
+        "LLMs",
+        "LangChain/LangGraph",
+    ],
+    projects=[
+        Project(
+            name="ApplyLens",
+            one_liner="Agentic job-inbox that ingests Gmail, tracks applications, and adds security risk scoring.",
+            bullets=[
+                "FastAPI backend with Gmail OAuth ingest and Elasticsearch search + synonym/recency boosts.",
+                "Application tracker with status chips, filters, and CRUD UI in React.",
+                "Prometheus/Grafana metrics + alerting for ingest errors and system health.",
+            ],
+            links=ProjectLink(
+                demo="https://applylens.app",
+                repo="https://github.com/leok974/ApplyLens",
+            ),
+        ),
+        Project(
+            name="SiteAgent",
+            one_liner="Self-updating portfolio & SEO agent that ships diff-based approvals.",
+            bullets=[
+                "Agent tasks for SEO tuning, OG image generation, and link validation.",
+                "Dev Overlay with artifacts, SSE events, and per-run diagnostics.",
+                "JSON-LD + nightly SEO/analytics loops via GitHub Actions.",
+            ],
+            links=ProjectLink(
+                demo="https://www.leoklemet.com",
+                repo="https://github.com/leok974/siteagent",
+            ),
+        ),
+    ],
+    preferences={
+        "domains": [
+            "Agentic platforms",
+            "ML infrastructure",
+            "Dev tools",
+            "Productivity",
+        ],
+        "work_setup": ["Remote", "Hybrid DC"],
+        "note": "Wants roles where agents/LLMs are core to the product.",
+    },
+)
+
+
+@router.get("/profile/me", response_model=Profile, dependencies=[Depends(dev_only)])
+def get_profile():
+    """Get user profile for context in form generation."""
+    return PROFILE
+
+
+# ---------- Phase 1: Minimal logging ----------
+class AppLogIn(BaseModel):
+    company: str
+    role: str
+    job_url: Optional[HttpUrl] = None
+    source: str = "browser_extension"
+    applied_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+@router.post("/extension/applications", dependencies=[Depends(dev_only)])
+def log_application(payload: AppLogIn, db: DBSession = Depends(get_db)):
+    """Log a job application from the browser extension."""
+    rec = ExtensionApplication(
+        company=payload.company,
+        role=payload.role,
+        job_url=str(payload.job_url) if payload.job_url else None,
+        source=payload.source,
+        applied_at=payload.applied_at or datetime.utcnow(),
+        notes=payload.notes,
+        user_email="leo@applylens.dev",  # single-user dev
+    )
+    db.add(rec)
+    db.commit()
+    return {"ok": True, "id": rec.id}
+
+
+class OutreachIn(BaseModel):
+    company: str
+    role: str
+    recruiter_name: Optional[str] = None
+    recruiter_profile_url: Optional[HttpUrl] = None
+    message_preview: Optional[str] = None
+    sent_at: Optional[datetime] = None
+    source: str = "browser_extension"
+
+
+@router.post("/extension/outreach", dependencies=[Depends(dev_only)])
+def log_outreach(payload: OutreachIn, db: DBSession = Depends(get_db)):
+    """Log recruiter outreach from the browser extension."""
+    rec = ExtensionOutreach(
+        company=payload.company,
+        role=payload.role,
+        recruiter_name=payload.recruiter_name,
+        recruiter_profile_url=(
+            str(payload.recruiter_profile_url)
+            if payload.recruiter_profile_url
+            else None
+        ),
+        message_preview=payload.message_preview,
+        sent_at=payload.sent_at or datetime.utcnow(),
+        source=payload.source,
+        user_email="leo@applylens.dev",
+    )
+    db.add(rec)
+    db.commit()
+    return {"ok": True, "id": rec.id}
+
+
+# ---------- Phase 3/4: Generators (stubbed now) ----------
+class FormField(BaseModel):
+    field_id: str
+    label: Optional[str] = None
+    type: Optional[str] = None
+
+
+class GenerateFormAnswersIn(BaseModel):
+    job: Dict[str, Any]
+    fields: List[FormField]
+
+
+@router.post("/extension/generate-form-answers", dependencies=[Depends(dev_only)])
+def generate_form_answers(payload: GenerateFormAnswersIn):
+    """
+    Generate form answers based on job context and profile.
+    TODO: Replace with LLM call later.
+    """
+    answers = []
+    for f in payload.fields:
+        # Template answer for now
+        text = (
+            f"Answer for '{f.label or f.field_id}' based on {payload.job.get('title', 'the role')} "
+            f"and my projects (e.g., ApplyLens, SiteAgent)."
+        )
+        answers.append({"field_id": f.field_id, "answer": text})
+    return {"job": payload.job, "answers": answers}
+
+
+class RecruiterProfile(BaseModel):
+    name: str
+    headline: Optional[str] = None
+    company: Optional[str] = None
+    profile_url: Optional[HttpUrl] = None
+
+
+class GenerateDMIn(BaseModel):
+    profile: RecruiterProfile
+    job: Optional[Dict[str, Any]] = None
+
+
+@router.post("/extension/generate-recruiter-dm", dependencies=[Depends(dev_only)])
+def generate_recruiter_dm(payload: GenerateDMIn):
+    """
+    Generate a recruiter DM based on their profile and the job.
+    TODO: Replace with LLM call later.
+    """
+    name = payload.profile.name.split()[0]
+    role = (payload.job or {}).get("title", "the role")
+    msg = (
+        f"Hi {name}, I just applied to {role}. I build agentic systems (ApplyLens, SiteAgent) "
+        f"with FastAPI/React/Elasticsearch—happy to share a quick demo if helpful!"
+    )
+    return {"message": msg}
