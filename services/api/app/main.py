@@ -25,7 +25,15 @@ ALLOWED_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5175").split
 
 # Add chrome extension support for dev mode
 if os.getenv("APPLYLENS_DEV") == "1":
-    ALLOWED_ORIGINS.extend(["chrome-extension://*", "http://localhost:*"])
+    # Support chrome extensions and any localhost port for development
+    ALLOWED_ORIGINS.extend(
+        [
+            "chrome-extension://*",
+            "http://localhost",
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+        ]
+    )
 
 app = FastAPI(title="ApplyLens API")
 
@@ -72,13 +80,24 @@ app.add_middleware(
 )
 
 # CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[o.strip() for o in ALLOWED_ORIGINS if o.strip()],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
+if os.getenv("APPLYLENS_DEV") == "1":
+    # Dev mode: Use regex to support wildcards (chrome-extension://* and localhost:*)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"(chrome-extension://.*|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?)",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+else:
+    # Production: Use explicit allowlist
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[o.strip() for o in ALLOWED_ORIGINS if o.strip()],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
 
 
 @app.on_event("startup")

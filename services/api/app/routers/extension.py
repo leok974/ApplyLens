@@ -11,12 +11,36 @@ from typing import List, Optional, Dict, Any
 import os
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, HttpUrl
+from prometheus_client import Counter
 from sqlalchemy.orm import Session as DBSession
 
 from ..db import get_db
 from ..models import ExtensionApplication, ExtensionOutreach
 
 DEV_MODE = os.getenv("APPLYLENS_DEV", "1") == "1"
+
+# Prometheus metrics for extension activity
+extension_applications_total = Counter(
+    "applylens_extension_applications_total",
+    "Total job applications logged via browser extension",
+    ["source"],
+)
+
+extension_outreach_total = Counter(
+    "applylens_extension_outreach_total",
+    "Total recruiter outreach logged via browser extension",
+    ["source"],
+)
+
+extension_form_generations_total = Counter(
+    "applylens_extension_form_generations_total",
+    "Total form answer generations requested",
+)
+
+extension_dm_generations_total = Counter(
+    "applylens_extension_dm_generations_total",
+    "Total recruiter DM generations requested",
+)
 
 
 def dev_only():
@@ -144,6 +168,10 @@ def log_application(payload: AppLogIn, db: DBSession = Depends(get_db)):
     )
     db.add(rec)
     db.commit()
+
+    # Track metric
+    extension_applications_total.labels(source=payload.source).inc()
+
     return {"ok": True, "id": rec.id}
 
 
@@ -176,6 +204,10 @@ def log_outreach(payload: OutreachIn, db: DBSession = Depends(get_db)):
     )
     db.add(rec)
     db.commit()
+
+    # Track metric
+    extension_outreach_total.labels(source=payload.source).inc()
+
     return {"ok": True, "id": rec.id}
 
 
@@ -205,6 +237,10 @@ def generate_form_answers(payload: GenerateFormAnswersIn):
             f"and my projects (e.g., ApplyLens, SiteAgent)."
         )
         answers.append({"field_id": f.field_id, "answer": text})
+
+    # Track metric
+    extension_form_generations_total.inc()
+
     return {"job": payload.job, "answers": answers}
 
 
@@ -232,4 +268,8 @@ def generate_recruiter_dm(payload: GenerateDMIn):
         f"Hi {name}, I just applied to {role}. I build agentic systems (ApplyLens, SiteAgent) "
         f"with FastAPI/React/Elasticsearch—happy to share a quick demo if helpful!"
     )
+
+    # Track metric
+    extension_dm_generations_total.inc()
+
     return {"message": msg}
