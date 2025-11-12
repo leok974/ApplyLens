@@ -17,15 +17,18 @@ logger = logging.getLogger(__name__)
 # HTTP methods that are considered safe and don't require CSRF protection
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
-# Extension API - exempt from CSRF (dev-only endpoints)
-EXTENSION_EXEMPT_PREFIXES = (
-    "/api/extension/",  # All extension endpoints
-    "/extension/",  # Without /api prefix (if nginx strips it)
+# Machine-to-machine and automation endpoints - exempt from CSRF
+# These paths are designed for non-browser clients (automation, backfill, etc.)
+EXEMPT_PREFIXES = (
+    "/api/extension/",  # Browser extension (dev-only)
+    "/extension/",  # Without /api prefix (nginx strips)
     "/api/ops/diag",  # DevDiag diagnostics proxy
+    "/api/gmail/",  # Gmail backfill/ingest automation
+    "/gmail/",  # Without /api prefix
 )
 
-EXTENSION_EXEMPT_EXACT = {
-    "/api/profile/me",  # Profile brain (dev only)
+EXEMPT_EXACT = {
+    "/api/profile/me",  # Profile brain (dev-only)
     "/profile/me",  # Without /api prefix
     "/api/ops/diag/health",  # DevDiag health check
 }
@@ -43,6 +46,23 @@ CSRF_EXEMPT_PATHS = {
     "/assistant/query",  # Assistant query endpoint
     "/api/assistant/query",  # Assistant via nginx
 }
+
+
+def _has_auth_header(request: Request) -> bool:
+    """Check if request has machine-to-machine authentication.
+
+    Skip CSRF validation if Authorization (Bearer token) or X-API-Key header is present.
+    This allows automation scripts, CI/CD, and other non-browser clients to bypass CSRF.
+
+    Args:
+        request: Incoming HTTP request
+
+    Returns:
+        True if M2M auth header is present
+    """
+    auth = request.headers.get("authorization", "").strip()
+    api_key = request.headers.get("x-api-key", "").strip()
+    return bool(auth or api_key)
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):
@@ -74,11 +94,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        # Exempt extension API routes (dev-only endpoints)
-        if path.startswith(EXTENSION_EXEMPT_PREFIXES) or path in EXTENSION_EXEMPT_EXACT:
-            logger.debug(f"CSRF exempt extension path: {request.method} {path}")
+        # 1) Global exemptions by path (non-browser automations)
+        if path.startswith(EXEMPT_PREFIXES) or path in EXEMPT_EXACT:
+            logger.debug(f"CSRF exempt M2M path: {request.method} {path}")
             response = await call_next(request)
-            # Still set cookie for future requests
+            # Still set cookie for future browser requests
             response.set_cookie(
                 key=agent_settings.CSRF_COOKIE_NAME,
                 value=token,
@@ -87,6 +107,13 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 samesite="lax",
                 path="/",
             )
+            return response
+
+        # 2) M2M: if an Authorization or X-API-Key header is present, skip CSRF
+        if _has_auth_header(request):
+            logger.debug(f"CSRF exempt M2M auth: {request.method} {path}")
+            response = await call_next(request)
+            # No cookie needed for M2M clients
             return response
 
         # Check if path is exempt from CSRF protection

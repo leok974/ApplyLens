@@ -198,6 +198,49 @@ docker ps --filter "name=cfd-" --format "table {{.Names}}\t{{.Status}}"
 - Auth endpoints (`/api/auth/me`) returning 401 before login is normal
 - Healthcheck showing "unhealthy" but requests succeeding is cosmetic (pgrep timing)
 
+## Backfill Scheduler Service
+
+**Service Name:** `applylens-backfill`
+
+**Network:** `applylens-prod` (shares network with API service)
+
+**API_URL:** `http://applylens-api-prod:8003/gmail/backfill`
+
+**Environment Variables:**
+- `BACKFILL_API_KEY` - API key for CSRF bypass (from `.env.prod`)
+- `BACKFILL_EVERY_MINUTES` - Run interval in minutes (default: 30)
+- `BACKFILL_DAYS` - Days to backfill (default: 2)
+- `TZ` - Timezone (America/New_York)
+
+**Healthcheck Policy:**
+- **Test:** Python probe to API endpoint
+- **Interval:** 5 minutes
+- **Timeout:** 15 seconds
+- **Retries:** 1
+- **Start Period:** 90 seconds
+- **Policy:** Accepts HTTP 4xx/5xx responses (rate limits OK)
+
+**Restart Command:**
+```powershell
+docker compose -f docker-compose.prod.yml --env-file infra\.env.prod restart backfill
+```
+
+**Check Status:**
+```powershell
+docker ps --filter "name=applylens-backfill" --format "table {{.Names}}\t{{.Status}}"
+```
+
+**View Logs:**
+```powershell
+docker logs -f applylens-backfill
+```
+
+**Expected Log Output:**
+```
+[backfill] 2025-11-12T19:34:19Z ERR attempt=1 http=429 Too Many Requests
+[backfill] 2025-11-12T19:35:25Z SLEEP next_in_s=1821 success=False
+```
+
 ## Notes
 
 - Tunnel uses default QUIC protocol (automatically selected by cloudflared:latest)
