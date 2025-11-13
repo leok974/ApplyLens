@@ -4,8 +4,20 @@ Phase 3.1: Safety Guardrails for LLM-Generated Application Answers
 Prevents hallucinated employment, URLs, excessive length, and other issues.
 """
 
+import logging
 import re
 from typing import Dict, List, Tuple
+
+logger = logging.getLogger(__name__)
+
+# Import metrics
+try:
+    from app.metrics import llm_guardrail_triggers
+
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+    logger.warning("Metrics not available for guardrails")
 
 # Configuration
 MAX_FIELD_CHARS = 2000
@@ -47,13 +59,20 @@ def sanitize_answer(text: str, field_type: str = "text") -> str:
     if len(text) > max_len:
         # Trim at word boundary
         text = text[:max_len].rsplit(" ", 1)[0] + "..."
+        if METRICS_AVAILABLE:
+            llm_guardrail_triggers.labels(guardrail_type="length_limit").inc()
 
     # 2. Strip URLs (most ATS forms reject them)
-    text = URL_PATTERN.sub("", text)
+    if URL_PATTERN.search(text):
+        text = URL_PATTERN.sub("", text)
+        if METRICS_AVAILABLE:
+            llm_guardrail_triggers.labels(guardrail_type="url_stripped").inc()
 
     # 3. Strip email addresses if not an email field
-    if field_type != "email":
+    if field_type != "email" and EMAIL_PATTERN.search(text):
         text = EMAIL_PATTERN.sub("", text)
+        if METRICS_AVAILABLE:
+            llm_guardrail_triggers.labels(guardrail_type="email_stripped").inc()
 
     # 4. Remove forbidden phrases (hallucination indicators)
     for phrase in FORBIDDEN_PHRASES:
@@ -65,6 +84,8 @@ def sanitize_answer(text: str, field_type: str = "text") -> str:
                 text,
                 flags=re.IGNORECASE,
             )
+            if METRICS_AVAILABLE:
+                llm_guardrail_triggers.labels(guardrail_type="forbidden_phrase").inc()
 
     # 5. Clean up whitespace
     text = re.sub(r"\s+", " ", text).strip()

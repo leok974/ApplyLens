@@ -9,6 +9,7 @@ Security: Dev-only mode via APPLYLENS_DEV=1 env var.
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, HttpUrl
 from prometheus_client import Counter
@@ -16,6 +17,14 @@ from sqlalchemy.orm import Session as DBSession
 
 from ..db import get_db
 from ..models import ExtensionApplication, ExtensionOutreach
+from ..llm import (
+    generate_form_answers_llm,
+    CompanionLLMError,
+    sanitize_answers,
+    validate_answers,
+)
+
+logger = logging.getLogger(__name__)
 
 DEV_MODE = os.getenv("APPLYLENS_DEV", "1") == "1"
 
@@ -226,22 +235,96 @@ class GenerateFormAnswersIn(BaseModel):
 @router.post("/extension/generate-form-answers", dependencies=[Depends(dev_only)])
 def generate_form_answers(payload: GenerateFormAnswersIn):
     """
-    Generate form answers based on job context and profile.
-    TODO: Replace with LLM call later.
+    Generate form answers based on job context and profile using LLM.
+    Phase 3.1: Now uses real LLM generation with safety guardrails.
     """
-    answers = []
-    for f in payload.fields:
-        # Template answer for now
-        text = (
-            f"Answer for '{f.label or f.field_id}' based on {payload.job.get('title', 'the role')} "
-            f"and my projects (e.g., ApplyLens, SiteAgent)."
+    try:
+        # Convert profile to dict format expected by LLM client
+        profile_dict = {
+            "first_name": PROFILE.name.split()[0] if PROFILE.name else "",
+            "last_name": PROFILE.name.split()[-1] if PROFILE.name else "",
+            "headline": PROFILE.headline,
+            "summary": PROFILE.headline,  # Use headline as summary
+            "tech_stack": PROFILE.tech_stack,
+            "projects": [
+                {
+                    "name": p.name,
+                    "description": p.one_liner,
+                    "bullets": p.bullets,
+                }
+                for p in PROFILE.projects
+            ],
+        }
+
+        # Convert fields to format expected by LLM client
+        fields_list = [
+            {
+                "selector": f"field_{f.field_id}",  # Placeholder selector
+                "semantic_key": f.field_id,  # Use field_id as semantic key
+                "label": f.label or f.field_id,
+                "type": "text",
+            }
+            for f in payload.fields
+        ]
+
+        # Generate answers using LLM
+        raw_answers = generate_form_answers_llm(
+            fields=fields_list,
+            profile=profile_dict,
+            job_context=payload.job,
+            style={"tone": "professional", "length": "concise"},
         )
-        answers.append({"field_id": f.field_id, "answer": text})
 
-    # Track metric
-    extension_form_generations_total.inc()
+        # Apply safety guardrails
+        safe_answers = sanitize_answers(raw_answers)
 
-    return {"job": payload.job, "answers": answers}
+        # Validate required fields (currently all fields are optional)
+        required_fields = [
+            f.field_id for f in payload.fields if hasattr(f, "required") and f.required
+        ]
+        is_valid, missing = validate_answers(safe_answers, required_fields)
+
+        if not is_valid:
+            logger.warning(f"Missing required fields: {missing}")
+
+        # Convert back to response format
+        answers = []
+        for f in payload.fields:
+            answer_text = safe_answers.get(f.field_id, "")
+            if answer_text:
+                answers.append({"field_id": f.field_id, "answer": answer_text})
+            else:
+                # Fallback to template if no answer generated
+                template_text = (
+                    f"Answer for '{f.label or f.field_id}' based on {payload.job.get('title', 'the role')} "
+                    f"and my projects (e.g., ApplyLens, SiteAgent)."
+                )
+                answers.append({"field_id": f.field_id, "answer": template_text})
+
+        # Track metric
+        extension_form_generations_total.inc()
+
+        logger.info(f"Generated {len(answers)} answers with guardrails applied")
+
+        return {"job": payload.job, "answers": answers}
+
+    except CompanionLLMError as exc:
+        logger.error(f"LLM generation failed: {exc}")
+        # Fallback to template answers
+        answers = []
+        for f in payload.fields:
+            text = (
+                f"Answer for '{f.label or f.field_id}' based on {payload.job.get('title', 'the role')} "
+                f"and my projects (e.g., ApplyLens, SiteAgent)."
+            )
+            answers.append({"field_id": f.field_id, "answer": text})
+
+        extension_form_generations_total.inc()
+        return {"job": payload.job, "answers": answers}
+
+    except Exception as exc:
+        logger.error(f"Unexpected error in generate_form_answers: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Answer generation failed")
 
 
 class RecruiterProfile(BaseModel):

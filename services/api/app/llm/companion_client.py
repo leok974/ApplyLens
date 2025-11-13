@@ -8,12 +8,29 @@ import json
 import logging
 import os
 import re
+import time
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+# Import metrics
+try:
+    from app.metrics import (
+        llm_generation_duration,
+        llm_generation_requests,
+        llm_template_fallbacks,
+    )
+
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+    logger.warning("Metrics not available for LLM client")
+
 # Environment configuration
 LLM_ENABLED = os.getenv("COMPANION_LLM_ENABLED", "0") == "1"
+LLM_PROVIDER = os.getenv("COMPANION_LLM_PROVIDER", "openai")  # "openai" | "ollama"
+LLM_MODEL = os.getenv("COMPANION_LLM_MODEL", "gpt-4o-mini")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 LLM_PROVIDER = os.getenv("COMPANION_LLM_PROVIDER", "openai")  # "openai" | "ollama"
 LLM_MODEL = os.getenv("COMPANION_LLM_MODEL", "gpt-4o-mini")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -46,11 +63,21 @@ def generate_form_answers_llm(
     Raises:
         CompanionLLMError: If LLM call fails and fallback is disabled
     """
-    if not LLM_ENABLED:
-        logger.info("LLM disabled, using template fallback")
-        return _generate_template_answers(fields, profile)
+    start_time = time.time()
+    provider = LLM_PROVIDER.lower()
+    model = LLM_MODEL
+    status = "success"
+    result = {}
 
     try:
+        if not LLM_ENABLED:
+            logger.info("LLM disabled, using template fallback")
+            if METRICS_AVAILABLE:
+                llm_template_fallbacks.labels(reason="llm_disabled").inc()
+            result = _generate_template_answers(fields, profile)
+            status = "template_fallback"
+            return result
+
         prompt = _build_form_prompt(fields, profile, job_context, style)
 
         if LLM_PROVIDER == "openai":
@@ -58,7 +85,12 @@ def generate_form_answers_llm(
         elif LLM_PROVIDER == "ollama":
             raw_response = _call_ollama(prompt)
         else:
-            raise CompanionLLMError(f"Unknown LLM provider: {LLM_PROVIDER}")
+            logger.warning(f"Unknown LLM provider: {LLM_PROVIDER}")
+            if METRICS_AVAILABLE:
+                llm_template_fallbacks.labels(reason="unknown_provider").inc()
+            result = _generate_template_answers(fields, profile)
+            status = "template_fallback"
+            return result
 
         answers = _parse_llm_output(raw_response, fields)
         logger.info(f"Generated {len(answers)} answers via {LLM_PROVIDER}")
@@ -66,8 +98,23 @@ def generate_form_answers_llm(
 
     except Exception as exc:
         logger.error(f"LLM generation failed: {exc}", exc_info=True)
+        status = "error"
+        if METRICS_AVAILABLE:
+            llm_template_fallbacks.labels(reason="llm_error").inc()
         # Fallback to templates on error
-        return _generate_template_answers(fields, profile)
+        result = _generate_template_answers(fields, profile)
+        return result
+
+    finally:
+        # Record metrics
+        duration = time.time() - start_time
+        if METRICS_AVAILABLE:
+            llm_generation_requests.labels(
+                provider=provider, model=model, status=status
+            ).inc()
+            llm_generation_duration.labels(provider=provider, model=model).observe(
+                duration
+            )
 
 
 def _build_form_prompt(
