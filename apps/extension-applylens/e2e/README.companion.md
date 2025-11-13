@@ -56,6 +56,75 @@ npx playwright test -g "@realworld"
 npx playwright test -g "@lowquality"
 ```
 
+### `autofill-ux-panel.spec.ts` - Panel UX Controls ⏳
+
+**Tag**: `@companion @ux`
+
+**Status**: ⚠️ **SPECIFICATION TEST** - Describes Phase 3.0 feature to be implemented
+
+**Purpose**: Validates Phase 3.0 per-field accept/edit controls in the Companion panel.
+
+**Flow**:
+1. Mock `/api/extension/generate-form-answers` to return deterministic answers.
+2. Open demo form and trigger Companion panel.
+3. Verify answer rows are rendered with checkboxes and textareas.
+4. **Uncheck** first row (should NOT be filled).
+5. **Edit** second row textarea to a custom value.
+6. Click **Fill All**.
+7. Assert:
+   - First row's field remains empty (unchecked).
+   - Second row's field contains the edited value.
+
+**What it proves**: Per-field UX controls (checkboxes and inline editing) correctly drive Fill All behavior.
+
+**Implementation Requirements**:
+- Panel must render `[data-testid="al-answer-row"]` for each answer
+- Each row must have `data-selector="<css-selector>"` attribute
+- Each row must contain:
+  - `[data-testid="al-answer-checkbox"]` - checkbox to enable/disable field
+  - `[data-testid="al-answer-textarea"]` - editable text area
+- Fill All logic must respect checkbox state and use textarea values
+
+**Run it**:
+```bash
+npx playwright test -g "@ux"
+```
+
+### `autofill-generation-guardrails.spec.ts` - Generation Guardrails ⏳
+
+**Tag**: `@companion @generation`
+
+**Status**: ⚠️ **SPECIFICATION TEST** - Describes Phase 3.1 feature to be implemented
+
+**Purpose**: Validates Phase 3.1 backend guardrails that sanitize generated content.
+
+**Flow**:
+1. Mock `/api/extension/generate-form-answers` to return sanitized content (simulating backend guardrails).
+2. Open demo form and trigger Companion panel.
+3. Click **Fill All**.
+4. Assert form fields contain sanitized content:
+   - No "I worked at" phrases.
+   - No `http://` or `https://` URLs.
+   - Safe content like company names remain.
+
+**What it proves**: Backend guardrails successfully strip forbidden phrases and URLs before content reaches the form.
+
+**Implementation Requirements**:
+- Backend `/api/extension/generate-form-answers` must apply guardrails module
+- Guardrails must strip:
+  - URLs matching `http://` or `https://` patterns
+  - Forbidden phrases like "I worked at"
+- Sanitization must preserve safe content
+
+**Run it**:
+```bash
+npx playwright test -g "@generation"
+```
+
+**Tests included**:
+- Basic guardrails validation (single violation)
+- Multiple violations handling (URLs + forbidden phrases)
+
 ## Running Tests
 
 ### All Companion Tests
@@ -68,8 +137,17 @@ npm run e2e:companion
 # Real world flow only
 npx playwright test -g "@realworld"
 
-# Low quality profile tests (when added)
+# Low quality profile tests
 npx playwright test -g "@lowquality"
+
+# UX panel controls
+npx playwright test -g "@ux"
+
+# Generation guardrails
+npx playwright test -g "@generation"
+
+# Run UX and generation tests together
+npx playwright test -g "@ux|@generation"
 ```
 
 ### With UI (headed mode)
