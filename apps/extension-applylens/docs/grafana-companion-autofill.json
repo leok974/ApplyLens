@@ -1,0 +1,257 @@
+{
+  "id": null,
+  "uid": "applylens-companion-autofill",
+  "title": "ApplyLens – Companion Autofill",
+  "tags": ["applylens", "companion", "autofill"],
+  "timezone": "",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Aggregator Runs by Status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "YOUR_PROM_DS_UID"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(applylens_autofill_agg_runs_total[5m])) by (status)",
+          "legendFormat": "{{status}}",
+          "interval": ""
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "stacking": "normal"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Profiles Updated (Last 24h)",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "YOUR_PROM_DS_UID"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(applylens_autofill_profiles_updated_total[24h])",
+          "interval": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Autofill Runs by Status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "YOUR_PROM_DS_UID"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(applylens_autofill_runs_total[5m])) by (status)",
+          "legendFormat": "{{status}}",
+          "interval": ""
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "stacking": "normal"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Autofill Success Ratio (Last 1h)",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "YOUR_PROM_DS_UID"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(applylens_autofill_runs_total{status=\"ok\"}[1h])) / sum(rate(applylens_autofill_runs_total[1h]))",
+          "interval": ""
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 0.8 },
+              { "color": "green", "value": 0.95 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Autofill Time to Fill (p50 / p90, ms)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "YOUR_PROM_DS_UID"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum(rate(applylens_autofill_time_ms_bucket[5m])) by (le))",
+          "legendFormat": "p50",
+          "interval": ""
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.9, sum(rate(applylens_autofill_time_ms_bucket[5m])) by (le))",
+          "legendFormat": "p90",
+          "interval": ""
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Profiles Rejected by Quality Guards (optional)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "YOUR_PROM_DS_UID"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(applylens_autofill_profiles_rejected_total[5m]))",
+          "legendFormat": "rejected_profiles",
+          "interval": ""
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  }
+}

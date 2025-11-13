@@ -137,3 +137,45 @@ risk_requests_total = Counter(
     "Total risk computation requests by outcome",
     ["outcome"],  # success, failure
 )
+
+# --- Phase 3.1: LLM Generation Metrics ---
+
+llm_generation_requests = Counter(
+    "applylens_llm_generation_requests_total",
+    "Total LLM generation requests",
+    [
+        "provider",
+        "model",
+        "status",
+    ],  # provider: openai|ollama, model: gpt-4o-mini, status: success|error
+)
+
+llm_generation_duration = Histogram(
+    "applylens_llm_generation_duration_seconds",
+    "LLM generation latency in seconds",
+    ["provider"],
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0],
+)
+
+llm_guardrail_triggers = Counter(
+    "applylens_llm_guardrail_triggers_total",
+    "Guardrail violations detected",
+    ["guardrail_type"],  # url, forbidden_phrase, length, email
+)
+
+llm_template_fallbacks = Counter(
+    "applylens_llm_template_fallbacks_total",
+    "LLM failures resulting in template fallback",
+    ["reason"],  # disabled, error, timeout
+)
+
+autofill_field_acceptance = Counter(
+    "applylens_autofill_field_acceptance_total",
+    "Fields accepted vs rejected by users",
+    ["accepted"],  # true | false
+)
+
+autofill_manual_edits = Counter(
+    "applylens_autofill_manual_edits_total",
+    "Fields manually edited by users",
+)
