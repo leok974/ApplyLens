@@ -1,0 +1,109 @@
+{
+  "config": {
+    "configFile": "D:\\ApplyLens\\apps\\web\\playwright.config.ts",
+    "rootDir": "D:/ApplyLens/apps/web/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-report.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/ApplyLens/apps/web/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/ApplyLens/apps/web/tests",
+        "testIgnore": [
+          "**/e2e-new/**"
+        ],
+        "testMatch": [
+          "preflight/**/*.spec.ts",
+          "pipeline.spec.ts",
+          "search.spec.ts",
+          "highlight.spec.ts",
+          "profile.spec.ts",
+          "profile-warehouse.spec.ts",
+          "**/auth.*.spec.ts",
+          "settings-logout.spec.ts",
+          "e2e/email-risk-banner.spec.ts",
+          "e2e/ux-heartbeat.spec.ts",
+          "e2e/search-form.spec.ts",
+          "e2e/search.smoke.spec.ts",
+          "e2e/search-suggest-softfail.spec.ts",
+          "e2e/search-populates.spec.ts",
+          "e2e/search-renders.spec.ts",
+          "e2e/search-derived-and-tooltip.spec.ts",
+          "e2e/prod-search-smoke.spec.ts",
+          "ui/header-logo.spec.ts",
+          "search.interactions.spec.ts",
+          "mailboxAssistant.spec.ts",
+          "smoke/**/*.spec.ts"
+        ],
+        "timeout": 45000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.0",
+    "workers": 4,
+    "webServer": {
+      "command": "pnpm dev",
+      "url": "http://localhost:5175",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Error: apiRequestContext.get: connect ECONNREFUSED 127.0.0.1:8888\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:8888/api/auth/csrf\u001b[22m\n\u001b[2m    - user-agent: Playwright/1.56.0 (x64; windows 10.0) node/22.18\u001b[22m\n\u001b[2m    - accept: application/json\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+      "stack": "Error: apiRequestContext.get: connect ECONNREFUSED 127.0.0.1:8888\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:8888/api/auth/csrf\u001b[22m\n\u001b[2m    - user-agent: Playwright/1.56.0 (x64; windows 10.0) node/22.18\u001b[22m\n\u001b[2m    - accept: application/json\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at globalSetup (D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts:18:30)",
+      "location": {
+        "file": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts",
+        "column": 30,
+        "line": 18
+      },
+      "snippet": "\u001b[90m   at \u001b[39msetup\\global-setup.ts:18\n\n\u001b[0m \u001b[90m 16 |\u001b[39m   \u001b[90m// 1) CSRF cookie\u001b[39m\n \u001b[90m 17 |\u001b[39m   console\u001b[33m.\u001b[39mlog(\u001b[32m'   📝 Getting CSRF token...'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m   \u001b[36mconst\u001b[39m csrfResp \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m ctx\u001b[33m.\u001b[39m\u001b[36mget\u001b[39m(\u001b[32m'/api/auth/csrf'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mcsrfResp\u001b[33m.\u001b[39mok()) {\n \u001b[90m 20 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`CSRF endpoint failed: ${csrfResp.status()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+    }
+  ],
+  "stats": {
+    "startTime": "2025-11-13T00:08:50.913Z",
+    "duration": 39.79399999999998,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -236,6 +236,11 @@ app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
+# Companion learning loop
+from .routers import extension_learning  # noqa: E402
+
+app.include_router(extension_learning.router)
+
 # Async Gmail backfill with job tracking (v0.4.17)
 from .routers import gmail_backfill  # noqa: E402
 

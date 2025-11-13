@@ -109,6 +109,27 @@ backfill_emails_synced = Counter(
     "applylens_backfill_emails_synced_total", "Total emails synced via backfill"
 )
 
+# Learning Loop Metrics (Companion extension)
+learning_sync_counter = Counter(
+    "applylens_autofill_runs_total",
+    "Total number of Companion autofill learning sync events",
+    labelnames=["status"],
+)
+
+learning_time_histogram = Histogram(
+    "applylens_autofill_time_ms_bucket",
+    "Distribution of autofill completion times in milliseconds",
+    buckets=(
+        1_000,
+        5_000,
+        10_000,
+        30_000,
+        60_000,
+        120_000,
+        300_000,
+    ),
+)
+
 
 # Helper Functions
 def track_crypto_operation(operation: str):

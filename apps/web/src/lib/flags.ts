@@ -1,6 +1,6 @@
 /**
  * Feature Flags for Phase 4 AI Features
- * 
+ *
  * These flags control the visibility of AI-powered features in the UI.
  * Set corresponding VITE_FEATURE_* environment variables to '1' to enable.
  */
@@ -29,6 +29,12 @@ export const FLAGS = {
    * Shows demo indicators and may use sample data
    */
   DEMO_MODE: import.meta.env.VITE_DEMO_MODE === '1',
+
+  /**
+   * Browser Companion extension
+   * Shows navigation link to extension landing page and settings
+   */
+  COMPANION: import.meta.env.VITE_FEATURE_COMPANION === '1',
 };
 
 /**
@@ -47,5 +53,6 @@ export const getEnabledFeatures = (): string[] => {
   if (FLAGS.RISK_BADGE) features.push('Risk Badge');
   if (FLAGS.RAG_SEARCH) features.push('RAG Search');
   if (FLAGS.DEMO_MODE) features.push('Demo Mode');
+  if (FLAGS.COMPANION) features.push('Companion');
   return features;
 };

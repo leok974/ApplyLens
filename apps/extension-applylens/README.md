@@ -136,9 +136,25 @@ Every autofill logs:
 
 ## 🔒 Security
 
+### Permissions Rationale
+
+**`activeTab`**: Only activates when you click the extension icon. Allows reading visible form fields on the current tab to generate personalized answers. No background page scraping.
+
+**`scripting`**: Injects a small content script to scan and fill form fields. Script only runs when you explicitly click "Scan form & suggest" - never runs automatically in the background.
+
+**`host_permissions`**: Limited to specific domains where autofill/DM features are used:
+- `https://*.greenhouse.io/*` - Greenhouse ATS forms
+- `https://jobs.lever.co/*` - Lever ATS forms
+- `https://*.myworkdayjobs.com/*` - Workday ATS forms
+- `https://www.linkedin.com/*` - LinkedIn recruiter profiles
+- `https://applylens.app/*` - ApplyLens web app
+- `https://api.applylens.app/*` - ApplyLens API
+
+All permissions follow the principle of least privilege and can be further restricted based on your usage patterns.
+
 ### Dev Mode (Current)
 
-- ⚠️ Broad `<all_urls>` permissions
+- ⚠️ Broad `<all_urls>` permissions (for testing)
 - ⚠️ No authentication (CSRF-exempt paths)
 - ⚠️ API endpoints are dev-only (`APPLYLENS_DEV=1`)
 

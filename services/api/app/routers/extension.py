@@ -273,3 +273,86 @@ def generate_recruiter_dm(payload: GenerateDMIn):
     extension_dm_generations_total.inc()
 
     return {"message": msg}
+
+
+# ---------- List endpoints for dev UI ----------
+class ApplicationOut(BaseModel):
+    id: int
+    company: Optional[str] = None
+    role: Optional[str] = None
+    job_url: Optional[str] = None
+    source: Optional[str] = None
+    applied_at: Optional[str] = None
+    created_at: str
+
+
+class OutreachOut(BaseModel):
+    id: int
+    company: Optional[str] = None
+    role: Optional[str] = None
+    recruiter_name: Optional[str] = None
+    recruiter_profile_url: Optional[str] = None
+    message_preview: Optional[str] = None
+    sent_at: Optional[str] = None
+    source: Optional[str] = None
+    created_at: str
+
+
+@router.get(
+    "/extension/applications",
+    response_model=List[ApplicationOut],
+    dependencies=[Depends(dev_only)],
+)
+async def list_extension_applications(
+    limit: int = 10,
+    db: DBSession = Depends(get_db),
+):
+    """List recent applications logged via the browser extension."""
+    q = (
+        db.query(ExtensionApplication)
+        .order_by(ExtensionApplication.created_at.desc())
+        .limit(max(1, min(limit, 100)))
+    )
+    return [
+        ApplicationOut(
+            id=r.id,
+            company=r.company,
+            role=r.role,
+            job_url=r.job_url,
+            source=r.source,
+            applied_at=r.applied_at.isoformat() if r.applied_at else None,
+            created_at=r.created_at.isoformat(),
+        )
+        for r in q.all()
+    ]
+
+
+@router.get(
+    "/extension/outreach",
+    response_model=List[OutreachOut],
+    dependencies=[Depends(dev_only)],
+)
+async def list_extension_outreach(
+    limit: int = 10,
+    db: DBSession = Depends(get_db),
+):
+    """List recent outreach logged via the browser extension."""
+    q = (
+        db.query(ExtensionOutreach)
+        .order_by(ExtensionOutreach.created_at.desc())
+        .limit(max(1, min(limit, 100)))
+    )
+    return [
+        OutreachOut(
+            id=r.id,
+            company=r.company,
+            role=r.role,
+            recruiter_name=r.recruiter_name,
+            recruiter_profile_url=r.recruiter_profile_url,
+            message_preview=r.message_preview,
+            sent_at=r.sent_at.isoformat() if r.sent_at else None,
+            source=r.source,
+            created_at=r.created_at.isoformat(),
+        )
+        for r in q.all()
+    ]

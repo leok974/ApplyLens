@@ -21,6 +21,7 @@ import { Sparkles, LogOut, User, ShieldCheck, X } from "lucide-react"
 import { logout, getCurrentUser, fetchAndCacheCurrentUser, type User as UserType } from "@/api/auth"
 import { cn } from "@/lib/utils"
 import { useJobPoller } from "@/hooks/useJobPoller"
+import { FLAGS } from "@/lib/flags"
 
 const USER_EMAIL = "leoklemet.pa@gmail.com" // TODO: Read from auth context
 
@@ -258,6 +259,7 @@ export function AppHeader() {
               <Tab to="/chat" label="Chat" />
               <Tab to="/tracker" label="Tracker" />
               <Tab to="/profile" label="Profile" />
+              {FLAGS.COMPANION && <Tab to="/extension" label="Companion" data-testid="nav-companion" />}
               <Tab to="/settings" label="Settings" />
             </div>
           </nav>
@@ -448,10 +450,11 @@ export function AppHeader() {
   )
 }
 
-function Tab({ to, label }: { to: string; label: string }) {
+function Tab({ to, label, "data-testid": dataTestId }: { to: string; label: string; "data-testid"?: string }) {
   return (
     <NavLink
       to={to}
+      data-testid={dataTestId}
       className={({ isActive }) =>
         cn(
           "px-3 h-9 inline-flex items-center rounded-md text-sm",

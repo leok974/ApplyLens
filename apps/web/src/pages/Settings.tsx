@@ -6,6 +6,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Info, User as UserIcon } from 'lucide-react'
 import { features } from '../config/features'
+import { FLAGS } from '@/lib/flags'
 import { ProfileMetrics } from '../components/ProfileMetrics'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -135,6 +136,23 @@ export default function Settings() {
         <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-6">
           More settings coming soon: muted senders, safe senders, data sync controls.
         </div>
+
+        {/* Browser Companion link (feature-flagged) */}
+        {FLAGS.COMPANION && (
+          <div className="mt-6 p-4 rounded-lg border bg-zinc-50 dark:bg-zinc-800/50">
+            <h3 className="text-sm font-medium mb-2">Browser Companion</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
+              Install the Chrome extension to autofill ATS forms and draft recruiter messages.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/settings/companion')}
+            >
+              View Companion Settings
+            </Button>
+          </div>
+        )}
     </div>
   )
 }
