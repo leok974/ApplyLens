@@ -1,5 +1,6 @@
 """Learning loop API endpoints for the Companion extension."""
 
+import logging
 import os
 import uuid
 from datetime import datetime
@@ -12,6 +13,8 @@ from app.models_learning_db import FormProfile, AutofillEvent, GenStyle
 from app.core.metrics import learning_sync_counter
 from app.db import get_db
 from app.settings import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/extension/learning", tags=["learning"])
 
@@ -151,6 +154,19 @@ async def learning_profile(
 
     if not profile:
         # No profile exists yet - return empty
+        return LearningProfileResponse(host=host, schema_hash=schema_hash)
+
+    # Safety guard: Reject low-confidence profiles from noisy or early data
+    # Low success rate (<60%) or high edit distance (>500 chars) indicates
+    # the profile hasn't stabilized yet and shouldn't be used for recommendations
+    success_rate = profile.success_rate or 0.0
+    avg_edit_chars = profile.avg_edit_chars or 0.0
+
+    if success_rate < 0.6 or avg_edit_chars > 500:
+        logger.info(
+            f"Rejecting low-confidence profile for {host}/{schema_hash}: "
+            f"success_rate={success_rate:.2f}, avg_edit_chars={avg_edit_chars:.1f}"
+        )
         return LearningProfileResponse(host=host, schema_hash=schema_hash)
 
     # Pick best GenStyle for this host/schema based on prior_weight
