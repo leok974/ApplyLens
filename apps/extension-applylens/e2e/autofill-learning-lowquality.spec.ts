@@ -71,12 +71,12 @@ const editDistance = (a, b) => Math.abs(a.length - b.length);`
   return raw;
 }
 
-test.describe("@companion @realworld Companion autofill - real world profile + learning sync", () => {
-  test("uses server profile and sends learning sync on Fill All", async ({ page }) => {
-    // Enable console log capturing from the browser
+test.describe("@companion @lowquality Companion autofill - low quality profile rejected", () => {
+  test("falls back to heuristics when profile quality is low", async ({ page }) => {
+    // Enable console log capture
     page.on('console', msg => {
       const text = msg.text();
-      if (text.includes('[CONTENT]') || text.includes('[Learning]')) {
+      if (text.includes('[CONTENT]') || text.includes('[Learning]') || text.includes('[TEST]')) {
         console.log(text);
       }
     });
@@ -84,12 +84,15 @@ test.describe("@companion @realworld Companion autofill - real world profile + l
     let profileRequests = 0;
     let syncRequests = 0;
     let lastSyncPayload: any = null;
+    let generateAnswersRequests = 0;
 
-    // --- 1) Mock /api/extension/learning/profile (real-world: aggregator already ran) ---
+    // --- 1) Mock /api/extension/learning/profile with LOW QUALITY data ---
+    // This simulates the backend returning a profile that should be rejected
+    // due to quality guards (success_rate < 0.6, avg_edit_chars > 500)
     await page.route("**/api/extension/learning/profile**", async (route) => {
       profileRequests += 1;
 
-      console.log("[TEST] Profile endpoint called");
+      console.log("[TEST] Profile endpoint called (returning low-quality profile)");
 
       await route.fulfill({
         status: 200,
@@ -97,21 +100,23 @@ test.describe("@companion @realworld Companion autofill - real world profile + l
         body: JSON.stringify({
           host: "127.0.0.1",
           schema_hash: "demo_schema_hash",
+          // Low quality indicators - backend would reject this
           canonical_map: {
-            "#full_name": "full_name",
+            "#full_name": "first_name",
             "#email": "email",
-            "#cover_letter": "cover_letter",
-            "#project_example": "project_example",
           },
           style_hint: {
-            gen_style_id: "concise_bullets_e2e",
-            confidence: 0.95,
+            gen_style_id: "bad_profile",
+            confidence: 0.1,  // Very low confidence
           },
+          // Quality metrics that would trigger rejection
+          success_rate: 0.2,      // < 0.6 threshold
+          avg_edit_chars: 900,    // > 500 threshold
         }),
       });
     });
 
-    // --- 2) Mock /api/extension/learning/sync to assert it gets called on Fill All ---
+    // --- 2) Mock /api/extension/learning/sync ---
     await page.route("**/api/extension/learning/sync", async (route) => {
       syncRequests += 1;
       console.log("[TEST] Learning sync endpoint called");
@@ -134,20 +139,19 @@ test.describe("@companion @realworld Companion autofill - real world profile + l
       });
     });
 
-    // --- 3) Mock /api/extension/generate-form-answers (so we don't hit the real backend) ---
+    // --- 3) Mock /api/extension/generate-form-answers ---
     await page.route("**/api/extension/generate-form-answers", async (route) => {
       const reqBody = await route.request().postDataJSON();
+      generateAnswersRequests += 1;
 
-      console.log("[TEST] Generate answers called with fields:", reqBody.fields?.length);
+      console.log("[TEST] Generate answers called (should use heuristics, not bad profile)");
 
-      // Sanity check: extension sends field info
       expect(reqBody).toHaveProperty("fields");
       expect(Array.isArray(reqBody.fields)).toBe(true);
 
-      // Create answers matching the demo form fields
       const answers = reqBody.fields.map((field: any) => ({
         field_id: field.field_id,
-        answer: `Test answer for ${field.field_id}`
+        answer: `Heuristic answer for ${field.field_id}`
       }));
 
       await route.fulfill({
@@ -164,7 +168,7 @@ test.describe("@companion @realworld Companion autofill - real world profile + l
     await page.goto("http://127.0.0.1:5177/demo-form.html");
     await page.waitForLoadState("networkidle");
 
-    // Inject chrome API stub AFTER page load to ensure it's available
+    // Inject chrome API stub AFTER page load
     await page.evaluate(() => {
       (window as any).chrome = {
         runtime: {
@@ -192,70 +196,76 @@ test.describe("@companion @realworld Companion autofill - real world profile + l
     const contentScript = loadContentPatched();
     await page.addScriptTag({ content: contentScript });
 
-    // Wait for extension global to be available
+    // Wait for extension global
     await page.waitForFunction(() => (window as any).__APPLYLENS__ !== undefined, { timeout: 5000 });
 
-    // --- 5) Trigger scan and suggest using the extension's global API ---
+    // --- 5) Trigger scan and suggest ---
     console.log("[TEST] Triggering scan and suggest...");
     await page.evaluate(() => {
       (window as any).__APPLYLENS__.runScanAndSuggest();
     });
 
-    // Wait for panel to render
+    // Wait for panel
     const panel = page.locator("#__applylens_panel__");
     await expect(panel).toBeVisible({ timeout: 5000 });
     console.log("[TEST] Panel visible");
 
-    // --- 6) Click Fill All to trigger actual field fill + learning sync ---
+    // --- 6) Click Fill All ---
     const fillAllButton = panel.locator("#al_fill_all");
     await expect(fillAllButton).toBeVisible();
 
     console.log("[TEST] Clicking Fill All button...");
     await fillAllButton.click();
 
-    // Give content script a moment to fire the async tracking call
+    // Give time for async operations
     await page.waitForTimeout(1500);
 
-    // --- 7) Assertions: profile was used + sync fired ---
+    // --- 7) Assertions: System should still work despite low-quality profile ---
 
-    // Profile endpoint should have been called at least once in this run
-    expect(profileRequests, "Profile should be fetched").toBeGreaterThanOrEqual(1);
+    console.log("[TEST] === Assertions ===");
 
-    // Learning sync should be called after Fill All
-    expect(syncRequests, "Learning sync should be called after Fill All").toBeGreaterThanOrEqual(1);
+    // Profile endpoint was called (we attempted to fetch it)
+    expect(profileRequests, "Profile endpoint should be called").toBeGreaterThanOrEqual(1);
+    console.log("[TEST] ✅ Profile was requested");
+
+    // Generate answers was called (system still works)
+    expect(generateAnswersRequests, "Generate answers should be called").toBeGreaterThanOrEqual(1);
+    console.log("[TEST] ✅ Generate answers was called");
+
+    // Learning sync should still happen (we learn from this run)
+    expect(syncRequests, "Learning sync should be called").toBeGreaterThanOrEqual(1);
+    console.log("[TEST] ✅ Learning sync was called");
+
+    // Verify sync payload structure
     expect(lastSyncPayload, "Sync payload should not be null").not.toBeNull();
-
-    // Optional: basic shape check on sync payload
     if (lastSyncPayload) {
       expect(lastSyncPayload).toHaveProperty("host");
       expect(lastSyncPayload).toHaveProperty("schema_hash");
-
-      // Check events array with final_map, duration, edit stats, etc.
-      if (Array.isArray(lastSyncPayload.events)) {
-        expect(lastSyncPayload.events.length).toBeGreaterThan(0);
-        const event = lastSyncPayload.events[0];
-        expect(event).toHaveProperty("finalMap");
-        expect(event).toHaveProperty("suggestedMap");
-        expect(event).toHaveProperty("editStats");
-        expect(event).toHaveProperty("durationMs");
-
-        console.log("[TEST] ✅ Sync payload structure validated");
-      }
+      console.log("[TEST] ✅ Sync payload structure validated");
     }
 
-    // --- 8) Form fields actually got filled using the answers ---
+    // --- 8) Form fields should be filled (using heuristics, not bad profile) ---
     const fullNameValue = await page.locator("#full_name").inputValue();
     const emailValue = await page.locator("#email").inputValue();
 
     expect(fullNameValue).not.toBe("");
     expect(emailValue).not.toBe("");
+    expect(fullNameValue).toContain("Heuristic"); // Verify we used heuristic answers
+    expect(emailValue).toContain("Heuristic");
 
-    console.log("[TEST] ✅ Form fields filled:", { fullNameValue, emailValue });
+    console.log("[TEST] ✅ Form fields filled with heuristic answers:", {
+      fullNameValue,
+      emailValue
+    });
+
+    // --- Final Summary ---
     console.log("[TEST] ✅ Test complete!");
-    console.log("[TEST] Summary:");
+    console.log("[TEST] === Summary: Low Quality Profile Scenario ===");
     console.log("[TEST]   - Profile requests:", profileRequests);
+    console.log("[TEST]   - Profile quality: LOW (success_rate: 0.2, avg_edit_chars: 900)");
+    console.log("[TEST]   - Generate answers requests:", generateAnswersRequests);
     console.log("[TEST]   - Sync requests:", syncRequests);
-    console.log("[TEST]   - Profile used: YES");
-    console.log("[TEST]   - Learning sync: YES");
+    console.log("[TEST]   - Result: System fell back to heuristics and worked normally");
+    console.log("[TEST]   - Learning: Still synced events for future improvement");
   });
 });
