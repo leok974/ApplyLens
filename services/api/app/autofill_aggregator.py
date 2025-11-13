@@ -10,7 +10,7 @@ Aggregates AutofillEvent rows into FormProfile statistics:
 Run via cron or CLI to periodically update profiles.
 """
 
-from collections import Counter, defaultdict
+from collections import Counter as CollectionsCounter, defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
 import logging
@@ -19,8 +19,21 @@ from sqlalchemy.orm import Session
 
 from .db import SessionLocal
 from .models_learning_db import AutofillEvent, FormProfile, GenStyle
+from .core.metrics import Counter as PrometheusCounter
 
 logger = logging.getLogger(__name__)
+
+# Prometheus metrics
+autofill_agg_runs_total = PrometheusCounter(
+    "applylens_autofill_agg_runs_total",
+    "Total autofill aggregator runs",
+    ["status"],  # ok, err
+)
+
+autofill_profiles_updated_total = PrometheusCounter(
+    "applylens_autofill_profiles_updated_total",
+    "Total profiles updated by autofill aggregator",
+)
 
 
 def _compute_canonical_map(events: List[AutofillEvent]) -> Dict[str, str]:
@@ -36,7 +49,7 @@ def _compute_canonical_map(events: List[AutofillEvent]) -> Dict[str, str]:
         Event 3: {"input[name='first']": "given_name"}
         Result: {"input[name='first']": "first_name"}  # 2 votes wins
     """
-    counts: Dict[str, Counter] = defaultdict(Counter)
+    counts: Dict[str, CollectionsCounter] = defaultdict(CollectionsCounter)
 
     for ev in events:
         final_map = ev.final_map or {}
@@ -229,6 +242,10 @@ def run_aggregator(days: int = 30) -> int:
 
     Opens a database session, runs aggregation, commits changes.
 
+    Emits Prometheus metrics:
+    - applylens_autofill_agg_runs_total{status="ok|err"}
+    - applylens_autofill_profiles_updated_total
+
     Usage:
         python -c "from app.autofill_aggregator import run_aggregator; print(run_aggregator(days=30))"
     """
@@ -236,10 +253,16 @@ def run_aggregator(days: int = 30) -> int:
     try:
         updated = aggregate_autofill_profiles(db, days=days)
         db.commit()
+
+        # Track metrics
+        autofill_agg_runs_total.labels(status="ok").inc()
+        autofill_profiles_updated_total.inc(updated)
+
         logger.info(f"Aggregation complete: {updated} profiles updated")
         return updated
     except Exception as e:
         db.rollback()
+        autofill_agg_runs_total.labels(status="err").inc()
         logger.error(f"Aggregation failed: {e}")
         raise
     finally:

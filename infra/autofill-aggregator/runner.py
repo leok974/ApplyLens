@@ -26,14 +26,11 @@ def log(level, msg):
     print(f"[autofill-agg] {ts} {level} {msg}", flush=True)
 
 
-def run_aggregator():
+def run_aggregator_wrapper():
     """Run the autofill aggregator.
 
-    This function should:
-    1. Connect to the database
-    2. Aggregate application tracking data
-    3. Update profile autofill suggestions
-    4. Return stats about what was updated
+    Calls the actual aggregator function from the API codebase.
+    Returns stats about what was updated.
     """
     if not ENABLED:
         log("SKIP", "aggregator disabled (COMPANION_AUTOFILL_AGG_ENABLED=0)")
@@ -42,50 +39,24 @@ def run_aggregator():
     start_time = time.time()
 
     try:
-        # Import database and models
-        from app.db import SessionLocal
-        from app.models import Application
-        from sqlalchemy import func, distinct
-        from datetime import datetime, timedelta
+        # Import the actual aggregator function from API
+        from app.autofill_aggregator import run_aggregator
 
-        db = SessionLocal()
+        # Run aggregation
+        profiles_updated = run_aggregator(days=DAYS)
 
-        try:
-            # Calculate cutoff date
-            cutoff = datetime.utcnow() - timedelta(days=DAYS)
+        duration = time.time() - start_time
 
-            # Count distinct hosts (application tracking domains)
-            hosts_count = (
-                db.query(func.count(distinct(Application.job_url)))
-                .filter(Application.created_at >= cutoff)
-                .scalar()
-                or 0
-            )
+        log(
+            "OK",
+            f"aggregation complete: profiles={profiles_updated} duration={duration:.2f}s lookback={DAYS}d",
+        )
 
-            # For now, this is a placeholder that counts data
-            # TODO: Implement actual aggregation logic to update profiles
-            # - Extract domain patterns from job_urls
-            # - Group by user_email
-            # - Update UserProfile with autofill suggestions
-
-            profiles_updated = 0  # Will be actual count once implemented
-
-            duration = time.time() - start_time
-
-            log(
-                "OK",
-                f"aggregation complete: hosts={hosts_count} "
-                f"profiles={profiles_updated} duration={duration:.2f}s lookback={DAYS}d",
-            )
-
-            return {
-                "profiles_updated": profiles_updated,
-                "hosts_processed": hosts_count,
-                "duration_s": round(duration, 2),
-            }
-
-        finally:
-            db.close()
+        return {
+            "profiles_updated": profiles_updated,
+            "hosts_processed": 0,  # Tracked inside run_aggregator
+            "duration_s": round(duration, 2),
+        }
 
     except Exception as e:
         duration = time.time() - start_time
@@ -115,7 +86,7 @@ def main():
 
     while True:
         # Run aggregation
-        stats = run_aggregator()
+        stats = run_aggregator_wrapper()
 
         # Calculate next run time (with small jitter)
         sleep_seconds = HOURS * 3600 + random.randint(0, 300)  # +0-5min jitter
