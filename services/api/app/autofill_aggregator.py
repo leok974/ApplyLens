@@ -6,13 +6,15 @@ Aggregates AutofillEvent rows into FormProfile statistics:
 - Success rate (% of events with status='ok')
 - Average edit distance (chars added/deleted)
 - Average completion time
+- Phase 5.0: Style performance tracking and preferred_style_id selection
 
 Run via cron or CLI to periodically update profiles.
 """
 
 from collections import Counter as CollectionsCounter, defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import logging
 
 from sqlalchemy.orm import Session
@@ -34,6 +36,172 @@ autofill_profiles_updated_total = PrometheusCounter(
     "applylens_autofill_profiles_updated_total",
     "Total profiles updated by autofill aggregator",
 )
+
+
+# Phase 5.0: Style Performance Tracking
+@dataclass
+class StyleStats:
+    """Performance metrics for a generation style."""
+
+    style_id: str
+    helpful: int = 0
+    unhelpful: int = 0
+    total_runs: int = 0
+    avg_edit_chars: float = 0.0
+
+    @property
+    def helpful_ratio(self) -> float:
+        """Percentage of runs marked helpful."""
+        if self.total_runs == 0:
+            return 0.0
+        return self.helpful / self.total_runs
+
+
+def _compute_style_stats(
+    db: Session, lookback_days: int
+) -> Dict[Tuple[str, str], Dict[str, StyleStats]]:
+    """
+    Aggregate AutofillEvent by (host, schema_hash, gen_style_id).
+
+    Returns a dict: {(host, schema_hash): {style_id: StyleStats}}
+
+    Args:
+        db: Database session
+        lookback_days: Number of days to look back (0 = all time)
+
+    Returns:
+        Mapping of (host, schema) to style performance stats
+    """
+    query = db.query(
+        AutofillEvent.host,
+        AutofillEvent.schema_hash,
+        AutofillEvent.gen_style_id,
+        AutofillEvent.feedback_status,
+        AutofillEvent.edit_chars,
+    ).filter(AutofillEvent.gen_style_id.isnot(None))
+
+    # Filter by date if needed
+    if lookback_days > 0:
+        cutoff = datetime.utcnow() - timedelta(days=lookback_days)
+        query = query.filter(AutofillEvent.created_at >= cutoff)
+
+    # Aggregate results
+    by_profile: Dict[Tuple[str, str], Dict[str, StyleStats]] = defaultdict(dict)
+
+    for host, schema_hash, style_id, feedback_status, edit_chars in query:
+        key = (host, schema_hash)
+
+        if style_id not in by_profile[key]:
+            by_profile[key][style_id] = StyleStats(style_id=style_id)
+
+        st = by_profile[key][style_id]
+        st.total_runs += 1
+
+        # Count feedback
+        if feedback_status == "helpful":
+            st.helpful += 1
+        elif feedback_status == "unhelpful":
+            st.unhelpful += 1
+
+        # Running average of edit_chars
+        if edit_chars is not None:
+            n = st.total_runs
+            st.avg_edit_chars = ((st.avg_edit_chars * (n - 1)) + edit_chars) / n
+
+    return by_profile
+
+
+def _pick_best_style(styles: Dict[str, StyleStats]) -> Optional[StyleStats]:
+    """
+    Select best style by performance metrics.
+
+    Ranking criteria (in order):
+    1. Highest helpful_ratio (% of helpful feedback)
+    2. Tie-breaker: Lowest avg_edit_chars
+    3. Tie-breaker: Most total_runs (confidence)
+
+    Args:
+        styles: Dict of style_id -> StyleStats
+
+    Returns:
+        Best performing StyleStats or None if no styles
+    """
+    if not styles:
+        return None
+
+    return max(
+        styles.values(),
+        key=lambda s: (
+            s.helpful_ratio,  # Primary: success rate
+            -s.avg_edit_chars,  # Secondary: less editing needed
+            s.total_runs,  # Tertiary: more data = more confidence
+        ),
+    )
+
+
+def _update_style_hints(db: Session, lookback_days: int = 30) -> int:
+    """
+    Update FormProfile.style_hint with preferred_style_id based on feedback.
+
+    This is Phase 5.0 functionality that uses user feedback to recommend
+    the best performing generation style for each form.
+
+    Args:
+        db: Database session
+        lookback_days: Number of days to analyze
+
+    Returns:
+        Number of profiles updated with style hints
+    """
+    # Compute style performance across all forms
+    style_map = _compute_style_stats(db, lookback_days)
+    if not style_map:
+        logger.info("No style data found, skipping style hint updates")
+        return 0
+
+    # Get all profiles
+    profiles = db.query(FormProfile).filter(FormProfile.host.isnot(None)).all()
+
+    updated = 0
+    for profile in profiles:
+        key = (profile.host, profile.schema_hash)
+        styles_for_profile = style_map.get(key, {})
+
+        if not styles_for_profile:
+            continue  # No style data for this form
+
+        # Pick best style
+        best = _pick_best_style(styles_for_profile)
+        if not best:
+            continue
+
+        # Build/update style_hint
+        hint = (profile.style_hint or {}).copy()
+        hint["preferred_style_id"] = best.style_id
+
+        # Include detailed stats for all styles
+        hint["style_stats"] = {
+            sid: {
+                "helpful": s.helpful,
+                "unhelpful": s.unhelpful,
+                "total_runs": s.total_runs,
+                "helpful_ratio": s.helpful_ratio,
+                "avg_edit_chars": s.avg_edit_chars,
+            }
+            for sid, s in styles_for_profile.items()
+        }
+
+        profile.style_hint = hint
+        updated += 1
+
+        logger.info(
+            f"Updated style hint for {profile.host}/{profile.schema_hash}: "
+            f"preferred={best.style_id} "
+            f"(helpful_ratio={best.helpful_ratio:.1%}, "
+            f"avg_edit_chars={best.avg_edit_chars:.1f})"
+        )
+
+    return updated
 
 
 def _compute_canonical_map(events: List[AutofillEvent]) -> Dict[str, str]:
@@ -158,6 +326,7 @@ def aggregate_autofill_profiles(db: Session, *, days: int = 30) -> int:
     3. Compute success_rate, avg_edit_chars, avg_duration_ms
     4. Upsert FormProfile
     5. Update GenStyle weights
+    6. Phase 5.0: Update style_hint with preferred_style_id
 
     Args:
         db: Database session
@@ -232,6 +401,10 @@ def aggregate_autofill_profiles(db: Session, *, days: int = 30) -> int:
             f"{len(canonical_map)} fields, {success_rate:.1%} success, "
             f"{avg_edit_chars:.1f} avg edits"
         )
+
+    # Phase 5.0: Update style hints for all profiles
+    style_updates = _update_style_hints(db, lookback_days=days)
+    logger.info(f"Updated style hints for {style_updates} profiles")
 
     return updated
 

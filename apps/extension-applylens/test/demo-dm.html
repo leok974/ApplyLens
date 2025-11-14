@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo Recruiter DM Page</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 { color: #333; }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #555;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0052a3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Recruiter Outreach</h1>
+
+  <p>
+    <strong>Recruiter:</strong> Alex Thompson<br>
+    <strong>Company:</strong> ExampleCorp<br>
+    <strong>Role:</strong> Senior AI Engineer
+  </p>
+
+  <button id="open-dm-btn">Open Recruiter DM</button>
+
+  <form>
+    <label for="recruiter_message">
+      Message to Recruiter:
+    </label>
+    <textarea
+      id="recruiter_message"
+      name="recruiter_message"
+      rows="8"
+      placeholder="Compose your message to the recruiter..."></textarea>
+  </form>
+
+  <script>
+    // For testing: trigger DM generation when button is clicked
+    document.getElementById('open-dm-btn').addEventListener('click', () => {
+      if (window.__APPLYLENS__?.generateRecruiterDM) {
+        window.__APPLYLENS__.generateRecruiterDM();
+      } else {
+        alert('ApplyLens extension not loaded');
+      }
+    });
+  </script>
+</body>
+</html>

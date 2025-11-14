@@ -39,6 +39,23 @@ class FormProfile(Base):
     # Canonical field mappings: {semantic_name: field_id}
     fields = Column(JSONB, nullable=False, server_default="{}")
 
+    # Style recommendation based on feedback
+    # {
+    #   "gen_style_id": "bullets_v1",           # current style
+    #   "confidence": 0.85,                      # confidence score
+    #   "preferred_style_id": "bullets_v1",     # Phase 5.0: best performing style
+    #   "style_stats": {                         # Phase 5.0: per-style metrics
+    #     "bullets_v1": {
+    #       "helpful": 8,
+    #       "unhelpful": 1,
+    #       "total_runs": 10,
+    #       "helpful_ratio": 0.8,
+    #       "avg_edit_chars": 120
+    #     }
+    #   }
+    # }
+    style_hint = Column(JSONB, nullable=True)
+
     # Performance metrics (aggregated from events)
     success_rate = Column(Float, nullable=True)
     avg_edit_chars = Column(Float, nullable=True)
@@ -80,6 +97,12 @@ class AutofillEvent(Base):
     # Generation settings
     gen_style_id = Column(Text, nullable=True, index=True)
 
+    # Phase 5.0: Feedback tracking
+    feedback_status = Column(
+        Text, nullable=True, index=True
+    )  # "helpful" | "unhelpful" | None
+    edit_chars = Column(Integer, nullable=True)  # Total characters edited
+
     # Performance metrics
     edit_stats = Column(JSONB, nullable=False, server_default="{}")
     duration_ms = Column(Integer, nullable=True)
@@ -100,6 +123,7 @@ class AutofillEvent(Base):
         Index("ix_autofill_events_created_at", "created_at"),
         Index("ix_autofill_events_status", "status"),
         Index("ix_autofill_events_gen_style_id", "gen_style_id"),
+        Index("ix_autofill_events_feedback_status", "feedback_status"),
     )
 
 

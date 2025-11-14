@@ -44,9 +44,10 @@ async function fetchLearningProfile(host, schemaHash) {
     const data = await res.json();
 
     // Defensive normalization: convert snake_case to camelCase
+    // Phase 5.0: Support both gen_style_id and preferred_style_id
     const styleHint = data.style_hint
       ? {
-          genStyleId: data.style_hint.gen_style_id,
+          genStyleId: data.style_hint.preferred_style_id ?? data.style_hint.gen_style_id,
           confidence: data.style_hint.confidence,
         }
       : null;

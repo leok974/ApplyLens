@@ -68,6 +68,19 @@ const editDistance = (a, b) => Math.abs(a.length - b.length);`
     `const mergeSelectorMaps = (serverMap, localMap) => ({ ...serverMap, ...localMap });`
   );
 
+  // Replace guardrails import
+  raw = raw.replace(
+    /import\s*\{[^}]+\}\s*from\s*["']\.\/guardrails\.js["'];?/,
+    `const sanitizeGeneratedContent = (text) => {
+  if (!text) return text;
+  let sanitized = text;
+  sanitized = sanitized.replace(/https?:\\/\\/[^\\s]+/gi, '');
+  sanitized = sanitized.replace(/I worked at\\s+/gi, '');
+  sanitized = sanitized.replace(/\\s+/g, ' ').trim();
+  return sanitized;
+};`
+  );
+
   return raw;
 }
 

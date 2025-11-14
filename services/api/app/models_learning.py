@@ -40,6 +40,7 @@ class StyleHint(BaseModel):
 
     gen_style_id: Optional[str] = None
     confidence: float = 0.0
+    preferred_style_id: Optional[str] = None  # Phase 5.0: Best performing style
 
 
 class LearningProfileResponse(BaseModel):

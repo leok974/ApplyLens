@@ -5,6 +5,7 @@ import { queueLearningEvent, flushLearningEvents } from "./learning/client.js";
 import { computeSchemaHash, editDistance } from "./learning/utils.js";
 import { fetchLearningProfile } from "./learning.profileClient.js";
 import { mergeSelectorMaps } from "./learning.mergeMaps.js";
+import { sanitizeGeneratedContent } from "./guardrails.js"; // Phase 3.1
 
 const PANEL_ID = "__applylens_panel__";
 const STYLE_ID = "__applylens_panel_style__";
@@ -13,6 +14,7 @@ const STYLE_ID = "__applylens_panel_style__";
 let learningStartTime = null;
 let suggestedMap = {};
 let finalMap = {};
+let currentProfile = null; // Phase 5.0: Store current profile for style tracking
 
 function injectStyles() {
   if (document.getElementById(STYLE_ID)) return;
@@ -102,11 +104,16 @@ function getPageContext() {
   };
 }
 
-async function fetchFormAnswers(job, fields) {
+async function fetchFormAnswers(job, fields, styleHint = null) {
+  const payload = { job, fields };
+  if (styleHint) {
+    payload.style_hint = styleHint;
+  }
+
   const res = await fetch(`${APPLYLENS_API_BASE}/api/extension/generate-form-answers`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ job, fields }),
+    body: JSON.stringify(payload),
     credentials: "omit",
   });
   if (!res.ok) throw new Error(`gen answers failed: ${res.status}`);
@@ -120,6 +127,7 @@ function mountPanel() {
 
   panel = document.createElement("aside");
   panel.id = PANEL_ID;
+  panel.setAttribute("data-testid", "al-panel"); // Phase 3.0: test attribute
   panel.innerHTML = `
     <header>
       <div>ApplyLens — Review answers</div>
@@ -132,6 +140,11 @@ function mountPanel() {
       <button id="al_fill_all" class="primary">Fill all</button>
       <button id="al_cancel">Cancel</button>
     </div>
+    <div style="padding: 12px; border-top: 1px solid #334155; display: flex; align-items: center; gap: 12px; background: #0a0f1c;">
+      <span style="font-size: 12px; color: #94a3b8;">How was this?</span>
+      <button id="al_feedback_up" data-testid="al-feedback-up" aria-pressed="false" style="background: none; border: 1px solid #334155; border-radius: 4px; padding: 6px 12px; cursor: pointer; color: #94a3b8; font-size: 16px;" title="Helpful">👍</button>
+      <button id="al_feedback_down" data-testid="al-feedback-down" aria-pressed="false" style="background: none; border: 1px solid #334155; border-radius: 4px; padding: 6px 12px; cursor: pointer; color: #94a3b8; font-size: 16px;" title="Not helpful">👎</button>
+    </div>
   `;
   document.documentElement.appendChild(panel);
   panel.querySelector("#al_close").onclick = () => panel.remove();
@@ -143,13 +156,34 @@ function renderAnswers(panel, answers, fields) {
   const map = new Map(answers.map(a => [a.field_id, a.answer]));
   const body = panel.querySelector("#al_body");
   body.innerHTML = "";
+
+  // Phase 3.0: Track row state for UX controls
+  const rows = [];
+
   for (const f of fields) {
     const current = map.get(f.field_id) || "";
     const row = document.createElement("div");
     row.className = "row";
+    row.setAttribute("data-testid", "al-answer-row"); // Phase 3.0
+    row.setAttribute("data-selector", f.selector); // Phase 3.0
+
+    // Phase 3.0: Row state
+    const rowState = {
+      selector: f.selector,
+      fieldId: f.field_id,
+      text: current,
+      accepted: true,
+      source: "generated"
+    };
+    rows.push(rowState);
+
+    // Phase 3.0: Build row with checkbox + textarea
     row.innerHTML = `
-      <div class="label">${f.label}</div>
-      <textarea data-field="${encodeURIComponent(f.field_id)}">${current}</textarea>
+      <div class="label">
+        <input type="checkbox" checked data-testid="al-answer-checkbox" style="margin-right: 6px;">
+        ${f.label}
+      </div>
+      <textarea data-field="${encodeURIComponent(f.field_id)}" data-testid="al-answer-textarea" rows="3">${current}</textarea>
       <div class="actions">
         <button data-act="apply" data-field="${encodeURIComponent(f.field_id)}">Apply</button>
         <button data-act="skip" data-field="${encodeURIComponent(f.field_id)}">Skip</button>
@@ -159,8 +193,22 @@ function renderAnswers(panel, answers, fields) {
 
     // Store original generated value for edit tracking
     const textarea = row.querySelector("textarea");
+    const checkbox = row.querySelector('input[type="checkbox"]');
+
     if (textarea) {
       textarea.defaultValue = current;
+      // Phase 3.0: Track text edits
+      textarea.addEventListener("input", () => {
+        rowState.text = textarea.value;
+        rowState.source = "manual";
+      });
+    }
+
+    if (checkbox) {
+      // Phase 3.0: Track acceptance state
+      checkbox.addEventListener("change", () => {
+        rowState.accepted = checkbox.checked;
+      });
     }
   }
 
@@ -183,17 +231,69 @@ function renderAnswers(panel, answers, fields) {
     btn.disabled = true;
   });
 
-  panel.querySelector("#al_fill_all").onclick = () => {
-    for (const f of fields) {
-      const ta = body.querySelector(`textarea[data-field="${encodeURIComponent(f.field_id)}"]`);
-      const val = ta?.value || "";
-      const el = document.querySelector(f.selector);
-      if (el) {
-        el.focus(); el.value = val; el.dispatchEvent(new Event("input", { bubbles: true }));
+  // Phase 3.0: Update Fill All to respect row state
+  panel.querySelector("#al_fill_all").onclick = async () => {
+    for (const row of rows) {
+      if (!row.accepted) continue; // Phase 3.0: Skip unchecked rows
+
+      const el = document.querySelector(row.selector);
+      if (!el) continue;
+
+      // Phase 3.0: Use current textarea value (may be edited)
+      const val = row.text;
+      if ("value" in el) {
+        el.focus();
+        el.value = val;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
       }
     }
+
+    // Track learning event with final state
+    await trackAutofillCompletion(location.host, computeSchemaHash(fields), rows);
   };
+
+  // Store rows for learning
+  panel.__rowsState = rows;
+
+  // Phase 4.0: Wire feedback buttons
+  const feedbackUp = panel.querySelector("#al_feedback_up");
+  const feedbackDown = panel.querySelector("#al_feedback_down");
+
+  const sendFeedback = async (status) => {
+    try {
+      await fetch(`${APPLYLENS_API_BASE}/api/extension/feedback/autofill`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          host: location.host,
+          schema_hash: panel.__schemaHash || "unknown",
+          status: status
+        }),
+        credentials: "omit",
+      });
+    } catch (e) {
+      console.error("[Feedback] Error sending feedback:", e);
+    }
+  };
+
+  if (feedbackUp && feedbackDown) {
+    feedbackUp.onclick = async () => {
+      feedbackUp.setAttribute("aria-pressed", "true");
+      feedbackDown.setAttribute("aria-pressed", "false");
+      feedbackUp.style.color = "#10b981";
+      feedbackDown.style.color = "#94a3b8";
+      await sendFeedback("helpful");
+    };
+
+    feedbackDown.onclick = async () => {
+      feedbackDown.setAttribute("aria-pressed", "true");
+      feedbackUp.setAttribute("aria-pressed", "false");
+      feedbackDown.style.color = "#ef4444";
+      feedbackUp.style.color = "#94a3b8";
+      await sendFeedback("unhelpful");
+    };
+  }
 }
 
 async function runScanAndSuggest() {
@@ -217,6 +317,9 @@ async function runScanAndSuggest() {
       fetchLearningProfile(host, schemaHash)
     ]);
 
+    // Phase 5.0: Store profile for learning event
+    currentProfile = profile;
+
     // Merge server canonical map with local memory
     const serverMap = profile?.canonicalMap || {};
     const localMap = formMemory?.selectorMap || {};
@@ -232,7 +335,16 @@ async function runScanAndSuggest() {
       console.log(`[Learning] Style hint: ${profile.styleHint.genStyleId} (${(profile.styleHint.confidence * 100).toFixed(0)}% confidence)`);
     }
 
-    const data = await fetchFormAnswers(ctx.job, fields);
+    // Phase 4.1: Pass style hint to generation endpoint
+    const data = await fetchFormAnswers(ctx.job, fields, profile?.styleHint || null);
+
+    // Phase 3.1: Apply guardrails to sanitize generated content
+    if (data.answers) {
+      data.answers = data.answers.map(ans => ({
+        ...ans,
+        answer: sanitizeGeneratedContent(ans.answer)
+      }));
+    }
 
     // Build suggested map for learning (now incorporating effective mappings)
     suggestedMap = {};
@@ -259,15 +371,10 @@ async function runScanAndSuggest() {
 
     console.log(`[Learning] Mapping summary: ${learnedMappingCount} learned, ${heuristicMappingCount} heuristic`);
 
-    renderAnswers(panel, data.answers || [], fields);
+    // Store schema hash for feedback
+    panel.__schemaHash = schemaHash;
 
-    // Setup learning tracking on Fill All
-    const fillAllBtn = panel.querySelector("#al_fill_all");
-    const originalFillAll = fillAllBtn.onclick;
-    fillAllBtn.onclick = async () => {
-      originalFillAll();
-      await trackAutofillCompletion(host, schemaHash, fields, body);
-    };
+    renderAnswers(panel, data.answers || [], fields);
 
     // log application (best-effort)
     try {
@@ -281,7 +388,7 @@ async function runScanAndSuggest() {
   }
 }
 
-async function trackAutofillCompletion(host, schemaHash, fields, panelBody) {
+async function trackAutofillCompletion(host, schemaHash, rows) {
   // Check if learning is enabled
   try {
     const settings = await chrome.storage.sync.get(["learningEnabled"]);
@@ -296,7 +403,7 @@ async function trackAutofillCompletion(host, schemaHash, fields, panelBody) {
 
   const durationMs = Date.now() - learningStartTime;
 
-  // Build final map and calculate edit stats
+  // Build final map and calculate edit stats from row state
   finalMap = {};
   const editStats = {
     totalCharsAdded: 0,
@@ -304,13 +411,17 @@ async function trackAutofillCompletion(host, schemaHash, fields, panelBody) {
     perField: {}
   };
 
-  for (const field of fields) {
-    const textarea = panelBody.querySelector(`textarea[data-field="${encodeURIComponent(field.field_id)}"]`);
+  for (const row of rows) {
+    if (!row.accepted) continue; // Only track accepted rows
+
+    // Get suggested value (generated answer)
+    const panel = document.getElementById(PANEL_ID);
+    const textarea = panel?.querySelector(`textarea[data-field="${encodeURIComponent(row.fieldId)}"]`);
     const generatedValue = textarea?.defaultValue || "";
-    const finalValue = textarea?.value || "";
+    const finalValue = row.text; // Current value from row state
 
     if (finalValue) {
-      finalMap[field.selector] = field.field_id;
+      finalMap[row.selector] = row.fieldId;
 
       // Calculate edit distance
       const distance = editDistance(generatedValue, finalValue);
@@ -319,7 +430,7 @@ async function trackAutofillCompletion(host, schemaHash, fields, panelBody) {
 
       editStats.totalCharsAdded += charsAdded;
       editStats.totalCharsDeleted += charsDeleted;
-      editStats.perField[field.selector] = {
+      editStats.perField[row.selector] = {
         added: charsAdded,
         deleted: charsDeleted,
         editDistance: distance
@@ -333,6 +444,7 @@ async function trackAutofillCompletion(host, schemaHash, fields, panelBody) {
     schemaHash,
     suggestedMap,
     finalMap,
+    genStyleId: currentProfile?.styleHint?.genStyleId || null, // Phase 5.0: Include style ID
     editStats,
     durationMs,
     validationErrors: {},
@@ -357,10 +469,173 @@ async function trackAutofillCompletion(host, schemaHash, fields, panelBody) {
   console.log("[Learning] Saved form memory and queued event");
 }
 
+// ======= Phase 3.2: Recruiter DM Panel =======
+
+const DM_PANEL_ID = "__applylens_dm_panel__";
+
+function mountDMPanel() {
+  injectStyles();
+  let panel = document.getElementById(DM_PANEL_ID);
+  if (panel) panel.remove();
+
+  panel = document.createElement("aside");
+  panel.id = DM_PANEL_ID;
+  panel.setAttribute("data-testid", "al-dm-panel");
+  panel.style.cssText = `
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 420px;
+    max-height: 80vh;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 999999;
+    font-family: system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+  `;
+
+  panel.innerHTML = `
+    <header style="padding: 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-weight: 600; font-size: 15px;">ApplyLens — Recruiter DM</div>
+      <button id="al_dm_close" title="Close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">✕</button>
+    </header>
+    <div class="body" id="al_dm_body" style="flex: 1; overflow-y: auto; padding: 16px;">
+      <div style="color: #999; text-align: center;">Generating DM...</div>
+    </div>
+    <div style="padding: 16px; border-top: 1px solid #eee; display: flex; gap: 8px;">
+      <button id="al_dm_insert" style="flex: 1; padding: 10px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Insert DM</button>
+      <button id="al_dm_cancel" style="padding: 10px 20px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">Cancel</button>
+    </div>
+  `;
+
+  document.documentElement.appendChild(panel);
+  panel.querySelector("#al_dm_close").onclick = () => panel.remove();
+  panel.querySelector("#al_dm_cancel").onclick = () => panel.remove();
+  return panel;
+}
+
+function renderDMLines(panel, lines) {
+  const body = panel.querySelector("#al_dm_body");
+  body.innerHTML = "";
+
+  // Phase 3.2: Track row state for DM lines
+  const rows = [];
+
+  for (const line of lines) {
+    const row = document.createElement("div");
+    row.style.cssText = "margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;";
+    row.setAttribute("data-testid", "al-dm-row");
+
+    const rowState = {
+      text: line,
+      accepted: true
+    };
+    rows.push(rowState);
+
+    row.innerHTML = `
+      <div style="margin-bottom: 8px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" checked data-testid="al-dm-checkbox" style="cursor: pointer;">
+          <span style="font-size: 13px; color: #666;">Include this line</span>
+        </label>
+      </div>
+      <textarea data-testid="al-dm-textarea" rows="2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 14px; resize: vertical;">${line}</textarea>
+    `;
+
+    body.appendChild(row);
+
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const textarea = row.querySelector("textarea");
+
+    if (checkbox) {
+      checkbox.addEventListener("change", () => {
+        rowState.accepted = checkbox.checked;
+      });
+    }
+
+    if (textarea) {
+      textarea.addEventListener("input", () => {
+        rowState.text = textarea.value;
+      });
+    }
+  }
+
+  // Wire Insert DM button
+  panel.querySelector("#al_dm_insert").onclick = () => {
+    const acceptedLines = rows
+      .filter(r => r.accepted)
+      .map(r => r.text)
+      .filter(t => t.trim());
+
+    const finalDM = acceptedLines.join("\n\n");
+
+    // Find message field on page
+    const messageField = document.querySelector('textarea[name="recruiter_message"]')
+      || document.querySelector('[contenteditable="true"]');
+
+    if (messageField) {
+      if (messageField.tagName.toLowerCase() === "textarea") {
+        messageField.focus();
+        messageField.value = finalDM;
+        messageField.dispatchEvent(new Event("input", { bubbles: true }));
+        messageField.dispatchEvent(new Event("change", { bubbles: true }));
+      } else {
+        // contenteditable
+        messageField.focus();
+        messageField.textContent = finalDM;
+        messageField.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+
+    panel.remove();
+  };
+
+  panel.__dmRowsState = rows;
+}
+
+async function generateRecruiterDM() {
+  const panel = mountDMPanel();
+  const body = panel.querySelector("#al_dm_body");
+
+  try {
+    const ctx = getPageContext();
+
+    // Call DM generation endpoint
+    const res = await fetch(`${APPLYLENS_API_BASE}/api/extension/generate-recruiter-dm`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        job: ctx.job,
+        recruiter: {
+          name: "Recruiter",
+          company: ctx.job.company
+        }
+      }),
+      credentials: "omit",
+    });
+
+    if (!res.ok) throw new Error(`DM generation failed: ${res.status}`);
+
+    const data = await res.json();
+    let lines = data.dm || [];
+
+    // Phase 3.1: Apply guardrails to each line
+    lines = lines.map(line => sanitizeGeneratedContent(line));
+
+    renderDMLines(panel, lines);
+
+  } catch (e) {
+    body.innerHTML = `<div style="color: #d32f2f; text-align: center;">Error: ${String(e)}</div>`;
+  }
+}
+
 // Listen for SW messages and devtools test hook
 chrome.runtime?.onMessage?.addListener((msg, _sender, _sendResponse) => {
   if (msg?.type === "SCAN_AND_SUGGEST") runScanAndSuggest();
 });
 
 // Simple global for E2E to call directly
-window.__APPLYLENS__ = { runScanAndSuggest, scanFields };
+window.__APPLYLENS__ = { runScanAndSuggest, scanFields, generateRecruiterDM };

@@ -174,7 +174,7 @@ async def learning_profile(
     style = db.query(GenStyle).order_by(GenStyle.prior_weight.desc()).first()
 
     style_hint = None
-    if style:
+    if style or profile.style_hint:
         # Confidence based on number of events for this form
         event_count = (
             db.query(func.count(AutofillEvent.id))
@@ -190,7 +190,15 @@ async def learning_profile(
         # 10+ events = full confidence
         confidence = min((event_count or 0) / 10.0, 1.0)
 
-        style_hint = StyleHint(gen_style_id=style.id, confidence=confidence)
+        # Phase 5.0: Use preferred_style_id from aggregator if available
+        hint_data = profile.style_hint or {}
+        preferred_style_id = hint_data.get("preferred_style_id")
+
+        style_hint = StyleHint(
+            gen_style_id=style.id if style else None,
+            confidence=confidence,
+            preferred_style_id=preferred_style_id,  # Phase 5.0
+        )
 
     return LearningProfileResponse(
         host=host,
