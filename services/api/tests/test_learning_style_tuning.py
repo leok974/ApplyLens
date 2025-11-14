@@ -1092,3 +1092,27 @@ def test_no_segment_no_family_returns_none(postgresql_db):
     # Should return None
     assert best is None
     assert meta["source"] is None
+
+
+def test_style_choice_metric_labels_smoke():
+    """Smoke test that Phase 5.2 metric labels work without errors."""
+    from app.autofill_aggregator import autofill_style_choice_total
+
+    # Should not raise, and internal storage should create a sample
+    c = autofill_style_choice_total.labels(
+        source="segment", host_family="greenhouse", segment_key="senior"
+    )
+    c.inc()
+
+    # Test other source types
+    autofill_style_choice_total.labels(
+        source="form", host_family="lever", segment_key=""
+    ).inc()
+
+    autofill_style_choice_total.labels(
+        source="family", host_family="workday", segment_key=""
+    ).inc()
+
+    autofill_style_choice_total.labels(
+        source="none", host_family="other", segment_key=""
+    ).inc()

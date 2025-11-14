@@ -38,6 +38,13 @@ autofill_profiles_updated_total = PrometheusCounter(
     "Total profiles updated by autofill aggregator",
 )
 
+# Phase 5.2: Style choice tracking by source and segment
+autofill_style_choice_total = PrometheusCounter(
+    "applylens_autofill_style_choice_total",
+    "Total style recommendations chosen per profile aggregation",
+    ["source", "host_family", "segment_key"],
+)
+
 
 # Phase 5.1: Host-family bundles for cross-form generalization
 ATS_FAMILIES: Dict[str, Tuple[str, ...]] = {
@@ -569,6 +576,17 @@ def _update_style_hints(db: Session, lookback_days: int = 30) -> int:
 
         profile.style_hint = hint
         updated += 1
+
+        # Phase 5.2: Track style choice metrics
+        host_family = get_host_family(profile.host) or "other"
+        source = meta.get("source") or "none"
+        seg_key_label = segment_key or ""
+        
+        autofill_style_choice_total.labels(
+            source=source,
+            host_family=host_family,
+            segment_key=seg_key_label,
+        ).inc()
 
         logger.info(
             f"Updated style hint for {profile.host}/{profile.schema_hash}: "
