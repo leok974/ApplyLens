@@ -43,11 +43,16 @@ const editDistance = (a, b) => Math.abs(a.length - b.length);`
   const res = await fetch(\`/api/extension/learning/profile?host=\${host}&schema_hash=\${schemaHash}\`);
   if (!res.ok) return null;
   const data = await res.json();
-  // Phase 5.0: Transform style_hint including preferred_style_id to genStyleId
+  // Phase 5.0: Map all style hint fields
   const styleHint = data.style_hint ? {
-    genStyleId: data.style_hint.preferred_style_id ?? data.style_hint.gen_style_id,
-    confidence: data.style_hint.confidence,
-  } : undefined;
+    genStyleId: data.style_hint.gen_style_id ?? undefined,
+    confidence: data.style_hint.confidence ?? undefined,
+    summaryStyle: data.style_hint.summary_style ?? undefined,
+    maxLength: data.style_hint.max_length ?? undefined,
+    tone: data.style_hint.tone ?? undefined,
+    preferredStyleId: data.style_hint.preferred_style_id ?? undefined,
+    styleStats: data.style_hint.style_stats ?? undefined,
+  } : null;
   return {
     host: data.host,
     schemaHash: data.schema_hash,

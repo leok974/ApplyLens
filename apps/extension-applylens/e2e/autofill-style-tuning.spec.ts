@@ -43,11 +43,16 @@ const editDistance = (a, b) => Math.abs(a.length - b.length);`
   const res = await fetch(\`/api/extension/learning/profile?host=\${host}&schema_hash=\${schemaHash}\`);
   if (!res.ok) return null;
   const data = await res.json();
-  // Phase 5.0: Transform style_hint including preferred_style_id to genStyleId
+  // Phase 5.0: Map all style hint fields
   const styleHint = data.style_hint ? {
-    genStyleId: data.style_hint.preferred_style_id ?? data.style_hint.gen_style_id,
-    confidence: data.style_hint.confidence,
-  } : undefined;
+    genStyleId: data.style_hint.gen_style_id ?? undefined,
+    confidence: data.style_hint.confidence ?? undefined,
+    summaryStyle: data.style_hint.summary_style ?? undefined,
+    maxLength: data.style_hint.max_length ?? undefined,
+    tone: data.style_hint.tone ?? undefined,
+    preferredStyleId: data.style_hint.preferred_style_id ?? undefined,
+    styleStats: data.style_hint.style_stats ?? undefined,
+  } : null;
   return {
     host: data.host,
     schemaHash: data.schema_hash,
@@ -86,8 +91,8 @@ const applyGuardrails = (answers, fields) => {
 }
 
 test.describe("@companion @styletuning", () => {
-  test("forwards preferred_style_id from profile into styleHint.genStyleId", async ({ page }) => {
-    // 1) Mock profile endpoint with preferred_style_id
+  test("forwards preferred_style_id from profile into style_hint.style_id", async ({ page }) => {
+    // 1) Mock profile endpoint with Phase 5.0 preferred_style_id
     let profileCalls = 0;
 
     await page.route("**/api/extension/learning/profile**", async (route) => {
@@ -100,8 +105,27 @@ test.describe("@companion @styletuning", () => {
           schema_hash: "schema-style",
           canonical_map: {},
           style_hint: {
-            preferred_style_id: "bullets_v1",
-            confidence: 0.95,
+            preferred_style_id: "friendly_bullets_v1",
+            confidence: 0.857,
+            summary_style: "bullets",
+            max_length: 500,
+            tone: "friendly",
+            style_stats: {
+              friendly_bullets_v1: {
+                helpful: 12,
+                unhelpful: 2,
+                total_runs: 14,
+                helpful_ratio: 0.857,
+                avg_edit_chars: 120,
+              },
+              professional_narrative_v1: {
+                helpful: 3,
+                unhelpful: 9,
+                total_runs: 12,
+                helpful_ratio: 0.25,
+                avg_edit_chars: 450,
+              },
+            },
           },
         }),
       });
@@ -172,13 +196,16 @@ test.describe("@companion @styletuning", () => {
     await page.getByRole("button", { name: /fill all/i }).click();
     await page.waitForTimeout(500);
 
-    // 5) Assertions: profile was called and genStyleId is forwarded
+    // 5) Assertions: profile was called and preferred_style_id forwarded as style_id
     expect(profileCalls).toBeGreaterThan(0);
     expect(lastBody).not.toBeNull();
 
-    // The payload should have styleHint with genStyleId
+    // Phase 5.0: Backend expects snake_case style_id from preferredStyleId
     expect(lastBody.style_hint).toBeDefined();
-    expect(lastBody.style_hint.genStyleId).toBe("bullets_v1");
-    expect(lastBody.style_hint.confidence).toBe(0.95);
+    expect(lastBody.style_hint.style_id).toBe("friendly_bullets_v1");
+
+    // Sanity: other fields still present
+    expect(Array.isArray(lastBody.fields)).toBe(true);
+    expect(lastBody.fields.length).toBeGreaterThan(0);
   });
 });

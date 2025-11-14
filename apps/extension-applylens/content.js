@@ -332,11 +332,35 @@ async function runScanAndSuggest() {
 
     // Log style hint if available
     if (profile?.styleHint) {
-      console.log(`[Learning] Style hint: ${profile.styleHint.genStyleId} (${(profile.styleHint.confidence * 100).toFixed(0)}% confidence)`);
+      const styleId = profile.styleHint.preferredStyleId || profile.styleHint.genStyleId;
+      const confidence = profile.styleHint.confidence;
+      if (styleId && confidence !== undefined) {
+        console.log(`[Learning] Style hint: ${styleId} (${(confidence * 100).toFixed(0)}% confidence)`);
+      }
+      // Phase 5.0: Log preferred style from aggregator
+      if (profile.styleHint.preferredStyleId && profile.styleHint.styleStats) {
+        const stats = profile.styleHint.styleStats[profile.styleHint.preferredStyleId];
+        if (stats) {
+          console.log(
+            `📊 Using tuned style: ${profile.styleHint.preferredStyleId} ` +
+            `(${stats.helpful}/${stats.total_runs} helpful, avg ${Math.round(stats.avg_edit_chars)} chars edited)`
+          );
+        }
+      }
+    }
+
+    // Phase 5.0: Use preferredStyleId if available (aggregator-chosen best style)
+    let effectiveStyleHint = profile?.styleHint || null;
+    if (effectiveStyleHint && effectiveStyleHint.preferredStyleId) {
+      // Backend expects snake_case style_id
+      effectiveStyleHint = {
+        ...effectiveStyleHint,
+        style_id: effectiveStyleHint.preferredStyleId,
+      };
     }
 
     // Phase 4.1: Pass style hint to generation endpoint
-    const data = await fetchFormAnswers(ctx.job, fields, profile?.styleHint || null);
+    const data = await fetchFormAnswers(ctx.job, fields, effectiveStyleHint);
 
     // Phase 3.1: Apply guardrails to sanitize generated content
     if (data.answers) {
