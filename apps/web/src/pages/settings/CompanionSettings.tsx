@@ -39,7 +39,7 @@ function StyleDebugPanel() {
   };
 
   return (
-    <section className="rounded-2xl border p-5">
+    <section className="rounded-2xl border p-5" data-testid="style-debug-panel">
       <h2 className="font-medium mb-3">Style Choice Explanation (Debug)</h2>
       <p className="text-sm text-muted-foreground mb-4">
         Phase 5.3: Shows why a particular autofill style was chosen for a form.
@@ -98,24 +98,24 @@ function StyleDebugPanel() {
             </div>
             <div>
               <span className="font-medium">Source:</span>{" "}
-              <span className="font-mono">{explanation.source}</span>
+              <span className="font-mono" data-testid="style-debug-source">{explanation.source}</span>
             </div>
             <div>
               <span className="font-medium">Chosen Style:</span>{" "}
-              <span className="font-mono">{explanation.chosen_style_id ?? "none"}</span>
+              <span className="font-mono" data-testid="style-debug-style-id">{explanation.chosen_style_id ?? "none"}</span>
             </div>
           </div>
 
           <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm">
             <p className="font-medium mb-1">Explanation:</p>
-            <p className="whitespace-pre-wrap">{explanation.explanation}</p>
+            <p className="whitespace-pre-wrap" data-testid="style-debug-text">{explanation.explanation}</p>
           </div>
 
           {explanation.considered_styles.length > 0 && (
             <div>
               <h3 className="font-medium mb-2 text-sm">Considered Styles:</h3>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs border">
+                <table className="w-full text-xs border" data-testid="style-debug-stats-table">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left p-2 border-b">Style ID</th>
@@ -131,13 +131,14 @@ function StyleDebugPanel() {
                       <tr
                         key={style.style_id}
                         className={style.is_winner ? "bg-green-50" : ""}
+                        data-testid={`style-row-${style.style_id}`}
                       >
                         <td className="p-2 border-b font-mono">{style.style_id}</td>
-                        <td className="p-2 border-b">{style.total_runs}</td>
+                        <td className="p-2 border-b" data-testid={`style-runs-${style.style_id}`}>{style.total_runs}</td>
                         <td className="p-2 border-b">
                           {style.helpful_runs}/{style.total_runs}
                         </td>
-                        <td className="p-2 border-b">
+                        <td className="p-2 border-b" data-testid={`style-ratio-${style.style_id}`}>
                           {(style.helpful_ratio * 100).toFixed(1)}%
                         </td>
                         <td className="p-2 border-b">
