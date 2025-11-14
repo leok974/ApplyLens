@@ -25,7 +25,7 @@ from .db import Base
 from .settings import settings
 
 # Use JSON for SQLite, JSONB for PostgreSQL
-JSONType = JSON if "sqlite" in settings.DATABASE_URL.lower() else JSONB
+JSONType = JSON if "sqlite" in settings.sql_database_url.lower() else JSONB
 
 
 class User(Base):

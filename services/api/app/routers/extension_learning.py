@@ -13,6 +13,7 @@ from app.models_learning_db import FormProfile, AutofillEvent, GenStyle
 from app.core.metrics import learning_sync_counter
 from app.db import get_db
 from app.settings import settings
+from app.autofill_aggregator import derive_segment_key  # Phase 5.2
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,9 @@ async def learning_sync(
         # Persist each event to database
         events_created = 0
         for event in payload.events:
+            # Phase 5.2: Derive segment_key from job information
+            segment_key = derive_segment_key(event.job)
+
             db_event = AutofillEvent(
                 user_id=temp_user_id,
                 host=event.host,
@@ -69,6 +73,7 @@ async def learning_sync(
                 suggested_map=event.suggested_map,
                 final_map=event.final_map,
                 gen_style_id=event.gen_style_id,
+                segment_key=segment_key,  # Phase 5.2
                 edit_stats=event.edit_stats.dict(),
                 duration_ms=event.duration_ms,
                 validation_errors=event.validation_errors,

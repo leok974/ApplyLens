@@ -25,6 +25,7 @@ class AutofillLearningEvent(BaseModel):
     validation_errors: Dict[str, Any] = Field(default_factory=dict)
     status: str = "ok"
     application_id: Optional[str] = None
+    job: Optional[Dict[str, Any]] = None  # Phase 5.2: Job info for segment derivation
 
 
 class LearningSyncRequest(BaseModel):

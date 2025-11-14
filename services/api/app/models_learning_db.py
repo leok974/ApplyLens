@@ -103,6 +103,11 @@ class AutofillEvent(Base):
     )  # "helpful" | "unhelpful" | None
     edit_chars = Column(Integer, nullable=True)  # Total characters edited
 
+    # Phase 5.2: Segment-aware tuning
+    segment_key = Column(
+        Text, nullable=True, index=True
+    )  # "senior" | "junior" | "intern" | "default" etc.
+
     # Performance metrics
     edit_stats = Column(JSONB, nullable=False, server_default="{}")
     duration_ms = Column(Integer, nullable=True)
@@ -124,6 +129,7 @@ class AutofillEvent(Base):
         Index("ix_autofill_events_status", "status"),
         Index("ix_autofill_events_gen_style_id", "gen_style_id"),
         Index("ix_autofill_events_feedback_status", "feedback_status"),
+        Index("ix_autofill_events_segment_key", "segment_key"),
     )
 
 

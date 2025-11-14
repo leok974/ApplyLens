@@ -104,7 +104,7 @@ async def _maybe_create_tables():
     log = logging.getLogger("uvicorn")
     log.info(
         f"🔧 Runtime config: APPLYLENS_DEV={os.getenv('APPLYLENS_DEV')}, "
-        f"DATABASE_URL={settings.DATABASE_URL[:50]}..., "
+        f"DATABASE_URL={settings.sql_database_url[:50]}..., "
         f"DEVDIAG_BASE={os.getenv('DEVDIAG_BASE')}, "
         f"DEVDIAG_ENABLED={os.getenv('DEVDIAG_ENABLED')}"
     )
@@ -122,7 +122,7 @@ def _startup():
     # Log key environment variables for troubleshooting
     logger.info(
         f"🔧 Runtime config: APPLYLENS_DEV={os.getenv('APPLYLENS_DEV')}, "
-        f"DATABASE_URL={settings.DATABASE_URL[:30]}..., "
+        f"DATABASE_URL={settings.sql_database_url[:30]}..., "
         f"ES_ENABLED={os.getenv('ES_ENABLED', 'true')}, "
         f"DEVDIAG_BASE={os.getenv('DEVDIAG_BASE')}, "
         f"DEVDIAG_ENABLED={os.getenv('DEVDIAG_ENABLED')}"

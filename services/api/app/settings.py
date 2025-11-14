@@ -14,15 +14,50 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:5175"
 
     # Database URL - can be overridden by APPLYLENS_DEV_DB for local dev
-    DATABASE_URL: str = Field(
-        default="postgresql://postgres:postgres@db:5432/applylens",
+    # NOTE: Prefer using POSTGRES_* env vars in production to avoid special char issues
+    DATABASE_URL: Optional[str] = Field(
+        default=None,
         validation_alias="APPLYLENS_DEV_DB",
     )
+
+    # PostgreSQL connection components (preferred for production)
+    POSTGRES_HOST: str = "db"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_DB: str = "applylens"
+
+    @property
+    def sql_database_url(self) -> str:
+        """
+        Build database URL from components or use DATABASE_URL if set.
+        
+        Preferred approach: Use POSTGRES_* env vars (especially in production)
+        to avoid URL encoding issues with special characters in passwords.
+        
+        Fallback: Use DATABASE_URL if set (for local dev/backwards compatibility).
+        """
+        # Backward compatibility: use DATABASE_URL if explicitly set
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        
+        # Production approach: build from components
+        if not self.POSTGRES_PASSWORD:
+            # Default for local dev without password
+            return f"postgresql://{self.POSTGRES_USER}:postgres@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        
+        # Build URL with password (no encoding needed - Python handles it)
+        return (
+            f"postgresql://{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@"
+            f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/"
+            f"{self.POSTGRES_DB}"
+        )
 
     @property
     def is_sqlite(self) -> bool:
         """Check if using SQLite database."""
-        return "sqlite" in self.DATABASE_URL.lower()
+        return "sqlite" in self.sql_database_url.lower()
 
     # Database table creation (disabled in test env and SQLite to avoid import-time connections)
     CREATE_TABLES_ON_STARTUP: bool = False  # Will be computed based on env
@@ -64,11 +99,6 @@ class Settings(BaseSettings):
     def effective_redirect_uri(self) -> str:
         """Return the effective redirect URI based on environment"""
         return self.GOOGLE_REDIRECT_URI or self.GOOGLE_REDIRECT_URI_DEV
-
-    # PostgreSQL
-    POSTGRES_USER: Optional[str] = None
-    POSTGRES_PASSWORD: Optional[str] = None
-    POSTGRES_DB: Optional[str] = None
 
     # Web frontend
     WEB_PORT: Optional[int] = None
