@@ -1,5 +1,4 @@
 from logging.config import fileConfig
-import os
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -15,6 +14,7 @@ config = context.config
 # Override with database URL from settings (supports both DATABASE_URL and POSTGRES_* env vars)
 # Phase 5.0: Use settings.sql_database_url which constructs URL from POSTGRES_* if needed
 from app.settings import settings
+
 database_url = settings.sql_database_url
 
 if database_url:

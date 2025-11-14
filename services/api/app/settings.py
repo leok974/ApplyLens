@@ -31,21 +31,21 @@ class Settings(BaseSettings):
     def sql_database_url(self) -> str:
         """
         Build database URL from components or use DATABASE_URL if set.
-        
+
         Preferred approach: Use POSTGRES_* env vars (especially in production)
         to avoid URL encoding issues with special characters in passwords.
-        
+
         Fallback: Use DATABASE_URL if set (for local dev/backwards compatibility).
         """
         # Backward compatibility: use DATABASE_URL if explicitly set
         if self.DATABASE_URL:
             return self.DATABASE_URL
-        
+
         # Production approach: build from components
         if not self.POSTGRES_PASSWORD:
             # Default for local dev without password
             return f"postgresql://{self.POSTGRES_USER}:postgres@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-        
+
         # Build URL with password (no encoding needed - Python handles it)
         return (
             f"postgresql://{self.POSTGRES_USER}:"

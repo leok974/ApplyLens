@@ -89,7 +89,7 @@ def approvals_bulk_insert(rows: List[Dict[str, Any]]) -> None:
                     """
                     INSERT INTO approvals_proposed
                     (email_id, action, policy_id, confidence, rationale, params, status)
-                    VALUES (:email_id, :action, :policy_id, :confidence, :rationale, 
+                    VALUES (:email_id, :action, :policy_id, :confidence, :rationale,
                             cast(:params as jsonb), 'proposed')
                 """
                 ),
@@ -126,11 +126,11 @@ def approvals_get(status: str = "proposed", limit: int = 200) -> List[Dict[str, 
         result = db.execute(
             text(
                 """
-                SELECT id, email_id, action, policy_id, confidence, rationale, 
+                SELECT id, email_id, action, policy_id, confidence, rationale,
                        params, status, created_at
-                FROM approvals_proposed 
+                FROM approvals_proposed
                 WHERE status = :status
-                ORDER BY created_at DESC 
+                ORDER BY created_at DESC
                 LIMIT :limit
             """
             ),
@@ -171,8 +171,8 @@ def approvals_update_status(ids: List[int], status: str) -> None:
         db.execute(
             text(
                 """
-                UPDATE approvals_proposed 
-                SET status = :status, updated_at = now() 
+                UPDATE approvals_proposed
+                SET status = :status, updated_at = now()
                 WHERE id = ANY(:ids)
             """
             ),
