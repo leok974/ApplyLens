@@ -86,7 +86,7 @@ def upgrade():
             primary_key=True,
             server_default=sa.text("gen_random_uuid()"),
         ),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("user_id", sa.String(64), nullable=False),  # Match users.id type
         sa.Column("host", sa.Text(), nullable=False),
         sa.Column("schema_hash", sa.Text(), nullable=False),
         sa.Column(
@@ -122,7 +122,7 @@ def upgrade():
             nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.Column("application_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("application_id", sa.Integer(), nullable=True),  # Match extension_applications.id type
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(
             ["application_id"], ["extension_applications.id"], ondelete="SET NULL"
