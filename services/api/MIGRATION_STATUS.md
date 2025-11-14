@@ -254,3 +254,42 @@ For questions about:
 - Migration execution → Check PostgreSQL setup docs
 - Learning loop implementation → See LEARNING_IMPLEMENTATION.md
 - Architecture decisions → See LEARNING_LOOP.md
+
+---
+
+## Phase 5.0 – Style Tuning Summary
+
+**Status**: ✅ **COMPLETE** (November 14, 2025)
+
+Phase 5.0 extends the learning loop with feedback-aware style tuning:
+
+- **Data Collection**:
+  - `gen_style_id` recorded for each autofill event (which style was used)
+  - `feedback_status` captures user thumbs up/down ("helpful" | "unhelpful")
+  - `edit_chars` measures edit distance after autofill (quality metric)
+
+- **Aggregation**:
+  - New aggregator computes `StyleStats` per (host, schema, style_id)
+  - Selects `preferred_style_id` based on helpful_ratio, avg_edit_chars, confidence
+  - Writes `style_hint.preferred_style_id` + `style_stats` to `FormProfile.style_hint` (JSONB)
+
+- **API Integration**:
+  - `/api/extension/learning/profile` now returns `style_hint.preferred_style_id`
+  - Extension maps `preferred_style_id` → `styleHint.preferredStyleId` (camelCase)
+  - Extension sends `style_hint.style_id` in generate-form-answers requests
+
+- **Backward Compatibility**:
+  - All Phase 5.0 fields are nullable and optional
+  - Legacy profiles without `preferred_style_id` continue working
+  - Falls back to base styleHint or template defaults
+
+- **Testing**:
+  - Backend: `test_learning_style_tuning.py` (8 tests, Postgres-only)
+  - Extension: `autofill-style-tuning.spec.ts` (3 E2E tests, @companion)
+  - All tests passing, no regressions
+
+- **Migration**: `75310f8e88d7_phase_5_style_feedback_tracking.py`
+
+**The feedback loop is now complete**: User feedback → Aggregator → Preferred style → Better autofills
+
+See `PHASE_5_COMPLETE.md` for full documentation.

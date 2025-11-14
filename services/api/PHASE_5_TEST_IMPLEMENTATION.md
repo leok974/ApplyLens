@@ -1,5 +1,15 @@
 # Phase 5.0: Style Tuning Tests Implementation Guide
 
+**Status**: ✅ **COMPLETE**
+
+## Current Status
+
+- **Backend tests**: ✅ PASSING - `test_learning_style_tuning.py` (Postgres-only, 8 tests)
+- **Extension tests**: ✅ PASSING - `autofill-style-tuning.spec.ts` (3 E2E tests)
+- **@companion suite**: ✅ PASSING - Run with `npm run e2e:companion`
+
+All Phase 5.0 tests are implemented and verified. This guide documents the test implementation for reference.
+
 ## Overview
 
 Phase 5.0 backend is complete. This guide shows how to validate the style tuning feedback loop with E2E and unit tests in the extension.
@@ -510,11 +520,33 @@ Check your normalization:
 
 ## Summary
 
-Phase 5.0 backend is complete and working. These tests validate:
+**Phase 5.0 is COMPLETE!** ✅
 
+Phase 5.0 backend and extension tests are fully implemented and passing:
+
+✅ **Backend Tests** - `test_learning_style_tuning.py` (8 tests, Postgres-only)
+✅ **Extension E2E Tests** - `autofill-style-tuning.spec.ts` (3 tests, @companion @styletuning)
 ✅ **Profile fetching** - Extension receives `preferred_style_id`
-✅ **Mapping** - `preferred_style_id` → `styleHint.styleId`
-✅ **Generation** - `styleId` sent in generation request
-✅ **Fallback** - Uses `gen_style_id` when preferred not available
+✅ **Mapping** - `preferred_style_id` → `styleHint.preferredStyleId`
+✅ **Generation** - `preferredStyleId` sent as `style_hint.style_id` in generation request
+✅ **Fallback** - Uses base styleHint when preferred not available
 
 The feedback loop is closed! 🎉
+
+**Run tests**:
+
+```bash
+# Backend
+cd services/api
+pytest tests/test_learning_style_tuning.py -v
+
+# Extension
+cd apps/extension-applylens
+npm run e2e:companion
+```
+
+**See also**:
+- `PHASE_5_COMPLETE.md` - Complete Phase 5.0 documentation
+- `PHASE_5_EXTENSION_IMPLEMENTATION.md` - Extension implementation guide
+- `infra/STYLE_TUNING_RUNBOOK.md` - Operational runbook
+
