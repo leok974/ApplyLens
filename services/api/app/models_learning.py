@@ -1,6 +1,6 @@
 """Pydantic models for the Companion learning loop."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -51,3 +51,43 @@ class LearningProfileResponse(BaseModel):
     schema_hash: str
     canonical_map: Dict[str, str] = Field(default_factory=dict)
     style_hint: Optional[StyleHint] = None
+
+
+# Phase 5.3: Style choice explanation models
+
+
+class StyleChoiceStyleStats(BaseModel):
+    """Performance metrics for a single generation style variant."""
+
+    style_id: str
+    source: Literal["form", "segment", "family", "unknown"] = "unknown"
+    segment_key: Optional[str] = None
+
+    total_runs: int = 0
+    helpful_runs: int = 0
+    unhelpful_runs: int = 0
+    helpful_ratio: float = 0.0
+    avg_edit_chars: Optional[float] = None
+
+    is_winner: bool = False
+
+
+class StyleChoiceExplanation(BaseModel):
+    """
+    Explanation of why a particular style was chosen for a form.
+
+    Provides transparency into the hierarchical decision process:
+    form → segment → family → none.
+    """
+
+    host: str
+    schema_hash: str
+    host_family: str
+    segment_key: Optional[str] = None
+
+    chosen_style_id: Optional[str] = None
+    source: Literal["form", "segment", "family", "none"] = "none"
+
+    considered_styles: List[StyleChoiceStyleStats] = Field(default_factory=list)
+
+    explanation: str

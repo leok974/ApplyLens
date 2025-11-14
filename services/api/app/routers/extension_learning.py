@@ -4,16 +4,27 @@ import logging
 import os
 import uuid
 from datetime import datetime
+from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.models_learning import LearningProfileResponse, LearningSyncRequest, StyleHint
+from app.models_learning import (
+    LearningProfileResponse,
+    LearningSyncRequest,
+    StyleHint,
+    StyleChoiceExplanation,  # Phase 5.3
+    StyleChoiceStyleStats,  # Phase 5.3
+)
 from app.models_learning_db import FormProfile, AutofillEvent, GenStyle
 from app.core.metrics import learning_sync_counter
 from app.db import get_db
 from app.settings import settings
-from app.autofill_aggregator import derive_segment_key  # Phase 5.2
+from app.autofill_aggregator import (
+    derive_segment_key,  # Phase 5.2
+    get_host_family,  # Phase 5.3
+    build_style_explanation,  # Phase 5.3
+)
 
 logger = logging.getLogger(__name__)
 
@@ -210,4 +221,100 @@ async def learning_profile(
         schema_hash=schema_hash,
         canonical_map=profile.fields or {},
         style_hint=style_hint,
+    )
+
+
+@router.get("/explain-style", response_model=StyleChoiceExplanation)
+async def explain_style_choice(
+    host: str,
+    schema_hash: str,
+    db: Session = Depends(get_db),
+    _dev: bool = Depends(dev_only),
+):
+    """Explain why a particular style was chosen for a form.
+
+    Phase 5.3: Provides transparency into the hierarchical style selection
+    process (form → segment → family → none) using stored style_hint data.
+
+    Args:
+        host: Hostname (e.g., "boards.greenhouse.io")
+        schema_hash: Hash of form schema
+        db: Database session
+        _dev: Dev-mode guard
+
+    Returns:
+        Detailed explanation with metrics for all considered styles
+    """
+    host_family = get_host_family(host) or "other"
+
+    # Query database for existing profile
+    profile = (
+        db.query(FormProfile)
+        .filter(FormProfile.host == host, FormProfile.schema_hash == schema_hash)
+        .first()
+    )
+
+    if not profile or not profile.style_hint:
+        return StyleChoiceExplanation(
+            host=host,
+            schema_hash=schema_hash,
+            host_family=host_family,
+            segment_key=None,
+            chosen_style_id=None,
+            source="none",
+            considered_styles=[],
+            explanation=(
+                "No style_hint is available yet for this form. "
+                "Once enough autofill runs and feedback are collected, "
+                "the aggregator will compute a preferred style."
+            ),
+        )
+
+    hint = profile.style_hint or {}
+    chosen_style_id = hint.get("preferred_style_id")
+    source = hint.get("source", "none")
+    segment_key = hint.get("segment_key") or hint.get("segment")
+
+    # Parse style_stats from the stored hint
+    raw_stats = hint.get("style_stats") or {}
+    considered: List[StyleChoiceStyleStats] = []
+
+    for style_id, data in raw_stats.items():
+        considered.append(
+            StyleChoiceStyleStats(
+                style_id=style_id,
+                source=data.get("source", source) or "unknown",
+                segment_key=data.get("segment_key", segment_key),
+                total_runs=int(data.get("total_runs", 0)),
+                helpful_runs=int(
+                    data.get("helpful", 0)
+                ),  # Map 'helpful' to 'helpful_runs'
+                unhelpful_runs=int(
+                    data.get("unhelpful", 0)
+                ),  # Map 'unhelpful' to 'unhelpful_runs'
+                helpful_ratio=float(data.get("helpful_ratio", 0.0)),
+                avg_edit_chars=data.get("avg_edit_chars"),
+                is_winner=(style_id == chosen_style_id),
+            )
+        )
+
+    # Generate human-readable explanation
+    explanation = build_style_explanation(
+        host=host,
+        host_family=host_family,
+        segment_key=segment_key,
+        source=source,
+        chosen_style_id=chosen_style_id,
+        styles=considered,
+    )
+
+    return StyleChoiceExplanation(
+        host=host,
+        schema_hash=schema_hash,
+        host_family=host_family,
+        segment_key=segment_key,
+        chosen_style_id=chosen_style_id,
+        source=source,
+        considered_styles=considered,
+        explanation=explanation,
     )

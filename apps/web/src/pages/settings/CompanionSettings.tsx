@@ -6,6 +6,158 @@ import {
   ExtApplication,
   ExtOutreach,
 } from "@/lib/extension";
+import { fetchStyleExplanation, StyleChoiceExplanation } from "@/api/companion";
+
+/**
+ * Phase 5.3: Debug panel for style choice transparency
+ */
+function StyleDebugPanel() {
+  const [host, setHost] = useState("boards.greenhouse.io");
+  const [schemaHash, setSchemaHash] = useState("");
+  const [explanation, setExplanation] = useState<StyleChoiceExplanation | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFetch = async () => {
+    if (!host || !schemaHash) {
+      setError("Both host and schema hash are required");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setExplanation(null);
+
+    try {
+      const result = await fetchStyleExplanation({ host, schemaHash });
+      setExplanation(result);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to fetch explanation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border p-5">
+      <h2 className="font-medium mb-3">Style Choice Explanation (Debug)</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        Phase 5.3: Shows why a particular autofill style was chosen for a form.
+      </p>
+
+      <div className="grid md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Host</label>
+          <input
+            type="text"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="e.g., boards.greenhouse.io"
+            value={host}
+            onChange={(e) => setHost(e.target.value)}
+            data-testid="style-debug-host-input"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Schema Hash</label>
+          <input
+            type="text"
+            className="w-full px-3 py-2 border rounded"
+            placeholder="e.g., abc123def456"
+            value={schemaHash}
+            onChange={(e) => setSchemaHash(e.target.value)}
+            data-testid="style-debug-hash-input"
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={handleFetch}
+        disabled={loading || !host || !schemaHash}
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        data-testid="style-debug-fetch-btn"
+      >
+        {loading ? "Loading..." : "Fetch Explanation"}
+      </button>
+
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700" data-testid="style-debug-error">
+          {error}
+        </div>
+      )}
+
+      {explanation && (
+        <div className="mt-4 space-y-4" data-testid="style-debug-result">
+          <div className="grid md:grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="font-medium">Host Family:</span>{" "}
+              <span className="font-mono">{explanation.host_family}</span>
+            </div>
+            <div>
+              <span className="font-medium">Segment:</span>{" "}
+              <span className="font-mono">{explanation.segment_key ?? "—"}</span>
+            </div>
+            <div>
+              <span className="font-medium">Source:</span>{" "}
+              <span className="font-mono">{explanation.source}</span>
+            </div>
+            <div>
+              <span className="font-medium">Chosen Style:</span>{" "}
+              <span className="font-mono">{explanation.chosen_style_id ?? "none"}</span>
+            </div>
+          </div>
+
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+            <p className="font-medium mb-1">Explanation:</p>
+            <p className="whitespace-pre-wrap">{explanation.explanation}</p>
+          </div>
+
+          {explanation.considered_styles.length > 0 && (
+            <div>
+              <h3 className="font-medium mb-2 text-sm">Considered Styles:</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-2 border-b">Style ID</th>
+                      <th className="text-left p-2 border-b">Runs</th>
+                      <th className="text-left p-2 border-b">Helpful</th>
+                      <th className="text-left p-2 border-b">Ratio</th>
+                      <th className="text-left p-2 border-b">Avg Edit Chars</th>
+                      <th className="text-left p-2 border-b">Winner</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {explanation.considered_styles.map((style) => (
+                      <tr
+                        key={style.style_id}
+                        className={style.is_winner ? "bg-green-50" : ""}
+                      >
+                        <td className="p-2 border-b font-mono">{style.style_id}</td>
+                        <td className="p-2 border-b">{style.total_runs}</td>
+                        <td className="p-2 border-b">
+                          {style.helpful_runs}/{style.total_runs}
+                        </td>
+                        <td className="p-2 border-b">
+                          {(style.helpful_ratio * 100).toFixed(1)}%
+                        </td>
+                        <td className="p-2 border-b">
+                          {style.avg_edit_chars?.toFixed(1) ?? "—"}
+                        </td>
+                        <td className="p-2 border-b">
+                          {style.is_winner ? "✓" : ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function CompanionSettings() {
   const [apiOk, setApiOk] = useState<boolean | null>(null);
@@ -150,6 +302,9 @@ export default function CompanionSettings() {
           </table>
         </div>
       </section>
+
+      {/* Phase 5.3: Style choice transparency debug panel */}
+      <StyleDebugPanel />
     </div>
   );
 }

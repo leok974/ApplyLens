@@ -23,6 +23,7 @@ from sqlalchemy import func
 from .db import SessionLocal
 from .models_learning_db import AutofillEvent, FormProfile, GenStyle
 from .core.metrics import Counter as PrometheusCounter
+from .models_learning import StyleChoiceStyleStats  # Phase 5.3
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,66 @@ def derive_segment_key(job: Optional[dict]) -> Optional[str]:
         return "senior"
     else:
         return "default"
+
+
+# Phase 5.3: Style choice explanation
+def build_style_explanation(
+    host: str,
+    host_family: str,
+    segment_key: Optional[str],
+    source: str,
+    chosen_style_id: Optional[str],
+    styles: List[StyleChoiceStyleStats],
+) -> str:
+    """
+    Build human-readable explanation for why a style was chosen.
+
+    Args:
+        host: Form host domain
+        host_family: ATS family (greenhouse, lever, etc.)
+        segment_key: Segment identifier (intern, junior, senior, default)
+        source: Decision level (form, segment, family, none)
+        chosen_style_id: ID of the selected style
+        styles: List of all considered styles with their stats
+
+    Returns:
+        Human-readable explanation string
+
+    Example:
+        >>> build_style_explanation(
+        ...     "boards.greenhouse.io", "greenhouse", "senior", "segment",
+        ...     "friendly_bullets_v1", [...]
+        ... )
+        "We chose style 'friendly_bullets_v1' at the segment level..."
+    """
+    if not chosen_style_id or not styles:
+        return (
+            "No style recommendation is available yet for this form. "
+            "The aggregator either has not run or does not have enough feedback."
+        )
+
+    winner = next((s for s in styles if s.style_id == chosen_style_id), None)
+    if not winner:
+        return (
+            f"Style '{chosen_style_id}' was recorded as preferred "
+            "but no stats are available; this usually means the schema changed "
+            "or stats have not yet been recomputed."
+        )
+
+    level = source
+    seg = segment_key or "default"
+    helpful_pct = (
+        round(winner.helpful_ratio * 100) if winner.helpful_ratio is not None else 0
+    )
+
+    return (
+        f"We chose style '{winner.style_id}' at the {level} level "
+        f"for host family '{host_family}' and segment '{seg}' because it has "
+        f"{winner.total_runs} runs, {winner.helpful_runs} helpful votes "
+        f"({helpful_pct}%) and an average edit size of "
+        f"{int(winner.avg_edit_chars) if winner.avg_edit_chars is not None else 0} characters. "
+        "Other styles had lower helpful ratios or required more edits."
+    )
 
 
 # Phase 5.0: Style Performance Tracking
@@ -581,7 +642,7 @@ def _update_style_hints(db: Session, lookback_days: int = 30) -> int:
         host_family = get_host_family(profile.host) or "other"
         source = meta.get("source") or "none"
         seg_key_label = segment_key or ""
-        
+
         autofill_style_choice_total.labels(
             source=source,
             host_family=host_family,
