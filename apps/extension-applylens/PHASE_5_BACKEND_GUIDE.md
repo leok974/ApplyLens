@@ -1,7 +1,12 @@
 # Phase 5.0 Implementation Complete! ✅
 
 ## Overview
-Phase 5.0 adds feedback-aware style tuning to the ApplyLens system. **Both extension and backend implementations are now complete.**
+Phase 5.0 adds feedback-aware style tuning to the ApplyLens system. **Extension implementation complete. Backend implementation documented below.**
+
+**Related Guides**:
+- Phase 5.2: Prometheus Metrics → See `PHASE_5_2_METRICS_GUIDE.md`
+- Phase 5.4/5.5: Epsilon-Greedy Bandit → See `PHASE_5_4_5_IMPLEMENTATION_GUIDE.md`
+- Deployment Status → See `DEPLOYMENT_STATUS.md`
 
 ## Extension Changes (✅ COMPLETE)
 

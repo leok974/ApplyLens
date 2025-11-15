@@ -81,7 +81,7 @@ test.describe("@companion @bandit", () => {
       Math.random = () => 0.01;
     });
 
-    await page.goto("http://localhost:4173/test/demo-form.html");
+    await page.goto("http://127.0.0.1:5177/demo-form.html");
     await page.click('[data-testid="al-scan-button"]');
 
     const panel = page.locator('[data-testid="al-panel"]');
@@ -173,7 +173,7 @@ test.describe("@companion @bandit", () => {
       Math.random = () => 0.99;
     });
 
-    await page.goto("http://localhost:4173/test/demo-form.html");
+    await page.goto("http://127.0.0.1:5177/demo-form.html");
     await page.click('[data-testid="al-scan-button"]');
 
     const panel = page.locator('[data-testid="al-panel"]');
@@ -243,7 +243,7 @@ test.describe("@companion @bandit", () => {
       }
     );
 
-    await page.goto("http://localhost:4173/test/demo-form.html");
+    await page.goto("http://127.0.0.1:5177/demo-form.html");
     await page.click('[data-testid="al-scan-button"]');
 
     const panel = page.locator('[data-testid="al-panel"]');

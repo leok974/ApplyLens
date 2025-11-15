@@ -18,28 +18,28 @@ originRequest:
 ingress:
   # Direct diagnostic hostname - bypasses any Page/Transform Rules on root
   - hostname: direct.applylens.app
-    service: http://applylens.int:80
+    service: http://applylens-web-prod:80
     originRequest:
       noTLSVerify: false
       connectTimeout: 10s
 
-  # Main domain - route to Nginx reverse proxy (handles path-based routing)
+  # Main domain - route to web frontend
   - hostname: applylens.app
-    service: http://applylens.int:80
+    service: http://applylens-web-prod:80
     originRequest:
       noTLSVerify: false
       connectTimeout: 10s
 
-  # WWW subdomain - route to Nginx reverse proxy
+  # WWW subdomain - route to web frontend
   - hostname: www.applylens.app
-    service: http://applylens.int:80
+    service: http://applylens-web-prod:80
     originRequest:
       noTLSVerify: false
       connectTimeout: 10s
 
   # API subdomain - direct route to FastAPI backend
   - hostname: api.applylens.app
-    service: http://applylens-api.int:8003
+    service: http://applylens-api-prod:8003
     originRequest:
       noTLSVerify: false
       connectTimeout: 15s
