@@ -93,6 +93,69 @@ function scanFields() {
   return fields;
 }
 
+// Phase 5.4 — epsilon-greedy bandit
+const BANDIT_EPSILON_DEFAULT = 0.15; // 15% explore
+
+function resolveBanditEpsilon() {
+  try {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.__APPLYLENS_BANDIT_EPSILON === "number"
+    ) {
+      return window.__APPLYLENS_BANDIT_EPSILON;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return BANDIT_EPSILON_DEFAULT;
+}
+
+/**
+ * styleHint is the normalized object from profileClient:
+ * {
+ *   preferredStyleId?: string;
+ *   styleStats?: {
+ *     chosen?: { styleId: string; helpfulRatio?: number; totalRuns?: number; ... };
+ *     competitors?: Array<{ styleId: string; helpfulRatio?: number; totalRuns?: number; ... }>;
+ *   }
+ * }
+ */
+function pickStyleForBandit(styleHint) {
+  if (!styleHint || !styleHint.preferredStyleId) {
+    console.log("[Bandit] fallback: no preferredStyleId");
+    return { styleId: null, policy: "fallback" };
+  }
+
+  const best = styleHint.preferredStyleId;
+  const competitors =
+    (styleHint.styleStats && styleHint.styleStats.competitors) || [];
+
+  // No competitors → always exploit
+  if (!competitors.length) {
+    console.log("[Bandit] exploit (no competitors)", best);
+    return { styleId: best, policy: "exploit" };
+  }
+
+  const epsilon = resolveBanditEpsilon();
+  const r = Math.random();
+
+  if (r < epsilon) {
+    const idx = Math.floor(Math.random() * competitors.length);
+    const candidate = competitors[idx] && competitors[idx].styleId;
+    const chosen = candidate || best;
+    console.log(
+      "[Bandit] explore",
+      chosen,
+      "ε=" + epsilon,
+      "vs best=" + best
+    );
+    return { styleId: chosen, policy: "explore" };
+  }
+
+  console.log("[Bandit] exploit", best, "ε=" + epsilon);
+  return { styleId: best, policy: "exploit" };
+}
+
 function getPageContext() {
   // Try to infer company & title from common ATS/SEO patterns
   const title = (document.querySelector("h1")?.textContent || document.title || "").trim().slice(0,140);
@@ -249,8 +312,8 @@ function renderAnswers(panel, answers, fields) {
       }
     }
 
-    // Track learning event with final state
-    await trackAutofillCompletion(location.host, computeSchemaHash(fields), rows);
+    // Track learning event with final state (Phase 5.4: includes ctx with bandit policy)
+    await trackAutofillCompletion(location.host, computeSchemaHash(fields), rows, panel.__ctx);
   };
 
   // Store rows for learning
@@ -349,18 +412,34 @@ async function runScanAndSuggest() {
       }
     }
 
-    // Phase 5.0: Use preferredStyleId if available (aggregator-chosen best style)
-    let effectiveStyleHint = profile?.styleHint || null;
-    if (effectiveStyleHint && effectiveStyleHint.preferredStyleId) {
-      // Backend expects snake_case style_id
-      effectiveStyleHint = {
-        ...effectiveStyleHint,
-        style_id: effectiveStyleHint.preferredStyleId,
+    // Phase 5.4 — epsilon-greedy bandit
+    const styleHint = profile?.styleHint || null;
+    const { styleId: chosenStyleId, policy: banditPolicy } =
+      pickStyleForBandit(styleHint);
+
+    // If bandit couldn't choose, fall back to preferred
+    const styleIdToSend =
+      chosenStyleId ||
+      (styleHint && styleHint.preferredStyleId) ||
+      null;
+
+    // Build style_hint object for backend (snake_case)
+    let styleHintForRequest = null;
+    if (styleIdToSend) {
+      styleHintForRequest = {
+        ...(styleHint || {}),
+        style_id: styleIdToSend,
       };
+      // Don't send preferredStyleId back, API expects style_id
+      delete styleHintForRequest.preferredStyleId;
     }
 
+    // Remember for learning sync
+    ctx.genStyleId = styleIdToSend;
+    ctx.banditPolicy = banditPolicy;
+
     // Phase 4.1: Pass style hint to generation endpoint
-    const data = await fetchFormAnswers(ctx.job, fields, effectiveStyleHint);
+    const data = await fetchFormAnswers(ctx.job, fields, styleHintForRequest);
 
     // Phase 3.1: Apply guardrails to sanitize generated content
     if (data.answers) {
@@ -395,8 +474,9 @@ async function runScanAndSuggest() {
 
     console.log(`[Learning] Mapping summary: ${learnedMappingCount} learned, ${heuristicMappingCount} heuristic`);
 
-    // Store schema hash for feedback
+    // Store context for feedback and learning (Phase 5.4: includes bandit policy)
     panel.__schemaHash = schemaHash;
+    panel.__ctx = ctx;
 
     renderAnswers(panel, data.answers || [], fields);
 
@@ -412,7 +492,7 @@ async function runScanAndSuggest() {
   }
 }
 
-async function trackAutofillCompletion(host, schemaHash, rows) {
+async function trackAutofillCompletion(host, schemaHash, rows, ctx = {}) {
   // Check if learning is enabled
   try {
     const settings = await chrome.storage.sync.get(["learningEnabled"]);
@@ -462,13 +542,14 @@ async function trackAutofillCompletion(host, schemaHash, rows) {
     }
   }
 
-  // Queue learning event
+  // Queue learning event (Phase 5.4: includes bandit policy)
   const event = {
     host,
     schemaHash,
     suggestedMap,
     finalMap,
-    genStyleId: currentProfile?.styleHint?.genStyleId || null, // Phase 5.0: Include style ID
+    genStyleId: ctx.genStyleId || null,
+    policy: ctx.banditPolicy || "exploit", // Phase 5.4: bandit policy
     editStats,
     durationMs,
     validationErrors: {},

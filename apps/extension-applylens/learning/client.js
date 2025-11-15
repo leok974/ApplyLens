@@ -27,11 +27,15 @@ export async function flushLearningEvents() {
     const apiBase = getApiBase();
     const host = batch[0]?.host || location.host;
     const schemaHash = batch[0]?.schemaHash || "unknown";
+    const genStyleId = batch[0]?.genStyleId || null; // Phase 5.0
+    const policy = batch[0]?.policy || "exploit"; // Phase 5.4
 
     // Convert camelCase to snake_case for backend
     const payload = {
       host,
       schema_hash: schemaHash,
+      gen_style_id: genStyleId, // Phase 5.0
+      policy: policy, // Phase 5.4: bandit policy
       events: batch.map(e => ({
         host: e.host,
         schema_hash: e.schemaHash,
