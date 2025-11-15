@@ -24,6 +24,7 @@ from app.autofill_aggregator import (
     derive_segment_key,  # Phase 5.2
     get_host_family,  # Phase 5.3
     build_style_explanation,  # Phase 5.3
+    autofill_policy_total,  # Phase 5.4
 )
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,12 @@ async def learning_sync(
             # Phase 5.2: Derive segment_key from job information
             segment_key = derive_segment_key(event.job)
 
+            # Phase 5.4: Get policy from event (default to "exploit")
+            policy = event.policy or "exploit"
+
+            # Phase 5.4: Get host_family for metrics
+            host_family = get_host_family(event.host)
+
             db_event = AutofillEvent(
                 user_id=temp_user_id,
                 host=event.host,
@@ -85,6 +92,7 @@ async def learning_sync(
                 final_map=event.final_map,
                 gen_style_id=event.gen_style_id,
                 segment_key=segment_key,  # Phase 5.2
+                policy=policy,  # Phase 5.4
                 edit_stats=event.edit_stats.dict(),
                 duration_ms=event.duration_ms,
                 validation_errors=event.validation_errors,
@@ -95,6 +103,13 @@ async def learning_sync(
             )
             db.add(db_event)
             events_created += 1
+
+            # Phase 5.4: Increment policy metric
+            autofill_policy_total.labels(
+                policy=policy,
+                host_family=host_family,
+                segment_key=segment_key,
+            ).inc()
 
         # Update or create form profile
         profile = (

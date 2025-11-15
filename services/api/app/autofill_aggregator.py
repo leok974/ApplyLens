@@ -46,6 +46,13 @@ autofill_style_choice_total = PrometheusCounter(
     ["source", "host_family", "segment_key"],
 )
 
+# Phase 5.4: Bandit policy usage tracking
+autofill_policy_total = PrometheusCounter(
+    "applylens_autofill_policy_total",
+    "Bandit policy usage for autofill events",
+    ["policy", "host_family", "segment_key"],
+)
+
 
 # Phase 5.1: Host-family bundles for cross-form generalization
 ATS_FAMILIES: Dict[str, Tuple[str, ...]] = {

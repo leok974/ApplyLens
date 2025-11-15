@@ -108,6 +108,14 @@ class AutofillEvent(Base):
         Text, nullable=True, index=True
     )  # "senior" | "junior" | "intern" | "default" etc.
 
+    # Phase 5.4: Bandit policy tracking
+    policy = Column(
+        Text,
+        nullable=True,
+        index=True,
+        doc="Bandit policy used when choosing gen_style_id: exploit|explore|fallback",
+    )
+
     # Performance metrics
     edit_stats = Column(JSONB, nullable=False, server_default="{}")
     duration_ms = Column(Integer, nullable=True)
@@ -130,6 +138,7 @@ class AutofillEvent(Base):
         Index("ix_autofill_events_gen_style_id", "gen_style_id"),
         Index("ix_autofill_events_feedback_status", "feedback_status"),
         Index("ix_autofill_events_segment_key", "segment_key"),
+        Index("ix_autofill_events_policy", "policy"),  # Phase 5.4: bandit tracking
     )
 
 

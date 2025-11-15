@@ -26,6 +26,10 @@ class AutofillLearningEvent(BaseModel):
     status: str = "ok"
     application_id: Optional[str] = None
     job: Optional[Dict[str, Any]] = None  # Phase 5.2: Job info for segment derivation
+    policy: Optional[str] = Field(
+        default="exploit",
+        description="Bandit policy used for this autofill: exploit|explore|fallback",
+    )  # Phase 5.4: Epsilon-greedy bandit tracking
 
 
 class LearningSyncRequest(BaseModel):
