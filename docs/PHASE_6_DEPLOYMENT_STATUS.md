@@ -169,7 +169,39 @@ Alert group loaded with 3 rules confirmed.
 
 ---
 
-## 6. Final Phase 6 Checklist
+## 6. Production Fixes Applied
+
+### OAuth Callback Route Fix (Nov 16, 2025)
+
+**Issue**: OAuth callback returned 404 error when users attempted to login via Google
+- Error: `applylens.app/api/auth/google/callback?state=...&code=... → 404`
+- Root Cause: nginx was proxying `/api/auth/google/callback` → `http://api:8000/api/auth/google/callback`
+  but FastAPI router has `prefix="/auth"` (not `/api/auth`)
+
+**Fix**: Added nginx location block to strip `/api` prefix from auth routes
+```nginx
+location ^~ /api/auth/ {
+    proxy_pass http://applylens-api:8000/auth/;
+    ...
+}
+```
+
+**Verification**:
+```bash
+# Login redirect works
+curl "https://applylens.app/api/auth/google/login"
+# → 307 redirect to accounts.google.com with correct callback URL
+
+# Callback route accessible
+curl "https://applylens.app/api/auth/google/callback?code=test&state=test"
+# → {"detail":"Authentication failed"} (expected with fake values)
+```
+
+**Commit**: `9103f3c` - fix: Add nginx route for /api/auth/* to fix OAuth callback 404
+
+---
+
+## 7. Complete Phase 6 Checklist
 
 - ✅ Backend bandit kill switch (`COMPANION_BANDIT_ENABLED`)
 - ✅ Extension kill switch (`isBanditEnabled` + `window.__APPLYLENS_BANDIT_ENABLED`)
