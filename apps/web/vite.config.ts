@@ -1,6 +1,7 @@
 import { defineConfig, Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'node:fs'
 
 // Check if we need a proxy (when API_BASE is not explicitly set or is relative)
 const API_BASE = process.env.VITE_API_BASE
@@ -21,10 +22,40 @@ function buildIdPlugin(): Plugin {
   }
 }
 
+// Plugin to generate version.json in build output
+function versionJsonPlugin(): Plugin {
+  let outDir: string
+
+  return {
+    name: 'applylens-version-json',
+    apply: 'build',
+
+    configResolved(resolvedConfig) {
+      // Capture the final outDir (respects custom config)
+      outDir = resolvedConfig.build.outDir
+    },
+
+    writeBundle() {
+      const version = process.env.VITE_APP_VERSION || 'dev-local'
+
+      const payload = {
+        version,
+        buildTime: new Date().toISOString(),
+      }
+
+      const filePath = path.join(outDir, 'version.json')
+      fs.mkdirSync(outDir, { recursive: true })
+      fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8')
+      // eslint-disable-next-line no-console
+      console.log(`[applylens-version-json] wrote ${filePath} with version=${version}`)
+    },
+  }
+}
+
 export default defineConfig({
   // Use ASSET_BASE for CDN support (e.g., https://cdn.applylens.app/)
   base: ASSET_BASE,
-  plugins: [react(), buildIdPlugin()],
+  plugins: [react(), buildIdPlugin(), versionJsonPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

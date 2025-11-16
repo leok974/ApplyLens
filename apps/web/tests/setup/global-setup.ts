@@ -15,7 +15,7 @@ export default async function globalSetup(config: FullConfig) {
 
   // 1) CSRF cookie
   console.log('   📝 Getting CSRF token...');
-  const csrfResp = await ctx.get('/api/auth/csrf');
+  const csrfResp = await ctx.get('/auth/csrf');
   if (!csrfResp.ok()) {
     throw new Error(`CSRF endpoint failed: ${csrfResp.status()}`);
   }
@@ -30,7 +30,7 @@ export default async function globalSetup(config: FullConfig) {
 
   // 2) Demo session (guarantees JSON from /auth/me per your fixes)
   console.log('   📝 Starting demo authentication...');
-  const res = await ctx.post('/api/auth/demo/start', {
+  const res = await ctx.post('/auth/demo/start', {
     headers: { 'X-CSRF-Token': csrfCookie.value }
   });
   if (!res.ok()) {
@@ -42,7 +42,7 @@ export default async function globalSetup(config: FullConfig) {
   // 3) Optional seed (idempotent in dev)
   if (smoke) {
     console.log(`   🌱 Seeding ${seed} threads...`);
-    const r = await ctx.get(`/api/dev/seed-threads-simple?count=${seed}`);
+    const r = await ctx.get(`/dev/seed-threads-simple?count=${seed}`);
     if (!r.ok()) {
       console.warn(`   ⚠ Seed failed: ${r.status()} - continuing anyway`);
     } else {
@@ -52,7 +52,7 @@ export default async function globalSetup(config: FullConfig) {
 
   // 4) Persist session storage for UI tests
   //    We fetch /auth/me to ensure cookies are set, then save state.
-  await ctx.get('/api/auth/me');
+  await ctx.get('/auth/me');
   await ctx.storageState({ path: 'tests/.auth/storageState.json' });
   await ctx.dispose();
 

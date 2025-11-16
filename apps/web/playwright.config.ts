@@ -15,6 +15,7 @@ export default defineConfig({
     "profile-warehouse.spec.ts",  // Warehouse-backed profile page
     "**/auth.*.spec.ts",  // Must include glob pattern
     "settings-logout.spec.ts",  // Settings page logout flow [prodSafe]
+    "settings-companion-experimental-styles.spec.ts",  // Bandit toggle UI tests
     "e2e/email-risk-banner.spec.ts",
     "e2e/ux-heartbeat.spec.ts",
     "e2e/search-form.spec.ts",

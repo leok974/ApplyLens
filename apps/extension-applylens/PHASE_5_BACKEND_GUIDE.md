@@ -6,6 +6,7 @@ Phase 5.0 adds feedback-aware style tuning to the ApplyLens system. **Extension 
 **Related Guides**:
 - Phase 5.2: Prometheus Metrics → See `PHASE_5_2_METRICS_GUIDE.md`
 - Phase 5.4/5.5: Epsilon-Greedy Bandit → See `PHASE_5_4_5_IMPLEMENTATION_GUIDE.md`
+- Phase 5.4.5: Bandit Kill Switch → See `PHASE_5_4_5_KILLSWITCH_GUIDE.md`
 - Deployment Status → See `DEPLOYMENT_STATUS.md`
 
 ## Extension Changes (✅ COMPLETE)

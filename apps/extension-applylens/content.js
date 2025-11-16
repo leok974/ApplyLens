@@ -111,6 +111,25 @@ function resolveBanditEpsilon() {
 }
 
 /**
+ * Check if bandit exploration is enabled.
+ * Reads from window.__APPLYLENS_BANDIT_ENABLED (set by settings or test).
+ * Defaults to true if not explicitly set to false.
+ */
+function isBanditEnabled() {
+  try {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.__APPLYLENS_BANDIT_ENABLED === "boolean"
+    ) {
+      return window.__APPLYLENS_BANDIT_ENABLED;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return true; // Default: bandit enabled
+}
+
+/**
  * styleHint is the normalized object from profileClient:
  * {
  *   preferredStyleId?: string;
@@ -414,8 +433,23 @@ async function runScanAndSuggest() {
 
     // Phase 5.4 — epsilon-greedy bandit
     const styleHint = profile?.styleHint || null;
-    const { styleId: chosenStyleId, policy: banditPolicy } =
-      pickStyleForBandit(styleHint);
+
+    let chosenStyleId = null;
+    let banditPolicy = "fallback";
+
+    if (isBanditEnabled() && styleHint && styleHint.preferredStyleId) {
+      // Bandit is enabled - use normal exploration logic
+      const banditResult = pickStyleForBandit(styleHint);
+      chosenStyleId = banditResult.styleId;
+      banditPolicy = banditResult.policy;
+    } else {
+      // Bandit disabled globally or no style hint available - fallback
+      chosenStyleId = styleHint ? styleHint.preferredStyleId : null;
+      banditPolicy = "fallback";
+      if (!isBanditEnabled()) {
+        console.log("[Bandit] DISABLED via kill switch - using fallback policy");
+      }
+    }
 
     // If bandit couldn't choose, fall back to preferred
     const styleIdToSend =

@@ -7,12 +7,13 @@ import '@/styles/dark-hotfix.css'
 import App from './App'
 import { installGlobalReloadGuard } from './lib/reload-guard'
 import { ensureCsrf } from './lib/csrf'
+import { buildInfo } from './version'
 // import { registerServiceWorker } from './lib/sw-register'
 
 // Version banner for debugging
 console.info(
-  '%c🔍 ApplyLens Web v0.4.64%c\n' +
-  'Build: 2025-01-27\n' +
+  `%c🔍 ApplyLens Web ${buildInfo.version}%c\n` +
+  `Build: ${buildInfo.buildTime || 'dev'}\n` +
   'Features: Theme-aware select fields for light/dark modes',
   'color: #10b981; font-weight: bold; font-size: 14px;',
   'color: #6b7280; font-size: 11px;'

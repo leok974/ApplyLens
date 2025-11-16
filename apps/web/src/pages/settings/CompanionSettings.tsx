@@ -7,6 +7,11 @@ import {
   ExtOutreach,
 } from "@/lib/extension";
 import { fetchStyleExplanation, StyleChoiceExplanation } from "@/api/companion";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useBanditToggle } from "@/lib/useBanditToggle";
 
 /**
  * Phase 5.3: Debug panel for style choice transparency
@@ -166,6 +171,9 @@ export default function CompanionSettings() {
   const [outs, setOuts] = useState<ExtOutreach[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  const { enabled: experimentalStylesEnabled, setEnabled: setExperimentalStylesEnabled } =
+    useBanditToggle();
+
   useEffect(() => {
     (async () => {
       try {
@@ -303,6 +311,62 @@ export default function CompanionSettings() {
           </table>
         </div>
       </section>
+
+      {/* Phase 5.4/5.5: Autofill learning toggle */}
+      <Card data-testid="companion-autofill-learning-card">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle>Autofill learning</CardTitle>
+              <CardDescription>
+                ApplyLens learns your preferred writing style over time and occasionally
+                tries small variations to improve results.
+              </CardDescription>
+            </div>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/40 text-muted-foreground hover:bg-muted/40"
+                    aria-label="What does experimental styles mean?"
+                    data-testid="companion-experimental-styles-tooltip-trigger"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-xs text-xs" data-testid="companion-experimental-styles-tooltip-content">
+                  <p className="mb-1 font-medium">What this means</p>
+                  <ul className="list-disc space-y-1 pl-4">
+                    <li>Sometimes tries alternate phrasing or layout (~15% of the time).</li>
+                    <li>You can turn this off at any time.</li>
+                    <li>
+                      Your data stays within ApplyLens and its configured AI providers.
+                    </li>
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Allow experimental styles</p>
+            <p className="text-xs text-muted-foreground">
+              When enabled, ApplyLens occasionally explores new styles to find what works
+              best for you. When disabled, it uses your current preferred style only.
+            </p>
+          </div>
+
+          <Switch
+            checked={experimentalStylesEnabled}
+            onCheckedChange={(value: boolean) => setExperimentalStylesEnabled(value)}
+            data-testid="companion-experimental-styles-toggle"
+          />
+        </CardContent>
+      </Card>
 
       {/* Phase 5.3: Style choice transparency debug panel */}
       <StyleDebugPanel />

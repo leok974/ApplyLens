@@ -20,6 +20,7 @@ from app.models_learning_db import FormProfile, AutofillEvent, GenStyle
 from app.core.metrics import learning_sync_counter
 from app.db import get_db
 from app.settings import settings
+from app.config import agent_settings  # Phase 5.4: Bandit kill switch
 from app.autofill_aggregator import (
     derive_segment_key,  # Phase 5.2
     get_host_family,  # Phase 5.3
@@ -80,6 +81,10 @@ async def learning_sync(
 
             # Phase 5.4: Get policy from event (default to "exploit")
             policy = event.policy or "exploit"
+
+            # Phase 5.4: Force fallback when bandit is globally disabled
+            if not agent_settings.COMPANION_BANDIT_ENABLED:
+                policy = "fallback"
 
             # Phase 5.4: Get host_family for metrics
             host_family = get_host_family(event.host)
@@ -224,6 +229,10 @@ async def learning_profile(
         # Phase 5.0: Use preferred_style_id from aggregator if available
         hint_data = profile.style_hint or {}
         preferred_style_id = hint_data.get("preferred_style_id")
+
+        # Phase 5.4: Disable recommendations when bandit is globally disabled
+        if not agent_settings.COMPANION_BANDIT_ENABLED:
+            preferred_style_id = None
 
         style_hint = StyleHint(
             gen_style_id=style.id if style else None,
