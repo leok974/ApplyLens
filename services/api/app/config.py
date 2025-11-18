@@ -15,6 +15,7 @@ from pydantic_settings import BaseSettings
 APP_VERSION = os.getenv("APP_VERSION", "dev")
 APP_BUILD_SHA = os.getenv("APP_BUILD_SHA", "")
 APP_BUILD_TIME = os.getenv("APP_BUILD_TIME", "")
+APP_ENV = os.getenv("APP_ENV", "dev")
 
 
 class AgentSettings(BaseSettings):

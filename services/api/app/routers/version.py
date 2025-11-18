@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.config import APP_VERSION, APP_BUILD_SHA, APP_BUILD_TIME
+from app.config import APP_VERSION, APP_BUILD_SHA, APP_BUILD_TIME, APP_ENV
 
 router = APIRouter(tags=["ops"])
 
@@ -11,12 +11,14 @@ router = APIRouter(tags=["ops"])
 async def get_version():
     """Return build metadata for the API.
 
-    Returns version, git SHA, and build timestamp for debugging
-    and deployment verification.
+    Returns version, git SHA, build timestamp, and environment
+    for debugging and deployment verification.
     """
     return {
-        "app": "applylens-api",
+        "app_name": "applylens-api",
         "version": APP_VERSION,
-        "sha": APP_BUILD_SHA,
-        "built_at": APP_BUILD_TIME,
+        "commit_sha": APP_BUILD_SHA,
+        "build_time": APP_BUILD_TIME,
+        "env": APP_ENV,
+        "git_ref": None,
     }

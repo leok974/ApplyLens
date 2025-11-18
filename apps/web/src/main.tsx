@@ -7,7 +7,7 @@ import '@/styles/dark-hotfix.css'
 import App from './App'
 import { installGlobalReloadGuard } from './lib/reload-guard'
 import { ensureCsrf } from './lib/csrf'
-import { BUILD_META } from './version'
+import { BUILD_META } from './buildMeta'
 // import { registerServiceWorker } from './lib/sw-register'
 
 // Version banner for debugging
