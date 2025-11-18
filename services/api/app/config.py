@@ -6,9 +6,15 @@ and provides settings for real integrations.
 
 from __future__ import annotations
 
+import os
 from typing import Literal, Optional
 
 from pydantic_settings import BaseSettings
+
+# Build metadata for version endpoint
+APP_VERSION = os.getenv("APP_VERSION", "dev")
+APP_BUILD_SHA = os.getenv("APP_BUILD_SHA", "")
+APP_BUILD_TIME = os.getenv("APP_BUILD_TIME", "")
 
 
 class AgentSettings(BaseSettings):

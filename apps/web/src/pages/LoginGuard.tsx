@@ -9,6 +9,17 @@ interface LoginGuardProps {
 type Me = { id: string; email: string } | null;
 
 /**
+ * Check if we're in dev mode bypass (localhost without production API)
+ */
+function isDevModeBypass(): boolean {
+  return (
+    import.meta.env.DEV &&
+    window.location.hostname === "localhost" &&
+    import.meta.env.VITE_BYPASS_AUTH === "true"
+  );
+}
+
+/**
  * Fetch user from /api/auth/me with proper error handling.
  *
  * - 401/403 → null (stable unauthenticated state, show login CTA)
@@ -18,6 +29,11 @@ type Me = { id: string; email: string } | null;
  * - 200 → user object
  */
 async function getMe(signal?: AbortSignal): Promise<Me | "degraded"> {
+  // Dev mode bypass - return mock user
+  if (isDevModeBypass()) {
+    console.info("[LoginGuard] DEV MODE - Bypassing auth with mock user");
+    return { id: "dev-user-local", email: "dev@localhost" };
+  }
   try {
     const r = await fetch(apiUrl("/api/auth/me"), {
       credentials: "include",

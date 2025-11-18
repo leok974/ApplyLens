@@ -70,7 +70,7 @@ export default defineConfig({
     // When VITE_API_BASE is set, the client calls it directly
     proxy: needsProxy ? {
       '/api': {
-        target: 'http://localhost:8003',  // Default for local dev
+        target: 'http://localhost:8003',  // Dev API container
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),  // Strip /api prefix

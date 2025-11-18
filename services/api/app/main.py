@@ -2,12 +2,14 @@ import logging
 import os
 
 # Load .env early (dev only) - ensures environment variables are available
-try:
-    from dotenv import load_dotenv
+# Skip if running in Docker with SKIP_DOTENV=1
+if not os.getenv("SKIP_DOTENV"):
+    try:
+        from dotenv import load_dotenv
 
-    load_dotenv()
-except Exception:
-    pass
+        load_dotenv()
+    except Exception:
+        pass
 
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,12 +23,14 @@ from . import auth_google, health, oauth_google, routes_extract, routes_gmail
 from .db import Base, engine
 from .es import ensure_index
 from .routers import applications, emails, search, suggest, search_debug
+from .routers import version as version_router
 from .settings import settings
 from .tracing import init_tracing
 from .config import agent_settings
 from .core.csrf import CSRFMiddleware
 from .core.limiter import RateLimitMiddleware
 from .core.metrics import metrics_router
+from .routers import dev_shims
 
 # CORS allowlist from environment (comma-separated)
 ALLOWED_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5175").split(",")
@@ -186,6 +190,9 @@ def get_runtime_config():
 # Health endpoints (include new enhanced module)
 app.include_router(health.router)
 
+# Version endpoint (build metadata)
+app.include_router(version_router.router)
+
 # Metrics endpoints (security events + Prometheus)
 app.include_router(metrics_router)
 
@@ -194,6 +201,12 @@ app.include_router(metrics_router)
 def debug_500():
     """Debug endpoint to test 5xx error alerting (dev/testing only)"""
     raise HTTPException(status_code=500, detail="Debug error for alert testing")
+
+
+# Dev shim router - must come early enough that /api/auth/* and
+# /api/actions/tray are handled before any more specific 404s.
+if os.getenv("APPLYLENS_DEV") == "1":
+    app.include_router(dev_shims.router)
 
 
 # Dev routers FIRST - Must be before production routers to win path matches

@@ -180,10 +180,13 @@ services:
     restart: unless-stopped
     networks:
       - infra_net  # ✅ CRITICAL: needed for ledgermind-web.int / ledgermind-api.int
+      - applylens_applylens-prod  # ✅ CRITICAL: needed for applylens-nginx:80 / applylens-api-prod:8000
       - default
 
 networks:
   infra_net:
+    external: true
+  applylens_applylens-prod:
     external: true
 
 volumes:

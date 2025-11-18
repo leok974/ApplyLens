@@ -1,10 +1,7 @@
 # Cloudflare Tunnel Configuration
-# Brand-correct routing for applylens.app with internal Docker aliases
-
 tunnel: 08d5feee-f504-47a2-a1f2-b86564900991
 credentials-file: /etc/cloudflared/08d5feee-f504-47a2-a1f2-b86564900991.json
 
-# Global origin request settings for reliability
 originRequest:
   connectTimeout: 30s
   tlsTimeout: 10s
@@ -12,37 +9,12 @@ originRequest:
   noHappyEyeballs: false
   keepAliveConnections: 100
   keepAliveTimeout: 90s
-  httpHostHeader: ""
-  disableChunkedEncoding: false
 
 ingress:
-  # Direct diagnostic hostname - bypasses any Page/Transform Rules on root
-  - hostname: direct.applylens.app
-    service: http://applylens-web-prod:80
-    originRequest:
-      noTLSVerify: false
-      connectTimeout: 10s
-
-  # Main domain - route to web frontend
   - hostname: applylens.app
     service: http://applylens-web-prod:80
-    originRequest:
-      noTLSVerify: false
-      connectTimeout: 10s
-
-  # WWW subdomain - route to web frontend
   - hostname: www.applylens.app
     service: http://applylens-web-prod:80
-    originRequest:
-      noTLSVerify: false
-      connectTimeout: 10s
-
-  # API subdomain - direct route to FastAPI backend
   - hostname: api.applylens.app
-    service: http://applylens-api-prod:8003
-    originRequest:
-      noTLSVerify: false
-      connectTimeout: 15s
-
-  # Catch-all rule (required, must be last)
+    service: http://applylens-api-prod:8000
   - service: http_status:404

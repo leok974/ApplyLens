@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { logout } from '@/api/auth'
 import { getCurrentUser, fetchAndCacheCurrentUser } from '@/api/auth'
+import { VersionCard } from '@/components/settings/VersionCard'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -153,6 +154,21 @@ export default function Settings() {
             </Button>
           </div>
         )}
+
+        {/* About Section */}
+        <section className="space-y-3 mt-6">
+          <div>
+            <h2 className="text-xl font-semibold">About</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+              Build metadata for support and debugging. Share this if something looks off.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <VersionCard />
+            {/* leave room for future cards (license, telemetry, etc.) */}
+          </div>
+        </section>
     </div>
   )
 }

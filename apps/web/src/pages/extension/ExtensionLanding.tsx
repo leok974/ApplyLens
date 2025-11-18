@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight, Shield, ClipboardCheck, Send, Rocket } from "lucide-react";
+
+const MAIN_APP_PATH = "/"; // Main app route (Job Inbox)
 
 function InstallButton() {
   // When you publish, replace with the real Chrome Web Store URL
@@ -52,6 +55,15 @@ export default function ExtensionLanding() {
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <InstallButton />
+
+              <Link
+                to={MAIN_APP_PATH}
+                className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 shadow hover:shadow-md transition
+                           border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                data-testid="companion-back-to-app"
+              >
+                Back to ApplyLens
+              </Link>
               <a
                 href="/extension/support"
                 className="text-sm underline opacity-80 hover:opacity-100"

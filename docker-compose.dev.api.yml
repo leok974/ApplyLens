@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  applylens-api-dev:
+    container_name: applylens-api-dev
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+    env_file:
+      - ./services/api/.env.dev
+    environment:
+      # Override .env.dev with container-specific values
+      # Dev mode flag
+      APPLYLENS_DEV: "1"
+
+      # Skip loading .env.prod file (prevents production config from being loaded)
+      SKIP_DOTENV: "1"
+
+      # Ensure dev uses SQLite via Settings.DATABASE_URL (validation_alias=APPLYLENS_DEV_DB)
+      APPLYLENS_DEV_DB: "sqlite:///./data/dev_extension.db"
+
+    volumes:
+      # Mount source for hot reload
+      - ./services/api:/app
+      # Persistent dev database folder
+      - ./services/api/dev-data:/app/data
+
+    ports:
+      # Host 8003 → container 8000 (matches docs and prod pattern)
+      - "8003:8000"
+
+    networks:
+      - applylens-dev
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  applylens-dev:
+    driver: bridge
+    name: applylens-dev

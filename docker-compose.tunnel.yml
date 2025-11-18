@@ -7,6 +7,7 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN}
     networks:
       - infra_net
+      - applylens_applylens-prod
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pgrep cloudflared || exit 1"]
@@ -22,6 +23,7 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN}
     networks:
       - infra_net
+      - applylens_applylens-prod
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pgrep cloudflared || exit 1"]
@@ -31,4 +33,6 @@ services:
 
 networks:
   infra_net:
+    external: true
+  applylens_applylens-prod:
     external: true
