@@ -130,6 +130,11 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "1. A short opening sentence that includes total email volume and the time window analyzed.\n"
         "2. 3–5 bullet points for key stats (applications, recruiter replies, interviews, any non-trivial security risk). "
         "If a category has zero activity, you may omit it from the bullets.\n"
+        "\n"
+        "CRITICAL - Card output rules:\n"
+        '- Always use "kind": "generic_summary" for profile cards.\n'
+        '- NEVER use "profile_summary" or any other string for the kind field.\n'
+        '- Allowed kinds are ONLY: "suspicious_summary", "bills_summary", "interviews_summary", "followups_summary", "generic_summary", "error".\n'
     )
     + SHARED_STYLE_HINT,
     "generic": (

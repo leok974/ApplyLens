@@ -8,7 +8,7 @@ This module defines the stable contract for agent runs used across:
 - Grafana dashboards
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Literal, List, Optional, Dict, Any
 from datetime import datetime
 import uuid
@@ -17,6 +17,22 @@ import uuid
 # ============================================================================
 # Agent Run Contract - The Single Source of Truth
 # ============================================================================
+
+# Card kind normalization constants
+ALLOWED_CARD_KINDS = {
+    "suspicious_summary",
+    "bills_summary",
+    "followups_summary",
+    "interviews_summary",
+    "generic_summary",
+    "error",
+}
+
+CARD_KIND_ALIASES = {
+    "profile_summary": "generic_summary",
+    "profile": "generic_summary",
+    # Add other future aliases here if the LLM gets creative
+}
 
 
 class AgentMode(str):
@@ -63,16 +79,13 @@ class AgentCard(BaseModel):
     - interviews_summary: job-related emails
     - generic_summary: general query results
     - error: fallback when tools fail
+
+    The 'kind' field accepts any string and normalizes to allowed values:
+    - Known aliases (e.g., profile_summary) are mapped to canonical kinds
+    - Unknown values fallback to generic_summary to prevent validation errors
     """
 
-    kind: Literal[
-        "suspicious_summary",
-        "bills_summary",
-        "followups_summary",
-        "interviews_summary",
-        "generic_summary",
-        "error",
-    ] = Field(..., description="Card type for frontend rendering")
+    kind: str = Field(..., description="Card type for frontend rendering")
     title: str = Field(..., description="Card title for UI")
     body: str = Field(..., description="Card summary body (different from answer)")
 
@@ -87,6 +100,27 @@ class AgentCard(BaseModel):
         default_factory=dict,
         description="Rendering hints: count, time_window_days, mode, etc.",
     )
+
+    @validator("kind", pre=True)
+    def normalize_kind(cls, v: str) -> str:
+        """
+        Normalize card kind to prevent LLM creativity from causing validation errors.
+
+        - Maps known aliases (profile_summary → generic_summary)
+        - Fallback to generic_summary for unknown values
+        - Ensures frontend only sees canonical kinds
+        """
+        if not isinstance(v, str):
+            return "generic_summary"
+
+        # Apply aliases
+        v = CARD_KIND_ALIASES.get(v, v)
+
+        # Fallback for unknown kinds
+        if v not in ALLOWED_CARD_KINDS:
+            return "generic_summary"
+
+        return v
 
 
 class AgentMetrics(BaseModel):
