@@ -11,10 +11,8 @@ Architecture:
 
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.agent.tools import ToolRegistry
-from app.agent.metrics import AgentMetrics
 
 __all__ = [
     "MailboxAgentOrchestrator",
     "ToolRegistry",
-    "AgentMetrics",
 ]
