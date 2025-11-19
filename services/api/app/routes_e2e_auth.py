@@ -9,7 +9,7 @@ from fastapi import APIRouter, Response, HTTPException, Header
 from typing import Optional
 import os
 
-from app.db import get_session
+from app.db import get_db
 from app.models import User
 from app.auth.session import new_session, set_cookie
 from app.config import agent_settings
@@ -57,7 +57,7 @@ async def e2e_login(
 
     try:
         # Get or verify the E2E test user exists
-        db = next(get_session())
+        db = next(get_db())
         result = db.execute(select(User).where(User.email == E2E_TEST_USER))
         user = result.scalar_one_or_none()
 
