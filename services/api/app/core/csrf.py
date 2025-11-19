@@ -33,6 +33,8 @@ EXEMPT_EXACT = {
     "/api/profile/me",  # Profile brain (dev-only)
     "/profile/me",  # Without /api prefix
     "/api/ops/diag/health",  # DevDiag health check
+    "/api/auth/e2e/login",  # E2E test authentication (test-only, guarded by E2E_PROD)
+    "/auth/e2e/login",  # Without /api prefix
 }
 
 # Paths that are exempt from CSRF protection (e.g., non-sensitive UX metrics)

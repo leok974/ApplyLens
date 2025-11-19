@@ -4,15 +4,13 @@
     "rootDir": "D:/ApplyLens/apps/web/tests",
     "forbidOnly": false,
     "fullyParallel": false,
-    "globalSetup": null,
+    "globalSetup": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup-auth.ts",
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
     "grepInvert": {},
     "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
+    "metadata": {},
     "preserveOutput": "always",
     "reporter": [
       [
@@ -42,9 +40,7 @@
         "outputDir": "D:/ApplyLens/apps/web/test-results",
         "repeatEach": 1,
         "retries": 2,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "chromium",
         "name": "chromium",
         "testDir": "D:/ApplyLens/apps/web/tests",
@@ -86,325 +82,24 @@
     "workers": 4,
     "webServer": null
   },
-  "suites": [
+  "suites": [],
+  "errors": [
     {
-      "title": "e2e\\chat-agent-v2.spec.ts",
-      "file": "e2e/chat-agent-v2.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "@frontend @agent-v2 @prodSafe @authRequired Chat Agent V2 UI",
-          "file": "e2e/chat-agent-v2.spec.ts",
-          "line": 19,
-          "column": 6,
-          "specs": [
-            {
-              "title": "renders answer and suspicious_summary card with data-driven content",
-              "ok": true,
-              "tags": [
-                "frontend",
-                "agent-v2",
-                "prodSafe",
-                "authRequired"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "E2E_AUTH_STATE not configured; skipping Agent V2 UI tests that require authenticated session.",
-                      "location": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.spec.ts",
-                        "line": 14,
-                        "column": 6
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-19T22:09:41.159Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "6dc29d0d19eb21677751-3c0687bdc6ba5ee8f63e",
-              "file": "e2e/chat-agent-v2.spec.ts",
-              "line": 20,
-              "column": 3
-            },
-            {
-              "title": "renders bills_summary card with due soon/overdue pills",
-              "ok": true,
-              "tags": [
-                "frontend",
-                "agent-v2",
-                "prodSafe",
-                "authRequired"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "E2E_AUTH_STATE not configured; skipping Agent V2 UI tests that require authenticated session.",
-                      "location": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.spec.ts",
-                        "line": 14,
-                        "column": 6
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-19T22:09:41.166Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "6dc29d0d19eb21677751-8e5b4eac5048f99c7b61",
-              "file": "e2e/chat-agent-v2.spec.ts",
-              "line": 117,
-              "column": 3
-            },
-            {
-              "title": "renders interviews_summary card with upcoming/waiting/closed pills",
-              "ok": true,
-              "tags": [
-                "frontend",
-                "agent-v2",
-                "prodSafe",
-                "authRequired"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "E2E_AUTH_STATE not configured; skipping Agent V2 UI tests that require authenticated session.",
-                      "location": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.spec.ts",
-                        "line": 14,
-                        "column": 6
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-19T22:09:41.170Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "6dc29d0d19eb21677751-5df0b98e661335389796",
-              "file": "e2e/chat-agent-v2.spec.ts",
-              "line": 190,
-              "column": 3
-            },
-            {
-              "title": "renders generic_summary card with email statistics",
-              "ok": true,
-              "tags": [
-                "frontend",
-                "agent-v2",
-                "prodSafe",
-                "authRequired"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "E2E_AUTH_STATE not configured; skipping Agent V2 UI tests that require authenticated session.",
-                      "location": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.spec.ts",
-                        "line": 14,
-                        "column": 6
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-19T22:09:41.173Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "6dc29d0d19eb21677751-16ae621831c6a0981d9e",
-              "file": "e2e/chat-agent-v2.spec.ts",
-              "line": 263,
-              "column": 3
-            },
-            {
-              "title": "shows error banner when API request fails",
-              "ok": true,
-              "tags": [
-                "frontend",
-                "agent-v2",
-                "prodSafe",
-                "authRequired"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "E2E_AUTH_STATE not configured; skipping Agent V2 UI tests that require authenticated session.",
-                      "location": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.spec.ts",
-                        "line": 14,
-                        "column": 6
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-19T22:09:41.177Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "6dc29d0d19eb21677751-e1e086f2907f96880102",
-              "file": "e2e/chat-agent-v2.spec.ts",
-              "line": 323,
-              "column": 3
-            },
-            {
-              "title": "shows thinking indicator while processing",
-              "ok": true,
-              "tags": [
-                "frontend",
-                "agent-v2",
-                "prodSafe",
-                "authRequired"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "E2E_AUTH_STATE not configured; skipping Agent V2 UI tests that require authenticated session.",
-                      "location": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.spec.ts",
-                        "line": 14,
-                        "column": 6
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": -1,
-                      "parallelIndex": -1,
-                      "status": "skipped",
-                      "duration": 0,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-19T22:09:41.181Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "skipped"
-                }
-              ],
-              "id": "6dc29d0d19eb21677751-69176927c1882ec213ea",
-              "file": "e2e/chat-agent-v2.spec.ts",
-              "line": 344,
-              "column": 3
-            }
-          ]
-        }
-      ]
+      "message": "Error: E2E login failed: 403 Forbidden\nCSRF token missing",
+      "stack": "Error: E2E login failed: 403 Forbidden\nCSRF token missing\n    at globalSetup (D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup-auth.ts:49:13)",
+      "location": {
+        "file": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup-auth.ts",
+        "column": 13,
+        "line": 49
+      },
+      "snippet": "\u001b[90m   at \u001b[39msetup\\global-setup-auth.ts:49\n\n\u001b[0m \u001b[90m 47 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok()) {\n \u001b[90m 48 |\u001b[39m       \u001b[36mconst\u001b[39m body \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m response\u001b[33m.\u001b[39mtext()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 49 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\n \u001b[90m    |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 50 |\u001b[39m         \u001b[32m`E2E login failed: ${response.status()} ${response.statusText()}\\n${body}`\u001b[39m\n \u001b[90m 51 |\u001b[39m       )\u001b[33m;\u001b[39m\n \u001b[90m 52 |\u001b[39m     }\u001b[0m"
     }
   ],
-  "errors": [],
   "stats": {
-    "startTime": "2025-11-19T22:09:40.950Z",
-    "duration": 235.2639999999999,
+    "startTime": "2025-11-19T22:35:21.031Z",
+    "duration": 1217.364,
     "expected": 0,
-    "skipped": 6,
+    "skipped": 0,
     "unexpected": 0,
     "flaky": 0
   }
