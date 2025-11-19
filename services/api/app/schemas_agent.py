@@ -161,11 +161,11 @@ class AgentRunResponse(BaseModel):
 class EmailSearchParams(BaseModel):
     """Parameters for email_search tool."""
 
-    query_text: str
+    query_text: str = ""
     time_window_days: int = 30
-    labels: List[str] = Field(default_factory=lambda: ["INBOX"])
+    labels: List[str] = Field(default_factory=list)  # No default filter
     risk_min: Optional[float] = None
-    max_results: int = Field(default=20, ge=1, le=100)
+    max_results: int = Field(default=50, ge=1, le=100)
 
 
 class SecurityScanParams(BaseModel):

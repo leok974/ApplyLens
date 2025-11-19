@@ -106,16 +106,56 @@ class ToolRegistry:
 
             es = AsyncElasticsearch(ES_URL)
 
-            # Build ES query
-            es_query = build_es_query(
-                query_text=search_params.query_text,
-                time_window_days=search_params.time_window_days,
-                labels=search_params.labels,
-                risk_min=search_params.risk_min,
-            )
+            # Build query
+            must = []
+            filters = [
+                # IMPORTANT: user_id is text field, use match
+                {"match": {"user_id": user_id}}
+            ]
 
-            # Add user_id filter (use match for analyzed text field)
-            es_query["query"]["bool"]["filter"].append({"match": {"user_id": user_id}})
+            # Full-text search on subject + body, or match_all if empty
+            if search_params.query_text and search_params.query_text != "*":
+                must.append(
+                    {
+                        "multi_match": {
+                            "query": search_params.query_text,
+                            "fields": ["subject^3", "body_text"],
+                        }
+                    }
+                )
+            else:
+                must.append({"match_all": {}})
+
+            # Time window filter
+            if search_params.time_window_days:
+                since = datetime.utcnow() - timedelta(
+                    days=search_params.time_window_days
+                )
+                filters.append({"range": {"received_at": {"gte": since.isoformat()}}})
+
+            # Optional labels filter (only if explicitly provided)
+            if search_params.labels:
+                filters.append({"terms": {"labels": search_params.labels}})
+
+            # Optional risk filter (only if explicitly provided)
+            if search_params.risk_min is not None:
+                filters.append(
+                    {"range": {"risk_score": {"gte": search_params.risk_min}}}
+                )
+
+            es_query = {
+                "query": {
+                    "bool": {
+                        "must": must,
+                        "filter": filters,
+                    }
+                },
+                "sort": [{"received_at": "desc"}],
+                "size": search_params.max_results,
+            }
+
+            # Debug logging
+            logger.info(f"email_search ES query: {es_query}")
 
             # Execute search
             result = await es.search(index="gmail_emails", body=es_query)
@@ -124,28 +164,30 @@ class ToolRegistry:
             hits = result.get("hits", {}).get("hits", [])
             total_found = result.get("hits", {}).get("total", {}).get("value", 0)
 
+            logger.info(f"email_search: total={total_found}, returned={len(hits)}")
+
             emails = []
-            for hit in hits[: search_params.max_results]:
+            for hit in hits:
                 source = hit["_source"]
                 emails.append(
                     {
-                        "id": source.get("id"),
+                        "id": source.get("gmail_id") or hit["_id"],
                         "subject": source.get("subject", ""),
                         "sender": source.get("sender", ""),
                         "received_at": source.get("received_at"),
-                        "snippet": source.get("snippet", ""),
-                        "risk_score": source.get("risk_score"),
+                        "snippet": source.get("body_text", "")[:200],
+                        "risk_score": source.get("risk_score", 0),
                         "labels": source.get("labels", []),
                     }
                 )
 
-            summary = (
-                f"Found {total_found} emails matching '{search_params.query_text}'"
-            )
-            if total_found == 0:
-                summary = f"No emails found matching '{search_params.query_text}'"
-            elif total_found > search_params.max_results:
-                summary = f"Found {total_found} emails, showing top {len(emails)}"
+            await es.close()
+
+            summary = f"Found {total_found} emails for user {user_id}"
+            if search_params.query_text:
+                summary = (
+                    f"Found {total_found} emails matching '{search_params.query_text}'"
+                )
 
             return ToolResult(
                 tool_name="email_search",
