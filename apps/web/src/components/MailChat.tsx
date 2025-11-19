@@ -19,7 +19,7 @@ import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
 import { FLAGS } from '@/lib/flags'
 import { runMailboxAgent } from '@/api/agent'
 import type { AgentCard } from '@/types/agent'
-import { AgentResultCard } from './AgentCard'
+import { AgentCardList } from './AgentCardList'
 
 interface QuickAction {
   label: string
@@ -1083,11 +1083,7 @@ export default function MailChat() {
 
               {/* Agent V2 Cards - Structured responses */}
               {isAssistant && msg.status === 'done' && msg.agentV2Cards && msg.agentV2Cards.length > 0 && (
-                <div className="mt-2 space-y-2">
-                  {msg.agentV2Cards.map((card, idx) => (
-                    <AgentResultCard key={idx} card={card} />
-                  ))}
-                </div>
+                <AgentCardList cards={msg.agentV2Cards} />
               )}
 
               {/* Assistant response metadata */}
