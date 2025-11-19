@@ -138,6 +138,10 @@ class AgentRunResponse(BaseModel):
 
     # Results
     status: Literal["running", "done", "error"] = "running"
+    intent: Optional[str] = Field(
+        default=None,
+        description="Classified intent: suspicious, bills, interviews, followups, profile, generic",
+    )
     answer: str = Field(
         default="", description="LLM-generated answer synthesizing tool results"
     )
