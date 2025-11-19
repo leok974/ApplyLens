@@ -1,6 +1,6 @@
 {
   "suspicious": {
-    "run_id": "ce85514e-42ab-400a-b519-26a686c5dd96",
+    "run_id": "e8914eaa-9360-49af-ad0f-7574cb729451",
     "user_id": "pierre@applylens.app",
     "query": "Show suspicious or scam emails from the last 14 days",
     "mode": "preview_only",
@@ -11,12 +11,12 @@
     },
     "status": "done",
     "intent": "suspicious",
-    "answer": "I cannot retrieve any suspicious or scam emails due to errors in the email search and security scan processes. Please check back later or ensure that the necessary tools are enabled.",
+    "answer": "I am unable to retrieve any suspicious or scam emails due to a system error. Please check back later or ensure that the email search feature is enabled.",
     "cards": [
       {
         "kind": "error",
         "title": "Error retrieving emails",
-        "body": "Unable to fetch suspicious emails due to tool errors.",
+        "body": "Email search and security scan features are currently disabled.",
         "email_ids": [],
         "meta": {}
       }
@@ -29,17 +29,17 @@
       "emails_scanned": 0,
       "tool_calls": 2,
       "rag_sources": 0,
-      "duration_ms": 13756,
+      "duration_ms": 10682,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:19:27.683474",
-    "completed_at": "2025-11-19T20:19:27.683424",
+    "created_at": "2025-11-19T20:35:11.321899",
+    "completed_at": "2025-11-19T20:35:11.321863",
     "error_message": null
   },
   "bills": {
-    "run_id": "eac2c1dd-f872-40d9-9500-a3a5344be69e",
+    "run_id": "fb68c466-9793-4ca0-bdb7-fa0b5f67b76c",
     "user_id": "pierre@applylens.app",
     "query": "Show my bills and invoices from the last 30 days",
     "mode": "preview_only",
@@ -72,17 +72,17 @@
       "emails_scanned": 0,
       "tool_calls": 2,
       "rag_sources": 0,
-      "duration_ms": 4671,
+      "duration_ms": 7584,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:19:32.572055",
-    "completed_at": "2025-11-19T20:19:32.572025",
+    "created_at": "2025-11-19T20:35:19.096120",
+    "completed_at": "2025-11-19T20:35:19.096092",
     "error_message": null
   },
   "interviews": {
-    "run_id": "2d73dd1c-ccba-458c-9c30-5c0f7f6c98f9",
+    "run_id": "c7fba232-5fa9-401f-84f5-2859392a1712",
     "user_id": "pierre@applylens.app",
     "query": "Show my interview and recruiter emails from the last 30 days",
     "mode": "preview_only",
@@ -93,12 +93,12 @@
     },
     "status": "done",
     "intent": "interviews",
-    "answer": "I am unable to retrieve your interview and recruiter emails due to a system error. Please check back later or try again.",
+    "answer": "I am unable to retrieve your interview and recruiter emails due to a technical issue. Please check back later or try again.",
     "cards": [
       {
         "kind": "error",
-        "title": "Error Retrieving Emails",
-        "body": "Unable to access interview and recruiter emails due to system issues.",
+        "title": "Error retrieving emails",
+        "body": "Technical issues are preventing access to your interview and recruiter emails.",
         "email_ids": [],
         "meta": {}
       }
@@ -112,17 +112,17 @@
       "emails_scanned": 0,
       "tool_calls": 3,
       "rag_sources": 0,
-      "duration_ms": 3974,
+      "duration_ms": 3908,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:19:36.738906",
-    "completed_at": "2025-11-19T20:19:36.738859",
+    "created_at": "2025-11-19T20:35:23.201830",
+    "completed_at": "2025-11-19T20:35:23.201797",
     "error_message": null
   },
   "followups": {
-    "run_id": "9a4c51d9-59a5-4110-860c-991a292ec8af",
+    "run_id": "21337012-ea4a-48ef-8290-eb911fd415bb",
     "user_id": "pierre@applylens.app",
     "query": "Which recruiter or interview threads should I follow up on?",
     "mode": "preview_only",
@@ -133,12 +133,12 @@
     },
     "status": "done",
     "intent": "followups",
-    "answer": "I couldn't retrieve any information about your recruiter or interview threads to follow up on due to technical issues. Please check back later or ensure that the necessary data is available.",
+    "answer": "I couldn't find any specific follow-up threads or recruiter emails to suggest. Please check your email for any recent communications regarding interviews or applications.",
     "cards": [
       {
         "kind": "error",
-        "title": "Unable to Retrieve Follow-ups",
-        "body": "There was an error fetching your follow-up threads. Please try again later.",
+        "title": "Unable to retrieve follow-ups",
+        "body": "No follow-up threads or recruiter emails were found due to missing data.",
         "email_ids": [],
         "meta": {}
       }
@@ -152,17 +152,17 @@
       "emails_scanned": 0,
       "tool_calls": 3,
       "rag_sources": 0,
-      "duration_ms": 6930,
+      "duration_ms": 4350,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:19:43.863534",
-    "completed_at": "2025-11-19T20:19:43.863498",
+    "created_at": "2025-11-19T20:35:27.754462",
+    "completed_at": "2025-11-19T20:35:27.754427",
     "error_message": null
   },
   "profile": {
-    "run_id": "2f117a42-e148-4374-8960-4ee91fc9cd5e",
+    "run_id": "d6cc5095-d9d0-415b-8682-eda8fef24918",
     "user_id": "pierre@applylens.app",
     "query": "Give me a profile and stats overview of my job-search inbox for the last 60 days",
     "mode": "preview_only",
@@ -173,12 +173,12 @@
     },
     "status": "done",
     "intent": "profile",
-    "answer": "I'm unable to provide a profile and stats overview of your job-search inbox due to a technical issue with the data retrieval system.",
+    "answer": "I'm unable to provide a profile and stats overview of your job-search inbox due to technical issues with the data retrieval system.",
     "cards": [
       {
         "kind": "error",
         "title": "Data Retrieval Error",
-        "body": "Unable to compute profile stats due to disabled data access.",
+        "body": "Unable to compute profile stats due to disabled search functionality.",
         "email_ids": [],
         "meta": {}
       }
@@ -191,17 +191,17 @@
       "emails_scanned": 0,
       "tool_calls": 2,
       "rag_sources": 0,
-      "duration_ms": 3324,
+      "duration_ms": 4740,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:19:47.385622",
-    "completed_at": "2025-11-19T20:19:47.385592",
+    "created_at": "2025-11-19T20:35:32.740115",
+    "completed_at": "2025-11-19T20:35:32.740068",
     "error_message": null
   },
   "generic": {
-    "run_id": "033f1abb-a168-4aa9-8052-69343e418e82",
+    "run_id": "f26b6bdc-c17a-4799-abad-b87586398459",
     "user_id": "pierre@applylens.app",
     "query": "Show me my recent job application emails and what I should prioritize next",
     "mode": "preview_only",
@@ -229,13 +229,13 @@
       "emails_scanned": 0,
       "tool_calls": 1,
       "rag_sources": 0,
-      "duration_ms": 3146,
+      "duration_ms": 3620,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:19:50.728446",
-    "completed_at": "2025-11-19T20:19:50.728413",
+    "created_at": "2025-11-19T20:35:36.580233",
+    "completed_at": "2025-11-19T20:35:36.580203",
     "error_message": null
   }
 }
