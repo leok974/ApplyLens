@@ -14,6 +14,7 @@ dependencies = [
   "python-multipart",
   "orjson",
   "elasticsearch>=8.12,<9",
+  "aiohttp",  # For async Elasticsearch
   "httpx",
   "itsdangerous",  # For SessionMiddleware
   "google-auth>=2.30.0",

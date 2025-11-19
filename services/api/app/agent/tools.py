@@ -203,7 +203,7 @@ class ToolRegistry:
 
     async def _security_scan(self, params: Dict[str, Any], user_id: str) -> ToolResult:
         """
-        Run security scan on emails using EmailRiskAnalyzer.
+        Run security scan on emails using risk scores from DB.
 
         Uses Redis cache for domain risk to avoid recomputation.
         Checks sender domains and returns risky vs safe breakdown.
@@ -211,25 +211,43 @@ class ToolRegistry:
         try:
             scan_params = SecurityScanParams(**params)
 
-            # Get emails to scan (use email_search internally)
-            search_result = await self._email_search(
-                {
-                    "query_text": scan_params.query_text or "*",
-                    "time_window_days": scan_params.time_window_days,
-                    "max_results": 50,  # Limit scan to 50 emails
-                },
-                user_id,
-            )
-
-            if search_result.status != "success":
-                return ToolResult(
-                    tool_name="security_scan",
-                    status="error",
-                    summary="Failed to fetch emails for scanning",
-                    error_message=search_result.error_message,
+            # If no email_ids provided, fetch recent emails
+            if not scan_params.email_ids:
+                # Use email_search to get recent emails
+                search_result = await self._email_search(
+                    {
+                        "query_text": "*",
+                        "time_window_days": 7,
+                        "max_results": 50,
+                    },
+                    user_id,
                 )
 
-            emails = search_result.data.get("emails", [])
+                if search_result.status != "success":
+                    return ToolResult(
+                        tool_name="security_scan",
+                        status="error",
+                        summary="Failed to fetch emails for scanning",
+                        error_message=search_result.error_message,
+                    )
+
+                emails = search_result.data.get("emails", [])
+            else:
+                # TODO: Fetch specific emails by IDs from DB
+                emails = []
+
+            if not emails:
+                return ToolResult(
+                    tool_name="security_scan",
+                    status="success",
+                    summary="No emails found to scan",
+                    data=SecurityScanResult(
+                        scanned_count=0,
+                        risky_emails=[],
+                        safe_emails=[],
+                        domains_checked=[],
+                    ).dict(),
+                )
 
             # Simple risk scoring stub (TODO: implement proper EmailRiskAnalyzer)
             # For now, use DB risk_score if available, else assign based on sender domain
