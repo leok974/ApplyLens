@@ -61,13 +61,12 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Actionable: tell the user exactly what to do next (ignore, delete, report, or reply carefully).\n"
         "\n"
         "When you describe risky emails, always explain WHY they are risky using 2–4 bullet points per cluster "
-        "(sender domain, payment requests, urgency, mismatched URLs, no company details). "
-        "If no suspicious emails are found, say that clearly and briefly.\n"
+        "(sender domain, payment requests, urgency, mismatched URLs, no company details).\n"
         "\n"
-        "Format your answer as:\n"
-        "1. One short paragraph summarizing how many emails you scanned and whether anything looks risky.\n"
-        "2. A bullet list called 'Key red flags' if you found suspicious emails.\n"
-        "3. A bullet list called 'Safe next steps' telling the user what to do.\n"
+        "Format your answer EXACTLY as:\n"
+        "1. A short opening sentence that includes how many emails you scanned and what time window.\n"
+        "2. A section heading '**Key red flags:**' with 2–4 bullet points (or write 'None found' if there are no suspicious emails).\n"
+        "3. A section heading '**Safe next steps:**' with 2–4 bullet points of concrete recommendations.\n"
     )
     + SHARED_STYLE_HINT,
     "bills": (
@@ -79,11 +78,10 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Grouped into 'due soon', 'overdue', and 'other' when possible.\n"
         "- Short: a 1-paragraph summary, then a small list of the most important bills.\n"
         "\n"
-        "If you do not find any bills or invoices, say that plainly and suggest how the user could refine the query.\n"
-        "\n"
-        "Format your answer as:\n"
-        "1. One short paragraph summarizing how many bills/invoices you found and the overall situation.\n"
-        "2. A bullet list with headings like 'Due soon', 'Overdue', and 'Other', listing only the most important items.\n"
+        "Format your answer EXACTLY as:\n"
+        "1. A short opening sentence that includes how many bills/invoices you scanned and what time window.\n"
+        "2. Three subsections: '**Due soon:**', '**Overdue:**', and '**Other:**'. "
+        "If a section is empty, write 'None' for that section.\n"
     )
     + SHARED_STYLE_HINT,
     "interviews": (
@@ -95,12 +93,11 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Specific about company, role, date/time, and what the user should do next.\n"
         "- Brief: 1–2 paragraphs plus a bullet list of concrete next actions.\n"
         "\n"
-        "If you find no interview-related emails, say that clearly and suggest whether the user should widen the date range.\n"
-        "\n"
-        "Format your answer as:\n"
-        "1. One short paragraph summarizing interview/recruiter activity in the chosen time window.\n"
-        "2. Three short bullet sections labelled 'Upcoming interviews', 'Waiting on recruiter', and 'Closed / done'.\n"
-        "3. Under each section, list at most 3 items with company, role, and what to do next.\n"
+        "Format your answer EXACTLY as:\n"
+        "1. A short opening sentence that includes how many interview/recruiter emails you scanned and what time window.\n"
+        "2. Three subsections: '**Upcoming interviews:**', '**Waiting on recruiter:**', and '**Closed / done:**'. "
+        "Under each section, list at most 3 items with company, role, and what to do next. "
+        "If a section is empty, write 'None' for that section.\n"
     )
     + SHARED_STYLE_HINT,
     "followups": (
@@ -112,11 +109,10 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Specific: include company, role, last email date, and suggested follow-up angle.\n"
         "- Concise: one short paragraph and then a numbered list of suggested follow-ups.\n"
         "\n"
-        "If there is nothing to follow up on, say that explicitly and recommend what timeframe to watch next.\n"
-        "\n"
-        "Format your answer as:\n"
-        "1. One short paragraph explaining how many threads might benefit from a follow-up.\n"
-        "2. A numbered list of the top 3–5 follow-ups, each with company, role, last contact date, and a suggested follow-up angle.\n"
+        "Format your answer EXACTLY as:\n"
+        "1. A short opening sentence that includes how many threads you scanned and what time window.\n"
+        "2. A numbered list of the top 3–5 follow-ups, each with company, role, last contact date, and a suggested follow-up angle. "
+        "If there are no follow-ups needed, write 'None needed at this time' and suggest checking back later.\n"
     )
     + SHARED_STYLE_HINT,
     "profile": (
@@ -130,9 +126,10 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "\n"
         "Only mention security risk if the risk buckets show non-trivial medium/high/critical values.\n"
         "\n"
-        "Format your answer as:\n"
-        "1. One short paragraph summarizing overall volume and pace (total vs recent window).\n"
-        "2. 3–5 bullet points for key stats (applications, recruiter replies, interviews, any non-trivial security risk).\n"
+        "Format your answer EXACTLY as:\n"
+        "1. A short opening sentence that includes total email volume and the time window analyzed.\n"
+        "2. 3–5 bullet points for key stats (applications, recruiter replies, interviews, any non-trivial security risk). "
+        "If a category has zero activity, you may omit it from the bullets.\n"
     )
     + SHARED_STYLE_HINT,
     "generic": (
@@ -144,11 +141,10 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Short and practical: 1 paragraph plus a bullet list of suggested actions.\n"
         "- Focused on prioritization: what should the user read or act on next.\n"
         "\n"
-        "If the tools show no relevant emails, admit that clearly and suggest how the user could refine their query.\n"
-        "\n"
-        "Format your answer as:\n"
-        "1. One paragraph summarizing what you found in the inbox that matches the query.\n"
-        "2. A bullet list of 3–5 concrete next actions the user should take.\n"
+        "Format your answer EXACTLY as:\n"
+        "1. A short opening sentence that includes how many emails you found and what time window.\n"
+        "2. A bullet list of 3–5 concrete next actions the user should take. "
+        "If nothing was found, suggest how the user could refine their query.\n"
     )
     + SHARED_STYLE_HINT,
 }
@@ -200,6 +196,10 @@ def build_llm_messages(
     """
     system_prompt = INTENT_SYSTEM_PROMPTS.get(intent, INTENT_SYSTEM_PROMPTS["generic"])
 
+    # Track primary email_search results for explicit count requirement
+    primary_total = None
+    primary_window_days = None
+
     # Build a compact, LLM-friendly summary of tool outputs.
     tool_summaries: List[str] = []
     for tr in tool_results:
@@ -220,6 +220,11 @@ def build_llm_messages(
                     window_days = tw.get("days")
                 elif isinstance(tw, (int, float)):
                     window_days = tw
+
+            # Capture first email_search for explicit count requirement
+            if primary_total is None:
+                primary_total = total
+                primary_window_days = window_days
 
             label = f"{total} matching emails"
             if window_days:
@@ -264,8 +269,19 @@ def build_llm_messages(
         else "No relevant tool data was available for this query.\n"
     )
 
+    # Add explicit count requirement if we have email_search data
+    count_requirement = ""
+    if primary_total is not None and primary_window_days is not None:
+        count_requirement = (
+            f"For this answer, you scanned approximately {primary_total} emails "
+            f"in the last {primary_window_days} days.\n"
+            "Your first sentence MUST explicitly mention how many emails were scanned "
+            "and what time window you looked at.\n\n"
+        )
+
     user_instructions = (
         f"User query:\n{query}\n\n"
+        f"{count_requirement}"
         "Use the summary of tool results above to answer the question.\n"
         "Do NOT restate the raw tool data exhaustively; instead, summarize and prioritize.\n"
         "If the tools indicate there is nothing relevant, say that clearly.\n"
