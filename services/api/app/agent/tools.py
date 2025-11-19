@@ -273,6 +273,7 @@ class ToolRegistry:
                         error_message=search_result.error_message,
                     )
 
+                # data is already a dict from EmailSearchResult.dict()
                 emails = search_result.data.get("emails", [])
             else:
                 # TODO: Fetch specific emails by IDs from DB

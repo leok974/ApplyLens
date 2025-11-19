@@ -197,12 +197,12 @@ class MailboxAgentOrchestrator:
                     {
                         "query_text": request.query,
                         "time_window_days": request.context.time_window_days,
-                        "risk_min": 80,
-                        "max_results": 20,
+                        # Don't filter by risk_min - let security_scan categorize
+                        "max_results": 50,
                     },
                 )
             )
-            # Add security scan if we find emails
+            # Add security scan to categorize emails by risk
             plan.append(("security_scan", {"email_ids": []}))  # Populated after search
 
         elif intent == "bills":
