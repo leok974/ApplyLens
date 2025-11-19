@@ -1,5 +1,11 @@
 # ApplyLens Deployment & Rollback Guide
 
+> ⚠️ **DEPRECATED – Historical deployment notes**
+>
+> This document describes an older ApplyLens deployment architecture
+> (pre-Cloudflare Tunnel consolidated setup). For current instructions,
+> see [`docs/PRODUCTION_DEPLOYMENT.md`](./PRODUCTION_DEPLOYMENT.md).
+
 ## Quick Reference
 
 ### Current Production Version

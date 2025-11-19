@@ -1,0 +1,12 @@
+# E2E Test Configuration
+
+E2E_PROD=1
+E2E_SHARED_SECRET=1xemKOKbpYrg1F6LZvn/oejzPw83shr3sCbCTTfSlh8=
+
+# Usage:
+# Set these in your production deployment environment
+# OR for local testing:
+# $env:E2E_PROD="1"
+# $env:E2E_SHARED_SECRET="1xemKOKbpYrg1F6LZvn/oejzPw83shr3sCbCTTfSlh8="
+# $env:E2E_BASE_URL="https://applylens.app"
+# cd apps/web && npx playwright test e2e/chat-agent-v2.spec.ts

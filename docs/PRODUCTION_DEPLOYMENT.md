@@ -1,8 +1,310 @@
-# Production Deployment Checklist v0.5.0
+# ApplyLens – Production Deployment
 
-This document provides a comprehensive checklist for deploying ApplyLens v0.5.0 to production.
+<!-- LLM NOTE: This is the canonical ApplyLens production deployment doc.
+     Do not mix in infra from LedgerMind, SiteAgent, ai-finance, or other projects. -->
 
-## 📋 Pre-Deployment Checklist
+> **Canonical Documentation**
+>
+> This file is the single source of truth for ApplyLens production deployment.
+> If any other document disagrees with this one, this document wins.
+
+---
+
+## 1. Overview
+
+ApplyLens is a Gmail-based job application assistant.
+
+Production infrastructure consists of:
+
+- **UI:** https://applylens.app
+- **API:** https://api.applylens.app
+- **Infrastructure:** Docker + Cloudflare Tunnel
+- **Data Stores:** Postgres, Elasticsearch, Redis
+
+All public traffic enters via **Cloudflare Tunnel** and is routed directly to Docker containers on the `applylens_applylens-prod` network.
+
+**Important:** There is **no separate edge nginx VM** for ApplyLens and no bare ports 80/443 exposed on the host. This architecture replaced the older edge-proxy approach.
+
+---
+
+## 2. Container & Network Layout
+
+All production services run on the Docker network:
+
+- **Network:** `applylens_applylens-prod`
+
+### Canonical Container Names
+
+| Container Name | Role | Internal Port |
+|----------------|------|---------------|
+| `applylens-web-prod` | Serves the React/Vite app | 80 |
+| `applylens-api-prod` | FastAPI backend | 8003 |
+| `applylens-es-prod` | Elasticsearch | 9200 |
+| `applylens-db-prod` | Postgres | 5432 |
+| `applylens-redis-prod` | Redis | 6379 |
+
+### Web Container (applylens-web-prod)
+
+- Serves the React/Vite frontend application
+- Includes nginx that proxies `/api/*` requests to `applylens-api-prod:8003`
+- Exposed internally on port 80
+
+### API Container (applylens-api-prod)
+
+- FastAPI backend application
+- Exposes REST API endpoints: `/api/healthz`, `/api/version`, `/api/v2/agent/run`, etc.
+- Exposed internally on port 8003
+
+### Image Naming Pattern
+
+Images follow this pattern (versions are pinned in `docker-compose.prod.yml`):
+
+- `leoklemet/applylens-web:<version>`
+- `leoklemet/applylens-api:<version>`
+
+> **Note:** Example versions as of late 2025 are around `0.5.x`, but always check
+> `docker-compose.prod.yml` for the current production tags.
+
+---
+
+## 3. Cloudflare Tunnel Routing
+
+ApplyLens uses a single Cloudflare Named Tunnel for all public traffic:
+
+- **Tunnel ID:** `08d5feee-f504-47a2-a1f2-b86564900991`
+- **Connectors:** `cfd-a`, `cfd-b` (running on the production host, attached to `applylens_applylens-prod`)
+
+### Hostname Routes
+
+| Hostname | Target | Description |
+|----------|--------|-------------|
+| `applylens.app` | `http://applylens-web-prod:80` | Main production UI |
+| `www.applylens.app` | `http://applylens-web-prod:80` | www subdomain |
+| `api.applylens.app` | `http://applylens-api-prod:8003` | API endpoints |
+
+### Important Architecture Notes
+
+- The Cloudflare Tunnel is the **only** public entry point
+- The production host does **not** listen directly on ports 80/443
+- There is **no separate edge nginx VM** – nginx only exists inside the `applylens-web-prod` container
+- The web container's nginx proxies `/api/*` to the API container on the internal Docker network
+
+---
+
+## 4. Deploying a New Version
+
+This section assumes:
+
+- You have already built and pushed new images to Docker Hub:
+  - `leoklemet/applylens-web:<new-version>`
+  - `leoklemet/applylens-api:<new-version>`
+- You are **on the production host** where this repo and `docker-compose.prod.yml` exist
+
+### 4.1. Build and Push Images (from dev machine)
+
+```powershell
+# Example build commands (run from repo root on dev machine)
+cd d:\ApplyLens
+
+# Build API
+$GitSha = (git rev-parse --short HEAD)
+$BuildDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$Version = "0.5.11"  # Update as needed
+
+docker build `
+  --build-arg GIT_SHA=$GitSha `
+  --build-arg BUILD_DATE="$BuildDate" `
+  -t leoklemet/applylens-api:$Version `
+  -t leoklemet/applylens-api:latest `
+  -f services\api\Dockerfile.prod `
+  services\api
+
+# Build Web
+docker build `
+  --build-arg VITE_BUILD_FLAVOR=prod `
+  --build-arg VITE_APP_VERSION=$Version `
+  --build-arg VITE_BUILD_GIT_SHA=$GitSha `
+  --build-arg VITE_BUILD_TIME="$BuildDate" `
+  -t leoklemet/applylens-web:$Version `
+  -t leoklemet/applylens-web:latest `
+  -f apps\web\Dockerfile.prod `
+  apps\web
+
+# Push to Docker Hub
+docker push leoklemet/applylens-api:$Version
+docker push leoklemet/applylens-api:latest
+docker push leoklemet/applylens-web:$Version
+docker push leoklemet/applylens-web:latest
+```
+
+### 4.2. Update Image Tags (on production host)
+
+Edit `docker-compose.prod.yml` on the production host and update the image tags for the `web` and `api` services:
+
+```yaml
+services:
+  web:
+    image: leoklemet/applylens-web:0.5.11  # Update version
+    container_name: applylens-web-prod
+    # ...
+
+  api:
+    image: leoklemet/applylens-api:0.5.11  # Update version
+    container_name: applylens-api-prod
+    # ...
+```
+
+Commit the changes to your infrastructure repository as appropriate.
+
+### 4.3. Pull and Deploy (on production host)
+
+```bash
+# From the directory containing docker-compose.prod.yml
+docker compose -f docker-compose.prod.yml pull web api
+docker compose -f docker-compose.prod.yml up -d web api
+```
+
+### 4.4. Verify Deployment
+
+```bash
+# Check container status
+docker ps --filter "name=applylens-*-prod"
+```
+
+Expected output should show `applylens-web-prod` and `applylens-api-prod` running with the new image tags and status "Up X minutes (healthy)".
+
+---
+
+## 5. Post-Deploy Verification
+
+### 5.1. API Health & Version Endpoints
+
+From your local machine:
+
+```bash
+# Health check
+curl https://api.applylens.app/api/healthz
+
+# Version information
+curl https://api.applylens.app/api/version
+```
+
+**Expected responses:**
+
+- `/api/healthz` → `{"status":"ok"}` or similar
+- `/api/version` → JSON with `version`, `git_sha`, `build_time` fields
+
+### 5.2. UI Sanity Check
+
+1. Open https://applylens.app in a browser
+2. Verify the app loads without errors in browser console
+3. Confirm basic user flows work:
+   - Login/authentication
+   - Inbox loads
+   - Email thread viewing
+
+### 5.3. Playwright Production Health Spec
+
+From the `apps/web` directory (or repo root):
+
+```powershell
+# Set production URL
+$env:E2E_BASE_URL = "https://applylens.app"
+
+# Run production health checks
+npx playwright test tests/e2e/prod-version-health.spec.ts --project=chromium-prod
+```
+
+This test spec verifies:
+
+- `/api/healthz` and `/api/version` endpoints are reachable
+- The UI renders a `VersionCard` component matching the backend version
+- No critical console errors during page load
+
+---
+
+## 6. Rollback
+
+If you need to rollback to a previous version:
+
+### 6.1. Restore Previous Image Tags
+
+Edit `docker-compose.prod.yml` on the production host and restore the previous image tags for `web` and `api`:
+
+```yaml
+services:
+  web:
+    image: leoklemet/applylens-web:0.5.10  # Restore previous version
+
+  api:
+    image: leoklemet/applylens-api:0.5.10  # Restore previous version
+```
+
+### 6.2. Re-deploy
+
+```bash
+docker compose -f docker-compose.prod.yml pull web api
+docker compose -f docker-compose.prod.yml up -d web api
+```
+
+### 6.3. Verify Rollback
+
+Run the same health and UI checks as described in **Section 5: Post-Deploy Verification**.
+
+### Important Note on Database Migrations
+
+If the upgrade applied irreversible database migrations (e.g., dropping columns, altering schemas):
+
+- A simple rollback may cause the old API code to fail against the new schema
+- In such cases, you may need to "roll forward" with a hotfix instead
+- **Best practice:** Design all database migrations to be backward-compatible for at least one version
+
+---
+
+## 7. Guardrails for Future Edits
+
+To prevent documentation drift and confusion:
+
+### ❌ DO NOT:
+
+- Introduce instructions that SSH to hostnames not documented here (e.g., `ssh applylens.app`) unless they actually exist in your infrastructure
+- Describe an "edge nginx VM" or direct ports 80/443 exposed on the host. That architecture is deprecated for ApplyLens.
+- Copy infrastructure details from other projects (LedgerMind, SiteAgent, ai-finance, TasteOS, etc.) into this document
+- Reference Docker image registries other than Docker Hub (e.g., `ghcr.io`) unless you've explicitly migrated
+
+### ✅ DO:
+
+- Always check `docker-compose.prod.yml` before updating this document
+- Use container names in the form `applylens-{service}-prod`
+- Keep this document as the canonical reference for ApplyLens production deployment
+- If another document disagrees with this one, either update it or mark it clearly as deprecated
+- Cross-reference `docker-compose.prod.yml` for current image versions, environment variables, and network configuration
+
+---
+
+## 8. Additional Resources
+
+- **Cloudflare Tunnel Setup:** `infra/cloudflared/README.md`
+- **Cloudflare Tunnel Runbook:** `infra/docs/CLOUDFLARE_TUNNEL_RUNBOOK.md`
+- **Docker Compose File:** `docker-compose.prod.yml` (canonical source of truth for configuration)
+- **Deployment Scripts:** `scripts/rollback.ps1`, `deploy-prod.ps1`
+- **E2E Testing with Production:** `apps/web/tests/auth/README.md`
+
+---
+
+**Last Updated:** November 2025
+**Maintained By:** ApplyLens Infrastructure Team
+
+---
+
+## Historical Context (Pre-November 2025)
+
+The sections below contain historical deployment information from v0.5.0.
+They may be useful for understanding configuration details but should not override the canonical instructions above.
+
+---
+
+## 📋 Pre-Deployment Checklist (Historical)
 
 ### 1. Version & Changelog ✅
 

@@ -1,5 +1,11 @@
 # Docker Setup - Complete ✅
 
+> ⚠️ **DEPRECATED – Historical development setup notes**
+>
+> This document describes an older ApplyLens development setup.
+> For current production deployment instructions,
+> see [`docs/PRODUCTION_DEPLOYMENT.md`](./PRODUCTION_DEPLOYMENT.md).
+
 ## Services Running
 
 - **PostgreSQL**: Port 5433 (mapped from 5432)
