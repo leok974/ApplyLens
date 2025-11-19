@@ -224,8 +224,8 @@ services:
 
       # Build Metadata
       APP_VERSION: '0.5.2'
-      APP_BUILD_SHA: '912a6b8'
-      APP_BUILD_TIME: '2025-11-18T21:07:37Z'
+      APP_BUILD_SHA: '6f22dfe'
+      APP_BUILD_TIME: '2025-11-19T02:00:45Z'
       APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
@@ -412,8 +412,8 @@ services:
       # Build Metadata (Web)
       - VITE_BUILD_FLAVOR=prod
       - VITE_APP_VERSION=0.5.2
-      - VITE_BUILD_GIT_SHA=912a6b8
-      - VITE_BUILD_TIME=2025-11-18T21:07:37Z
+      - VITE_BUILD_GIT_SHA=6f22dfe
+      - VITE_BUILD_TIME=2025-11-19T02:00:45Z
 
       # Feature Flags
       - VITE_FEATURE_COMPANION=1

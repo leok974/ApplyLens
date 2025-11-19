@@ -24,6 +24,7 @@ from .db import Base, engine
 from .es import ensure_index
 from .routers import applications, emails, search, suggest, search_debug
 from .routers import version as version_router
+from .routers import agent as agent_router
 from .settings import settings
 from .tracing import init_tracing
 from .config import agent_settings
@@ -233,6 +234,9 @@ app.include_router(search.router)
 app.include_router(search_debug.router)  # Debug diagnostics for search
 app.include_router(suggest.router)
 app.include_router(applications.router)
+
+# Agent router - Mailbox Agent v2 (AI assistant)
+app.include_router(agent_router.router)
 
 # Auth router - Google OAuth and demo mode
 from .routers import auth as auth_router  # noqa: E402
