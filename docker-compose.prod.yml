@@ -198,8 +198,8 @@ services:
       # CRITICAL: Using shared infra-ollama-1 container on infra_net network
       # DO NOT change to http://localhost:11434 - must use container hostname
       # DO NOT change model back to gpt-oss:20b - too slow for production
-      OLLAMA_BASE: "http://infra-ollama-1:11434"
-      OLLAMA_MODEL: "llama3:latest"  # 4.7GB, 2-4s response time (quoted for YAML colon handling)
+      OLLAMA_BASE: "http://ai-finance-agent-oss-clean-ollama-1:11434"
+      OLLAMA_MODEL: "gpt-oss:20b"  # 4.7GB, 2-4s response time (quoted for YAML colon handling)
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
 
@@ -284,6 +284,7 @@ services:
         aliases:
           - applylens-api.internal
       infra_net:  # Connect to infra network for Ollama access
+      shared-ollama:  # Connect to shared Ollama container
 
   # =============================================================================
   # BACKFILL SCHEDULER (Automated Gmail Backfill)
@@ -571,3 +572,5 @@ networks:
         - subnet: 172.25.0.0/16
   infra_net:
     external: true  # Use existing infra network with Ollama
+  shared-ollama:
+    external: true  # Shared Ollama network (ai-finance-agent-oss-clean-ollama-1)

@@ -16,6 +16,10 @@ import { ReplyDraftModal } from '@/components/ReplyDraftModal'
 import { sync7d, sync60d } from '@/lib/api'
 import { useNavigate } from 'react-router-dom'
 import { useRuntimeConfig } from '@/hooks/useRuntimeConfig'
+import { FLAGS } from '@/lib/flags'
+import { runMailboxAgent } from '@/api/agent'
+import type { AgentCard } from '@/types/agent'
+import { AgentResultCard } from './AgentCard'
 
 interface QuickAction {
   label: string
@@ -67,8 +71,11 @@ const QUICK_ACTIONS: QuickAction[] = [
 ]
 
 interface ConversationMessage extends Message {
+  id?: string
   response?: ChatResponse
   assistantResponse?: AssistantQueryResponse
+  agentV2Cards?: AgentCard[]  // Agent v2 structured cards
+  status?: 'idle' | 'thinking' | 'done' | 'error'
   error?: string
   timestamp?: string  // ISO 8601 timestamp for confirmation messages
   meta?: {
@@ -601,10 +608,79 @@ export default function MailChat() {
     )
   }
 
-    async function sendViaAssistant(explicitText?: string) {
+  async function sendViaAssistant(explicitText?: string) {
     const userText = (explicitText ?? input).trim()
     if (!userText) return
 
+    // Agent V2 path - structured LLM answering
+    if (FLAGS.CHAT_AGENT_V2) {
+      const placeholderId = crypto.randomUUID()
+
+      // Add user message
+      setMessages(prev => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: userText,
+          status: "done",
+        },
+      ])
+
+      // Add thinking indicator
+      setMessages(prev => [
+        ...prev,
+        {
+          id: placeholderId,
+          role: "assistant",
+          content: "",
+          status: "thinking",
+        },
+      ])
+
+      setInput("")
+      setBusy(true)
+
+      try {
+        const res = await runMailboxAgent(userText, { timeWindowDays: windowDays })
+
+        // Replace thinking message with actual response
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === placeholderId
+              ? {
+                  ...m,
+                  status: "done",
+                  content: res.answer,
+                  agentV2Cards: res.cards,
+                }
+              : m
+          )
+        )
+      } catch (err) {
+        console.error("[Agent V2] Error", err)
+
+        // Replace thinking message with error
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === placeholderId
+              ? {
+                  ...m,
+                  status: "error",
+                  content: "I hit an error while running the Mailbox Assistant. Please try again.",
+                  error: err instanceof Error ? err.message : String(err),
+                }
+              : m
+          )
+        )
+      } finally {
+        setBusy(false)
+      }
+
+      return
+    }
+
+    // Legacy streaming path below
     // push user message itself first
     setMessages(prev => [
       ...prev,
@@ -899,9 +975,13 @@ export default function MailChat() {
 
       {/* Message History */}
       <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto">
-        {messages.map((msg, i) => (
+        {messages.map((msg, i) => {
+          const isAssistant = msg.role === 'assistant'
+          const isThinking = msg.status === 'thinking'
+
+          return (
           <div
-            key={i}
+            key={msg.id ?? i}
             className={msg.role === 'user' ? 'text-right' : 'text-left'}
           >
             <div
@@ -912,7 +992,24 @@ export default function MailChat() {
                   ? 'bg-red-950/30 border border-red-900/50'
                   : 'bg-neutral-800/50'
               }`}
+              data-testid={
+                isAssistant
+                  ? isThinking
+                    ? 'chat-thinking'
+                    : 'chat-assistant-answer'
+                  : undefined
+              }
             >
+              {/* Thinking indicator for Agent V2 */}
+              {isThinking ? (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-neutral-400" />
+                  <span className="text-xs text-neutral-400">
+                    Mailbox Assistant is thinking…
+                  </span>
+                </span>
+              ) : (
+                <>
               {/* Message content with markdown-style formatting */}
               <div className={`whitespace-pre-wrap break-words ${
                 msg.meta?.kind === "sent_confirm" ? "italic text-green-400" : ""
@@ -981,6 +1078,15 @@ export default function MailChat() {
                       searched • {msg.response.intent} intent
                     </span>
                   </div>
+                </div>
+              )}
+
+              {/* Agent V2 Cards - Structured responses */}
+              {isAssistant && msg.status === 'done' && msg.agentV2Cards && msg.agentV2Cards.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {msg.agentV2Cards.map((card, idx) => (
+                    <AgentResultCard key={idx} card={card} />
+                  ))}
                 </div>
               )}
 
@@ -1082,6 +1188,10 @@ export default function MailChat() {
                 </>
               )}
 
+              {/* Closing fragment for thinking/done state */}
+              </>
+              )}
+
               {/* Timing Footer */}
               {msg.role === 'assistant' && i === messages.length - 1 && (timing.es_ms || timing.llm_ms || timing.client_ms) && (
                 <div className="mt-2 flex items-center gap-2 text-[11px] text-neutral-500">
@@ -1098,7 +1208,7 @@ export default function MailChat() {
               )}
             </div>
           </div>
-        ))}
+        )})}
 
         {/* Single thinking indicator - only when busy */}
         {busy && (

@@ -35,13 +35,19 @@ export const FLAGS = {
    * Shows navigation link to extension landing page and settings
    */
   COMPANION: import.meta.env.VITE_FEATURE_COMPANION === '1',
+
+  /**
+   * Agent v2 - Structured LLM answering with citations
+   * Uses new /api/v2/agent/run endpoint with tool-based architecture
+   */
+  CHAT_AGENT_V2: import.meta.env.VITE_CHAT_AGENT_V2 === '1',
 };
 
 /**
  * Check if any AI features are enabled
  */
 export const hasAnyAIFeatures = (): boolean => {
-  return FLAGS.SUMMARIZE || FLAGS.RISK_BADGE || FLAGS.RAG_SEARCH;
+  return FLAGS.SUMMARIZE || FLAGS.RISK_BADGE || FLAGS.RAG_SEARCH || FLAGS.CHAT_AGENT_V2;
 };
 
 /**
@@ -54,5 +60,6 @@ export const getEnabledFeatures = (): string[] => {
   if (FLAGS.RAG_SEARCH) features.push('RAG Search');
   if (FLAGS.DEMO_MODE) features.push('Demo Mode');
   if (FLAGS.COMPANION) features.push('Companion');
+  if (FLAGS.CHAT_AGENT_V2) features.push('Chat Agent V2');
   return features;
 };

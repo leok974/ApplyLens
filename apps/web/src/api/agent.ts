@@ -2,39 +2,60 @@
  * Agent v2 - API Client
  *
  * Type-safe client for mailbox agent endpoints.
+ * Supports both v1 (/agent/mailbox/run) and v2 (/api/v2/agent/run) endpoints.
  */
 
 import { apiFetch } from '@/lib/apiBase';
+import { FLAGS } from '@/lib/flags';
 import type {
-  AgentRunRequest,
   AgentRunResponse,
   ToolsListResponse,
   AgentHealthResponse,
 } from '../types/agent';
 
+export interface RunAgentOptions {
+  timeWindowDays?: number;
+  filters?: Record<string, unknown>;
+}
+
 /**
  * Execute a mailbox agent run.
  *
+ * Uses Agent v2 (/api/v2/agent/run) if CHAT_AGENT_V2 flag is enabled,
+ * otherwise falls back to v1 (/agent/mailbox/run).
+ *
  * @example
  * ```ts
- * const response = await runMailboxAgent({
- *   query: "Show suspicious emails from new domains this week",
- *   mode: "preview_only",
- *   context: {
- *     time_window_days: 7,
- *     filters: { labels: ["INBOX"], risk_min: 80 }
- *   },
- *   user_id: "user@gmail.com"
- * });
+ * const response = await runMailboxAgent(
+ *   "Show suspicious emails from new domains this week",
+ *   { timeWindowDays: 7 }
+ * );
  * ```
  */
 export async function runMailboxAgent(
-  request: AgentRunRequest
+  query: string,
+  options?: RunAgentOptions
 ): Promise<AgentRunResponse> {
-  const response = await apiFetch('/agent/mailbox/run', {
+  const body = {
+    run_id: crypto.randomUUID(),
+    user_id: undefined, // Backend derives user from session
+    query,
+    mode: 'preview_only' as const,
+    context: {
+      time_window_days: options?.timeWindowDays ?? 30,
+      filters: options?.filters ?? {},
+    },
+  };
+
+  // Use v2 endpoint if flag is enabled, otherwise v1
+  const endpoint = FLAGS.CHAT_AGENT_V2
+    ? '/v2/agent/run'  // Agent v2 with structured LLM answering
+    : '/agent/mailbox/run';  // Legacy v1 endpoint
+
+  const response = await apiFetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -88,31 +109,4 @@ export async function getAgentHealth(): Promise<AgentHealthResponse> {
   }
 
   return response.json();
-}
-
-/**
- * Helper: Build agent request from chat query.
- *
- * Extracts context from current page state and builds proper request.
- */
-export function buildAgentRequest(
-  query: string,
-  userId: string,
-  options?: {
-    mode?: 'preview_only' | 'apply_actions';
-    timeWindowDays?: number;
-    filters?: Record<string, any>;
-    sessionId?: string;
-  }
-): AgentRunRequest {
-  return {
-    query,
-    user_id: userId,
-    mode: options?.mode || 'preview_only',
-    context: {
-      time_window_days: options?.timeWindowDays || 30,
-      filters: options?.filters || {},
-      session_id: options?.sessionId,
-    },
-  };
 }
