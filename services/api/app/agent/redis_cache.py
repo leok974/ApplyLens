@@ -15,9 +15,9 @@ from datetime import datetime
 import redis.asyncio as redis
 from app.schemas_agent import DomainRiskCache, ChatSessionCache
 from app.agent.metrics import (
-    agent_redis_hits_total,
-    agent_redis_errors_total,
-    agent_redis_latency_seconds,
+    mailbox_agent_redis_hits_total,
+    mailbox_agent_redis_errors_total,
+    mailbox_agent_redis_latency_seconds,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,19 +56,19 @@ async def _get_json(key: str) -> Optional[dict]:
     if client is None:
         return None
 
-    with agent_redis_latency_seconds.labels(kind="get").time():
+    with mailbox_agent_redis_latency_seconds.labels(kind="get").time():
         try:
             raw = await client.get(key)
         except Exception as exc:
             logger.exception("Redis GET failed for %s: %s", key, exc)
-            agent_redis_errors_total.labels(kind="get").inc()
+            mailbox_agent_redis_errors_total.labels(kind="get").inc()
             return None
 
     if raw is None:
-        agent_redis_hits_total.labels(kind="get", result="miss").inc()
+        mailbox_agent_redis_hits_total.labels(kind="get", result="miss").inc()
         return None
 
-    agent_redis_hits_total.labels(kind="get", result="hit").inc()
+    mailbox_agent_redis_hits_total.labels(kind="get", result="hit").inc()
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
@@ -83,12 +83,12 @@ async def _set_json(key: str, value: dict, ttl_seconds: int) -> None:
     if client is None:
         return
 
-    with agent_redis_latency_seconds.labels(kind="set").time():
+    with mailbox_agent_redis_latency_seconds.labels(kind="set").time():
         try:
             await client.set(key, json.dumps(value), ex=ttl_seconds)
         except Exception as exc:
             logger.exception("Redis SET failed for %s: %s", key, exc)
-            agent_redis_errors_total.labels(kind="set").inc()
+            mailbox_agent_redis_errors_total.labels(kind="set").inc()
 
 
 # ============================================================================

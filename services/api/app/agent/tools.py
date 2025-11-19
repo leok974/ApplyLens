@@ -26,8 +26,8 @@ from app.es import ES_URL, ES_ENABLED
 from elasticsearch import Elasticsearch
 from app.agent.redis_cache import get_domain_risk, set_domain_risk
 from app.agent.metrics import (
-    agent_tool_calls_total,
-    agent_tool_latency_seconds,
+    mailbox_agent_tool_calls_total,
+    mailbox_agent_tool_latency_seconds,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class ToolRegistry:
     ) -> ToolResult:
         """Execute a tool by name with metrics."""
         if tool_name not in self.tools:
-            agent_tool_calls_total.labels(tool=tool_name, status="error").inc()
+            mailbox_agent_tool_calls_total.labels(tool=tool_name, status="error").inc()
             return ToolResult(
                 tool_name=tool_name,
                 status="error",
@@ -66,15 +66,17 @@ class ToolRegistry:
             )
 
         try:
-            with agent_tool_latency_seconds.labels(tool=tool_name).time():
+            with mailbox_agent_tool_latency_seconds.labels(tool=tool_name).time():
                 result = await self.tools[tool_name](params, user_id)
 
-            agent_tool_calls_total.labels(tool=tool_name, status=result.status).inc()
+            mailbox_agent_tool_calls_total.labels(
+                tool=tool_name, status=result.status
+            ).inc()
             return result
 
         except Exception as e:
             logger.error(f"Tool {tool_name} failed: {e}", exc_info=True)
-            agent_tool_calls_total.labels(tool=tool_name, status="error").inc()
+            mailbox_agent_tool_calls_total.labels(tool=tool_name, status="error").inc()
             return ToolResult(
                 tool_name=tool_name,
                 status="error",

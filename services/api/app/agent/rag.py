@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from elasticsearch import AsyncElasticsearch
 
 from app.schemas_agent import RAGContext, KnowledgeBaseEntry
-from app.agent.metrics import agent_rag_context_count
+from app.agent.metrics import mailbox_agent_rag_context_count
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ async def retrieve_email_contexts(
             )
         )
 
-    agent_rag_context_count.labels("emails").inc(len(contexts))
+    mailbox_agent_rag_context_count.labels("emails").inc(len(contexts))
     return contexts
 
 
@@ -153,7 +153,7 @@ async def retrieve_kb_contexts(
             )
         )
 
-    agent_rag_context_count.labels("kb").inc(len(contexts))
+    mailbox_agent_rag_context_count.labels("kb").inc(len(contexts))
     return contexts
 
 
