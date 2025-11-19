@@ -418,6 +418,7 @@ services:
 
       # Feature Flags
       - VITE_FEATURE_COMPANION=1
+      - VITE_CHAT_AGENT_V2=1
     ports:
       - "${WEB_PORT:-5175}:80"
     depends_on:
