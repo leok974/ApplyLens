@@ -23,7 +23,7 @@ from app.schemas_agent import (
     ThreadDetailResult,
 )
 from app.es import ES_URL, ES_ENABLED
-from elasticsearch import Elasticsearch
+from elasticsearch import AsyncElasticsearch
 from app.agent.redis_cache import get_domain_risk, set_domain_risk
 from app.agent.metrics import (
     mailbox_agent_tool_calls_total,
@@ -104,7 +104,7 @@ class ToolRegistry:
                     error_message="ES is disabled",
                 )
 
-            es = Elasticsearch(ES_URL)
+            es = AsyncElasticsearch(ES_URL)
 
             # Build ES query
             es_query = build_es_query(

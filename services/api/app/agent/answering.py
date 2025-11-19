@@ -53,10 +53,10 @@ def _summarize_rag_contexts(contexts: List[RAGContext]) -> str:
     lines = []
     for ctx in contexts:
         # Prefix email IDs so the model can refer to them explicitly
-        prefix = f"[email_id={ctx.id}]" if ctx.source == "emails" else "[kb]"
-        title = ctx.title.replace("\n", " ").strip()
-        snippet = ctx.snippet.replace("\n", " ").strip()
-        lines.append(f"{prefix} {title}\n{snippet}\n")
+        prefix = f"[email_id={ctx.source_id}]" if ctx.source_type == "email" else "[kb]"
+        # Use content directly (RAGContext has source_type, source_id, content, score, metadata)
+        content_preview = ctx.content.replace("\n", " ").strip()[:200]
+        lines.append(f"{prefix} {content_preview}\n")
     return "\n".join(lines) or "(no additional context available)"
 
 
