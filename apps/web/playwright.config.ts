@@ -57,9 +57,11 @@ export default defineConfig({
     screenshot: "only-on-failure",  // Screenshots on failure
   },
 
-  // Use new global setup that handles CSRF + session + seeding
+  // Use global setup for authentication
+  // - Production: Use auth setup if E2E_SHARED_SECRET is set
+  // - Dev: Use existing global setup for CSRF + session + seeding
   globalSetup: IS_PROD
-    ? undefined
+    ? "./tests/setup/global-setup-auth.ts"
     : "./tests/setup/global-setup.ts",
 
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

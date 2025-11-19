@@ -253,6 +253,15 @@ app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
+# E2E test authentication (only enabled when E2E_PROD=1)
+if os.getenv("E2E_PROD") == "1":
+    from . import routes_e2e_auth
+
+    app.include_router(routes_e2e_auth.router)
+    logging.getLogger("uvicorn").info(
+        "🧪 E2E auth endpoint enabled at /api/auth/e2e/login"
+    )
+
 # Companion learning loop
 from .routers import extension_learning  # noqa: E402
 
