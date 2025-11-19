@@ -178,21 +178,22 @@ class SecurityScanParams(BaseModel):
 class ThreadDetailParams(BaseModel):
     """Parameters for thread_detail tool."""
 
-    thread_id: str
-    include_body: bool = True
+    thread_id: Optional[str] = None
+    email_ids: List[str] = Field(default_factory=list)
+    max_emails: int = Field(50, ge=1, le=200)
 
 
 class ApplicationsLookupParams(BaseModel):
     """Parameters for applications_lookup tool."""
 
     email_ids: List[str]
+    max_results: int = Field(50, ge=1, le=200)
 
 
 class ProfileStatsParams(BaseModel):
     """Parameters for profile_stats tool."""
 
-    time_window_days: int = 30
-    group_by: Literal["sender", "label", "risk_bucket"] = "sender"
+    time_window_days: int = Field(30, ge=1, le=365)
 
 
 # ============================================================================
@@ -221,10 +222,26 @@ class SecurityScanResult(BaseModel):
 class ThreadDetailResult(BaseModel):
     """Result payload for thread_detail tool."""
 
-    thread_id: str
-    messages: List[Dict[str, Any]]
-    participants: List[str]
-    risk_summary: Dict[str, Any]
+    thread_id: Optional[str] = None
+    emails: List[Dict[str, Any]]
+    total_found: int
+
+
+class ApplicationsLookupResult(BaseModel):
+    """Result payload for applications_lookup tool."""
+
+    applications: List[Dict[str, Any]]
+    total_found: int
+
+
+class ProfileStatsResult(BaseModel):
+    """Result payload for profile_stats tool."""
+
+    total_emails: int
+    time_window_days: int
+    total_in_window: int
+    labels: Dict[str, int]
+    risk_buckets: Dict[str, int]
 
 
 # ============================================================================

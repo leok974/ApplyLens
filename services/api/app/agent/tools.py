@@ -3,7 +3,7 @@ Agent v2 - Tool Registry
 
 Implements core tools:
 - email_search: Query ES for emails
-- thread_detail: Get full thread from DB
+- thread_detail: Get full thread from ES
 - security_scan: Run EmailRiskAnalyzer
 - applications_lookup: Map emails → job applications
 - profile_stats: Get inbox analytics
@@ -18,9 +18,13 @@ from app.schemas_agent import (
     EmailSearchParams,
     SecurityScanParams,
     ThreadDetailParams,
+    ApplicationsLookupParams,
+    ProfileStatsParams,
     EmailSearchResult,
     SecurityScanResult,
     ThreadDetailResult,
+    ApplicationsLookupResult,
+    ProfileStatsResult,
     DomainRiskCache,
 )
 from app.es import ES_URL, ES_ENABLED
@@ -30,6 +34,8 @@ from app.agent.metrics import (
     mailbox_agent_tool_calls_total,
     mailbox_agent_tool_latency_seconds,
 )
+from app.db import SessionLocal
+from app import models
 
 logger = logging.getLogger(__name__)
 
@@ -213,30 +219,82 @@ class ToolRegistry:
 
     async def _thread_detail(self, params: Dict[str, Any], user_id: str) -> ToolResult:
         """
-        Get full thread details from database.
+        Get full thread details using Elasticsearch.
 
-        TODO Phase 1.1:
-        - Query Postgres for thread messages
-        - Include headers, body, risk_score
-        - Aggregate risk signals
+        Fetches all messages for a given thread_id or set of email_ids,
+        sorted by received_at ascending for chronological view.
         """
         try:
             thread_params = ThreadDetailParams(**params)
 
-            # TODO: Implement DB query
-            return ToolResult(
-                tool_name="thread_detail",
-                status="success",
-                summary=f"Retrieved thread {thread_params.thread_id}",
-                data=ThreadDetailResult(
-                    thread_id=thread_params.thread_id,
-                    messages=[],
-                    participants=[],
-                    risk_summary={},
-                ).dict(),
-            )
+            if not thread_params.thread_id and not thread_params.email_ids:
+                return ToolResult(
+                    tool_name="thread_detail",
+                    status="error",
+                    summary="Either thread_id or email_ids must be provided",
+                    error_message="Missing required parameters",
+                )
+
+            # Get ES client
+            if not ES_ENABLED:
+                return ToolResult(
+                    tool_name="thread_detail",
+                    status="error",
+                    summary="Elasticsearch not available",
+                    error_message="ES_ENABLED is False",
+                )
+
+            async with AsyncElasticsearch([ES_URL]) as es:
+                # Build query
+                must = [{"match": {"user_id": user_id}}]
+                filters = []
+
+                if thread_params.thread_id:
+                    # Match by thread_id
+                    filters.append({"match": {"thread_id": thread_params.thread_id}})
+
+                if thread_params.email_ids:
+                    # Match by email IDs
+                    filters.append({"ids": {"values": thread_params.email_ids}})
+
+                body = {
+                    "query": {
+                        "bool": {
+                            "must": must,
+                            "filter": filters,
+                        }
+                    },
+                    "sort": [{"received_at": {"order": "asc"}}],
+                    "size": thread_params.max_emails,
+                }
+
+                logger.info(f"thread_detail ES query: {body}")
+                res = await es.search(index="gmail_emails", body=body)
+
+                hits = res["hits"]["hits"]
+                emails = [h["_source"] for h in hits]
+                total = res["hits"]["total"]["value"]
+
+                # Extract thread_id from first email if not provided
+                thread_id = thread_params.thread_id
+                if not thread_id and emails:
+                    thread_id = emails[0].get("thread_id")
+
+                summary = f"Loaded {len(emails)} messages in thread"
+
+                return ToolResult(
+                    tool_name="thread_detail",
+                    status="success",
+                    summary=summary,
+                    data=ThreadDetailResult(
+                        thread_id=thread_id,
+                        emails=emails,
+                        total_found=total,
+                    ).dict(),
+                )
 
         except Exception as e:
+            logger.error(f"Thread detail failed: {e}", exc_info=True)
             return ToolResult(
                 tool_name="thread_detail",
                 status="error",
@@ -372,23 +430,100 @@ class ToolRegistry:
         self, params: Dict[str, Any], user_id: str
     ) -> ToolResult:
         """
-        Map emails to job applications.
+        Map emails to job applications using database.
 
-        TODO Phase 1.1:
-        - Query applications table
-        - Match by email_id or sender domain
-        - Return application cards
+        Queries applications table for any applications linked to the
+        provided email_ids or thread_ids.
         """
         try:
-            # TODO: Implement applications lookup
-            return ToolResult(
-                tool_name="applications_lookup",
-                status="success",
-                summary="Found 0 related applications",
-                data={"applications": []},
-            )
+            app_params = ApplicationsLookupParams(**params)
+
+            if not app_params.email_ids:
+                return ToolResult(
+                    tool_name="applications_lookup",
+                    status="error",
+                    summary="email_ids must be provided",
+                    error_message="Missing required email_ids parameter",
+                )
+
+            # Query database for applications
+            db = SessionLocal()
+            try:
+                # Note: Applications link to Email model via last_email_id
+                # We need to join through emails to match gmail IDs
+                # For now, we'll search by thread_id which is indexed
+
+                # First, extract thread_ids from the email_ids by querying ES
+                thread_ids = set()
+                if ES_ENABLED:
+                    async with AsyncElasticsearch([ES_URL]) as es:
+                        body = {
+                            "query": {
+                                "bool": {
+                                    "must": [
+                                        {"match": {"user_id": user_id}},
+                                    ],
+                                    "filter": [
+                                        {"ids": {"values": app_params.email_ids}}
+                                    ],
+                                }
+                            },
+                            "size": len(app_params.email_ids),
+                            "_source": ["thread_id"],
+                        }
+                        res = await es.search(index="gmail_emails", body=body)
+                        for hit in res["hits"]["hits"]:
+                            tid = hit["_source"].get("thread_id")
+                            if tid:
+                                thread_ids.add(tid)
+
+                # Query applications by thread_id
+                query = (
+                    db.query(models.Application)
+                    .filter(models.Application.thread_id.in_(list(thread_ids)))
+                    .order_by(models.Application.created_at.desc())
+                    .limit(app_params.max_results)
+                )
+
+                apps = query.all()
+
+                # Serialize applications
+                applications_data = []
+                for app in apps:
+                    applications_data.append(
+                        {
+                            "id": app.id,
+                            "company": app.company,
+                            "role": app.role,
+                            "status": app.status.value if app.status else None,
+                            "source": app.source,
+                            "thread_id": app.thread_id,
+                            "created_at": app.created_at.isoformat()
+                            if app.created_at
+                            else None,
+                            "updated_at": app.updated_at.isoformat()
+                            if app.updated_at
+                            else None,
+                        }
+                    )
+
+                summary = f"Found {len(applications_data)} applications linked to selected emails"
+
+                return ToolResult(
+                    tool_name="applications_lookup",
+                    status="success",
+                    summary=summary,
+                    data=ApplicationsLookupResult(
+                        applications=applications_data,
+                        total_found=len(applications_data),
+                    ).dict(),
+                )
+
+            finally:
+                db.close()
 
         except Exception as e:
+            logger.error(f"Applications lookup failed: {e}", exc_info=True)
             return ToolResult(
                 tool_name="applications_lookup",
                 status="error",
@@ -398,23 +533,100 @@ class ToolRegistry:
 
     async def _profile_stats(self, params: Dict[str, Any], user_id: str) -> ToolResult:
         """
-        Get inbox analytics/stats.
+        Get mailbox analytics and statistics.
 
-        TODO Phase 1.1:
-        - Use existing /emails/stats endpoint
-        - Group by sender, label, risk_bucket
-        - Return summary stats
+        Uses ES aggregations to provide:
+        - Total emails in time window
+        - Breakdown by label
+        - Risk score distribution
         """
         try:
-            # TODO: Implement profile stats
-            return ToolResult(
-                tool_name="profile_stats",
-                status="success",
-                summary="Retrieved inbox statistics",
-                data={"stats": {}},
-            )
+            stats_params = ProfileStatsParams(**params)
+            time_window_days = stats_params.time_window_days
+
+            if not ES_ENABLED:
+                return ToolResult(
+                    tool_name="profile_stats",
+                    status="error",
+                    summary="Elasticsearch not available",
+                    error_message="Cannot compute stats without ES",
+                )
+
+            async with AsyncElasticsearch([ES_URL]) as es:
+                # Compute time boundary
+                from datetime import datetime, timedelta
+
+                cutoff = datetime.utcnow() - timedelta(days=time_window_days)
+
+                # Main aggregation query
+                body = {
+                    "query": {
+                        "bool": {
+                            "must": [{"match": {"user_id": user_id}}],
+                            "filter": [
+                                {"range": {"received_at": {"gte": cutoff.isoformat()}}}
+                            ],
+                        }
+                    },
+                    "size": 0,
+                    "aggs": {
+                        "labels": {"terms": {"field": "labels.keyword", "size": 50}},
+                        "risk_buckets": {
+                            "range": {
+                                "field": "risk_score",
+                                "ranges": [
+                                    {"key": "low", "from": 0, "to": 20},
+                                    {"key": "medium", "from": 20, "to": 60},
+                                    {"key": "high", "from": 60, "to": 80},
+                                    {"key": "critical", "from": 80, "to": 101},
+                                ],
+                            }
+                        },
+                    },
+                }
+
+                res = await es.search(index="gmail_emails", body=body)
+
+                # Get total in time window
+                total_in_window = res["hits"]["total"]["value"]
+
+                # Parse labels aggregation
+                labels_dict = {}
+                for bucket in res["aggregations"]["labels"]["buckets"]:
+                    labels_dict[bucket["key"]] = bucket["doc_count"]
+
+                # Parse risk buckets
+                risk_buckets_dict = {}
+                for bucket in res["aggregations"]["risk_buckets"]["buckets"]:
+                    risk_buckets_dict[bucket["key"]] = bucket["doc_count"]
+
+                # Get total emails (all time)
+                total_query = {
+                    "query": {"bool": {"must": [{"match": {"user_id": user_id}}]}},
+                    "size": 0,
+                }
+                total_res = await es.count(index="gmail_emails", body=total_query)
+                total_emails = total_res["count"]
+
+                summary = (
+                    f"Analyzed {total_in_window} emails in last {time_window_days} days"
+                )
+
+                return ToolResult(
+                    tool_name="profile_stats",
+                    status="success",
+                    summary=summary,
+                    data=ProfileStatsResult(
+                        total_emails=total_emails,
+                        time_window_days=time_window_days,
+                        total_in_window=total_in_window,
+                        labels=labels_dict,
+                        risk_buckets=risk_buckets_dict,
+                    ).dict(),
+                )
 
         except Exception as e:
+            logger.error(f"Profile stats failed: {e}", exc_info=True)
             return ToolResult(
                 tool_name="profile_stats",
                 status="error",
