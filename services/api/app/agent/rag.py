@@ -81,12 +81,16 @@ async def retrieve_email_contexts(
     contexts: List[RAGContext] = []
     for hit in res["hits"]["hits"]:
         src = hit["_source"]
+        # Normalize and clamp score to [0, 1] range
+        raw_score = hit.get("_score", 0) / 10.0
+        clamped_score = max(0.0, min(raw_score, 1.0))
+
         contexts.append(
             RAGContext(
                 source_type="email",
                 source_id=str(src.get("id") or hit["_id"]),
                 content=f"Subject: {src.get('subject', '(no subject)')}\n\n{src.get('body', '')[:800]}",
-                score=hit.get("_score", 0) / 10.0,  # Normalize to 0-1 range
+                score=clamped_score,
                 metadata={
                     "thread_id": src.get("thread_id"),
                     "from": src.get("from"),
@@ -139,12 +143,16 @@ async def retrieve_kb_contexts(
     contexts: List[RAGContext] = []
     for hit in res["hits"]["hits"]:
         src = hit["_source"]
+        # Normalize and clamp score to [0, 1] range
+        raw_score = hit.get("_score", 0) / 10.0
+        clamped_score = max(0.0, min(raw_score, 1.0))
+
         contexts.append(
             RAGContext(
                 source_type="knowledge_base",
                 source_id=str(src.get("id") or hit["_id"]),
                 content=src.get("content", "")[:800],
-                score=hit.get("_score", 0) / 10.0,  # Normalize to 0-1 range
+                score=clamped_score,
                 metadata={
                     "title": src.get("title"),
                     "tags": src.get("tags", []),

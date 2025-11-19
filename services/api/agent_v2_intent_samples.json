@@ -1,7 +1,7 @@
 {
   "suspicious": {
-    "run_id": "e8914eaa-9360-49af-ad0f-7574cb729451",
-    "user_id": "pierre@applylens.app",
+    "run_id": "e0af3d28-5d6d-4782-92fe-b630a7b826bf",
+    "user_id": "leoklemet.pa@gmail.com",
     "query": "Show suspicious or scam emails from the last 14 days",
     "mode": "preview_only",
     "context": {
@@ -11,14 +11,18 @@
     },
     "status": "done",
     "intent": "suspicious",
-    "answer": "I am unable to retrieve any suspicious or scam emails due to a system error. Please check back later or ensure that the email search feature is enabled.",
+    "answer": "No suspicious or scam emails were found in the last 14 days. It's important to remain vigilant against potential threats, especially those that may use misleading domains or create a sense of urgency. Always verify the sender's email address and be cautious with any requests for personal information or payments.",
     "cards": [
       {
-        "kind": "error",
-        "title": "Error retrieving emails",
-        "body": "Email search and security scan features are currently disabled.",
+        "kind": "suspicious_summary",
+        "title": "No Suspicious Emails Found",
+        "body": "No suspicious or scam emails detected in the last 14 days.",
         "email_ids": [],
-        "meta": {}
+        "meta": {
+          "count": 0,
+          "time_window_days": 14,
+          "mode": "preview_only"
+        }
       }
     ],
     "tools_used": [
@@ -26,21 +30,21 @@
       "security_scan"
     ],
     "metrics": {
-      "emails_scanned": 0,
+      "emails_scanned": 50,
       "tool_calls": 2,
-      "rag_sources": 0,
-      "duration_ms": 10682,
+      "rag_sources": 3,
+      "duration_ms": 12727,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:35:11.321899",
-    "completed_at": "2025-11-19T20:35:11.321863",
+    "created_at": "2025-11-19T20:51:40.345822",
+    "completed_at": "2025-11-19T20:51:40.345784",
     "error_message": null
   },
   "bills": {
-    "run_id": "fb68c466-9793-4ca0-bdb7-fa0b5f67b76c",
-    "user_id": "pierre@applylens.app",
+    "run_id": "af7aa337-65e7-40b5-8093-37e4b3f4d472",
+    "user_id": "leoklemet.pa@gmail.com",
     "query": "Show my bills and invoices from the last 30 days",
     "mode": "preview_only",
     "context": {
@@ -50,12 +54,12 @@
     },
     "status": "done",
     "intent": "bills",
-    "answer": "I couldn't find any bills or invoices from the last 30 days due to a lack of available email data. Please check your email settings or try again later.",
+    "answer": "I couldn't find specific bills or invoices from the last 30 days based on the provided context. Please check your email for any recent billing statements or invoices directly.",
     "cards": [
       {
-        "kind": "error",
-        "title": "No Bills Found",
-        "body": "Unable to retrieve bills or invoices due to missing email data.",
+        "kind": "bills_summary",
+        "title": "No Recent Bills Found",
+        "body": "No bills or invoices were identified in the last 30 days.",
         "email_ids": [],
         "meta": {
           "count": 0,
@@ -69,21 +73,21 @@
       "applications_lookup"
     ],
     "metrics": {
-      "emails_scanned": 0,
+      "emails_scanned": 20,
       "tool_calls": 2,
-      "rag_sources": 0,
-      "duration_ms": 7584,
+      "rag_sources": 3,
+      "duration_ms": 3885,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:35:19.096120",
-    "completed_at": "2025-11-19T20:35:19.096092",
+    "created_at": "2025-11-19T20:51:44.437374",
+    "completed_at": "2025-11-19T20:51:44.437327",
     "error_message": null
   },
   "interviews": {
-    "run_id": "c7fba232-5fa9-401f-84f5-2859392a1712",
-    "user_id": "pierre@applylens.app",
+    "run_id": "941b9d75-15d3-41fb-abb2-7bf47365616c",
+    "user_id": "leoklemet.pa@gmail.com",
     "query": "Show my interview and recruiter emails from the last 30 days",
     "mode": "preview_only",
     "context": {
@@ -93,14 +97,18 @@
     },
     "status": "done",
     "intent": "interviews",
-    "answer": "I am unable to retrieve your interview and recruiter emails due to a technical issue. Please check back later or try again.",
+    "answer": "I found a total of 1540 emails related to your interviews and recruiter communications from the last 30 days. However, I cannot provide specific details about these emails due to a system error. Please check your email client directly for more information.",
     "cards": [
       {
         "kind": "error",
-        "title": "Error retrieving emails",
-        "body": "Technical issues are preventing access to your interview and recruiter emails.",
+        "title": "Error retrieving details",
+        "body": "Unable to fetch specific interview and recruiter email details due to a system error.",
         "email_ids": [],
-        "meta": {}
+        "meta": {
+          "count": 0,
+          "time_window_days": 30,
+          "mode": "preview_only"
+        }
       }
     ],
     "tools_used": [
@@ -109,21 +117,21 @@
       "thread_detail"
     ],
     "metrics": {
-      "emails_scanned": 0,
+      "emails_scanned": 20,
       "tool_calls": 3,
       "rag_sources": 0,
-      "duration_ms": 3908,
+      "duration_ms": 5208,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:35:23.201830",
-    "completed_at": "2025-11-19T20:35:23.201797",
+    "created_at": "2025-11-19T20:51:49.836521",
+    "completed_at": "2025-11-19T20:51:49.836493",
     "error_message": null
   },
   "followups": {
-    "run_id": "21337012-ea4a-48ef-8290-eb911fd415bb",
-    "user_id": "pierre@applylens.app",
+    "run_id": "369d7077-e160-4357-bf7d-276a433ada8e",
+    "user_id": "leoklemet.pa@gmail.com",
     "query": "Which recruiter or interview threads should I follow up on?",
     "mode": "preview_only",
     "context": {
@@ -133,14 +141,18 @@
     },
     "status": "done",
     "intent": "followups",
-    "answer": "I couldn't find any specific follow-up threads or recruiter emails to suggest. Please check your email for any recent communications regarding interviews or applications.",
+    "answer": "There are currently no specific recruiter or interview threads available for follow-up based on your query. Please check your email for any recent communications regarding applications or interviews.",
     "cards": [
       {
-        "kind": "error",
-        "title": "Unable to retrieve follow-ups",
-        "body": "No follow-up threads or recruiter emails were found due to missing data.",
+        "kind": "followups_summary",
+        "title": "No Follow-ups Found",
+        "body": "No recruiter or interview threads identified for follow-up.",
         "email_ids": [],
-        "meta": {}
+        "meta": {
+          "count": 0,
+          "time_window_days": 7,
+          "mode": "preview_only"
+        }
       }
     ],
     "tools_used": [
@@ -149,21 +161,21 @@
       "thread_detail"
     ],
     "metrics": {
-      "emails_scanned": 0,
+      "emails_scanned": 20,
       "tool_calls": 3,
       "rag_sources": 0,
-      "duration_ms": 4350,
+      "duration_ms": 4143,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:35:27.754462",
-    "completed_at": "2025-11-19T20:35:27.754427",
+    "created_at": "2025-11-19T20:51:54.179779",
+    "completed_at": "2025-11-19T20:51:54.179746",
     "error_message": null
   },
   "profile": {
-    "run_id": "d6cc5095-d9d0-415b-8682-eda8fef24918",
-    "user_id": "pierre@applylens.app",
+    "run_id": "559a6cd9-f69f-4c95-9a24-9e6afad0203c",
+    "user_id": "leoklemet.pa@gmail.com",
     "query": "Give me a profile and stats overview of my job-search inbox for the last 60 days",
     "mode": "preview_only",
     "context": {
@@ -173,12 +185,12 @@
     },
     "status": "done",
     "intent": "profile",
-    "answer": "I'm unable to provide a profile and stats overview of your job-search inbox due to technical issues with the data retrieval system.",
+    "answer": "I encountered an error while trying to retrieve your job-search inbox profile and stats. Unfortunately, I cannot provide a detailed overview at this moment due to a parsing issue. Please try again later or check your email settings.",
     "cards": [
       {
         "kind": "error",
-        "title": "Data Retrieval Error",
-        "body": "Unable to compute profile stats due to disabled search functionality.",
+        "title": "Error Retrieving Profile Stats",
+        "body": "Unable to fetch your job-search inbox profile due to a parsing error.",
         "email_ids": [],
         "meta": {}
       }
@@ -188,21 +200,21 @@
       "email_search"
     ],
     "metrics": {
-      "emails_scanned": 0,
+      "emails_scanned": 10,
       "tool_calls": 2,
-      "rag_sources": 0,
-      "duration_ms": 4740,
+      "rag_sources": 3,
+      "duration_ms": 4640,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:35:32.740115",
-    "completed_at": "2025-11-19T20:35:32.740068",
+    "created_at": "2025-11-19T20:51:59.025826",
+    "completed_at": "2025-11-19T20:51:59.025795",
     "error_message": null
   },
   "generic": {
-    "run_id": "f26b6bdc-c17a-4799-abad-b87586398459",
-    "user_id": "pierre@applylens.app",
+    "run_id": "ab1fd42a-e75a-4f18-aaeb-a2c1299ccf77",
+    "user_id": "leoklemet.pa@gmail.com",
     "query": "Show me my recent job application emails and what I should prioritize next",
     "mode": "preview_only",
     "context": {
@@ -212,30 +224,34 @@
     },
     "status": "done",
     "intent": "generic",
-    "answer": "I couldn't retrieve your recent job application emails due to a system error. Please check back later or try again.",
+    "answer": "You have a large number of emails related to job applications, but without specific details on the most recent ones, it's hard to prioritize. I recommend organizing your applications in a spreadsheet to track their status and setting up email filters for easier management. Focus on emails from legitimate domains and those that reference your resume or LinkedIn profile.",
     "cards": [
       {
-        "kind": "error",
-        "title": "Error Retrieving Emails",
-        "body": "Unable to access your job application emails at this time.",
+        "kind": "generic_summary",
+        "title": "Job Application Emails Overview",
+        "body": "1510 job application emails found; consider organizing them for better tracking.",
         "email_ids": [],
-        "meta": {}
+        "meta": {
+          "count": 0,
+          "time_window_days": 7,
+          "mode": "preview_only"
+        }
       }
     ],
     "tools_used": [
       "email_search"
     ],
     "metrics": {
-      "emails_scanned": 0,
+      "emails_scanned": 20,
       "tool_calls": 1,
-      "rag_sources": 0,
-      "duration_ms": 3620,
+      "rag_sources": 3,
+      "duration_ms": 4363,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T20:35:36.580233",
-    "completed_at": "2025-11-19T20:35:36.580203",
+    "created_at": "2025-11-19T20:52:03.675864",
+    "completed_at": "2025-11-19T20:52:03.675835",
     "error_message": null
   }
 }

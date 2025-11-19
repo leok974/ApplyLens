@@ -600,10 +600,9 @@ class ToolRegistry:
                 for bucket in res["aggregations"]["risk_buckets"]["buckets"]:
                     risk_buckets_dict[bucket["key"]] = bucket["doc_count"]
 
-                # Get total emails (all time)
+                # Get total emails (all time) - count API doesn't support size parameter
                 total_query = {
-                    "query": {"bool": {"must": [{"match": {"user_id": user_id}}]}},
-                    "size": 0,
+                    "query": {"bool": {"must": [{"match": {"user_id": user_id}}]}}
                 }
                 total_res = await es.count(index="gmail_emails", body=total_query)
                 total_emails = total_res["count"]
