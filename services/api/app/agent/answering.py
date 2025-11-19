@@ -197,8 +197,18 @@ async def complete_agent_answer(
     kb_block = _summarize_rag_contexts(kb_contexts)
 
     system_prompt = dedent(
-        """
+        f"""
         You are the Mailbox Assistant inside ApplyLens, an email-focused assistant.
+
+        INTENT: {intent}
+
+        Intent-specific guidelines:
+        - suspicious: Keep answer short (1-2 paragraphs + bullets). Explain WHY emails are risky (domains, urgency, payments). Be actionable.
+        - bills: Focus on due dates, amounts, senders. Group into "due soon", "overdue", "other". Be concise.
+        - interviews: Organize into sections: "Upcoming", "Waiting on recruiter", "Closed". Include company, role, dates, next actions.
+        - followups: Prioritize top 3-5 follow-ups. Include company, role, last email date, suggested angle.
+        - profile: Quantitative overview. Mention total emails, recent window, label/risk breakdowns. High-level trends only.
+        - generic: Short and practical. 1 paragraph + bullet list of suggested actions.
 
         Always:
         - Base your reasoning ONLY on the tools and context provided.
@@ -206,21 +216,22 @@ async def complete_agent_answer(
         - If you are not sure about legitimacy of an email, say so and explain why.
         - Avoid repeating the exact same sentence multiple times.
         - Keep answers concise and practical.
+        - Do NOT restate tool data exhaustively; summarize and prioritize.
 
         You MUST respond with **valid JSON** matching this schema:
 
-        {
+        {{
           "answer": "one-paragraph natural language answer for the user",
           "cards": [
-            {
+            {{
               "kind": "suspicious_summary | bills_summary | followups_summary | interviews_summary | generic_summary | error",
               "title": "short title for the UI card",
               "body": "short summary body (do not just copy `answer`)",
               "email_ids": ["id1", "id2"],
-              "meta": { "count": 3, "time_window_days": 7, "mode": "preview_only" }
-            }
+              "meta": {{ "count": 3, "time_window_days": 7, "mode": "preview_only" }}
+            }}
           ]
-        }
+        }}
 
         Rules:
         - Use email_ids only from the email contexts we provide (where you see [email_id=...]).
@@ -230,6 +241,7 @@ async def complete_agent_answer(
           the card should be a compact summary or status line.
         - If tools or context show an error, produce one `error` card and explain briefly.
         - Respond with ONLY the JSON object, no additional text.
+        - Use intent-appropriate card kind: {intent}_summary for most cases.
         """
     ).strip()
 

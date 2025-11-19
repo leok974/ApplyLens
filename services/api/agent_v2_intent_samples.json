@@ -1,0 +1,261 @@
+{
+  "suspicious": {
+    "run_id": "88830da1-bde4-430f-ae0c-535317183b84",
+    "user_id": "pierre@applylens.app",
+    "query": "Show suspicious or scam emails from the last 14 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "suspicious",
+    "answer": "There are no suspicious or scam emails found in the last 14 days. It's important to remain vigilant and look for signs of phishing, such as unusual sender domains or urgent payment requests.",
+    "cards": [
+      {
+        "kind": "suspicious_summary",
+        "title": "No Suspicious Emails Found",
+        "body": "No suspicious or scam emails detected in the last 14 days.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 14,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "security_scan"
+    ],
+    "metrics": {
+      "emails_scanned": 0,
+      "tool_calls": 2,
+      "rag_sources": 3,
+      "duration_ms": 4197,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T19:25:39.226626",
+    "completed_at": "2025-11-19T19:25:39.226580",
+    "error_message": null
+  },
+  "bills": {
+    "run_id": "b1d956dd-715f-4fa8-8d74-91897177c7ce",
+    "user_id": "pierre@applylens.app",
+    "query": "Show my bills and invoices from the last 30 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "bills",
+    "answer": "There are no bills or invoices found from the last 30 days in your email. Please check your inbox or try a different query.",
+    "cards": [
+      {
+        "kind": "bills_summary",
+        "title": "No Bills Found",
+        "body": "No bills or invoices were located in the past month.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 30,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "applications_lookup"
+    ],
+    "metrics": {
+      "emails_scanned": 0,
+      "tool_calls": 2,
+      "rag_sources": 3,
+      "duration_ms": 3646,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T19:25:43.078493",
+    "completed_at": "2025-11-19T19:25:43.078464",
+    "error_message": null
+  },
+  "interviews": {
+    "run_id": "5fad5b0f-3993-4fd6-add5-65ed0446d942",
+    "user_id": "pierre@applylens.app",
+    "query": "Show my interview and recruiter emails from the last 30 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "interviews",
+    "answer": "There are no interview or recruiter emails found in the last 30 days.",
+    "cards": [
+      {
+        "kind": "interviews_summary",
+        "title": "No Interviews Found",
+        "body": "No interview or recruiter emails were located in the specified timeframe.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 30,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "applications_lookup",
+      "thread_detail"
+    ],
+    "metrics": {
+      "emails_scanned": 0,
+      "tool_calls": 3,
+      "rag_sources": 0,
+      "duration_ms": 6710,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T19:25:50.017513",
+    "completed_at": "2025-11-19T19:25:50.017476",
+    "error_message": null
+  },
+  "followups": {
+    "run_id": "6ac9e623-948a-4b13-9e86-7518ae0520c2",
+    "user_id": "pierre@applylens.app",
+    "query": "Which recruiter or interview threads should I follow up on?",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "interviews",
+    "answer": "There are currently no interview threads or recruiter emails available for follow-up. Please check back later or ensure you have applied to relevant positions.",
+    "cards": [
+      {
+        "kind": "interviews_summary",
+        "title": "No Interview Threads Found",
+        "body": "No emails related to interviews or recruiters available for follow-up.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 7,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "applications_lookup",
+      "thread_detail"
+    ],
+    "metrics": {
+      "emails_scanned": 0,
+      "tool_calls": 3,
+      "rag_sources": 0,
+      "duration_ms": 3649,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T19:25:53.865367",
+    "completed_at": "2025-11-19T19:25:53.865336",
+    "error_message": null
+  },
+  "profile": {
+    "run_id": "a1f7d20e-e7f6-49cd-887a-9d6ed741be72",
+    "user_id": "pierre@applylens.app",
+    "query": "Give me a profile and stats overview of my job-search inbox for the last 60 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "profile",
+    "answer": "It seems there are no emails in your job-search inbox for the last 60 days, which means I cannot provide a profile or stats overview. You may want to check your email organization or ensure that you're looking in the correct folder.",
+    "cards": [
+      {
+        "kind": "error",
+        "title": "No Emails Found",
+        "body": "There are no emails to analyze for your job-search inbox in the last 60 days.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 60,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "profile_stats",
+      "email_search"
+    ],
+    "metrics": {
+      "emails_scanned": 0,
+      "tool_calls": 2,
+      "rag_sources": 3,
+      "duration_ms": 4617,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T19:25:58.678688",
+    "completed_at": "2025-11-19T19:25:58.678655",
+    "error_message": null
+  },
+  "generic": {
+    "run_id": "4bb012ee-be8a-4049-89c8-990c9076fc2c",
+    "user_id": "pierre@applylens.app",
+    "query": "Show me my recent job application emails and what I should prioritize next",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "generic",
+    "answer": "It seems there are no recent job application emails in your inbox to review. To stay organized and prioritize your job applications effectively, consider maintaining a spreadsheet that tracks all applications, including company names, positions, dates, and statuses. Additionally, setting up email filters can help you manage recruiter responses more efficiently.",
+    "cards": [
+      {
+        "kind": "generic_summary",
+        "title": "No Recent Job Applications Found",
+        "body": "There are currently no job application emails to prioritize.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 7,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search"
+    ],
+    "metrics": {
+      "emails_scanned": 0,
+      "tool_calls": 1,
+      "rag_sources": 3,
+      "duration_ms": 4628,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T19:26:03.494841",
+    "completed_at": "2025-11-19T19:26:03.494810",
+    "error_message": null
+  }
+}

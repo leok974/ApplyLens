@@ -56,6 +56,7 @@
           "profile-warehouse.spec.ts",
           "**/auth.*.spec.ts",
           "settings-logout.spec.ts",
+          "settings-companion-experimental-styles.spec.ts",
           "e2e/email-risk-banner.spec.ts",
           "e2e/ux-heartbeat.spec.ts",
           "e2e/search-form.spec.ts",
@@ -88,19 +89,19 @@
   "suites": [],
   "errors": [
     {
-      "message": "Error: apiRequestContext.get: connect ECONNREFUSED 127.0.0.1:8888\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:8888/api/auth/csrf\u001b[22m\n\u001b[2m    - user-agent: Playwright/1.56.0 (x64; windows 10.0) node/22.18\u001b[22m\n\u001b[2m    - accept: application/json\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
-      "stack": "Error: apiRequestContext.get: connect ECONNREFUSED 127.0.0.1:8888\nCall log:\n\u001b[2m  - → GET http://127.0.0.1:8888/api/auth/csrf\u001b[22m\n\u001b[2m    - user-agent: Playwright/1.56.0 (x64; windows 10.0) node/22.18\u001b[22m\n\u001b[2m    - accept: application/json\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at globalSetup (D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts:18:30)",
+      "message": "Error: CSRF cookie not set by server",
+      "stack": "Error: CSRF cookie not set by server\n    at globalSetup (D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts:27:11)",
       "location": {
         "file": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts",
-        "column": 30,
-        "line": 18
+        "column": 11,
+        "line": 27
       },
-      "snippet": "\u001b[90m   at \u001b[39msetup\\global-setup.ts:18\n\n\u001b[0m \u001b[90m 16 |\u001b[39m   \u001b[90m// 1) CSRF cookie\u001b[39m\n \u001b[90m 17 |\u001b[39m   console\u001b[33m.\u001b[39mlog(\u001b[32m'   📝 Getting CSRF token...'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m   \u001b[36mconst\u001b[39m csrfResp \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m ctx\u001b[33m.\u001b[39m\u001b[36mget\u001b[39m(\u001b[32m'/api/auth/csrf'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 19 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mcsrfResp\u001b[33m.\u001b[39mok()) {\n \u001b[90m 20 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`CSRF endpoint failed: ${csrfResp.status()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 21 |\u001b[39m   }\u001b[0m"
+      "snippet": "\u001b[90m   at \u001b[39msetup\\global-setup.ts:27\n\n\u001b[0m \u001b[90m 25 |\u001b[39m   \u001b[36mconst\u001b[39m csrfCookie \u001b[33m=\u001b[39m storage\u001b[33m.\u001b[39mcookies\u001b[33m.\u001b[39mfind(c \u001b[33m=>\u001b[39m c\u001b[33m.\u001b[39mname \u001b[33m===\u001b[39m \u001b[32m'csrf_token'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 26 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mcsrfCookie) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 27 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'CSRF cookie not set by server'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 28 |\u001b[39m   }\n \u001b[90m 29 |\u001b[39m   console\u001b[33m.\u001b[39mlog(\u001b[32m'   ✓ CSRF token obtained:'\u001b[39m\u001b[33m,\u001b[39m csrfCookie\u001b[33m.\u001b[39mvalue\u001b[33m.\u001b[39msubstring(\u001b[35m0\u001b[39m\u001b[33m,\u001b[39m \u001b[35m20\u001b[39m) \u001b[33m+\u001b[39m \u001b[32m'...'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 30 |\u001b[39m\u001b[0m"
     }
   ],
   "stats": {
-    "startTime": "2025-11-13T00:08:50.913Z",
-    "duration": 39.79399999999998,
+    "startTime": "2025-11-19T19:11:19.799Z",
+    "duration": 63.70499999999993,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,

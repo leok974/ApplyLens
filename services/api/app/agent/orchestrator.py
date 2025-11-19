@@ -43,41 +43,71 @@ MailboxIntent = Literal[
 INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
     "suspicious": (
         "You are ApplyLens's email security assistant.\n"
-        "You scan the user's job-search inbox for scams and risky emails.\n"
-        "You MUST:\n"
-        "- Explain clearly why each email is suspicious or safe.\n"
-        "- Call out red flags (sender domain, links, demands, urgency, payment requests).\n"
-        "- Suggest concrete next steps: ignore, report, or respond carefully.\n"
-        "- Be conservative and avoid false alarms.\n"
+        "The user is looking for potentially risky or scam emails in their job-search inbox.\n"
+        "\n"
+        "Write responses that are:\n"
+        "- Short (1–2 short paragraphs max) plus a compact bullet list.\n"
+        "- Concrete and grounded in the tool data (domains, subjects, links, risk scores).\n"
+        "- Actionable: tell the user exactly what to do next (ignore, delete, report, or reply carefully).\n"
+        "\n"
+        "When you describe risky emails, always explain WHY they are risky using 2–4 bullet points per cluster "
+        "(sender domain, payment requests, urgency, mismatched URLs, no company details). "
+        "If no suspicious emails are found, say that clearly and briefly.\n"
     ),
     "bills": (
         "You are ApplyLens's billing assistant.\n"
-        "You summarize bills and invoices from the user's inbox.\n"
-        "Focus on due dates, amounts, vendors, and anything overdue.\n"
-        "Highlight what's urgent versus routine.\n"
+        "The user wants an overview of bills and invoices in their inbox.\n"
+        "\n"
+        "Write responses that are:\n"
+        "- Focused on due dates, amounts, and senders.\n"
+        "- Grouped into 'due soon', 'overdue', and 'other' when possible.\n"
+        "- Short: a 1-paragraph summary, then a small list of the most important bills.\n"
+        "\n"
+        "If you do not find any bills or invoices, say that plainly and suggest how the user could refine the query.\n"
     ),
     "interviews": (
         "You are ApplyLens's interview assistant.\n"
-        "You help the user manage recruiter and interview threads.\n"
-        "Identify upcoming interviews, pending scheduling emails, and follow-ups needed.\n"
-        "Summarize the context of each thread clearly and suggest next replies.\n"
+        "The user wants help understanding recruiter and interview-related emails.\n"
+        "\n"
+        "Write responses that are:\n"
+        "- Organized into sections: 'Upcoming interviews', 'Waiting on recruiter', 'Closed / done'.\n"
+        "- Specific about company, role, date/time, and what the user should do next.\n"
+        "- Brief: 1–2 paragraphs plus a bullet list of concrete next actions.\n"
+        "\n"
+        "If you find no interview-related emails, say that clearly and suggest whether the user should widen the date range.\n"
     ),
     "followups": (
         "You are ApplyLens's follow-up assistant.\n"
-        "You find conversations where the user should follow up: recruiter emails, "
-        "applications with no reply, and ongoing threads.\n"
-        "Prioritize opportunities where a polite nudge could help.\n"
+        "The user wants to know where they should send a follow-up email.\n"
+        "\n"
+        "Write responses that are:\n"
+        "- Prioritized: show the top 3–5 highest-impact follow-ups first.\n"
+        "- Specific: include company, role, last email date, and suggested follow-up angle.\n"
+        "- Concise: one short paragraph and then a numbered list of suggested follow-ups.\n"
+        "\n"
+        "If there is nothing to follow up on, say that explicitly and recommend what timeframe to watch next.\n"
     ),
     "profile": (
         "You are ApplyLens's mailbox analyst.\n"
         "You summarize the user's job-search mailbox activity and risk profile.\n"
-        "Use counts and trends (last N days vs total) to give a concise overview.\n"
-        "Mention security risk levels only if relevant.\n"
+        "\n"
+        "Write responses that are:\n"
+        "- Quantitative: mention total emails, emails in the recent window, and rough label/risk breakdowns.\n"
+        "- High level: focus on trends, not individual messages.\n"
+        "- Short: one overview paragraph plus 3–5 bullet points of key insights.\n"
+        "\n"
+        "Only mention security risk if the risk buckets show non-trivial medium/high/critical values.\n"
     ),
     "generic": (
         "You are ApplyLens's mailbox assistant.\n"
         "You help the user understand and manage their job-search inbox.\n"
-        "Answer clearly, cite concrete email patterns, and suggest next steps.\n"
+        "\n"
+        "Write responses that are:\n"
+        "- Grounded in the tool data (emails, stats) and never fabricated.\n"
+        "- Short and practical: 1 paragraph plus a bullet list of suggested actions.\n"
+        "- Focused on prioritization: what should the user read or act on next.\n"
+        "\n"
+        "If the tools show no relevant emails, admit that clearly and suggest how the user could refine their query.\n"
     ),
 }
 
@@ -93,18 +123,22 @@ def classify_intent(query: str) -> str:
     """
     q = query.lower()
 
+    # Check more specific intents first to avoid false matches
+
     if "suspicious" in q or "scam" in q or "phishing" in q or "fraud" in q:
         return "suspicious"
 
     if "bill" in q or "bills" in q or "invoice" in q or "invoices" in q:
         return "bills"
 
-    if "interview" in q or "recruiter" in q or "hiring manager" in q:
-        return "interviews"
-
+    # Check for follow-ups BEFORE interviews (since queries may contain both)
     if "follow up" in q or "follow-up" in q or "followups" in q or "follow ups" in q:
         return "followups"
 
+    if "interview" in q or "recruiter" in q or "hiring manager" in q:
+        return "interviews"
+
+    # Profile/stats queries
     if "profile" in q or "stats" in q or "statistics" in q or "overview" in q:
         return "profile"
 
@@ -124,45 +158,48 @@ def build_llm_messages(
     """
     system_prompt = INTENT_SYSTEM_PROMPTS.get(intent, INTENT_SYSTEM_PROMPTS["generic"])
 
-    # Summarize tool outputs in a compact, LLM-friendly way.
+    # Build a compact, LLM-friendly summary of tool outputs.
     tool_summaries: List[str] = []
     for tr in tool_results:
         if tr.status != "success":
             continue
+        name = tr.tool_name
+        data = tr.data or {}
 
-        if tr.tool_name == "email_search":
-            data = tr.data or {}
-            total = data.get("total", data.get("total_found", 0))
+        if name == "email_search":
+            total = data.get("total") or data.get("total_found") or 0
+            window_days = data.get("time_window_days") or data.get(
+                "time_window", {}
+            ).get("days")
+            label = f"{total} matching emails"
+            if window_days:
+                label += f" in the last {window_days} days"
+            tool_summaries.append(f"- email_search: {label}.")
+
+        elif name == "security_scan":
+            suspicious = (
+                data.get("suspicious_count") or data.get("suspicious_emails") or 0
+            )
+            risky_domains = data.get("risky_domains") or []
+            dom_label = ", ".join(risky_domains[:5]) if risky_domains else "none"
             tool_summaries.append(
-                f"- email_search: scanned {total} emails matching the query/context."
+                f"- security_scan: {suspicious} suspicious emails; risky domains: {dom_label}."
             )
 
-        elif tr.tool_name == "security_scan":
-            data = tr.data or {}
-            suspicious = data.get("suspicious_count", data.get("suspicious_emails", 0))
-            domains = data.get("risky_domains") or []
-            tool_summaries.append(
-                f"- security_scan: found {suspicious} suspicious emails; "
-                f"risky domains: {', '.join(domains) if domains else 'none'}."
-            )
-
-        elif tr.tool_name == "thread_detail":
-            data = tr.data or {}
-            count = len(data.get("emails", []))
+        elif name == "thread_detail":
+            emails = data.get("emails") or []
             tid = data.get("thread_id")
             tool_summaries.append(
-                f"- thread_detail: loaded {count} messages in thread {tid!r}."
+                f"- thread_detail: {len(emails)} messages in thread {tid!r}."
             )
 
-        elif tr.tool_name == "applications_lookup":
-            data = tr.data or {}
-            count = len(data.get("applications", []))
+        elif name == "applications_lookup":
+            apps = data.get("applications") or []
             tool_summaries.append(
-                f"- applications_lookup: found {count} applications linked to these emails."
+                f"- applications_lookup: {len(apps)} applications linked to these emails."
             )
 
-        elif tr.tool_name == "profile_stats":
-            data = tr.data or {}
+        elif name == "profile_stats":
             total = data.get("total_emails")
             window_total = data.get("total_in_window")
             days = data.get("time_window_days")
@@ -170,25 +207,25 @@ def build_llm_messages(
                 f"- profile_stats: {total} total emails; {window_total} in the last {days} days."
             )
 
-    tool_context_block = (
-        "Tool context:\n" + "\n".join(tool_summaries)
+    condensed_context = (
+        "Here is a concise summary of the tools that were called and what they found:\n"
+        + "\n".join(tool_summaries)
         if tool_summaries
-        else "Tool context: No tool results were available.\n"
+        else "No relevant tool data was available for this query.\n"
     )
 
     user_instructions = (
-        "User query:\n"
-        f"{query}\n\n"
-        "Using the tool context above, answer the user's question.\n"
-        "Always be specific and grounded in the data; if the tools show nothing, say so.\n"
+        f"User query:\n{query}\n\n"
+        "Use the summary of tool results above to answer the question.\n"
+        "Do NOT restate the raw tool data exhaustively; instead, summarize and prioritize.\n"
+        "If the tools indicate there is nothing relevant, say that clearly.\n"
     )
 
-    messages = [
+    return [
         {"role": "system", "content": system_prompt},
-        {"role": "system", "content": tool_context_block},
+        {"role": "system", "content": condensed_context},
         {"role": "user", "content": user_instructions},
     ]
-    return messages
 
 
 class MailboxAgentOrchestrator:
