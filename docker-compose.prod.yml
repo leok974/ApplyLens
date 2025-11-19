@@ -175,6 +175,9 @@ services:
     environment:
       # Database
       DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-4c9248fc7d7d477d919ccc431b1bbd36!PgA1}@db:5432/${POSTGRES_DB:-applylens}"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-4c9248fc7d7d477d919ccc431b1bbd36!PgA1}
+      POSTGRES_DB: ${POSTGRES_DB:-applylens}
 
       # API Configuration
       ENV: production
@@ -411,6 +414,9 @@ services:
       - VITE_APP_VERSION=0.5.2
       - VITE_BUILD_GIT_SHA=912a6b8
       - VITE_BUILD_TIME=2025-11-18T21:07:37Z
+
+      # Feature Flags
+      - VITE_FEATURE_COMPANION=1
     ports:
       - "${WEB_PORT:-5175}:80"
     depends_on:

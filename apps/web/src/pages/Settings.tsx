@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { logout } from '@/api/auth'
 import { getCurrentUser, fetchAndCacheCurrentUser } from '@/api/auth'
 import { VersionCard } from '@/components/settings/VersionCard'
+import { HealthBadge } from '@/components/HealthBadge'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -154,6 +155,20 @@ export default function Settings() {
             </Button>
           </div>
         )}
+
+        {/* Warehouse Status */}
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+            Warehouse Status
+          </h3>
+          <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground max-w-[70%]">
+              Shows the health of your ApplyLens analytics warehouse and recent
+              backfills. If something looks off in charts or scoring, check here.
+            </p>
+            <HealthBadge />
+          </div>
+        </div>
 
         {/* About Section */}
         <section className="space-y-3 mt-6">

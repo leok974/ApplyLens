@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import ThemeToggle from "@/components/ThemeToggle"
-import { HealthBadge } from "@/components/HealthBadge"
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { relabel, rebuildProfile, startBackfillJob, cancelJob } from "@/lib/api"
 import { useState, useEffect } from "react"
@@ -266,9 +265,6 @@ export function AppHeader() {
 
           {/* ACTIONS — keep to the right; never shrink smaller than content */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Warehouse Health Badge */}
-            <HealthBadge />
-
             {/* Job Progress Indicator */}
             {jobStatus && jobStatus.state !== 'done' && (
               <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-md bg-muted border">
