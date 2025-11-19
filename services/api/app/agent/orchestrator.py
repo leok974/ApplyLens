@@ -450,8 +450,8 @@ class MailboxAgentOrchestrator:
                 (
                     "security_scan",
                     {
-                        "time_window_days": time_window_days,
-                        "limit": 50,
+                        "email_ids": [],  # Will be populated from email_search
+                        "force_rescan": False,
                     },
                 )
             )
@@ -520,6 +520,10 @@ class MailboxAgentOrchestrator:
 
                 # Populate dynamic params from previous tool results
                 if tool_name == "applications_lookup" and not params.get("email_ids"):
+                    # Use email_ids from email_search
+                    params["email_ids"] = email_ids_from_search[:50]  # Cap at 50
+
+                if tool_name == "security_scan" and not params.get("email_ids"):
                     # Use email_ids from email_search
                     params["email_ids"] = email_ids_from_search[:50]  # Cap at 50
 

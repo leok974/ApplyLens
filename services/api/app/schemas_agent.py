@@ -175,7 +175,7 @@ class EmailSearchParams(BaseModel):
 class SecurityScanParams(BaseModel):
     """Parameters for security_scan tool."""
 
-    email_ids: List[str]
+    email_ids: List[str] = Field(default_factory=list)
     force_rescan: bool = False
 
 

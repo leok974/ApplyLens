@@ -1,6 +1,6 @@
 {
   "suspicious": {
-    "run_id": "88830da1-bde4-430f-ae0c-535317183b84",
+    "run_id": "ce85514e-42ab-400a-b519-26a686c5dd96",
     "user_id": "pierre@applylens.app",
     "query": "Show suspicious or scam emails from the last 14 days",
     "mode": "preview_only",
@@ -11,18 +11,14 @@
     },
     "status": "done",
     "intent": "suspicious",
-    "answer": "There are no suspicious or scam emails found in the last 14 days. It's important to remain vigilant and look for signs of phishing, such as unusual sender domains or urgent payment requests.",
+    "answer": "I cannot retrieve any suspicious or scam emails due to errors in the email search and security scan processes. Please check back later or ensure that the necessary tools are enabled.",
     "cards": [
       {
-        "kind": "suspicious_summary",
-        "title": "No Suspicious Emails Found",
-        "body": "No suspicious or scam emails detected in the last 14 days.",
+        "kind": "error",
+        "title": "Error retrieving emails",
+        "body": "Unable to fetch suspicious emails due to tool errors.",
         "email_ids": [],
-        "meta": {
-          "count": 0,
-          "time_window_days": 14,
-          "mode": "preview_only"
-        }
+        "meta": {}
       }
     ],
     "tools_used": [
@@ -32,18 +28,18 @@
     "metrics": {
       "emails_scanned": 0,
       "tool_calls": 2,
-      "rag_sources": 3,
-      "duration_ms": 4197,
+      "rag_sources": 0,
+      "duration_ms": 13756,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T19:25:39.226626",
-    "completed_at": "2025-11-19T19:25:39.226580",
+    "created_at": "2025-11-19T20:19:27.683474",
+    "completed_at": "2025-11-19T20:19:27.683424",
     "error_message": null
   },
   "bills": {
-    "run_id": "b1d956dd-715f-4fa8-8d74-91897177c7ce",
+    "run_id": "eac2c1dd-f872-40d9-9500-a3a5344be69e",
     "user_id": "pierre@applylens.app",
     "query": "Show my bills and invoices from the last 30 days",
     "mode": "preview_only",
@@ -54,12 +50,12 @@
     },
     "status": "done",
     "intent": "bills",
-    "answer": "There are no bills or invoices found from the last 30 days in your email. Please check your inbox or try a different query.",
+    "answer": "I couldn't find any bills or invoices from the last 30 days due to a lack of available email data. Please check your email settings or try again later.",
     "cards": [
       {
-        "kind": "bills_summary",
+        "kind": "error",
         "title": "No Bills Found",
-        "body": "No bills or invoices were located in the past month.",
+        "body": "Unable to retrieve bills or invoices due to missing email data.",
         "email_ids": [],
         "meta": {
           "count": 0,
@@ -75,18 +71,18 @@
     "metrics": {
       "emails_scanned": 0,
       "tool_calls": 2,
-      "rag_sources": 3,
-      "duration_ms": 3646,
+      "rag_sources": 0,
+      "duration_ms": 4671,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T19:25:43.078493",
-    "completed_at": "2025-11-19T19:25:43.078464",
+    "created_at": "2025-11-19T20:19:32.572055",
+    "completed_at": "2025-11-19T20:19:32.572025",
     "error_message": null
   },
   "interviews": {
-    "run_id": "5fad5b0f-3993-4fd6-add5-65ed0446d942",
+    "run_id": "2d73dd1c-ccba-458c-9c30-5c0f7f6c98f9",
     "user_id": "pierre@applylens.app",
     "query": "Show my interview and recruiter emails from the last 30 days",
     "mode": "preview_only",
@@ -97,18 +93,14 @@
     },
     "status": "done",
     "intent": "interviews",
-    "answer": "There are no interview or recruiter emails found in the last 30 days.",
+    "answer": "I am unable to retrieve your interview and recruiter emails due to a system error. Please check back later or try again.",
     "cards": [
       {
-        "kind": "interviews_summary",
-        "title": "No Interviews Found",
-        "body": "No interview or recruiter emails were located in the specified timeframe.",
+        "kind": "error",
+        "title": "Error Retrieving Emails",
+        "body": "Unable to access interview and recruiter emails due to system issues.",
         "email_ids": [],
-        "meta": {
-          "count": 0,
-          "time_window_days": 30,
-          "mode": "preview_only"
-        }
+        "meta": {}
       }
     ],
     "tools_used": [
@@ -120,17 +112,17 @@
       "emails_scanned": 0,
       "tool_calls": 3,
       "rag_sources": 0,
-      "duration_ms": 6710,
+      "duration_ms": 3974,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T19:25:50.017513",
-    "completed_at": "2025-11-19T19:25:50.017476",
+    "created_at": "2025-11-19T20:19:36.738906",
+    "completed_at": "2025-11-19T20:19:36.738859",
     "error_message": null
   },
   "followups": {
-    "run_id": "6ac9e623-948a-4b13-9e86-7518ae0520c2",
+    "run_id": "9a4c51d9-59a5-4110-860c-991a292ec8af",
     "user_id": "pierre@applylens.app",
     "query": "Which recruiter or interview threads should I follow up on?",
     "mode": "preview_only",
@@ -140,19 +132,15 @@
       "session_id": null
     },
     "status": "done",
-    "intent": "interviews",
-    "answer": "There are currently no interview threads or recruiter emails available for follow-up. Please check back later or ensure you have applied to relevant positions.",
+    "intent": "followups",
+    "answer": "I couldn't retrieve any information about your recruiter or interview threads to follow up on due to technical issues. Please check back later or ensure that the necessary data is available.",
     "cards": [
       {
-        "kind": "interviews_summary",
-        "title": "No Interview Threads Found",
-        "body": "No emails related to interviews or recruiters available for follow-up.",
+        "kind": "error",
+        "title": "Unable to Retrieve Follow-ups",
+        "body": "There was an error fetching your follow-up threads. Please try again later.",
         "email_ids": [],
-        "meta": {
-          "count": 0,
-          "time_window_days": 7,
-          "mode": "preview_only"
-        }
+        "meta": {}
       }
     ],
     "tools_used": [
@@ -164,17 +152,17 @@
       "emails_scanned": 0,
       "tool_calls": 3,
       "rag_sources": 0,
-      "duration_ms": 3649,
+      "duration_ms": 6930,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T19:25:53.865367",
-    "completed_at": "2025-11-19T19:25:53.865336",
+    "created_at": "2025-11-19T20:19:43.863534",
+    "completed_at": "2025-11-19T20:19:43.863498",
     "error_message": null
   },
   "profile": {
-    "run_id": "a1f7d20e-e7f6-49cd-887a-9d6ed741be72",
+    "run_id": "2f117a42-e148-4374-8960-4ee91fc9cd5e",
     "user_id": "pierre@applylens.app",
     "query": "Give me a profile and stats overview of my job-search inbox for the last 60 days",
     "mode": "preview_only",
@@ -185,18 +173,14 @@
     },
     "status": "done",
     "intent": "profile",
-    "answer": "It seems there are no emails in your job-search inbox for the last 60 days, which means I cannot provide a profile or stats overview. You may want to check your email organization or ensure that you're looking in the correct folder.",
+    "answer": "I'm unable to provide a profile and stats overview of your job-search inbox due to a technical issue with the data retrieval system.",
     "cards": [
       {
         "kind": "error",
-        "title": "No Emails Found",
-        "body": "There are no emails to analyze for your job-search inbox in the last 60 days.",
+        "title": "Data Retrieval Error",
+        "body": "Unable to compute profile stats due to disabled data access.",
         "email_ids": [],
-        "meta": {
-          "count": 0,
-          "time_window_days": 60,
-          "mode": "preview_only"
-        }
+        "meta": {}
       }
     ],
     "tools_used": [
@@ -206,18 +190,18 @@
     "metrics": {
       "emails_scanned": 0,
       "tool_calls": 2,
-      "rag_sources": 3,
-      "duration_ms": 4617,
+      "rag_sources": 0,
+      "duration_ms": 3324,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T19:25:58.678688",
-    "completed_at": "2025-11-19T19:25:58.678655",
+    "created_at": "2025-11-19T20:19:47.385622",
+    "completed_at": "2025-11-19T20:19:47.385592",
     "error_message": null
   },
   "generic": {
-    "run_id": "4bb012ee-be8a-4049-89c8-990c9076fc2c",
+    "run_id": "033f1abb-a168-4aa9-8052-69343e418e82",
     "user_id": "pierre@applylens.app",
     "query": "Show me my recent job application emails and what I should prioritize next",
     "mode": "preview_only",
@@ -228,18 +212,14 @@
     },
     "status": "done",
     "intent": "generic",
-    "answer": "It seems there are no recent job application emails in your inbox to review. To stay organized and prioritize your job applications effectively, consider maintaining a spreadsheet that tracks all applications, including company names, positions, dates, and statuses. Additionally, setting up email filters can help you manage recruiter responses more efficiently.",
+    "answer": "I couldn't retrieve your recent job application emails due to a system error. Please check back later or try again.",
     "cards": [
       {
-        "kind": "generic_summary",
-        "title": "No Recent Job Applications Found",
-        "body": "There are currently no job application emails to prioritize.",
+        "kind": "error",
+        "title": "Error Retrieving Emails",
+        "body": "Unable to access your job application emails at this time.",
         "email_ids": [],
-        "meta": {
-          "count": 0,
-          "time_window_days": 7,
-          "mode": "preview_only"
-        }
+        "meta": {}
       }
     ],
     "tools_used": [
@@ -248,14 +228,14 @@
     "metrics": {
       "emails_scanned": 0,
       "tool_calls": 1,
-      "rag_sources": 3,
-      "duration_ms": 4628,
+      "rag_sources": 0,
+      "duration_ms": 3146,
       "redis_hits": 0,
       "redis_misses": 0,
       "llm_used": "ollama"
     },
-    "created_at": "2025-11-19T19:26:03.494841",
-    "completed_at": "2025-11-19T19:26:03.494810",
+    "created_at": "2025-11-19T20:19:50.728446",
+    "completed_at": "2025-11-19T20:19:50.728413",
     "error_message": null
   }
 }
