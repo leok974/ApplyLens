@@ -21,6 +21,7 @@ from app.schemas_agent import (
     EmailSearchResult,
     SecurityScanResult,
     ThreadDetailResult,
+    DomainRiskCache,
 )
 from app.es import ES_URL, ES_ENABLED
 from elasticsearch import AsyncElasticsearch
@@ -314,16 +315,20 @@ class ToolRegistry:
                 # Check Redis cache first
                 cached_risk = await get_domain_risk(domain)
                 if cached_risk is not None:
-                    risk_score = cached_risk.get("risk_score", 0.0)
+                    risk_score = cached_risk.risk_score
                 else:
                     # Cache the domain risk for future use
                     await set_domain_risk(
                         domain,
-                        {
-                            "risk_score": risk_score,
-                            "signals": [],
-                            "checked_at": datetime.utcnow().isoformat(),
-                        },
+                        DomainRiskCache(
+                            domain=domain,
+                            risk_score=risk_score,
+                            first_seen_at=datetime.utcnow(),
+                            last_seen_at=datetime.utcnow(),
+                            email_count=1,
+                            flags=[],
+                            evidence={},
+                        ),
                     )
 
                 # Categorize email
