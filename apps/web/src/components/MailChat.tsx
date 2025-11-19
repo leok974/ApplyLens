@@ -113,9 +113,6 @@ export default function MailChat() {
   const streamHeartbeatRef = useRef<number | null>(null)
   const currentEventSourceRef = useRef<EventSource | null>(null)
 
-  // Phase 3: Typing indicator for conversational feel
-  const [isAssistantTyping, setIsAssistantTyping] = useState(false)
-
   // Phase 3: Short-term memory for follow-up context
   const [lastResultContext, setLastResultContext] = useState<null | {
     intent: string
@@ -662,8 +659,6 @@ export default function MailChat() {
 
     // NORMAL PATH: hit backend
     setBusy(true)
-    setIsAssistantTyping(true)  // Phase 3: Show typing indicator
-    console.debug('[Chat] typing...')  // Development debug
     try {
       // Phase 3: Include context hint if query looks like anaphora
       const contextHint = looksLikeAnaphora(userText) && lastResultContext
@@ -729,8 +724,6 @@ export default function MailChat() {
       ])
     } finally {
       setBusy(false)
-      setIsAssistantTyping(false)  // Phase 3: Hide typing indicator
-      console.debug('[Chat] typing complete')
     }
   }
 
@@ -1039,18 +1032,11 @@ export default function MailChat() {
                   {/* Empty State with Conversational Suggestions (v0.4.47) */}
                   {msg.assistantResponse.sources.length === 0 && (
                     <div className="mt-4 text-[13px] leading-relaxed text-neutral-200">
-                      {/* main summary / headline */}
-                      {msg.assistantResponse.summary ? (
-                        <div className="whitespace-pre-line">
-                          {msg.assistantResponse.summary}
-                        </div>
-                      ) : (
-                        <div>
-                          I looked through the last {windowDays} days of mail for{" "}
-                          <span className="font-medium text-white">{userEmail}</span> and
-                          didn't see anything urgent.
-                        </div>
-                      )}
+                      {/* Don't repeat summary here - it's already in msg.content */}
+                      {/* Just show the contextual meta info */}
+                      <div className="text-xs text-neutral-500 mb-3">
+                        0 emails found • {msg.assistantResponse.intent} intent
+                      </div>
 
                       {/* smart follow-up coaching */}
                       <AssistantFollowupBlock
@@ -1114,19 +1100,7 @@ export default function MailChat() {
           </div>
         ))}
 
-        {/* Phase 3: Typing indicator for conversational feel */}
-        {isAssistantTyping && (
-          <div className="text-left">
-            <div className="inline-block bg-neutral-800/50 rounded-2xl px-4 py-2.5">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground/80 italic">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <div>Assistant is thinking…</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading indicator */}
+        {/* Single thinking indicator - only when busy */}
         {busy && (
           <div className="text-left">
             <div className="inline-block bg-neutral-800/50 rounded-2xl px-4 py-2.5">
