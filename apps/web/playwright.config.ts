@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Detect production environment
 const BASE = process.env.E2E_BASE_URL ?? "http://127.0.0.1:8000";
 const IS_PROD = /^https:\/\/applylens\.app/.test(BASE);
+const AUTH_STATE = process.env.E2E_AUTH_STATE || undefined;
 
 export default defineConfig({
   testDir: "./tests",
@@ -16,6 +17,7 @@ export default defineConfig({
     "**/auth.*.spec.ts",  // Must include glob pattern
     "settings-logout.spec.ts",  // Settings page logout flow [prodSafe]
     "settings-companion-experimental-styles.spec.ts",  // Bandit toggle UI tests
+    "e2e/chat-agent-v2.spec.ts",  // Agent V2 chat UI tests
     "e2e/email-risk-banner.spec.ts",
     "e2e/ux-heartbeat.spec.ts",
     "e2e/search-form.spec.ts",
@@ -48,8 +50,8 @@ export default defineConfig({
 
   use: {
     baseURL: BASE,
-    // Use prod storage state on production, demo state on dev
-    storageState: IS_PROD ? "tests/.auth/prod.json" : "tests/.auth/storageState.json",
+    // Use E2E_AUTH_STATE if provided, otherwise fall back to default auth files
+    storageState: AUTH_STATE || (IS_PROD ? "tests/.auth/prod.json" : "tests/.auth/storageState.json"),
     trace: "on-first-retry",  // Capture trace on first retry for efficiency
     video: "retain-on-failure",  // Keep videos of failed tests
     screenshot: "only-on-failure",  // Screenshots on failure
