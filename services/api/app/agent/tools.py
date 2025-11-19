@@ -114,8 +114,8 @@ class ToolRegistry:
                 risk_min=search_params.risk_min,
             )
 
-            # Add user_id filter
-            es_query["query"]["bool"]["filter"].append({"term": {"user_id": user_id}})
+            # Add user_id filter (use match for analyzed text field)
+            es_query["query"]["bool"]["filter"].append({"match": {"user_id": user_id}})
 
             # Execute search
             result = await es.search(index="gmail_emails", body=es_query)
