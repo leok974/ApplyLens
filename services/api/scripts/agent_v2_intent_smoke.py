@@ -26,7 +26,7 @@ INTENT_QUERIES: Dict[str, str] = {
 def run_one(query: str, time_window_days: int = 30) -> dict:
     payload = {
         "run_id": f"smoke-{uuid.uuid4()}",
-        "user_id": "pierre@applylens.app",  # Use actual user email
+        "user_id": "leoklemet.pa@gmail.com",  # User with ES data
         "mode": "preview_only",
         "context": {
             "time_window_days": time_window_days,
