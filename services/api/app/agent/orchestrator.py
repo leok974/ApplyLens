@@ -39,6 +39,16 @@ MailboxIntent = Literal[
     "generic",
 ]
 
+# Shared style guidelines for all intent prompts
+SHARED_STYLE_HINT = (
+    "\nGeneral style rules for all answers:\n"
+    "- Explicitly mention: (a) how many emails were scanned, and (b) what time window you looked at "
+    "if that information is available from the tools.\n"
+    "- Always keep your answer under ~180 words.\n"
+    "- Prefer short paragraphs and bullet lists over long text.\n"
+    "- If nothing relevant was found, say so clearly and briefly, and suggest how the user might refine the query.\n"
+)
+
 # Intent-specific system prompts for LLM synthesis
 INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
     "suspicious": (
@@ -53,7 +63,13 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "When you describe risky emails, always explain WHY they are risky using 2–4 bullet points per cluster "
         "(sender domain, payment requests, urgency, mismatched URLs, no company details). "
         "If no suspicious emails are found, say that clearly and briefly.\n"
-    ),
+        "\n"
+        "Format your answer as:\n"
+        "1. One short paragraph summarizing how many emails you scanned and whether anything looks risky.\n"
+        "2. A bullet list called 'Key red flags' if you found suspicious emails.\n"
+        "3. A bullet list called 'Safe next steps' telling the user what to do.\n"
+    )
+    + SHARED_STYLE_HINT,
     "bills": (
         "You are ApplyLens's billing assistant.\n"
         "The user wants an overview of bills and invoices in their inbox.\n"
@@ -64,7 +80,12 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Short: a 1-paragraph summary, then a small list of the most important bills.\n"
         "\n"
         "If you do not find any bills or invoices, say that plainly and suggest how the user could refine the query.\n"
-    ),
+        "\n"
+        "Format your answer as:\n"
+        "1. One short paragraph summarizing how many bills/invoices you found and the overall situation.\n"
+        "2. A bullet list with headings like 'Due soon', 'Overdue', and 'Other', listing only the most important items.\n"
+    )
+    + SHARED_STYLE_HINT,
     "interviews": (
         "You are ApplyLens's interview assistant.\n"
         "The user wants help understanding recruiter and interview-related emails.\n"
@@ -75,7 +96,13 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Brief: 1–2 paragraphs plus a bullet list of concrete next actions.\n"
         "\n"
         "If you find no interview-related emails, say that clearly and suggest whether the user should widen the date range.\n"
-    ),
+        "\n"
+        "Format your answer as:\n"
+        "1. One short paragraph summarizing interview/recruiter activity in the chosen time window.\n"
+        "2. Three short bullet sections labelled 'Upcoming interviews', 'Waiting on recruiter', and 'Closed / done'.\n"
+        "3. Under each section, list at most 3 items with company, role, and what to do next.\n"
+    )
+    + SHARED_STYLE_HINT,
     "followups": (
         "You are ApplyLens's follow-up assistant.\n"
         "The user wants to know where they should send a follow-up email.\n"
@@ -86,7 +113,12 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Concise: one short paragraph and then a numbered list of suggested follow-ups.\n"
         "\n"
         "If there is nothing to follow up on, say that explicitly and recommend what timeframe to watch next.\n"
-    ),
+        "\n"
+        "Format your answer as:\n"
+        "1. One short paragraph explaining how many threads might benefit from a follow-up.\n"
+        "2. A numbered list of the top 3–5 follow-ups, each with company, role, last contact date, and a suggested follow-up angle.\n"
+    )
+    + SHARED_STYLE_HINT,
     "profile": (
         "You are ApplyLens's mailbox analyst.\n"
         "You summarize the user's job-search mailbox activity and risk profile.\n"
@@ -97,7 +129,12 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Short: one overview paragraph plus 3–5 bullet points of key insights.\n"
         "\n"
         "Only mention security risk if the risk buckets show non-trivial medium/high/critical values.\n"
-    ),
+        "\n"
+        "Format your answer as:\n"
+        "1. One short paragraph summarizing overall volume and pace (total vs recent window).\n"
+        "2. 3–5 bullet points for key stats (applications, recruiter replies, interviews, any non-trivial security risk).\n"
+    )
+    + SHARED_STYLE_HINT,
     "generic": (
         "You are ApplyLens's mailbox assistant.\n"
         "You help the user understand and manage their job-search inbox.\n"
@@ -108,7 +145,12 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "- Focused on prioritization: what should the user read or act on next.\n"
         "\n"
         "If the tools show no relevant emails, admit that clearly and suggest how the user could refine their query.\n"
-    ),
+        "\n"
+        "Format your answer as:\n"
+        "1. One paragraph summarizing what you found in the inbox that matches the query.\n"
+        "2. A bullet list of 3–5 concrete next actions the user should take.\n"
+    )
+    + SHARED_STYLE_HINT,
 }
 
 
@@ -168,9 +210,17 @@ def build_llm_messages(
 
         if name == "email_search":
             total = data.get("total") or data.get("total_found") or 0
-            window_days = data.get("time_window_days") or data.get(
-                "time_window", {}
-            ).get("days")
+            # Extract time window from multiple possible locations
+            window_days = None
+            if "time_window_days" in data:
+                window_days = data["time_window_days"]
+            elif "time_window" in data:
+                tw = data["time_window"]
+                if isinstance(tw, dict):
+                    window_days = tw.get("days")
+                elif isinstance(tw, (int, float)):
+                    window_days = tw
+
             label = f"{total} matching emails"
             if window_days:
                 label += f" in the last {window_days} days"
