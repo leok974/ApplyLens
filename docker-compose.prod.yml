@@ -170,7 +170,7 @@ services:
     # v0.4.26: Implemented Actions page with real backend endpoints
     # v0.4.25: Added /api/tracker endpoint for Gmail-derived applications
     # v0.4.49: Profile warehouse integration + Ollama production deployment
-    image: leoklemet/applylens-api:0.5.2
+    image: leoklemet/applylens-api:0.5.3
     container_name: applylens-api-prod
     environment:
       # Database
@@ -223,7 +223,7 @@ services:
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
 
       # Build Metadata
-      APP_VERSION: '0.5.2'
+      APP_VERSION: '0.5.3'
       APP_BUILD_SHA: '6f22dfe'
       APP_BUILD_TIME: '2025-11-19T02:00:45Z'
       APP_ENV: 'production'
@@ -411,7 +411,7 @@ services:
 
       # Build Metadata (Web)
       - VITE_BUILD_FLAVOR=prod
-      - VITE_APP_VERSION=0.5.2
+      - VITE_APP_VERSION=0.5.3
       - VITE_BUILD_GIT_SHA=6f22dfe
       - VITE_BUILD_TIME=2025-11-19T02:00:45Z
 

@@ -24,7 +24,6 @@ from app.schemas_agent import (
 )
 from app.es import ES_URL, ES_ENABLED
 from elasticsearch import Elasticsearch
-from app.email_extractor import EmailRiskAnalyzer
 from app.agent.redis_cache import get_domain_risk, set_domain_risk
 from app.agent.metrics import (
     agent_tool_calls_total,
@@ -230,8 +229,8 @@ class ToolRegistry:
 
             emails = search_result.data.get("emails", [])
 
-            # Initialize risk analyzer
-            risk_analyzer = EmailRiskAnalyzer()
+            # Simple risk scoring stub (TODO: implement proper EmailRiskAnalyzer)
+            # For now, use DB risk_score if available, else assign based on sender domain
 
             risky_emails = []
             safe_emails = []
@@ -246,27 +245,20 @@ class ToolRegistry:
                 domain = sender.split("@")[-1] if "@" in sender else sender
                 domains_checked.add(domain)
 
+                # Use DB risk_score if available
+                risk_score = email.get("risk_score", 0) / 100.0  # Normalize to 0-1
+
                 # Check Redis cache first
                 cached_risk = await get_domain_risk(domain)
                 if cached_risk is not None:
                     risk_score = cached_risk.get("risk_score", 0.0)
                 else:
-                    # No cache, analyze domain
-                    # Create minimal email dict for analyzer
-                    email_data = {
-                        "sender": sender,
-                        "subject": email.get("subject", ""),
-                        "body": "",  # Don't need body for domain analysis
-                    }
-                    risk_result = risk_analyzer.analyze_email(email_data)
-                    risk_score = risk_result.get("risk_score", 0.0)
-
-                    # Cache the domain risk
+                    # Cache the domain risk for future use
                     await set_domain_risk(
                         domain,
                         {
                             "risk_score": risk_score,
-                            "signals": risk_result.get("signals", []),
+                            "signals": [],
                             "checked_at": datetime.utcnow().isoformat(),
                         },
                     )
