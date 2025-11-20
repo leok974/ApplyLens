@@ -644,6 +644,24 @@ export default function MailChat() {
       try {
         const res = await runMailboxAgent(userText, { timeWindowDays: windowDays })
 
+        // Check if response has an error status (HTTP 200 but status="error")
+        if (res.status === "error") {
+          // Replace thinking message with error
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === placeholderId
+                ? {
+                    ...m,
+                    status: "error",
+                    content: res.answer || "I hit an error while running the Mailbox Assistant. Please try again.",
+                    error: res.error_message,
+                  }
+                : m
+            )
+          )
+          return
+        }
+
         // Replace thinking message with actual response
         setMessages(prev =>
           prev.map(m =>

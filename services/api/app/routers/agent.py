@@ -10,6 +10,7 @@ Endpoints:
 from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import Dict, Any
 import logging
+import uuid
 from sqlalchemy.orm import Session as DBSession
 
 from app.schemas_agent import AgentRunRequest, AgentRunResponse
@@ -121,8 +122,26 @@ async def run_mailbox_agent(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Agent V2: run failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Agent run failed: {str(e)}")
+        logger.exception(
+            "Agent V2 run failed",
+            extra={
+                "query": payload.query,
+                "user_id": user_id if "user_id" in locals() else None,
+            },
+        )
+        # Return 200 with error payload instead of 500 to avoid Cloudflare 502
+        return AgentRunResponse(
+            run_id=f"error-{uuid.uuid4()}",
+            user_id=user_id if "user_id" in locals() else "unknown",
+            query=payload.query,
+            mode=payload.mode,
+            context=payload.context,
+            status="error",
+            error_message=f"Internal error while running Mailbox Assistant: {str(e)}",
+            cards=[],
+            intent="unknown",
+            answer="I hit an error while running the Mailbox Assistant. Please try again.",
+        )
 
 
 @router.get("/run/{run_id}", response_model=AgentRunResponse)
