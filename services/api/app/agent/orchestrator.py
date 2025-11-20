@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Optional, Tuple, Literal
 import asyncio
 import logging
 from datetime import datetime
+from dataclasses import dataclass
 
 from app.schemas_agent import (
     AgentRunRequest,
@@ -36,8 +37,84 @@ MailboxIntent = Literal[
     "interviews",
     "followups",
     "profile",
+    "clean_promos",
+    "unsubscribe",
     "generic",
 ]
+
+
+@dataclass
+class IntentSpec:
+    """Specification for intent-driven behavior contract."""
+
+    name: MailboxIntent
+    default_time_window_days: int
+    tools: List[str]
+    require_counts: bool
+    # How to treat zero-results vs non-zero
+    zero_title: Optional[str] = None
+    nonzero_title: Optional[str] = None
+
+
+# Intent specifications - defines the behavior contract for each intent
+INTENT_SPECS: Dict[MailboxIntent, IntentSpec] = {
+    "suspicious": IntentSpec(
+        name="suspicious",
+        default_time_window_days=30,
+        tools=["email_search", "security_scan"],
+        require_counts=True,
+        zero_title="No Suspicious Emails Found",
+        nonzero_title="Suspicious Emails Found",
+    ),
+    "followups": IntentSpec(
+        name="followups",
+        default_time_window_days=30,
+        tools=["email_search"],
+        require_counts=True,
+        zero_title="No Conversations Need Follow-up",
+        nonzero_title="Conversations Waiting on Your Reply",
+    ),
+    "bills": IntentSpec(
+        name="bills",
+        default_time_window_days=60,
+        tools=["email_search", "bill_parser"],
+        require_counts=True,
+        zero_title="No Bills Found",
+        nonzero_title="Bills Overview",
+    ),
+    "interviews": IntentSpec(
+        name="interviews",
+        default_time_window_days=30,
+        tools=["email_search"],
+        require_counts=True,
+        zero_title="No Interviews Found",
+        nonzero_title="Interview Schedule",
+    ),
+    "clean_promos": IntentSpec(
+        name="clean_promos",
+        default_time_window_days=30,
+        tools=["email_search", "unsubscribe_finder"],
+        require_counts=True,
+        zero_title="No Promotional Emails Found",
+        nonzero_title="Promotions & Newsletters",
+    ),
+    "profile": IntentSpec(
+        name="profile",
+        default_time_window_days=60,
+        tools=["email_search", "applications_lookup"],
+        require_counts=True,
+        zero_title="Your Application Profile",
+        nonzero_title="Your Application Profile",
+    ),
+    "generic": IntentSpec(
+        name="generic",
+        default_time_window_days=30,
+        tools=["email_search"],
+        require_counts=False,
+        zero_title=None,
+        nonzero_title=None,
+    ),
+}
 
 # Shared style guidelines for all intent prompts
 SHARED_STYLE_HINT = (
@@ -48,6 +125,62 @@ SHARED_STYLE_HINT = (
     "- Prefer short paragraphs and bullet lists over long text.\n"
     "- If nothing relevant was found, say so clearly and briefly, and suggest how the user might refine the query.\n"
 )
+
+# Intent-specific style hints for zero vs non-zero results
+INTENT_STYLE_HINTS: Dict[str, str] = {
+    "suspicious": """
+You are checking for suspicious or phishing emails.
+
+If metrics.matches == 0:
+- Start with "No suspicious emails were identified in your inbox over the last {time_window_days} days."
+- Then give 1–2 concise vigilance tips.
+
+If metrics.matches > 0:
+- Start with "I found {matches} emails that look suspicious out of {emails_scanned} scanned."
+- Mention 1–2 patterns (e.g., fake invoices, urgent payment requests).
+""",
+    "followups": """
+You are helping find conversations needing follow-up.
+
+If count == 0:
+- Start with "You're caught up — no conversations are currently waiting on your reply."
+- Suggest checking back later.
+
+If count > 0:
+- Start with "You have {count} conversations waiting for your reply in the last {time_window_days} days."
+- Highlight top 3-5 by priority.
+""",
+    "bills": """
+You are analyzing bills and invoices.
+
+If total == 0:
+- Start with "No recent bills found in your inbox for the last {time_window_days} days."
+- Keep it brief.
+
+If total > 0:
+- Start with "I found {total_bills} bills in the last {time_window_days} days: {due_soon} due soon, {overdue} overdue, and {other} upcoming or paid."
+- Break down by sections.
+""",
+    "interviews": """
+You are tracking interview-related emails.
+
+If total == 0:
+- Start with "No interview-related emails found in the last {time_window_days} days."
+
+If total > 0:
+- Start with "You have {upcoming} upcoming interviews, {awaiting_confirmation} needing a response, and {past} completed in the last {time_window_days} days."
+""",
+    "clean_promos": """
+You are identifying promotional emails for cleanup.
+
+If count == 0:
+- Start with "No promotional senders found cluttering your inbox."
+
+If count > 0:
+- Start with "I found {promo_count} promotional senders cluttering your inbox."
+- In preview mode, clarify nothing was changed yet.
+""",
+}
 
 # Intent-specific system prompts for LLM synthesis
 INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
@@ -709,6 +842,266 @@ class MailboxAgentOrchestrator:
     #     # This method is no longer used - cards are generated by the LLM
     #     # with citations in complete_agent_answer()
     #     pass
+
+    def _build_metrics_from_spec(
+        self, spec: IntentSpec, tool_results: List[ToolResult], time_window_days: int
+    ) -> Dict[str, Any]:
+        """
+        Build metrics dict based on intent spec and tool results.
+
+        Returns metrics with intent-specific fields:
+        - suspicious: emails_scanned, matches, high_risk, time_window_days
+        - followups: conversations_scanned, needs_reply, time_window_days
+        - bills: total_bills, due_soon, overdue, other, time_window_days
+        - etc.
+        """
+        metrics = {
+            "time_window_days": time_window_days,
+            "tool_calls": len(tool_results),
+        }
+
+        if spec.name == "suspicious":
+            # Extract from security_scan tool result
+            security_scan = next(
+                (tr for tr in tool_results if tr.tool_name == "security_scan"),
+                None,
+            )
+            if security_scan and security_scan.status == "success":
+                data = security_scan.data or {}
+                matches = data.get("matches", [])
+                metrics.update(
+                    {
+                        "emails_scanned": data.get("emails_scanned", 0),
+                        "matches": len(matches),
+                        "high_risk": sum(
+                            1 for m in matches if m.get("risk_level") == "high"
+                        ),
+                    }
+                )
+            else:
+                metrics.update({"emails_scanned": 0, "matches": 0, "high_risk": 0})
+
+        elif spec.name == "followups":
+            # Extract from email_search tool result
+            email_search = next(
+                (tr for tr in tool_results if tr.tool_name == "email_search"),
+                None,
+            )
+            if email_search and email_search.status == "success":
+                data = email_search.data or {}
+                threads = data.get("threads", [])
+                unreplied = [t for t in threads if not t.get("replied", True)]
+                metrics.update(
+                    {
+                        "conversations_scanned": len(threads),
+                        "needs_reply": len(unreplied),
+                    }
+                )
+            else:
+                metrics.update({"conversations_scanned": 0, "needs_reply": 0})
+
+        elif spec.name == "bills":
+            # Extract from email_search + bill_parser
+            email_search = next(
+                (tr for tr in tool_results if tr.tool_name == "email_search"),
+                None,
+            )
+            if email_search and email_search.status == "success":
+                data = email_search.data or {}
+                bills = data.get("bills", [])
+                due_soon = [b for b in bills if b.get("status") == "due_soon"]
+                overdue = [b for b in bills if b.get("status") == "overdue"]
+                other = [
+                    b for b in bills if b.get("status") not in ["due_soon", "overdue"]
+                ]
+                metrics.update(
+                    {
+                        "total_bills": len(bills),
+                        "due_soon": len(due_soon),
+                        "overdue": len(overdue),
+                        "other": len(other),
+                    }
+                )
+            else:
+                metrics.update(
+                    {"total_bills": 0, "due_soon": 0, "overdue": 0, "other": 0}
+                )
+
+        # Add more intent-specific metrics as needed
+
+        return metrics
+
+    def _build_cards_from_spec(
+        self,
+        spec: IntentSpec,
+        tool_results: List[ToolResult],
+        metrics: Dict[str, Any],
+        time_window_days: int,
+    ) -> List[AgentCard]:
+        """
+        Build card data structures with zero/non-zero handling per intent spec.
+
+        Returns list of AgentCard objects following the contract:
+        - Zero results: zero_title, empty items
+        - Non-zero results: nonzero_title, populated items
+        """
+        cards = []
+
+        if spec.name == "suspicious":
+            security_scan = next(
+                (tr for tr in tool_results if tr.tool_name == "security_scan"),
+                None,
+            )
+            matches = []
+            if security_scan and security_scan.status == "success":
+                data = security_scan.data or {}
+                matches = data.get("matches", [])
+
+            base_card = AgentCard(
+                kind="suspicious_summary",
+                title=spec.zero_title
+                if metrics["matches"] == 0
+                else spec.nonzero_title,
+                body="",
+                email_ids=[m.get("id", "") for m in matches],
+                meta={
+                    "count": metrics["matches"],
+                    "time_window_days": time_window_days,
+                },
+            )
+
+            if metrics["matches"] == 0:
+                cards.append(base_card)
+            else:
+                # Build items for non-zero case
+                items = []
+                for m in matches[:10]:  # Limit to top 10
+                    items.append(
+                        {
+                            "id": m.get("message_id", ""),
+                            "subject": m.get("subject", ""),
+                            "sender": m.get("from_address", ""),
+                            "risk_level": m.get("risk_level", "low"),
+                            "reasons": m.get("reasons", []),
+                            "received_at": m.get("received_at", ""),
+                        }
+                    )
+                base_card.meta["items"] = items
+                cards.append(base_card)
+
+        elif spec.name == "followups":
+            email_search = next(
+                (tr for tr in tool_results if tr.tool_name == "email_search"),
+                None,
+            )
+            threads = []
+            if email_search and email_search.status == "success":
+                data = email_search.data or {}
+                threads = [
+                    t for t in data.get("threads", []) if not t.get("replied", True)
+                ]
+
+            base_card = AgentCard(
+                kind="followups_summary",
+                title=spec.zero_title
+                if metrics["needs_reply"] == 0
+                else spec.nonzero_title,
+                body="",
+                email_ids=[],
+                meta={
+                    "count": metrics["needs_reply"],
+                    "time_window_days": time_window_days,
+                },
+            )
+
+            if metrics["needs_reply"] == 0:
+                cards.append(base_card)
+            else:
+                items = []
+                for t in threads[:10]:
+                    items.append(
+                        {
+                            "id": t.get("thread_id", ""),
+                            "company": t.get("company", ""),
+                            "subject": t.get("subject", ""),
+                            "last_from": t.get("last_from", "other"),
+                            "last_received_at": t.get("last_received_at", ""),
+                            "suggested_angle": t.get(
+                                "suggested_angle", "Follow up to maintain momentum"
+                            ),
+                        }
+                    )
+                base_card.meta["items"] = items
+                cards.append(base_card)
+
+        elif spec.name == "bills":
+            email_search = next(
+                (tr for tr in tool_results if tr.tool_name == "email_search"),
+                None,
+            )
+            bills = []
+            if email_search and email_search.status == "success":
+                data = email_search.data or {}
+                bills = data.get("bills", [])
+
+            base_card = AgentCard(
+                kind="bills_summary",
+                title=spec.zero_title
+                if metrics["total_bills"] == 0
+                else spec.nonzero_title,
+                body="",
+                email_ids=[],
+                meta={
+                    "total": metrics["total_bills"],
+                    "due_soon": metrics["due_soon"],
+                    "overdue": metrics["overdue"],
+                    "other": metrics["other"],
+                    "time_window_days": time_window_days,
+                },
+            )
+
+            if metrics["total_bills"] == 0:
+                cards.append(base_card)
+            else:
+                # Group bills into sections
+                due_soon_items = [b for b in bills if b.get("status") == "due_soon"]
+                overdue_items = [b for b in bills if b.get("status") == "overdue"]
+                other_items = [
+                    b for b in bills if b.get("status") not in ["due_soon", "overdue"]
+                ]
+
+                sections = []
+                if due_soon_items:
+                    sections.append(
+                        {
+                            "id": "due_soon",
+                            "title": "Due soon (next 7 days)",
+                            "items": due_soon_items[:5],
+                        }
+                    )
+                if overdue_items:
+                    sections.append(
+                        {
+                            "id": "overdue",
+                            "title": "Overdue",
+                            "items": overdue_items[:5],
+                        }
+                    )
+                if other_items:
+                    sections.append(
+                        {
+                            "id": "other",
+                            "title": "Other bills",
+                            "items": other_items[:5],
+                        }
+                    )
+
+                base_card.meta["sections"] = sections
+                cards.append(base_card)
+
+        # Add more intent-specific card building as needed
+
+        return cards
 
     def _count_emails_scanned(self, tool_results: List[ToolResult]) -> int:
         """Count total emails scanned across all tools."""

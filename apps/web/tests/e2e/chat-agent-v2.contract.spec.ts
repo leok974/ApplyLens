@@ -17,7 +17,7 @@ test.skip(
   'E2E_AUTH_STATE not configured; skipping Agent V2 contract tests that require authenticated session.'
 );
 
-test.describe('@frontend @agent-v2 @contract @authRequired Agent V2 API Contracts', () => {
+test.describe('@frontend @agent-v2 @contract @authRequired @prodSafe Agent V2 API Contracts', () => {
   test('renders answer and suspicious_summary card with data-driven content', async ({ page }) => {
     // Mock Agent V2 API response
     await page.route('**/api/v2/agent/run', async (route) => {
@@ -323,10 +323,15 @@ test.describe('@frontend @agent-v2 @contract @authRequired Agent V2 API Contract
 
   test('shows error banner when API request fails', async ({ page }) => {
     await page.route('**/api/v2/agent/run', async (route) => {
+      // Soft error: HTTP 200 with status="error" in payload (v0.5.14+)
       await route.fulfill({
-        status: 500,
+        status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ detail: 'Internal server error during test' }),
+        body: JSON.stringify({
+          status: 'error',
+          message: 'Connection hiccup',
+          error: 'Simulated error for testing',
+        }),
       });
     });
 
@@ -380,5 +385,326 @@ test.describe('@frontend @agent-v2 @contract @authRequired Agent V2 API Contract
 
     // Wait for response
     await expect(page.getByTestId('chat-message-assistant').last()).toBeVisible({ timeout: 3000 });
+  });
+
+  test('suspicious intent - zero results shows "No Suspicious Emails Found"', async ({ page }) => {
+    // Mock Agent V2 response with zero suspicious emails
+    await page.route('**/api/v2/agent/run', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          run_id: 'test-suspicious-zero',
+          user_id: 'test@example.com',
+          query: 'show suspicious emails',
+          mode: 'preview_only',
+          context: { time_window_days: 30, filters: {} },
+          status: 'done',
+          intent: 'suspicious',
+          answer: 'No suspicious emails were identified in your inbox over the last 30 days. Stay vigilant and report any emails that seem suspicious.',
+          cards: [
+            {
+              kind: 'suspicious_summary',
+              title: 'No Suspicious Emails Found',
+              body: '',
+              email_ids: [],
+              meta: {
+                count: 0,
+                time_window_days: 30,
+              },
+            },
+          ],
+          tools_used: ['email_search', 'security_scan'],
+          metrics: {
+            emails_scanned: 50,
+            matches: 0,
+            high_risk: 0,
+            tool_calls: 2,
+            rag_sources: 0,
+            duration_ms: 1200,
+            time_window_days: 30,
+          },
+          created_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto(`/chat`);
+    await expect(page.getByTestId('agent-mail-chat')).toBeVisible();
+
+    await page.getByTestId('chat-input').fill('show suspicious emails');
+    await page.getByTestId('chat-send').click();
+
+    // Verify zero-result message
+    const assistantMessage = page.getByTestId('chat-message-assistant').last();
+    await expect(assistantMessage).toBeVisible();
+    await expect(assistantMessage).toContainText('No suspicious emails were identified');
+    await expect(assistantMessage).toContainText('30 days');
+
+    // Verify zero-result card
+    const suspiciousCard = page.getByTestId('agent-card-suspicious_summary');
+    await expect(suspiciousCard).toBeVisible();
+    await expect(suspiciousCard).toContainText('No Suspicious Emails Found');
+  });
+
+  test('suspicious intent - non-zero results shows "Suspicious Emails Found" with items', async ({ page }) => {
+    // Mock Agent V2 response with 3 suspicious emails
+    await page.route('**/api/v2/agent/run', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          run_id: 'test-suspicious-nonzero',
+          user_id: 'test@example.com',
+          query: 'show suspicious emails',
+          mode: 'preview_only',
+          context: { time_window_days: 30, filters: {} },
+          status: 'done',
+          intent: 'suspicious',
+          answer: 'I found 3 emails that look suspicious out of 50 scanned. These include fake invoices and urgent payment requests.',
+          cards: [
+            {
+              kind: 'suspicious_summary',
+              title: 'Suspicious Emails Found',
+              body: '',
+              email_ids: ['msg1', 'msg2', 'msg3'],
+              meta: {
+                count: 3,
+                time_window_days: 30,
+                items: [
+                  {
+                    id: 'msg1',
+                    subject: 'Urgent: Verify your account',
+                    sender: 'phish@example.com',
+                    risk_level: 'high',
+                    reasons: ['Suspicious link', 'Urgent language'],
+                    received_at: '2025-11-20T10:00:00Z',
+                  },
+                  {
+                    id: 'msg2',
+                    subject: 'You won the lottery!',
+                    sender: 'scam@bad.com',
+                    risk_level: 'high',
+                    reasons: ['Too good to be true', 'Unknown sender'],
+                    received_at: '2025-11-19T15:30:00Z',
+                  },
+                  {
+                    id: 'msg3',
+                    subject: 'Invoice payment required',
+                    sender: 'fake@invoice.net',
+                    risk_level: 'medium',
+                    reasons: ['Fake invoice pattern'],
+                    received_at: '2025-11-18T09:15:00Z',
+                  },
+                ],
+              },
+            },
+          ],
+          tools_used: ['email_search', 'security_scan'],
+          metrics: {
+            emails_scanned: 50,
+            matches: 3,
+            high_risk: 2,
+            tool_calls: 2,
+            rag_sources: 0,
+            duration_ms: 1500,
+            time_window_days: 30,
+          },
+          created_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto(`/chat`);
+    await expect(page.getByTestId('agent-mail-chat')).toBeVisible();
+
+    await page.getByTestId('chat-input').fill('show suspicious emails');
+    await page.getByTestId('chat-send').click();
+
+    // Verify non-zero message
+    const assistantMessage = page.getByTestId('chat-message-assistant').last();
+    await expect(assistantMessage).toBeVisible();
+    await expect(assistantMessage).toContainText('3 emails that look suspicious');
+    await expect(assistantMessage).toContainText('50 scanned');
+
+    // Verify card with matches
+    const suspiciousCard = page.getByTestId('agent-card-suspicious_summary');
+    await expect(suspiciousCard).toBeVisible();
+    await expect(suspiciousCard).toContainText('Suspicious Emails Found');
+
+    // Verify count in card metadata
+    await expect(suspiciousCard).toContainText('3');
+  });
+
+  test('followups intent shows conversations waiting for reply', async ({ page }) => {
+    // Mock Agent V2 response for followups
+    await page.route('**/api/v2/agent/run', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          run_id: 'test-followups',
+          user_id: 'test@example.com',
+          query: 'show me followups',
+          mode: 'preview_only',
+          context: { time_window_days: 30, filters: {} },
+          status: 'done',
+          intent: 'followups',
+          answer: 'You have 2 conversations waiting for your reply in the last 30 days.',
+          cards: [
+            {
+              kind: 'followups_summary',
+              title: 'Conversations Waiting on Your Reply',
+              body: '',
+              email_ids: [],
+              meta: {
+                count: 2,
+                time_window_days: 30,
+                items: [
+                  {
+                    id: 't1',
+                    company: 'TechCorp',
+                    subject: 'Interview invitation',
+                    last_from: 'recruiter',
+                    last_received_at: '2025-11-18T14:00:00Z',
+                    suggested_angle: 'Confirm interest and availability',
+                  },
+                  {
+                    id: 't2',
+                    company: 'StartupXYZ',
+                    subject: 'Technical assessment',
+                    last_from: 'hiring_manager',
+                    last_received_at: '2025-11-17T10:00:00Z',
+                    suggested_angle: 'Ask for timeline clarification',
+                  },
+                ],
+              },
+            },
+          ],
+          tools_used: ['email_search'],
+          metrics: {
+            conversations_scanned: 3,
+            needs_reply: 2,
+            tool_calls: 1,
+            rag_sources: 0,
+            duration_ms: 800,
+            time_window_days: 30,
+          },
+          created_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto(`/chat`);
+    await expect(page.getByTestId('agent-mail-chat')).toBeVisible();
+
+    await page.getByTestId('chat-input').fill('show me followups');
+    await page.getByTestId('chat-send').click();
+
+    // Verify message
+    const assistantMessage = page.getByTestId('chat-message-assistant').last();
+    await expect(assistantMessage).toBeVisible();
+    await expect(assistantMessage).toContainText('2 conversations waiting');
+
+    // Verify card
+    const followupsCard = page.getByTestId('agent-card-followups_summary');
+    await expect(followupsCard).toBeVisible();
+    await expect(followupsCard).toContainText('Conversations Waiting on Your Reply');
+    await expect(followupsCard).toContainText('2');
+  });
+
+  test('bills intent shows due soon and overdue sections', async ({ page }) => {
+    // Mock Agent V2 response for bills
+    await page.route('**/api/v2/agent/run', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          run_id: 'test-bills',
+          user_id: 'test@example.com',
+          query: 'show my bills',
+          mode: 'preview_only',
+          context: { time_window_days: 60, filters: {} },
+          status: 'done',
+          intent: 'bills',
+          answer: 'I found 4 bills in the last 60 days: 2 due soon, 1 overdue, and 1 upcoming or paid.',
+          cards: [
+            {
+              kind: 'bills_summary',
+              title: 'Bills Overview',
+              body: '',
+              email_ids: [],
+              meta: {
+                total: 4,
+                due_soon: 2,
+                overdue: 1,
+                other: 1,
+                time_window_days: 60,
+                sections: [
+                  {
+                    id: 'due_soon',
+                    title: 'Due soon (next 7 days)',
+                    items: [
+                      { id: 'b1', merchant: 'Electric Co', amount: 150, due_date: '2025-11-22', status: 'due_soon' },
+                      { id: 'b2', merchant: 'Internet ISP', amount: 80, due_date: '2025-11-23', status: 'due_soon' },
+                    ],
+                  },
+                  {
+                    id: 'overdue',
+                    title: 'Overdue',
+                    items: [
+                      { id: 'b3', merchant: 'Credit Card', amount: 500, due_date: '2025-11-15', status: 'overdue' },
+                    ],
+                  },
+                  {
+                    id: 'other',
+                    title: 'Other bills',
+                    items: [
+                      { id: 'b4', merchant: 'Phone Bill', amount: 60, due_date: '2025-12-01', status: 'upcoming' },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+          tools_used: ['email_search', 'bill_parser'],
+          metrics: {
+            total_bills: 4,
+            due_soon: 2,
+            overdue: 1,
+            other: 1,
+            tool_calls: 2,
+            rag_sources: 0,
+            duration_ms: 1100,
+            time_window_days: 60,
+          },
+          created_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto(`/chat`);
+    await expect(page.getByTestId('agent-mail-chat')).toBeVisible();
+
+    await page.getByTestId('chat-input').fill('show my bills');
+    await page.getByTestId('chat-send').click();
+
+    // Verify message
+    const assistantMessage = page.getByTestId('chat-message-assistant').last();
+    await expect(assistantMessage).toBeVisible();
+    await expect(assistantMessage).toContainText('4 bills');
+    await expect(assistantMessage).toContainText('2 due soon');
+    await expect(assistantMessage).toContainText('1 overdue');
+
+    // Verify card
+    const billsCard = page.getByTestId('agent-card-bills_summary');
+    await expect(billsCard).toBeVisible();
+    await expect(billsCard).toContainText('Bills Overview');
+    await expect(billsCard).toContainText('Overdue');
+    await expect(billsCard).toContainText('Due soon');
   });
 });
