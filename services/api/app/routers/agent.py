@@ -39,7 +39,7 @@ def get_orchestrator() -> MailboxAgentOrchestrator:
 
 @router.post("/run", response_model=AgentRunResponse)
 async def run_mailbox_agent(
-    request: AgentRunRequest,
+    payload: AgentRunRequest,
     req: Request,
     db: DBSession = Depends(get_db),
 ):
@@ -47,10 +47,11 @@ async def run_mailbox_agent(
     Execute a mailbox agent run.
 
     Flow:
-    1. Classify intent from query
-    2. Plan + execute tools
-    3. Synthesize answer with LLM
-    4. Return structured response with cards
+    1. Resolve user from session or explicit user_id
+    2. Classify intent from query
+    3. Plan + execute tools
+    4. Synthesize answer with LLM
+    5. Return structured response with cards
 
     Example request:
     ```json
@@ -65,33 +66,62 @@ async def run_mailbox_agent(
     ```
     """
     try:
-        # Get user from session if not provided in request
-        if not request.user_id:
+        # 1. If caller sent user_id explicitly (smoke harness, tests), use it
+        user_id = payload.user_id
+
+        # 2. Otherwise, derive from session cookie (same pattern as auth.py)
+        if not user_id:
             sid = req.cookies.get("session_id")
-            if not sid:
-                raise HTTPException(status_code=401, detail="Not authenticated")
 
-            session_obj = db.query(SessionModel).filter(SessionModel.id == sid).first()
-            if not session_obj:
-                raise HTTPException(status_code=401, detail="Invalid session")
-            request.user_id = session_obj.user.email
+            logger.info(
+                f"Agent V2: incoming sid={sid!r}, payload.user_id={payload.user_id!r}"
+            )
 
+            if sid:
+                sess = db.query(SessionModel).filter(SessionModel.id == sid).first()
+                if sess and sess.user_id:
+                    from app.models import User as UserModel
+
+                    user = (
+                        db.query(UserModel).filter(UserModel.id == sess.user_id).first()
+                    )
+                    if user and user.email:
+                        user_id = user.email
+                        logger.info(
+                            f"Agent V2: resolved user_id={user_id!r} from session"
+                        )
+                    else:
+                        logger.warning(
+                            "Agent V2: session has user_id but no matching user/email"
+                        )
+                else:
+                    logger.warning("Agent V2: no session row for sid from cookie")
+            else:
+                logger.warning("Agent V2: no session cookie on request")
+
+        # 3. If we STILL don't have a user_id, fail clearly
+        if not user_id:
+            logger.warning("Agent V2: no user_id resolved, returning 401")
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        # 4. Mutate the payload and hand off to the orchestrator
+        payload.user_id = user_id
         logger.info(
-            f"Agent run requested: query='{request.query}', user={request.user_id}"
+            f"Agent V2: executing run for user={user_id}, query='{payload.query}'"
         )
 
         orchestrator = get_orchestrator()
-        response = await orchestrator.run(request)
+        response = await orchestrator.run(payload)
 
         logger.info(
-            f"Agent run completed: run_id={response.run_id}, status={response.status}"
+            f"Agent V2: run completed: run_id={response.run_id}, status={response.status}"
         )
         return response
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Agent run failed: {e}", exc_info=True)
+        logger.error(f"Agent V2: run failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Agent run failed: {str(e)}")
 
 
