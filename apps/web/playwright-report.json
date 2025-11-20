@@ -10,7 +10,9 @@
     "grep": {},
     "grepInvert": {},
     "maxFailures": 0,
-    "metadata": {},
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
     "reporter": [
       [
@@ -40,7 +42,9 @@
         "outputDir": "D:/ApplyLens/apps/web/test-results",
         "repeatEach": 1,
         "retries": 2,
-        "metadata": {},
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "chromium",
         "name": "chromium",
         "testDir": "D:/ApplyLens/apps/web/tests",
@@ -57,7 +61,8 @@
           "**/auth.*.spec.ts",
           "settings-logout.spec.ts",
           "settings-companion-experimental-styles.spec.ts",
-          "e2e/chat-agent-v2.spec.ts",
+          "e2e/chat-agent-v2.contract.spec.ts",
+          "e2e/chat-agent-v2.prod-smoke.spec.ts",
           "e2e/email-risk-banner.spec.ts",
           "e2e/ux-heartbeat.spec.ts",
           "e2e/search-form.spec.ts",
@@ -82,25 +87,197 @@
     "workers": 4,
     "webServer": null
   },
-  "suites": [],
-  "errors": [
+  "suites": [
     {
-      "message": "Error: E2E login failed: 403 Forbidden\nCSRF token missing",
-      "stack": "Error: E2E login failed: 403 Forbidden\nCSRF token missing\n    at globalSetup (D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup-auth.ts:49:13)",
-      "location": {
-        "file": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup-auth.ts",
-        "column": 13,
-        "line": 49
-      },
-      "snippet": "\u001b[90m   at \u001b[39msetup\\global-setup-auth.ts:49\n\n\u001b[0m \u001b[90m 47 |\u001b[39m     \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mresponse\u001b[33m.\u001b[39mok()) {\n \u001b[90m 48 |\u001b[39m       \u001b[36mconst\u001b[39m body \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m response\u001b[33m.\u001b[39mtext()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 49 |\u001b[39m       \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\n \u001b[90m    |\u001b[39m             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 50 |\u001b[39m         \u001b[32m`E2E login failed: ${response.status()} ${response.statusText()}\\n${body}`\u001b[39m\n \u001b[90m 51 |\u001b[39m       )\u001b[33m;\u001b[39m\n \u001b[90m 52 |\u001b[39m     }\u001b[0m"
+      "title": "e2e\\chat-agent-v2.prod-smoke.spec.ts",
+      "file": "e2e/chat-agent-v2.prod-smoke.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "@prodSafe @agent-v2 @authRequired Agent V2 Production Smoke",
+          "file": "e2e/chat-agent-v2.prod-smoke.spec.ts",
+          "line": 32,
+          "column": 6,
+          "specs": [
+            {
+              "title": "suspicious emails flow - API called and response rendered",
+              "ok": false,
+              "tags": [
+                "prodSafe",
+                "agent-v2",
+                "authRequired"
+              ],
+              "tests": [
+                {
+                  "timeout": 45000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 45994,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.prod-smoke.spec.ts",
+                            "column": 17,
+                            "line": 41
+                          },
+                          "message": "Error: locator.fill: Test timeout of 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('textbox', { name: /ask.*inbox/i })\u001b[22m\n\n\n  39 |     // Ask a suspicious question\n  40 |     const input = page.getByRole('textbox', { name: /ask.*inbox/i });\n> 41 |     await input.fill('show suspicious emails');\n     |                 ^\n  42 |     \n  43 |     const sendButton = page.getByRole('button', { name: /send/i });\n  44 |     \n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.prod-smoke.spec.ts:41:17"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-20T01:38:37.995Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium\\error-context.md"
+                        }
+                      ]
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 46187,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.prod-smoke.spec.ts",
+                            "column": 17,
+                            "line": 41
+                          },
+                          "message": "Error: locator.fill: Test timeout of 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('textbox', { name: /ask.*inbox/i })\u001b[22m\n\n\n  39 |     // Ask a suspicious question\n  40 |     const input = page.getByRole('textbox', { name: /ask.*inbox/i });\n> 41 |     await input.fill('show suspicious emails');\n     |                 ^\n  42 |     \n  43 |     const sendButton = page.getByRole('button', { name: /send/i });\n  44 |     \n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.prod-smoke.spec.ts:41:17"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-20T01:39:24.807Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium-retry1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium-retry1\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium-retry1\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium-retry1\\trace.zip"
+                        }
+                      ]
+                    },
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "timedOut",
+                      "duration": 46046,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 45000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.prod-smoke.spec.ts",
+                            "column": 17,
+                            "line": 41
+                          },
+                          "message": "Error: locator.fill: Test timeout of 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('textbox', { name: /ask.*inbox/i })\u001b[22m\n\n\n  39 |     // Ask a suspicious question\n  40 |     const input = page.getByRole('textbox', { name: /ask.*inbox/i });\n> 41 |     await input.fill('show suspicious emails');\n     |                 ^\n  42 |     \n  43 |     const sendButton = page.getByRole('button', { name: /send/i });\n  44 |     \n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-agent-v2.prod-smoke.spec.ts:41:17"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 2,
+                      "startTime": "2025-11-20T01:40:12.036Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium-retry2\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium-retry2\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-agent-v2.prod-smo-0817d-alled-and-response-rendered-chromium-retry2\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "845d17a6e446acd2bef0-a426f9fc68717b6faa56",
+              "file": "e2e/chat-agent-v2.prod-smoke.spec.ts",
+              "line": 33,
+              "column": 3
+            }
+          ]
+        }
+      ]
     }
   ],
+  "errors": [],
   "stats": {
-    "startTime": "2025-11-19T22:45:40.096Z",
-    "duration": 521.799,
+    "startTime": "2025-11-20T01:38:36.870Z",
+    "duration": 141423.20299999998,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }

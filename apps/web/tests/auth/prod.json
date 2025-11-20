@@ -1,0 +1,35 @@
+{
+  "cookies": [
+    {
+      "name": "session_id",
+      "value": "RjQuldvSUFTTgIPtSPh6jNrpowKakCOiWq9Hw13WhdU",
+      "domain": "applylens.app",
+      "path": "/",
+      "expires": 1764206142.927,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "csrf_token",
+      "value": "J5aW2etoPMa8l2tWgyzygy8ZEQ1DJPGXrf3GBDX1h7o",
+      "domain": "applylens.app",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://applylens.app",
+      "localStorage": [
+        {
+          "name": "applylens-theme",
+          "value": "dark"
+        }
+      ]
+    }
+  ]
+}

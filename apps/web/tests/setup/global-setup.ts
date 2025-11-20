@@ -5,8 +5,20 @@ export default async function globalSetup(config: FullConfig) {
   const api  = process.env.E2E_API      ?? `${base}/api`;
   const seed = Number(process.env.SEED_COUNT ?? '20');
   const smoke = (process.env.USE_SMOKE_SETUP ?? 'false') === 'true';
+  const authStatePath = process.env.E2E_AUTH_STATE;
 
-  console.log('🔧 Global setup starting - API:', api);
+  console.log('🔧 E2E Global Setup');
+  console.log('   Base URL:', base);
+  console.log('   Auth state path:', authStatePath || '(will create new)');
+
+  // If E2E_AUTH_STATE is provided, skip auth setup (use existing cookies)
+  if (authStatePath) {
+    console.log('✅  Using existing auth state; skipping auth setup.');
+    console.log('   Tests will use cookies from:', authStatePath);
+    return;
+  }
+
+  console.log('');
 
   const ctx = await request.newContext({
     baseURL: base,  // Use base URL, not api, since routes don't have /api prefix

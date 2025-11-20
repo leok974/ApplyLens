@@ -1,8 +1,10 @@
 /**
- * E2E tests for Agent V2 Chat UI
+ * Agent V2 Contract Tests
  *
- * Tests the structured LLM answering flow with enhanced card rendering.
- * Uses mocked API responses to ensure consistent test behavior.
+ * Tests exact API request/response contracts with mocked data.
+ * Asserts precise JSON structure and UI rendering.
+ *
+ * For production smoke tests (no mocking), see chat-agent-v2.prod-smoke.spec.ts
  */
 
 import { test, expect } from '@playwright/test';
@@ -10,13 +12,12 @@ import { test, expect } from '@playwright/test';
 const AUTH_STATE = process.env.E2E_AUTH_STATE ?? '';
 
 // Skip all tests in this file if we don't have an auth storage state configured.
-// This keeps prod runs clean until we explicitly set up login.
 test.skip(
   !AUTH_STATE,
-  'E2E_AUTH_STATE not configured; skipping Agent V2 UI tests that require authenticated session.'
+  'E2E_AUTH_STATE not configured; skipping Agent V2 contract tests that require authenticated session.'
 );
 
-test.describe('@frontend @agent-v2 @prodSafe @authRequired Chat Agent V2 UI', () => {
+test.describe('@frontend @agent-v2 @contract @authRequired Agent V2 API Contracts', () => {
   test('renders answer and suspicious_summary card with data-driven content', async ({ page }) => {
     // Mock Agent V2 API response
     await page.route('**/api/v2/agent/run', async (route) => {
