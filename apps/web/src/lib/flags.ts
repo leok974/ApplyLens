@@ -43,6 +43,12 @@ export const FLAGS = {
   CHAT_AGENT_V2: import.meta.env.VITE_CHAT_AGENT_V2 === '1',
 };
 
+// Runtime assertion to verify flag is wired correctly
+console.log('[FLAGS]', {
+  VITE_CHAT_AGENT_V2: import.meta.env.VITE_CHAT_AGENT_V2,
+  CHAT_AGENT_V2: import.meta.env.VITE_CHAT_AGENT_V2 === '1',
+});
+
 /**
  * Check if any AI features are enabled
  */

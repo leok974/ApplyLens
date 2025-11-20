@@ -63,6 +63,7 @@ export default defineConfig({
   },
   define: {
     '__BUILD_ID__': JSON.stringify(BUILD_ID),
+    'import.meta.env.VITE_CHAT_AGENT_V2': JSON.stringify(process.env.VITE_CHAT_AGENT_V2 || '0'),
   },
   server: {
     port: 5175,
