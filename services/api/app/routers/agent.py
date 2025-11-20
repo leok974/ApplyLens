@@ -14,7 +14,7 @@ import logging
 from app.schemas_agent import AgentRunRequest, AgentRunResponse
 from app.agent.orchestrator import MailboxAgentOrchestrator
 
-router = APIRouter(prefix="/agent", tags=["agent-v2"])
+router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
 logger = logging.getLogger(__name__)
 
 # Initialize orchestrator (singleton)
@@ -34,7 +34,7 @@ def get_orchestrator() -> MailboxAgentOrchestrator:
 # ============================================================================
 
 
-@router.post("/mailbox/run", response_model=AgentRunResponse)
+@router.post("/run", response_model=AgentRunResponse)
 async def run_mailbox_agent(
     request: AgentRunRequest,
     # current_user = Depends(get_current_user)  # TODO: Enable auth
@@ -79,7 +79,7 @@ async def run_mailbox_agent(
         raise HTTPException(status_code=500, detail=f"Agent run failed: {str(e)}")
 
 
-@router.get("/mailbox/run/{run_id}", response_model=AgentRunResponse)
+@router.get("/run/{run_id}", response_model=AgentRunResponse)
 async def get_agent_run(run_id: str):
     """
     Get agent run by ID.
