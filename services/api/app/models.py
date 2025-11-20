@@ -868,7 +868,7 @@ class AgentFeedback(Base):
     label = Column(Text, nullable=False)  # helpful | not_helpful | hide | done
     thread_id = Column(Text, nullable=True, index=True)
     message_id = Column(Text, nullable=True)
-    metadata = Column(JSONType, nullable=True)
+    feedback_metadata = Column("metadata", JSONType, nullable=True)
 
     __table_args__ = (
         Index(

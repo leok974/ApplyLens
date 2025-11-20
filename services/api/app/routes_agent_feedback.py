@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
 from app.db import get_db
-from app.oauth_google import get_session_user_or_demo
+from app.auth.deps import current_user
 from app.schemas_agent_feedback import (
     AgentFeedbackCreate,
     AgentFeedbackResponse,
@@ -31,7 +31,7 @@ async def create_agent_feedback(
     payload: AgentFeedbackCreate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    user: models.User = Depends(get_session_user_or_demo),
+    user: models.User = Depends(current_user),
 ):
     """
     Record user feedback on an agent card or item.
@@ -68,7 +68,7 @@ async def create_agent_feedback(
         label=payload.label,
         thread_id=payload.thread_id,
         message_id=payload.message_id,
-        metadata={
+        feedback_metadata={
             "metrics": payload.metrics,
             "meta": payload.meta,
             "user_agent": request.headers.get("user-agent"),
