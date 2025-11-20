@@ -49,7 +49,7 @@ export async function runMailboxAgent(
 
   // Use v2 endpoint if flag is enabled, otherwise v1
   const endpoint = FLAGS.CHAT_AGENT_V2
-    ? '/api/v2/agent/run'  // Agent v2 with structured LLM answering
+    ? '/v2/agent/run'  // Agent v2 with structured LLM answering (apiFetch adds /api prefix)
     : '/agent/mailbox/run';  // Legacy v1 endpoint
 
   const response = await apiFetch(endpoint, {
