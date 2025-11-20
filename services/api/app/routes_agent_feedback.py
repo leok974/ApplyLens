@@ -19,6 +19,7 @@ from app.schemas_agent_feedback import (
     AgentFeedbackResponse,
 )
 from app.metrics_agent import agent_v2_feedback_total
+from app.agent.feedback_aggregate import aggregate_feedback_for_all_users
 
 logger = logging.getLogger(__name__)
 
@@ -128,9 +129,8 @@ async def aggregate_feedback(
     # Run aggregation
     logger.info("Starting feedback aggregation for all users")
     try:
-        # TODO: Re-enable actual aggregation once async/sync DB is sorted out
-        # For now, return hardcoded safe stats to verify endpoint works
-        stats = {"user_count": 0, "total_feedback_rows": 0}
+        # Call sync aggregation function (no await)
+        stats = aggregate_feedback_for_all_users(db)
         logger.info("Feedback aggregation completed", extra={"stats": stats})
         return {"ok": True, "stats": stats}
     except Exception:
