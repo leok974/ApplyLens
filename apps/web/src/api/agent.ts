@@ -52,6 +52,7 @@ export async function runMailboxAgent(
     ? '/v2/agent/run'  // Agent v2 with structured LLM answering (apiFetch adds /api prefix)
     : '/agent/mailbox/run';  // Legacy v1 endpoint
 
+  // apiFetch already parses JSON and throws on error
   const response = await apiFetch(endpoint, {
     method: 'POST',
     headers: {
@@ -61,12 +62,7 @@ export async function runMailboxAgent(
     body: JSON.stringify(body),
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Agent run failed' }));
-    throw new Error(error.detail || 'Failed to execute agent run');
-  }
-
-  return response.json();
+  return response as AgentRunResponse;
 }
 
 /**
@@ -75,13 +71,9 @@ export async function runMailboxAgent(
  * Note: Not implemented yet - runs are not persisted.
  */
 export async function getAgentRun(runId: string): Promise<AgentRunResponse> {
+  // apiFetch already parses JSON and throws on error
   const response = await apiFetch(`/agent/mailbox/run/${runId}`);
-
-  if (!response.ok) {
-    throw new Error('Run not found or history not available');
-  }
-
-  return response.json();
+  return response as AgentRunResponse;
 }
 
 /**
@@ -90,13 +82,9 @@ export async function getAgentRun(runId: string): Promise<AgentRunResponse> {
  * Returns tool metadata for UI/debugging.
  */
 export async function listAgentTools(): Promise<ToolsListResponse> {
+  // apiFetch already parses JSON and throws on error
   const response = await apiFetch('/agent/tools');
-
-  if (!response.ok) {
-    throw new Error('Failed to list agent tools');
-  }
-
-  return response.json();
+  return response as ToolsListResponse;
 }
 
 /**
@@ -105,11 +93,7 @@ export async function listAgentTools(): Promise<ToolsListResponse> {
  * Checks Redis, ES, LLM connectivity.
  */
 export async function getAgentHealth(): Promise<AgentHealthResponse> {
+  // apiFetch already parses JSON and throws on error
   const response = await apiFetch('/agent/health');
-
-  if (!response.ok) {
-    throw new Error('Failed to check agent health');
-  }
-
-  return response.json();
+  return response as AgentHealthResponse;
 }

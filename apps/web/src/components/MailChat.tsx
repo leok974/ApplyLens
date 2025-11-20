@@ -644,6 +644,9 @@ export default function MailChat() {
       try {
         const res = await runMailboxAgent(userText, { timeWindowDays: windowDays })
 
+        // DEBUG: Log full response
+        console.log("[Agent V2] Response:", JSON.stringify(res, null, 2))
+
         // Check if response has an error status (HTTP 200 but status="error")
         if (res.status === "error") {
           // Replace thinking message with error
