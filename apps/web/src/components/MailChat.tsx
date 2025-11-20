@@ -1227,8 +1227,8 @@ export default function MailChat() {
           </div>
         )})}
 
-        {/* Single thinking indicator - only when busy */}
-        {busy && (
+        {/* Single thinking indicator - only for legacy (Agent V1) */}
+        {busy && !FLAGS.CHAT_AGENT_V2 && (
           <div className="text-left">
             <div className="inline-block bg-neutral-800/50 rounded-2xl px-4 py-2.5">
               <div className="flex items-center gap-2 text-sm text-neutral-400">
