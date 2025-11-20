@@ -68,7 +68,8 @@ async def e2e_login(
             )
 
         # Create session using existing session utilities
-        sid = new_session(user_id=user.id, user_email=user.email)
+        session = new_session(db=db, user_id=str(user.id))
+        sid = session.id
 
         # Set session cookie using existing helper
         set_cookie(
