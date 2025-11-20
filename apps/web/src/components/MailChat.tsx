@@ -90,6 +90,9 @@ export default function MailChat() {
   const { config } = useRuntimeConfig()
   const [userEmail] = useState('leoklemet.pa@gmail.com') // TODO: Read from auth context
 
+  // Feature flags
+  const CHAT_AGENT_V2 = Boolean(FLAGS?.CHAT_AGENT_V2)
+
   // Dev mode flag: show internal/debug controls
   const isDev = config.readOnly === true || import.meta.env.DEV
 
@@ -119,6 +122,12 @@ export default function MailChat() {
   const [isStreamAlive, setIsStreamAlive] = useState(false)
   const streamHeartbeatRef = useRef<number | null>(null)
   const currentEventSourceRef = useRef<EventSource | null>(null)
+
+  // Single source of truth for "thinking" UI state
+  // Agent V2: Check if any message has status="thinking"
+  // Agent V1: Use busy state
+  const hasThinkingMessage = messages.some(m => m.status === 'thinking')
+  const isThinking = CHAT_AGENT_V2 ? hasThinkingMessage : busy
 
   // Phase 3: Short-term memory for follow-up context
   const [lastResultContext, setLastResultContext] = useState<null | {
@@ -613,7 +622,7 @@ export default function MailChat() {
     if (!userText) return
 
     // Agent V2 path - structured LLM answering
-    if (FLAGS.CHAT_AGENT_V2) {
+    if (CHAT_AGENT_V2) {
       const placeholderId = crypto.randomUUID()
 
       // Add user message
@@ -639,7 +648,7 @@ export default function MailChat() {
       ])
 
       setInput("")
-      setBusy(true)
+      // Note: Do NOT set busy here - Agent V2 uses message-level status
 
       try {
         const res = await runMailboxAgent(userText, { timeWindowDays: windowDays })
@@ -649,6 +658,9 @@ export default function MailChat() {
 
         // Check if response has an error status (HTTP 200 but status="error")
         if (res.status === "error") {
+          // Set global error state for banner
+          setError(res.error_message || "An error occurred while processing your request")
+
           // Replace thinking message with error
           setMessages(prev =>
             prev.map(m =>
@@ -694,8 +706,6 @@ export default function MailChat() {
               : m
           )
         )
-      } finally {
-        setBusy(false)
       }
 
       return
@@ -976,8 +986,8 @@ export default function MailChat() {
         </div>
       </div>
 
-      {/* Loading State */}
-      {busy && (
+      {/* Loading State - Only for Agent V1 (legacy) */}
+      {isThinking && !CHAT_AGENT_V2 && (
         <div className="text-sm text-neutral-500 my-2">🔄 Searching mailbox …</div>
       )}
 
@@ -1228,7 +1238,7 @@ export default function MailChat() {
         )})}
 
         {/* Single thinking indicator - only for legacy (Agent V1) */}
-        {busy && !FLAGS.CHAT_AGENT_V2 && (
+        {isThinking && !CHAT_AGENT_V2 && (
           <div className="text-left">
             <div className="inline-block bg-neutral-800/50 rounded-2xl px-4 py-2.5">
               <div className="flex items-center gap-2 text-sm text-neutral-400">
