@@ -156,9 +156,10 @@ class AgentRunRequest(BaseModel):
     query: str = Field(..., min_length=1, description="User's natural language query")
     mode: Literal["preview_only", "apply_actions"] = "preview_only"
     context: AgentContext = Field(default_factory=AgentContext)
-    user_id: str = Field(
-        ..., description="Gmail account ID or user identifier"
-    )  # TODO: extract from auth token
+    user_id: Optional[str] = Field(
+        default=None,
+        description="Gmail account ID or user identifier (derived from session if not provided)",
+    )
 
 
 class AgentRunResponse(BaseModel):

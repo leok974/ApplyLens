@@ -7,12 +7,13 @@ Endpoints:
 - GET /agent/tools - List available tools
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import Dict, Any
 import logging
 
 from app.schemas_agent import AgentRunRequest, AgentRunResponse
 from app.agent.orchestrator import MailboxAgentOrchestrator
+from app.db import get_session_by_sid, SessionLocal
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ def get_orchestrator() -> MailboxAgentOrchestrator:
 @router.post("/run", response_model=AgentRunResponse)
 async def run_mailbox_agent(
     request: AgentRunRequest,
+    req: Request,
     # current_user = Depends(get_current_user)  # TODO: Enable auth
 ):
     """
@@ -56,12 +58,26 @@ async def run_mailbox_agent(
       "context": {
         "time_window_days": 7,
         "filters": {"labels": ["INBOX"], "risk_min": 80}
-      },
-      "user_id": "user@gmail.com"
+      }
     }
     ```
     """
     try:
+        # Get user from session if not provided in request
+        if not request.user_id:
+            sid = req.cookies.get("session_id")
+            if not sid:
+                raise HTTPException(status_code=401, detail="Not authenticated")
+
+            db = SessionLocal()
+            try:
+                session_obj = get_session_by_sid(db, sid)
+                if not session_obj:
+                    raise HTTPException(status_code=401, detail="Invalid session")
+                request.user_id = session_obj.user.email
+            finally:
+                db.close()
+
         logger.info(
             f"Agent run requested: query='{request.query}', user={request.user_id}"
         )
@@ -74,6 +90,8 @@ async def run_mailbox_agent(
         )
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Agent run failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Agent run failed: {str(e)}")
