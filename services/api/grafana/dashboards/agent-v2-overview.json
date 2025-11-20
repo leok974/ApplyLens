@@ -468,6 +468,155 @@
           "legendFormat": "Error Rate"
         }
       ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Agent Feedback by Label (Learning Signal)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": "${DS_PROM}",
+      "description": "User feedback on agent cards: helpful/not_helpful/hide/done. This drives the learning loop.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "helpful" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "not_helpful" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "hide" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "done" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "calcs": ["sum", "mean"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (label) (rate(agent_v2_feedback_total[1h]))",
+          "legendFormat": "{{label}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Learning Pressure (Total Feedback Rate)",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 24 },
+      "datasource": "${DS_PROM}",
+      "description": "How much signal are users sending to teach the agent? Higher = more engagement.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "text" },
+              { "value": 0.01, "color": "yellow" },
+              { "value": 0.1, "color": "green" },
+              { "value": 1, "color": "blue" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": ["mean"],
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(agent_v2_feedback_total[1h]))",
+          "legendFormat": "Feedback/sec"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Agent Runs vs Feedback (Engagement Ratio)",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 24 },
+      "datasource": "${DS_PROM}",
+      "description": "Compare agent runs to feedback events. High feedback = users actively teaching the system.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(mailbox_agent_runs_total{status=\"done\"}[5m]))",
+          "legendFormat": "Agent Runs"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(agent_v2_feedback_total[5m]))",
+          "legendFormat": "User Feedback"
+        }
+      ]
     }
   ]
 }

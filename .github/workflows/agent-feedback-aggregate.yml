@@ -1,0 +1,46 @@
+name: Agent Feedback Aggregation
+
+# Run nightly to aggregate user feedback into preferences
+# This keeps the Agent V2 learning loop fresh
+
+on:
+  schedule:
+    # Daily at 8:00 AM UTC (3:00 AM EST)
+    - cron: "0 8 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  aggregate-feedback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger feedback aggregation
+        run: |
+          echo "Triggering agent feedback aggregation..."
+
+          response=$(curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.SHARED_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -w "\n%{http_code}" \
+            -s \
+            https://applylens.app/api/v2/agent/feedback/aggregate)
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "ERROR: Feedback aggregation failed with status $http_code"
+            exit 1
+          fi
+
+          echo "✅ Feedback aggregation completed successfully"
+          echo "$body" | jq '.'
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "⚠️ Agent feedback aggregation failed!"
+          echo "Check logs at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

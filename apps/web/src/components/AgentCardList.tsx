@@ -8,11 +8,14 @@
 import React from 'react';
 import type { AgentCard } from '@/types/agent';
 
+export type FeedbackLabel = 'helpful' | 'not_helpful' | 'hide' | 'done';
+
 interface AgentCardListProps {
   cards: AgentCard[];
+  onFeedback?: (cardId: string, label: FeedbackLabel, itemId?: string) => void;
 }
 
-export const AgentCardList: React.FC<AgentCardListProps> = ({ cards }) => {
+export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback }) => {
   if (!cards || cards.length === 0) return null;
 
   return (
@@ -23,13 +26,48 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards }) => {
           className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-sm backdrop-blur-sm"
           data-testid={`agent-card-${card.kind}`}
         >
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-zinc-100">
               {card.title}
             </h3>
-            <span className="text-[11px] uppercase tracking-wide text-zinc-500">
-              {card.kind.replace(/_/g, ' ')}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] uppercase tracking-wide text-zinc-500">
+                {card.kind.replace(/_/g, ' ')}
+              </span>
+
+              {/* Feedback controls */}
+              {onFeedback && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    data-testid={`agent-feedback-${card.kind}-helpful`}
+                    className="rounded-md border border-zinc-700/50 px-1.5 py-0.5 text-xs hover:bg-zinc-800 hover:border-zinc-600 transition-colors"
+                    onClick={() => onFeedback(card.kind, 'helpful')}
+                    title="Helpful"
+                  >
+                    👍
+                  </button>
+                  <button
+                    type="button"
+                    data-testid={`agent-feedback-${card.kind}-not-helpful`}
+                    className="rounded-md border border-zinc-700/50 px-1.5 py-0.5 text-xs hover:bg-zinc-800 hover:border-zinc-600 transition-colors"
+                    onClick={() => onFeedback(card.kind, 'not_helpful')}
+                    title="Not helpful"
+                  >
+                    👎
+                  </button>
+                  <button
+                    type="button"
+                    data-testid={`agent-feedback-${card.kind}-hide`}
+                    className="rounded-md border border-zinc-700/50 px-1.5 py-0.5 text-xs text-zinc-400 hover:bg-zinc-800 hover:border-zinc-600 hover:text-zinc-300 transition-colors"
+                    onClick={() => onFeedback(card.kind, 'hide')}
+                    title="Hide this card"
+                  >
+                    Hide
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card body from card.body field */}

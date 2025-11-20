@@ -66,6 +66,12 @@ agent_v2_errors_total = Counter(
     ["error_type"],  # tool_timeout, llm_error, validation_error, etc.
 )
 
+agent_v2_feedback_total = Counter(
+    "agent_v2_feedback_total",
+    "Total Agent V2 feedback events from users",
+    ["intent", "label"],  # label: helpful, not_helpful, hide, done
+)
+
 # ============================================================================
 # Helper Functions
 # ============================================================================

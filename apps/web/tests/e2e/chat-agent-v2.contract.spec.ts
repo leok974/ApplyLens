@@ -707,4 +707,185 @@ test.describe('@frontend @agent-v2 @contract @authRequired @prodSafe Agent V2 AP
     await expect(billsCard).toContainText('Overdue');
     await expect(billsCard).toContainText('Due soon');
   });
+
+  test('feedback buttons send correct API calls with intent and card_id', async ({ page }) => {
+    // Track feedback API calls
+    const feedbackCalls: any[] = [];
+
+    await page.route('**/api/v2/agent/feedback', async (route) => {
+      const req = route.request();
+      const bodyRaw = req.postData() || '{}';
+      const body = JSON.parse(bodyRaw);
+
+      // Store for assertion
+      feedbackCalls.push(body);
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          message: 'Feedback saved successfully',
+        }),
+      });
+    });
+
+    // Mock Agent V2 run with suspicious card
+    await page.route('**/api/v2/agent/run', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          run_id: 'feedback-test-run',
+          user_id: 'test@example.com',
+          query: 'show suspicious emails',
+          mode: 'preview_only',
+          context: { time_window_days: 7 },
+          status: 'done',
+          intent: 'suspicious',
+          answer: 'I found 2 suspicious emails from risky domains.',
+          cards: [
+            {
+              kind: 'suspicious_summary',
+              title: 'Suspicious Emails',
+              body: 'Found 2 risky emails',
+              email_ids: ['email-1', 'email-2'],
+              meta: { count: 2 },
+            },
+          ],
+          tools_used: ['email_search'],
+          metrics: { emails_scanned: 100, tool_calls: 1, duration_ms: 1000 },
+          created_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto(`/chat`);
+    await expect(page.getByTestId('agent-mail-chat')).toBeVisible();
+
+    // Send agent query
+    await page.getByTestId('chat-input').fill('show suspicious emails');
+    await page.getByTestId('chat-send').click();
+
+    // Wait for card to render
+    const suspiciousCard = page.getByTestId('agent-card-suspicious_summary');
+    await expect(suspiciousCard).toBeVisible();
+
+    // Click helpful button (👍)
+    const helpfulButton = page.getByTestId('agent-feedback-suspicious_summary-helpful');
+    await expect(helpfulButton).toBeVisible();
+    await helpfulButton.click();
+
+    // Wait for API call
+    await page.waitForTimeout(200);
+
+    // Verify feedback API was called with correct payload
+    expect(feedbackCalls.length).toBeGreaterThan(0);
+    const helpfulCall = feedbackCalls[0];
+    expect(helpfulCall.intent).toBe('suspicious');
+    expect(helpfulCall.card_id).toBe('suspicious_summary');
+    expect(helpfulCall.label).toBe('helpful');
+    expect(helpfulCall.run_id).toBe('feedback-test-run');
+
+    // Click not helpful button (👎)
+    const notHelpfulButton = page.getByTestId('agent-feedback-suspicious_summary-not-helpful');
+    await notHelpfulButton.click();
+    await page.waitForTimeout(200);
+
+    expect(feedbackCalls.length).toBe(2);
+    const notHelpfulCall = feedbackCalls[1];
+    expect(notHelpfulCall.label).toBe('not_helpful');
+
+    // Click hide button - should trigger optimistic UI
+    const hideButton = page.getByTestId('agent-feedback-suspicious_summary-hide');
+    await hideButton.click();
+
+    // Verify card is removed from DOM (optimistic update)
+    await expect(suspiciousCard).not.toBeVisible({ timeout: 1000 });
+
+    // Verify hide feedback was sent
+    await page.waitForTimeout(200);
+    expect(feedbackCalls.length).toBe(3);
+    const hideCall = feedbackCalls[2];
+    expect(hideCall.label).toBe('hide');
+  });
+
+  test('feedback on card with items includes item_id', async ({ page }) => {
+    const feedbackCalls: any[] = [];
+
+    await page.route('**/api/v2/agent/feedback', async (route) => {
+      const req = route.request();
+      const body = JSON.parse(req.postData() || '{}');
+      feedbackCalls.push(body);
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, message: 'Feedback saved' }),
+      });
+    });
+
+    // Mock followups card with items
+    await page.route('**/api/v2/agent/run', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          run_id: 'followup-run',
+          user_id: 'test@example.com',
+          query: 'show followups',
+          mode: 'preview_only',
+          context: { time_window_days: 30 },
+          status: 'done',
+          intent: 'followups',
+          answer: 'You have 2 emails waiting for replies.',
+          cards: [
+            {
+              kind: 'followups_summary',
+              title: 'Follow-ups',
+              body: 'Found 2 threads needing replies',
+              email_ids: ['email-1', 'email-2'],
+              meta: {
+                count: 2,
+                items: [
+                  { id: 'thread-1', company: 'ACME Corp', last_email_date: '2025-11-10' },
+                  { id: 'thread-2', company: 'Widget Inc', last_email_date: '2025-11-15' },
+                ],
+              },
+            },
+          ],
+          tools_used: ['email_search'],
+          metrics: { emails_scanned: 500, tool_calls: 1, duration_ms: 800 },
+          created_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.goto(`/chat`);
+    await expect(page.getByTestId('agent-mail-chat')).toBeVisible();
+
+    await page.getByTestId('chat-input').fill('show followups');
+    await page.getByTestId('chat-send').click();
+
+    // Wait for card
+    const followupsCard = page.getByTestId('agent-card-followups_summary');
+    await expect(followupsCard).toBeVisible();
+
+    // Click hide on the card (not individual item)
+    const hideButton = page.getByTestId('agent-feedback-followups_summary-hide');
+    await hideButton.click();
+
+    await page.waitForTimeout(200);
+
+    // Verify feedback call includes card_id but no item_id (whole card hidden)
+    expect(feedbackCalls.length).toBe(1);
+    const call = feedbackCalls[0];
+    expect(call.intent).toBe('followups');
+    expect(call.card_id).toBe('followups_summary');
+    expect(call.label).toBe('hide');
+    // item_id should be undefined or null when hiding entire card
+    expect(call.item_id).toBeUndefined();
+  });
 });

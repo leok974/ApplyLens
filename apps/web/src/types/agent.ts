@@ -69,6 +69,7 @@ export interface AgentRunResponse {
 
   // Results
   status: AgentStatus;
+  intent?: string;  // Classified intent: suspicious, bills, interviews, followups, profile, generic
   answer: string;
   cards: AgentCard[];
   tools_used: string[];

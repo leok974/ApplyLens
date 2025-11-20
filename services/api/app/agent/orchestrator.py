@@ -14,6 +14,9 @@ import logging
 from datetime import datetime
 from dataclasses import dataclass
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.schemas_agent import (
     AgentRunRequest,
     AgentRunResponse,
@@ -456,7 +459,104 @@ class MailboxAgentOrchestrator:
     def __init__(self, tool_registry: Optional[ToolRegistry] = None):
         self.tools = tool_registry or ToolRegistry()
 
-    async def run(self, request: AgentRunRequest) -> AgentRunResponse:
+    async def _load_prefs_for_user(
+        self, db: Optional[AsyncSession], user_id: str
+    ) -> Dict[str, Any]:
+        """
+        Load user preferences from agent_preferences table.
+
+        Returns a dict like:
+        {
+            "suspicious": {"blocked_thread_ids": [...]},
+            "followups": {"done_thread_ids": [...], "hidden_thread_ids": [...]},
+            "bills": {"autopay_thread_ids": [...]}
+        }
+
+        If no preferences found or db is None, returns empty dict.
+        """
+        if not db:
+            return {}
+
+        try:
+            from app.models import AgentPreferences
+
+            result = await db.execute(
+                select(AgentPreferences).where(AgentPreferences.user_id == user_id)
+            )
+            row = result.scalar_one_or_none()
+            return row.data if row else {}
+        except Exception as e:
+            logger.warning(f"Failed to load preferences for user {user_id}: {e}")
+            return {}
+
+    def _filter_tool_results_by_preferences(
+        self, tool_results: List[ToolResult], intent: str, prefs: Dict[str, Any]
+    ) -> List[ToolResult]:
+        """
+        Filter tool results based on user preferences.
+
+        Intent-specific filtering:
+        - suspicious: Remove threads in blocked_thread_ids
+        - followups: Remove threads in done_thread_ids or hidden_thread_ids
+        - bills: Remove threads in autopay_thread_ids
+
+        Returns filtered list of tool results.
+        """
+        if not prefs:
+            return tool_results
+
+        if intent == "suspicious":
+            blocked = set(prefs.get("suspicious", {}).get("blocked_thread_ids", []))
+            if blocked:
+                original_count = len(tool_results)
+                tool_results = [
+                    r
+                    for r in tool_results
+                    if not hasattr(r, "thread_id") or r.thread_id not in blocked
+                ]
+                filtered_count = original_count - len(tool_results)
+                if filtered_count > 0:
+                    logger.info(
+                        f"Filtered {filtered_count} suspicious results based on user preferences"
+                    )
+
+        elif intent == "followups":
+            done_ids = set(prefs.get("followups", {}).get("done_thread_ids", []))
+            hidden_ids = set(prefs.get("followups", {}).get("hidden_thread_ids", []))
+            all_filtered = done_ids | hidden_ids
+            if all_filtered:
+                original_count = len(tool_results)
+                tool_results = [
+                    r
+                    for r in tool_results
+                    if not hasattr(r, "thread_id") or r.thread_id not in all_filtered
+                ]
+                filtered_count = original_count - len(tool_results)
+                if filtered_count > 0:
+                    logger.info(
+                        f"Filtered {filtered_count} followup results based on user preferences"
+                    )
+
+        elif intent == "bills":
+            autopay_ids = set(prefs.get("bills", {}).get("autopay_thread_ids", []))
+            if autopay_ids:
+                original_count = len(tool_results)
+                tool_results = [
+                    r
+                    for r in tool_results
+                    if not hasattr(r, "thread_id") or r.thread_id not in autopay_ids
+                ]
+                filtered_count = original_count - len(tool_results)
+                if filtered_count > 0:
+                    logger.info(
+                        f"Filtered {filtered_count} bill results based on user preferences"
+                    )
+
+        return tool_results
+
+    async def run(
+        self, request: AgentRunRequest, db: Optional[AsyncSession] = None
+    ) -> AgentRunResponse:
         """
         Execute a complete agent run.
 
@@ -481,12 +581,18 @@ class MailboxAgentOrchestrator:
             # 3. Execute tools
             tool_results = await self._execute_tools(tool_plan, request)
 
-            # 4. Synthesize answer with LLM + RAG (returns answer + cards)
+            # 4. Load user preferences and filter tool results
+            prefs = await self._load_prefs_for_user(db, request.user_id)
+            tool_results = self._filter_tool_results_by_preferences(
+                tool_results, intent, prefs
+            )
+
+            # 5. Synthesize answer with LLM + RAG (returns answer + cards)
             answer, llm_used, rag_sources, cards = await self._synthesize_answer(
                 request.query, intent, tool_results, request.user_id
             )
 
-            # 5. Build metrics
+            # 6. Build metrics
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             metrics = AgentMetrics(
                 emails_scanned=self._count_emails_scanned(tool_results),
@@ -496,7 +602,7 @@ class MailboxAgentOrchestrator:
                 llm_used=llm_used,
             )
 
-            # 6. Build response
+            # 7. Build response
             response = AgentRunResponse(
                 user_id=request.user_id,
                 query=request.query,
@@ -511,7 +617,7 @@ class MailboxAgentOrchestrator:
                 intent=intent,  # Add intent to response
             )
 
-            # 7. Record telemetry
+            # 8. Record telemetry
             record_agent_run(
                 intent=intent,
                 mode=request.mode,

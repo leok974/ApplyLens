@@ -850,3 +850,49 @@ class ExtensionOutreach(Base):
 
     def __repr__(self):
         return f"<ExtensionOutreach(id={self.id}, company={self.company}, recruiter={self.recruiter_name})>"
+
+
+class AgentFeedback(Base):
+    """User feedback on Agent V2 cards and items for learning loop."""
+
+    __tablename__ = "agent_feedback"
+
+    id = Column(String(64), primary_key=True)  # UUID
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(String(64), nullable=False, index=True)
+    intent = Column(Text, nullable=False)
+    query = Column(Text, nullable=True)
+    run_id = Column(String(64), nullable=True)
+    card_id = Column(Text, nullable=False)
+    item_id = Column(Text, nullable=True)
+    label = Column(Text, nullable=False)  # helpful | not_helpful | hide | done
+    thread_id = Column(Text, nullable=True, index=True)
+    message_id = Column(Text, nullable=True)
+    metadata = Column(JSONType, nullable=True)
+
+    __table_args__ = (
+        Index(
+            "ix_agent_feedback_user_intent_created_at",
+            "user_id",
+            "intent",
+            "created_at",
+        ),
+    )
+
+    def __repr__(self):
+        return f"<AgentFeedback(id={self.id}, user={self.user_id}, intent={self.intent}, label={self.label})>"
+
+
+class AgentPreferences(Base):
+    """Cached per-user preferences for fast Agent V2 filtering."""
+
+    __tablename__ = "agent_preferences"
+
+    user_id = Column(String(64), primary_key=True)
+    data = Column(JSONType, nullable=False, server_default=text("'{}'::jsonb"))
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self):
+        return f"<AgentPreferences(user={self.user_id})>"

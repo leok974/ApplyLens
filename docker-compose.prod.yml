@@ -169,8 +169,9 @@ services:
     # v0.4.27: Enhanced Actions page with drawer, explanations, and optimistic UI updates
     # v0.4.26: Implemented Actions page with real backend endpoints
     # v0.4.25: Added /api/tracker endpoint for Gmail-derived applications
+    # v0.5.15: Agent V2 Learning Loop - feedback routes + aggregation endpoint
     # v0.4.49: Profile warehouse integration + Ollama production deployment
-    image: leoklemet/applylens-api:0.5.14
+    image: leoklemet/applylens-api:0.5.15
     container_name: applylens-api-prod
     environment:
       # Database
@@ -361,6 +362,39 @@ services:
       timeout: 30s
       retries: 2
       start_period: 120s
+
+  # =============================================================================
+  # AGENT FEEDBACK AGGREGATOR (Learning Loop)
+  # =============================================================================
+  agent-feedback-cron:
+    image: python:3.11-slim
+    container_name: applylens-agent-feedback-cron
+    restart: unless-stopped
+    networks:
+      - applylens-prod
+    environment:
+      # Internal call to API (no Cloudflare)
+      API_URL: http://applylens-api-prod:8003/api/v2/agent/feedback/aggregate
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      EVERY_HOURS: ${AGENT_FEEDBACK_EVERY_HOURS:-6}
+      TIMEOUT: ${AGENT_FEEDBACK_TIMEOUT:-120}
+      TZ: America/New_York
+    volumes:
+      - ./infra/agent-feedback-cron:/app:ro
+    working_dir: /app
+    command: >
+      sh -c "pip install --quiet -r /app/requirements.txt && python /app/runner.py"
+    depends_on:
+      api:
+        condition: service_healthy
+    labels:
+      - "com.applylens.role=agent-feedback-cron"
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 1h
+      timeout: 15s
+      retries: 2
+      start_period: 90s
 
   # =============================================================================
   # WEB (Frontend)

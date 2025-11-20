@@ -75,6 +75,12 @@ interface ConversationMessage extends Message {
   response?: ChatResponse
   assistantResponse?: AssistantQueryResponse
   agentV2Cards?: AgentCard[]  // Agent v2 structured cards
+  agentV2Result?: {  // Full agent result for feedback
+    run_id?: string
+    intent?: string
+    query?: string
+    metrics?: Record<string, any>
+  }
   status?: 'idle' | 'thinking' | 'done' | 'error'
   error?: string
   timestamp?: string  // ISO 8601 timestamp for confirmation messages
@@ -233,6 +239,75 @@ export default function MailChat() {
   function openSearchPrefilled() {
     const q = lastQuery?.trim() || '*'
     navigate(`/search?q=${encodeURIComponent(q)}&window=${windowDays}`)
+  }
+
+  /**
+   * Handle user feedback on agent cards
+   * Saves feedback to backend and optionally hides cards from UI
+   */
+  async function handleAgentFeedback(
+    messageId: string | undefined,
+    cardId: string,
+    label: 'helpful' | 'not_helpful' | 'hide' | 'done',
+    itemId?: string
+  ) {
+    if (!messageId) {
+      console.warn('[Feedback] No message ID, skipping feedback')
+      return
+    }
+
+    // Find the message with this card
+    const message = messages.find(m => m.id === messageId)
+    if (!message || !message.agentV2Result) {
+      console.warn('[Feedback] Message not found or missing agent result', messageId)
+      return
+    }
+
+    const { run_id, intent, query, metrics } = message.agentV2Result
+
+    // Find the card to get metadata
+    const card = message.agentV2Cards?.find(c => c.kind === cardId)
+
+    try {
+      // Send feedback to backend
+      const response = await fetch('/api/v2/agent/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent,
+          query,
+          run_id,
+          card_id: cardId,
+          item_id: itemId,
+          label,
+          metrics,
+          meta: card?.meta,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      console.log(`[Feedback] Saved: ${label} for card=${cardId}`)
+
+      // Optimistic UI: hide card immediately if user clicked "hide"
+      if (label === 'hide') {
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === messageId
+              ? {
+                  ...m,
+                  agentV2Cards: m.agentV2Cards?.filter(c => c.kind !== cardId),
+                }
+              : m
+          )
+        )
+      }
+    } catch (err) {
+      console.error('[Feedback] Failed to save:', err)
+      // Don't show error to user - this is best-effort
+    }
   }
 
   function changeWindowDays(days: number) {
@@ -686,6 +761,12 @@ export default function MailChat() {
                   status: "done",
                   content: res.answer,
                   agentV2Cards: res.cards,
+                  agentV2Result: {
+                    run_id: res.run_id,
+                    intent: res.intent,
+                    query: userText,
+                    metrics: res.metrics,
+                  },
                 }
               : m
           )
@@ -1114,7 +1195,24 @@ export default function MailChat() {
 
               {/* Agent V2 Cards - Structured responses */}
               {isAssistant && msg.status === 'done' && msg.agentV2Cards && msg.agentV2Cards.length > 0 && (
-                <AgentCardList cards={msg.agentV2Cards} />
+                <>
+                  <AgentCardList
+                    cards={msg.agentV2Cards}
+                    onFeedback={(cardId, label, itemId) =>
+                      handleAgentFeedback(msg.id, cardId, label, itemId)
+                    }
+                  />
+
+                  {/* Feedback hint - explain that feedback teaches the system */}
+                  <p
+                    data-testid="agent-feedback-hint"
+                    className="mt-2 text-[11px] text-muted-foreground"
+                  >
+                    Use <span className="font-medium">👍</span>, <span className="font-medium">👎</span>, or{" "}
+                    <span className="font-medium">Hide</span> to teach ApplyLens what's useful.
+                    Over time, your feedback helps Mailbox Assistant show fewer irrelevant cards.
+                  </p>
+                </>
               )}
 
               {/* Assistant response metadata */}

@@ -112,7 +112,7 @@ async def run_mailbox_agent(
         )
 
         orchestrator = get_orchestrator()
-        response = await orchestrator.run(payload)
+        response = await orchestrator.run(payload, db=db)
 
         logger.info(
             f"Agent V2: run completed: run_id={response.run_id}, status={response.status}"

@@ -238,6 +238,11 @@ app.include_router(applications.router)
 # Agent router - Mailbox Agent v2 (AI assistant)
 app.include_router(agent_router.router)
 
+# Agent feedback - Learning loop for Agent V2
+from . import routes_agent_feedback  # noqa: E402
+
+app.include_router(routes_agent_feedback.router, prefix="/api")
+
 # Auth router - Google OAuth and demo mode
 from .routers import auth as auth_router  # noqa: E402
 
