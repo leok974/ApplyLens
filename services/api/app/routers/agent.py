@@ -7,13 +7,15 @@ Endpoints:
 - GET /agent/tools - List available tools
 """
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import Dict, Any
 import logging
+from sqlalchemy.orm import Session as DBSession
 
 from app.schemas_agent import AgentRunRequest, AgentRunResponse
 from app.agent.orchestrator import MailboxAgentOrchestrator
-from app.db import get_session_by_sid, SessionLocal
+from app.db import get_db
+from app.models import Session as SessionModel
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
 logger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ def get_orchestrator() -> MailboxAgentOrchestrator:
 async def run_mailbox_agent(
     request: AgentRunRequest,
     req: Request,
-    # current_user = Depends(get_current_user)  # TODO: Enable auth
+    db: DBSession = Depends(get_db),
 ):
     """
     Execute a mailbox agent run.
@@ -69,14 +71,10 @@ async def run_mailbox_agent(
             if not sid:
                 raise HTTPException(status_code=401, detail="Not authenticated")
 
-            db = SessionLocal()
-            try:
-                session_obj = get_session_by_sid(db, sid)
-                if not session_obj:
-                    raise HTTPException(status_code=401, detail="Invalid session")
-                request.user_id = session_obj.user.email
-            finally:
-                db.close()
+            session_obj = db.query(SessionModel).filter(SessionModel.id == sid).first()
+            if not session_obj:
+                raise HTTPException(status_code=401, detail="Invalid session")
+            request.user_id = session_obj.user.email
 
         logger.info(
             f"Agent run requested: query='{request.query}', user={request.user_id}"
