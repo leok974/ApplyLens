@@ -25,8 +25,10 @@ EXEMPT_PREFIXES = (
     "/api/ops/diag",  # DevDiag diagnostics proxy
     "/api/gmail/",  # Gmail backfill/ingest automation
     "/gmail/",  # Without /api prefix
-    "/api/agent/",  # Agent v2 endpoints (AI assistant)
+    "/api/agent/",  # Agent v1 endpoints (legacy)
     "/agent/",  # Without /api prefix
+    "/api/v2/agent/",  # Agent v2 endpoints (AI assistant)
+    "/v2/agent/",  # Without /api prefix
 )
 
 EXEMPT_EXACT = {
