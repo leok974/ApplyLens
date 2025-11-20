@@ -60,6 +60,7 @@
 
     // General perf safety
     "editor.largeFileOptimizations": true,
-    "git.excludeGitIgnore": true
+    "git.excludeGitIgnore": true,
+    "powershell.cwd": "web"
   }
 }
