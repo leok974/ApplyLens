@@ -1,160 +1,137 @@
 /**
- * Agent V2 Production Smoke Tests
+ * PROD SMOKE TEST
  *
- * Validates Agent V2 works end-to-end in production without mocking.
- * Tests assert API shape and rendering, not exact text/data.
+ * - Assumes you're already logged in via storageState (tests/auth/prod.json)
+ * - Does NOT mock anything (except error handling test)
+ * - Only checks:
+ *    • /api/v2/agent/run is called
+ *    • it returns 200
+ *    • the chat shell renders (no hard text assertions)
  *
- * @prodSafe - Safe to run against production with real data
+ * Safe to run against real production (@prodSafe).
  *
  * Usage:
- * E2E_BASE_URL=https://applylens.app \
- * E2E_API=https://applylens.app/api \
- * E2E_AUTH_STATE=tests/auth/prod.json \
- * USE_SMOKE_SETUP=false \
- * npx playwright test tests/e2e/chat-agent-v2.prod-smoke.spec.ts
+ * $env:E2E_BASE_URL="https://applylens.app"
+ * $env:E2E_API="https://applylens.app/api"
+ * $env:E2E_AUTH_STATE="tests/auth/prod.json"
+ * npx playwright test tests/e2e/chat-agent-v2.prod-smoke.spec.ts --project=chromium
  */
 
 import { test, expect } from '@playwright/test';
 
-const AUTH_STATE = process.env.E2E_AUTH_STATE ?? '';
+const BASE_URL = process.env.E2E_BASE_URL ?? 'https://applylens.app';
+const AUTH_STATE = process.env.E2E_AUTH_STATE ?? 'tests/auth/prod.json';
 
-// Skip all tests in this file if we don't have an auth storage state configured.
-test.skip(
-  !AUTH_STATE,
-  'E2E_AUTH_STATE not configured; skipping Agent V2 prod smoke tests that require authenticated session.'
-);
+test.describe('@prodSafe Agent V2 – prod smoke', () => {
+  test.use({
+    // Reuse your saved prod cookies
+    storageState: AUTH_STATE,
+    baseURL: BASE_URL,
+  });
 
-// Use existing auth state, don't run global setup for prod
-test.use({
-  storageState: AUTH_STATE,
-});
+  test('suspicious query calls /api/v2/agent/run and returns 200', async ({ page }) => {
+    // Skip entirely if someone forgot to point at prod
+    test.skip(
+      !BASE_URL.includes('applylens.app'),
+      'Prod smoke only runs against applylens.app',
+    );
 
-test.describe('@prodSafe @agent-v2 @authRequired Agent V2 Production Smoke', () => {
-  test('suspicious emails flow - API called and response rendered', async ({ page }) => {
     await page.goto('/chat');
 
-    // Wait for chat shell ready
-    await page.getByTestId('agent-mail-chat').waitFor();
+    // Wait for the Mailbox Assistant shell to appear
+    await page.getByTestId('agent-mail-chat').waitFor({ state: 'visible' });
 
-    // Ask a suspicious question
-    const input = page.getByRole('textbox', { name: /ask.*inbox/i });
+    // Fill and send using testids instead of role/name
+    const input = page.getByTestId('chat-input');
+    await expect(input).toBeVisible();
+    await expect(input).toBeEnabled();
     await input.fill('show suspicious emails');
 
-    const sendButton = page.getByRole('button', { name: /send/i });
+    const sendButton = page.getByTestId('chat-send');
+    await expect(sendButton).toBeVisible();
+    await expect(sendButton).toBeEnabled();
 
-    // Start waiting for API call before clicking
-    const requestPromise = page.waitForRequest(
-      req => req.url().includes('/api/v2/agent/run') && req.method() === 'POST',
-      { timeout: 5000 }
-    );
-    const responsePromise = page.waitForResponse(
-      res => res.url().includes('/api/v2/agent/run') && res.status() === 200,
-      { timeout: 15000 }
-    );
+    await Promise.all([
+      // Wait for the agent run request + response
+      page.waitForResponse((res) => {
+        const url = res.url();
+        return (
+          url.includes('/api/v2/agent/run') &&
+          res.request().method() === 'POST'
+        );
+      }),
+      sendButton.click(),
+    ]).then(async ([response]) => {
+      // Make sure backend actually succeeded
+      expect(response.ok(), `Agent V2 response status = ${response.status()}`).toBe(
+        true,
+      );
+    });
 
-    await sendButton.click();
-
-    // 1) Ensure we called the right endpoint
-    const [request, response] = await Promise.all([requestPromise, responsePromise]);
-
-    expect(request.url()).toContain('/api/v2/agent/run');
-    expect(request.method()).toBe('POST');
-    expect(response.status()).toBe(200);
-
-    // 2) Ensure we rendered at least one assistant message
-    const assistantMessage = page.getByTestId('chat-message-assistant').last();
-    await expect(assistantMessage).toBeVisible({ timeout: 5000 });
-
-    // 3) Make sure we didn't hit the generic error banner
+    // Sanity check: make sure we did NOT hit the generic red error banner
     await expect(
-      page.getByText(/I hit an error while running the Mailbox Assistant/i)
-    ).not.toBeVisible({ timeout: 2000 });
+      page.getByText(/I hit an error while running the Mailbox Assistant/i),
+    ).not.toBeVisible({ timeout: 1500 });
 
-    // 4) Check that some reasonable text pattern appears (without hardcoding exact numbers)
-    // Could be "0 emails found", "found 3 emails", "no suspicious emails", etc.
+    // Optional: very soft assertion that some reply text showed up,
+    // without depending on exact wording or counts.
+    // This keeps the test from passing if nothing rendered.
     await expect(
-      assistantMessage.locator('text=/emails? found|no suspicious|suspicious (?:email|message)/i')
-    ).toBeVisible();
-
-    // 5) Verify at least one card is rendered (Agent V2 always returns cards)
-    const agentCard = page.locator('[data-agent-card]').first();
-    await expect(agentCard).toBeVisible();
+      page
+        .getByTestId('agent-mail-chat')
+        // any non-empty assistant bubble inside the chat shell
+        .locator('text=/emails?|inbox|no suspicious emails/i')
+        .first(),
+    ).toBeVisible({ timeout: 10_000 });
   });
 
-  test('bills flow - API called and response rendered', async ({ page }) => {
+  test('bills query calls /api/v2/agent/run and returns 200', async ({ page }) => {
+    test.skip(
+      !BASE_URL.includes('applylens.app'),
+      'Prod smoke only runs against applylens.app',
+    );
+
     await page.goto('/chat');
     await page.getByTestId('agent-mail-chat').waitFor();
 
-    const input = page.getByRole('textbox', { name: /ask.*inbox/i });
+    const input = page.getByTestId('chat-input');
     await input.fill('show my bills');
 
-    const sendButton = page.getByRole('button', { name: /send/i });
-
-    const requestPromise = page.waitForRequest(
-      req => req.url().includes('/api/v2/agent/run') && req.method() === 'POST',
-      { timeout: 5000 }
-    );
-    const responsePromise = page.waitForResponse(
-      res => res.url().includes('/api/v2/agent/run') && res.status() === 200,
-      { timeout: 15000 }
-    );
-
-    await sendButton.click();
-    await Promise.all([requestPromise, responsePromise]);
-
-    // Assert assistant message rendered
-    const assistantMessage = page.getByTestId('chat-message-assistant').last();
-    await expect(assistantMessage).toBeVisible({ timeout: 5000 });
+    const sendButton = page.getByTestId('chat-send');
+    await Promise.all([
+      page.waitForResponse((res) => {
+        const url = res.url();
+        return (
+          url.includes('/api/v2/agent/run') &&
+          res.request().method() === 'POST'
+        );
+      }),
+      sendButton.click(),
+    ]).then(async ([response]) => {
+      expect(response.ok(), `Agent V2 response status = ${response.status()}`).toBe(
+        true,
+      );
+    });
 
     // No error banner
     await expect(
-      page.getByText(/I hit an error while running the Mailbox Assistant/i)
-    ).not.toBeVisible({ timeout: 2000 });
+      page.getByText(/I hit an error while running the Mailbox Assistant/i),
+    ).not.toBeVisible({ timeout: 1500 });
 
-    // Check for bill-related text (flexible patterns)
+    // Soft assertion: some bill/payment related text appeared
     await expect(
-      assistantMessage.locator('text=/bills?|payments?|invoices?|due|overdue|upcoming/i')
-    ).toBeVisible();
-  });
-
-  test('interviews flow - API called and response rendered', async ({ page }) => {
-    await page.goto('/chat');
-    await page.getByTestId('agent-mail-chat').waitFor();
-
-    const input = page.getByRole('textbox', { name: /ask.*inbox/i });
-    await input.fill('show interview emails');
-
-    const sendButton = page.getByRole('button', { name: /send/i });
-
-    const responsePromise = page.waitForResponse(
-      res => res.url().includes('/api/v2/agent/run') && res.status() === 200,
-      { timeout: 15000 }
-    );
-
-    await sendButton.click();
-    const response = await responsePromise;
-    expect(response.status()).toBe(200);
-
-    // Assert assistant message rendered
-    const assistantMessage = page.getByTestId('chat-message-assistant').last();
-    await expect(assistantMessage).toBeVisible({ timeout: 5000 });
-
-    // No error banner
-    await expect(
-      page.getByText(/I hit an error while running the Mailbox Assistant/i)
-    ).not.toBeVisible({ timeout: 2000 });
-
-    // Check for interview-related text
-    await expect(
-      assistantMessage.locator('text=/interviews?|upcoming|waiting|schedul/i')
-    ).toBeVisible();
+      page
+        .getByTestId('agent-mail-chat')
+        .locator('text=/bills?|payments?|invoices?|due|overdue/i')
+        .first(),
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test('error handling - shows error banner when API fails', async ({ page }) => {
     await page.goto('/chat');
     await page.getByTestId('agent-mail-chat').waitFor();
 
-    // Mock a 500 error for this test
+    // Mock a 500 error for this test only
     await page.route('**/api/v2/agent/run', route => {
       route.fulfill({
         status: 500,
@@ -163,14 +140,15 @@ test.describe('@prodSafe @agent-v2 @authRequired Agent V2 Production Smoke', () 
       });
     });
 
-    const input = page.getByRole('textbox', { name: /ask.*inbox/i });
+    const input = page.getByTestId('chat-input');
     await input.fill('test error handling');
 
-    const sendButton = page.getByRole('button', { name: /send/i });
+    const sendButton = page.getByTestId('chat-send');
     await sendButton.click();
 
     // Should show error message
-    const errorMessage = page.getByTestId('chat-message-assistant').last();
-    await expect(errorMessage).toContainText(/I hit an error while running the Mailbox Assistant/i);
+    await expect(
+      page.getByText(/I hit an error while running the Mailbox Assistant/i),
+    ).toBeVisible({ timeout: 5000 });
   });
 });

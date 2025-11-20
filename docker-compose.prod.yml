@@ -409,7 +409,7 @@ services:
     # v0.4.62: Filter pill styles + working category filters (fix param mismatch)
     # v0.4.63: Hardened filter pills for dark panels (stronger contrast, semantic colors)
     # v0.4.64: Theme-aware select fields - global styling for light/dark modes
-    image: leoklemet/applylens-web:0.5.8
+    image: leoklemet/applylens-web:0.5.9
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
