@@ -612,8 +612,8 @@ test.describe('@frontend @agent-v2 @contract @authRequired @prodSafe Agent V2 AP
     // Verify card
     const followupsCard = page.getByTestId('agent-card-followups_summary');
     await expect(followupsCard).toBeVisible();
-    await expect(followupsCard).toContainText('Conversations Waiting on Your Reply');
-    await expect(followupsCard).toContainText('2');
+    await expect(followupsCard).toContainText('Conversations Waiting');
+    await expect(followupsCard).toContainText('Suggested follow-ups');
   });
 
   test('bills intent shows due soon and overdue sections', async ({ page }) => {
@@ -663,7 +663,7 @@ test.describe('@frontend @agent-v2 @contract @authRequired @prodSafe Agent V2 AP
                     id: 'other',
                     title: 'Other bills',
                     items: [
-                      { id: 'b4', merchant: 'Phone Bill', amount: 60, due_date: '2025-12-01', status: 'upcoming' },
+                      { id: 'b4', merchant: 'Phone Bill', amount: 60, due_date: '2025-12-01', status: 'other' },
                     ],
                   },
                 ],

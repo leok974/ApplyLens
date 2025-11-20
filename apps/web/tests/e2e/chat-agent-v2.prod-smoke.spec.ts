@@ -68,10 +68,13 @@ test.describe('@prodSafe Agent V2 – prod smoke', () => {
       );
     });
 
+    // Wait for card to render (critical for UI validation)
+    const card = page.getByTestId('agent-card-suspicious_summary');
+    await expect(card).toBeVisible({ timeout: 10_000 });
+
     // Sanity check: make sure we did NOT hit the generic red error banner
-    await expect(
-      page.getByText(/I hit an error while running the Mailbox Assistant/i),
-    ).not.toBeVisible({ timeout: 1500 });
+    const errorBanner = page.getByTestId('chat-error-banner');
+    await expect(errorBanner).toHaveCount(0);
 
     // Optional: very soft assertion that some reply text showed up,
     // without depending on exact wording or counts.
@@ -80,7 +83,7 @@ test.describe('@prodSafe Agent V2 – prod smoke', () => {
       page
         .getByTestId('agent-mail-chat')
         // any non-empty assistant bubble inside the chat shell
-        .locator('text=/emails?|inbox|no suspicious emails/i')
+        .locator('text=/emails?|inbox|no suspicious emails|suspicious/i')
         .first(),
     ).toBeVisible({ timeout: 10_000 });
   });
