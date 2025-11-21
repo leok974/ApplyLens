@@ -29,6 +29,8 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { useMailboxTheme } from '@/hooks/useMailboxTheme'
+import { getMailboxThemeClasses } from '@/themes/mailbox/classes'
 
 type MailToolId =
   | 'summarize'
@@ -103,6 +105,9 @@ interface MailToolStripProps {
 }
 
 function MailToolStrip({ activeTool, onToolChange }: MailToolStripProps) {
+  const { themeId } = useMailboxTheme()
+  const themeClasses = getMailboxThemeClasses(themeId)
+
   return (
     <TooltipProvider>
       <div className="flex flex-wrap gap-2">
@@ -116,16 +121,17 @@ function MailToolStrip({ activeTool, onToolChange }: MailToolStripProps) {
                 <Button
                   type="button"
                   size="sm"
-                  variant={isActive ? 'default' : 'outline'}
+                  variant="ghost"
                   className={cn(
-                    'gap-2 rounded-full border-slate-700/70 bg-slate-900/70 text-xs',
-                    isActive &&
-                      'border-sky-500/60 bg-sky-500/10 shadow-[0_0_0_1px_rgba(56,189,248,0.5)]'
+                    'gap-2 rounded-full px-3 text-xs font-medium transition h-8',
+                    isActive
+                      ? themeClasses.toolPillActive
+                      : themeClasses.toolPill
                   )}
                   data-testid={`mailtool-${tool.id}`}
                   onClick={() => onToolChange(tool.id)}
                 >
-                  <Icon className={cn('h-3.5 w-3.5', tool.colorClass)} />
+                  <Icon className={cn('h-3.5 w-3.5', isActive ? '' : themeClasses.toolPillIcon)} />
                   <span>{tool.label}</span>
                 </Button>
               </TooltipTrigger>
@@ -165,6 +171,10 @@ export default function MailChat() {
   const navigate = useNavigate()
   const { config } = useRuntimeConfig()
   const [userEmail] = useState('leoklemet.pa@gmail.com') // TODO: Read from auth context
+
+  // Mailbox theme
+  const { themeId } = useMailboxTheme()
+  const themeClasses = getMailboxThemeClasses(themeId)
 
   // Feature flags
   const CHAT_AGENT_V2 = Boolean(FLAGS?.CHAT_AGENT_V2)
@@ -1188,7 +1198,10 @@ export default function MailChat() {
       )}
 
       {/* Chat Shell Card */}
-      <Card className="border border-slate-800/80 bg-slate-950/60 shadow-lg">
+      <Card className={cn(themeClasses.chatShell)} data-testid="chat-shell">
+        {/* Top accent border */}
+        <div className={cn("h-0.5 w-full rounded-t-2xl", themeClasses.chatShellBorder)} />
+        
         <CardContent className="p-4 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto">
         {messages.map((msg, i) => {
           const isAssistant = msg.role === 'assistant'

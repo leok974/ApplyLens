@@ -9,7 +9,7 @@ import { useMailboxTheme } from '@/hooks/useMailboxTheme'
 function ChatPageInner() {
   const { themeId } = useMailboxTheme()
   return (
-    <div data-mailbox-theme={themeId}>
+    <div data-testid="chat-root" data-mailbox-theme={themeId} className="flex h-full flex-col">
       <MailChat />
     </div>
   )

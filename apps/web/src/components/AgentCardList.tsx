@@ -18,7 +18,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useMailboxThemeContext } from '@/themes/mailbox/context';
+import { useMailboxTheme } from '@/hooks/useMailboxTheme';
+import { getMailboxThemeClasses } from '@/themes/mailbox/classes';
 
 import {
   ShieldAlert,
@@ -74,7 +75,8 @@ interface AgentCardListProps {
 }
 
 export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback }) => {
-  const theme = useMailboxThemeContext();
+  const { themeId } = useMailboxTheme();
+  const themeClasses = getMailboxThemeClasses(themeId);
 
   if (!cards || cards.length === 0) return null;
 
@@ -88,15 +90,13 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
         const count = meta.count ?? items.length ?? null;
         const timeWindowDays = meta.time_window_days ?? meta.timeWindowDays;
 
-        // Map intent to theme color
-        const intentColor =
+        // Map intent to theme class
+        const intentStripClass =
           intent === 'suspicious'
-            ? theme.colors.intentDanger
+            ? themeClasses.intentStripSuspicious
             : intent === 'bills'
-            ? theme.colors.intentInfo
-            : intent === 'followups' || intent === 'interviews'
-            ? theme.colors.intentSuccess
-            : theme.colors.accentPrimary;
+            ? themeClasses.intentStripBills
+            : themeClasses.intentStripFollowups;
 
         return (
           <div
@@ -106,88 +106,60 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
             data-mailbox-card="true"
             data-testid={`agent-card-${card.kind}`}
           >
-            {/* Left intent strip (only if theme.cards.leftIntentStrip is true) */}
-            {theme.cards.leftIntentStrip && (
-              <div
-                aria-hidden="true"
-                className="mt-2 mb-2 w-1.5 rounded-full"
-                style={{
-                  backgroundColor: intentColor,
-                  boxShadow: `0 0 8px ${intentColor}40`,
-                }}
-              />
-            )}
+            {/* Left intent strip */}
+            <div
+              aria-hidden="true"
+              className={cn('mt-2 mb-2 ml-0.5 w-1.5 rounded-full', intentStripClass)}
+            />
 
             <Card
               className={cn(
-                'flex-1 overflow-hidden border-0',
-                !theme.cards.leftIntentStrip && 'border',
+                'flex-1 overflow-hidden ml-3',
+                themeClasses.agentCardBase,
               )}
-              style={{
-                backgroundColor: theme.colors.bgSurfaceElevated,
-                boxShadow: theme.shadows.ambientGlow,
-                borderColor: !theme.cards.leftIntentStrip ? intentColor : undefined,
-              }}
             >
-              <CardHeader className="flex flex-row items-start gap-3 pb-2">
+              <CardHeader className={cn("flex flex-row items-start gap-3 pb-2", themeClasses.agentCardHeader)}>
                 <div
                   className={cn(
-                    'mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl',
+                    'mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-800/50',
                   )}
-                  style={{
-                    backgroundColor: theme.colors.bgSurfaceInteractive,
-                    color: intentColor,
-                    boxShadow: `0 0 12px ${intentColor}30`,
-                  }}
                 >
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex-1 space-y-1">
                   <CardTitle
-                    className="text-sm font-semibold"
-                    style={{ color: theme.colors.textPrimary }}
+                    className={cn("text-sm font-semibold", themeClasses.agentCardHeader)}
                     data-testid="agent-card-title"
                   >
                     {card.title}
                   </CardTitle>
                   {card.body && (
                     <CardDescription
-                      className="text-xs"
-                      style={{ color: theme.colors.textMuted }}
+                      className="text-xs text-slate-400"
                     >
                       {card.body}
                     </CardDescription>
                   )}
 
                   {/* metrics row */}
-                  {theme.cards.headerMetricsPill && (
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-                      {typeof count === 'number' && (
-                        <Badge
-                          variant="outline"
-                          className="border-0 px-2 py-0.5 text-[11px] font-medium"
-                          style={{
-                            backgroundColor: `${intentColor}15`,
-                            color: intentColor,
-                          }}
-                          data-testid="agent-card-count"
-                        >
-                          {count} {count === 1 ? 'item' : 'items'}
-                        </Badge>
-                      )}
-                      {typeof timeWindowDays === 'number' && (
-                        <span
-                          className="rounded-full px-2 py-0.5"
-                          style={{
-                            backgroundColor: theme.colors.bgSurfaceInteractive,
-                            color: theme.colors.textMuted,
-                          }}
-                        >
-                          Last {timeWindowDays} days
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                    {typeof count === 'number' && (
+                      <Badge
+                        variant="outline"
+                        className="border-slate-700 px-2 py-0.5 text-[11px] font-medium text-slate-300"
+                        data-testid="agent-card-count"
+                      >
+                        {count} {count === 1 ? 'item' : 'items'}
+                      </Badge>
+                    )}
+                    {typeof timeWindowDays === 'number' && (
+                      <span
+                        className="rounded-full bg-slate-800/50 px-2 py-0.5 text-slate-400"
+                      >
+                        Last {timeWindowDays} days
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
 
@@ -198,31 +170,18 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
                     {items.slice(0, 3).map((item: any, idx: number) => (
                       <li
                         key={item.id ?? item.thread_id ?? idx}
-                        className={cn(
-                          'flex items-start gap-2 rounded-lg px-2 py-1.5 transition-colors',
-                          theme.cards.hoverHighlightUsesIntentColor && 'hover:bg-opacity-10',
-                        )}
-                        style={{
-                          color: theme.colors.textPrimary,
-                          ...(theme.cards.hoverHighlightUsesIntentColor && {
-                            '--hover-bg': `${intentColor}20`,
-                          } as React.CSSProperties),
-                        }}
+                        className="flex items-start gap-2 rounded-lg px-2 py-1.5 text-slate-50 transition-colors hover:bg-slate-800/30"
                         data-testid="agent-card-item"
                       >
                         <ChevronRight
-                          className="mt-[3px] h-3 w-3"
-                          style={{ color: theme.colors.textMuted }}
+                          className="mt-[3px] h-3 w-3 text-slate-400"
                         />
                         <div className="flex-1">
                           <div className="font-medium">
                             {item.subject ?? item.title ?? 'Untitled'}
                           </div>
                           {(item.sender || item.from) && (
-                            <div
-                              className="text-[11px]"
-                              style={{ color: theme.colors.textMuted }}
-                            >
+                            <div className="text-[11px] text-slate-400">
                               {item.sender ?? item.from}
                             </div>
                           )}
@@ -230,10 +189,7 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
                       </li>
                     ))}
                     {items.length > 3 && (
-                      <div
-                        className="pt-1 text-[11px]"
-                        style={{ color: theme.colors.textMuted }}
-                      >
+                      <div className="pt-1 text-[11px] text-slate-400">
                         +{items.length - 3} more in this card
                       </div>
                     )}
@@ -244,42 +200,37 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
               {/* feedback footer */}
               {onFeedback && (
                 <CardFooter
-                  className="flex items-center justify-between border-t px-4 py-2.5 text-[11px]"
-                  style={{
-                    borderColor: theme.colors.borderSubtle,
-                    backgroundColor: theme.colors.bgCanvas,
-                    color: theme.colors.textMuted,
-                  }}
+                  className={cn(
+                    "flex items-center justify-between px-4 py-2.5 text-[11px]",
+                    themeClasses.agentCardFooter
+                  )}
                 >
                   <span>Did this help me learn?</span>
                   <div className="flex items-center gap-1.5">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full"
+                      className="h-7 w-7 rounded-full text-emerald-400 hover:text-emerald-300"
                       data-testid="agent-feedback-helpful"
                       onClick={() => onFeedback(card.kind, 'helpful')}
-                      style={{ color: theme.colors.intentSuccess }}
                     >
                       <ThumbsUp className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full"
+                      className="h-7 w-7 rounded-full text-sky-400 hover:text-sky-300"
                       data-testid="agent-feedback-not-helpful"
                       onClick={() => onFeedback(card.kind, 'not_helpful')}
-                      style={{ color: theme.colors.accentPrimary }}
                     >
                       <ThumbsDown className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full"
+                      className="h-7 w-7 rounded-full text-slate-400 hover:text-slate-300"
                       data-testid="agent-feedback-hide"
                       onClick={() => onFeedback(card.kind, 'hide')}
-                      style={{ color: theme.colors.textMuted }}
                     >
                       <EyeOff className="h-3.5 w-3.5" />
                     </Button>
