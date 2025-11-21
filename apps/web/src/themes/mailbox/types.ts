@@ -46,6 +46,8 @@ export interface MailboxTheme {
   frame?: {
     canvas: string;       // Page background
     backdrop: string;     // Optional gradient overlay (very subtle)
+    container?: string;   // Tailwind classes for frame container
+    glow?: string;        // Box shadow for frame (should be "shadow-none" for Banana Pro)
   };
 
   hero?: {

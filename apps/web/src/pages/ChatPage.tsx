@@ -11,15 +11,22 @@ function ChatPageInner() {
   const { themeId, theme } = useMailboxTheme()
 
   // Use theme frame tokens for clean canvas (no muddy overlays)
-  const canvasStyle = theme.frame?.canvas || 'bg-slate-950'
+  const backdropStyle = theme.frame?.backdrop || 'bg-slate-950'
+  const frameContainer = theme.frame?.container || ''
+  const frameGlow = theme.frame?.glow || ''
 
   return (
     <div
       data-testid="chat-root"
       data-mailbox-theme={themeId}
-      className={cn("flex h-full flex-col", canvasStyle)}
+      className={cn("relative min-h-[calc(100vh-64px)] overflow-hidden flex flex-col", backdropStyle)}
     >
-      <MailChat />
+      <div
+        data-testid="mailbox-frame"
+        className={cn("flex h-full flex-col", frameContainer, frameGlow)}
+      >
+        <MailChat />
+      </div>
     </div>
   )
 }

@@ -37,6 +37,7 @@ export function MailboxThemePanelInner() {
                 <Label
                   htmlFor={`mailbox-theme-${t.id}`}
                   className="cursor-pointer block"
+                  data-testid={`mailbox-theme-card-${t.id}`}
                 >
                   <Card
                     className={[

@@ -48,6 +48,8 @@ export const bananaProTheme: MailboxTheme = {
   frame: {
     canvas: "bg-slate-950",
     backdrop: "bg-slate-950", // solid, no gradient overlays
+    container: "",            // no extra classes on frame container
+    glow: "shadow-none",      // NO frame-level glow - kills outer yellow halo
   },
 
   // Hero header - tighter localized glow
