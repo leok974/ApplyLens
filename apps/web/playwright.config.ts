@@ -29,6 +29,7 @@ export default defineConfig({
     "e2e/search-renders.spec.ts",
     "e2e/search-derived-and-tooltip.spec.ts",
     "e2e/prod-search-smoke.spec.ts",  // Production-safe smoke tests
+    "chat-mailbox-ambient-glow.spec.ts",  // Banana Pro theme overlay verification [prodSafe]
     "ui/header-logo.spec.ts",
     "search.interactions.spec.ts",
     "mailboxAssistant.spec.ts",  // Small talk and conversational suggestions
