@@ -14,6 +14,7 @@ import { logout } from '@/api/auth'
 import { getCurrentUser, fetchAndCacheCurrentUser } from '@/api/auth'
 import { VersionCard } from '@/components/settings/VersionCard'
 import { HealthBadge } from '@/components/HealthBadge'
+import { MailboxThemePanel } from '@/components/settings/MailboxThemePanel'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -88,6 +89,9 @@ export default function Settings() {
             </div>
           </div>
         </Card>
+
+        {/* Mailbox Theme */}
+        <MailboxThemePanel />
 
         {/* Warehouse Metrics (feature-flagged) */}
         {features.warehouseMetrics && (

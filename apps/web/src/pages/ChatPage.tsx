@@ -3,9 +3,12 @@
  */
 
 import MailChat from '@/components/MailChat'
+import { MailboxThemeProvider } from '@/themes/mailbox/context'
 
 export default function ChatPage() {
   return (
-    <MailChat />
+    <MailboxThemeProvider>
+      <MailChat />
+    </MailboxThemeProvider>
   )
 }
