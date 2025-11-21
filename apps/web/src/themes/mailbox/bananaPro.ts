@@ -38,9 +38,8 @@ export const bananaProTheme: MailboxTheme = {
   },
 
   shadows: {
-    // faint blue-purple ambient with a hint of yellow
-    ambientGlow:
-      "0 0 80px rgba(59,130,246,0.18), 0 0 140px rgba(250,204,21,0.12)",
+    // No full-page ambient glow - keep it clean
+    ambientGlow: "none",
     // tighter, hotter glow for active pills/buttons
     activeGlow: "0 0 20px rgba(250,204,21,0.55)",
   },
@@ -48,7 +47,7 @@ export const bananaProTheme: MailboxTheme = {
   // Page frame - clean canvas with no muddy overlays
   frame: {
     canvas: "bg-slate-950",
-    backdrop: "bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950", // subtle, no yellow veil
+    backdrop: "bg-slate-950", // solid, no gradient overlays
   },
 
   // Hero header - tighter localized glow

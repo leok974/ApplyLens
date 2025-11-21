@@ -448,7 +448,9 @@ services:
     # v0.5.28: Mailbox theme classes wired to UI (chat shell, tool pills, agent cards)
     # v0.5.29: Banana Pro theme visual polish - hero header, tool pills, chat bubbles, input bar with gradients and glows
     # v0.5.30: Banana Pro polish - clean, localized glows (no muddy overlays, 3 glow sources only)
-    image: leoklemet/applylens-web:0.5.30
+    # v0.5.31: Remove gradient overlays from hero card (use clean container classes)
+    # v0.5.32: Remove ambientGlow and frame backdrop gradient (fully clean, no vignettes)
+    image: leoklemet/applylens-web:0.5.32
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production

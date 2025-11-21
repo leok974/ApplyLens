@@ -1115,8 +1115,8 @@ export default function MailChat() {
       <Card
         className={cn(
           "border shadow-lg",
-          themeId === 'bananaPro'
-            ? "border-slate-800/80 bg-gradient-to-r from-slate-950/95 via-slate-900/92 to-slate-950/95 rounded-3xl px-6 py-4"
+          themeId === 'bananaPro' && theme.hero
+            ? `${theme.hero.container} px-6 py-4`
             : "border-slate-800/80 bg-gradient-to-r from-slate-950/80 via-slate-900/80 to-slate-950/60"
         )}
         style={
