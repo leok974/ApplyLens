@@ -45,6 +45,84 @@ export const bananaProTheme: MailboxTheme = {
     activeGlow: "0 0 20px rgba(250,204,21,0.55)",
   },
 
+  // Hero header styling
+  hero: {
+    bg: "linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.92) 50%, rgba(15,23,42,0.95) 100%)",
+    glow: "0 8px 40px rgba(250,204,21,0.25), 0 0 80px rgba(59,130,246,0.15)",
+    iconRing: "rgba(250,204,21,0.7)",
+    iconGlow: "0 0 40px rgba(250,204,21,0.6)",
+    badgeBg: "linear-gradient(to right, rgba(250,204,21,0.9), rgb(251,191,36))",
+    badgeText: "#0f172a",
+    badgeGlow: "0 0 18px rgba(250,204,21,0.7)",
+  },
+
+  // Chat shell styling
+  chatShell: {
+    bg: "rgba(15,23,42,0.85)",
+    borderTop: "rgba(250,204,21,0.6)",
+    glowTop: "0 -8px 40px rgba(250,204,21,0.35)",
+  },
+
+  // Tool pill styling
+  tool: {
+    default: {
+      bg: "transparent",
+      border: "rgba(253,224,71,0.1)",
+      text: "rgb(226,232,240)",
+    },
+    hover: {
+      bg: "rgba(250,204,21,0.1)",
+      border: "rgba(253,224,71,0.4)",
+      text: "rgb(241,245,249)",
+      scale: "1.02",
+    },
+    active: {
+      bg: "linear-gradient(to right, rgb(250,204,21), rgb(252,211,77))",
+      text: "rgb(15,23,42)",
+      glow: "0 0 24px rgba(250,204,21,0.6)",
+    },
+  },
+
+  // Input bar styling
+  inputBar: {
+    bg: "rgba(2,6,23,0.9)",
+    border: "rgba(253,224,71,0.2)",
+    glow: "0 0 32px rgba(15,23,42,0.9)",
+    placeholderText: "rgb(100,116,139)",
+    caretColor: "rgb(250,204,21)",
+    toggleTrackActive: "rgba(250,204,21,0.6)",
+    toggleThumb: "rgb(2,6,23)",
+    toggleGlow: "0 0 12px rgba(250,204,21,0.7)",
+  },
+
+  // Primary button (send button)
+  primaryButton: {
+    bg: "linear-gradient(to bottom right, rgb(250,204,21), rgb(251,191,36))",
+    glow: "0 0 24px rgba(250,204,21,0.8)",
+    hoverGlow: "0 0 36px rgba(250,204,21,1)",
+  },
+
+  // Card intent strips
+  card: {
+    intent: {
+      suspicious: {
+        stripColor: "rgb(251,146,60)",
+        stripGlow: "0 0 24px rgba(251,146,60,0.7)",
+        hoverBg: "rgba(251,146,60,0.05)",
+      },
+      bills: {
+        stripColor: "rgb(34,211,238)",
+        stripGlow: "0 0 24px rgba(34,211,238,0.7)",
+        hoverBg: "rgba(34,211,238,0.05)",
+      },
+      followups: {
+        stripColor: "rgb(52,211,153)",
+        stripGlow: "0 0 24px rgba(52,211,153,0.7)",
+        hoverBg: "rgba(52,211,153,0.05)",
+      },
+    },
+  },
+
   layout: {
     heroHeight: "tall",
     shellMaxWidth: 1100,

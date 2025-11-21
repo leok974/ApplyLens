@@ -18,10 +18,18 @@ async function globalSetup(config: FullConfig) {
   console.log(`   Base URL: ${baseURL}`);
   console.log(`   Auth state path: ${authPath}`);
 
-  // Skip auth setup if secret not provided
+  // If E2E_AUTH_STATE is explicitly set, use existing auth state
+  // This is for production testing where we have pre-saved auth
+  if (process.env.E2E_AUTH_STATE) {
+    console.log('✓  Using existing auth state from E2E_AUTH_STATE');
+    console.log('   Skipping dev auth flow (E2E_SHARED_SECRET not needed)');
+    return;
+  }
+
+  // Skip auth setup if secret not provided (and no explicit auth state)
   if (!secret) {
     console.warn('⚠️  E2E_SHARED_SECRET not set; skipping auth setup.');
-    console.warn('   Tests requiring auth will be skipped.');
+    console.warn('   Tests requiring auth will use existing auth file or be skipped.');
     return;
   }
 

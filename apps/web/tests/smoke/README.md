@@ -153,10 +153,83 @@ The smoke tests use:
 }
 ```
 
+## Running E2E Tests Against Production (ApplyLens)
+
+These tests reuse a saved auth state at `tests/.auth/prod.json`.
+Make sure you've logged in once and saved that file before running.
+
+### PowerShell (Windows)
+
+```powershell
+cd d:/ApplyLens/apps/web
+$env:E2E_BASE_URL = 'https://applylens.app'
+$env:E2E_API = 'https://api.applylens.app/api'
+$env:E2E_AUTH_STATE = 'tests/.auth/prod.json'
+# Do **not** set E2E_SHARED_SECRET in prod – it's only for dev/global-setup
+npx playwright test tests/e2e/settings-mailbox-theme.spec.ts --project=chromium
+```
+
+Or use the npm script:
+
+```powershell
+$env:E2E_BASE_URL = 'https://applylens.app'
+$env:E2E_API = 'https://api.applylens.app/api'
+$env:E2E_AUTH_STATE = 'tests/.auth/prod.json'
+pnpm e2e:prod:mailbox-theme
+```
+
+### Bash (WSL / Git Bash / CI)
+
+```bash
+cd apps/web
+E2E_BASE_URL='https://applylens.app' \
+E2E_API='https://api.applylens.app/api' \
+E2E_AUTH_STATE='tests/.auth/prod.json' \
+  npx playwright test tests/e2e/settings-mailbox-theme.spec.ts --project=chromium
+```
+
+Or use the npm script:
+
+```bash
+E2E_BASE_URL='https://applylens.app' \
+E2E_API='https://api.applylens.app/api' \
+E2E_AUTH_STATE='tests/.auth/prod.json' \
+  pnpm e2e:prod:mailbox-theme
+```
+
+### Dev Environment (Local Backend + Frontend)
+
+```bash
+# Frontend dev server: http://127.0.0.1:5173
+# API: http://127.0.0.1:8003/api
+# Uses E2E_SHARED_SECRET to hit /api/auth/e2e/login and create tests/.auth/dev.json
+
+cd apps/web
+E2E_BASE_URL='http://127.0.0.1:5173' \
+E2E_API='http://127.0.0.1:8003/api' \
+E2E_SHARED_SECRET='<dev-shared-secret-from-.env>' \
+  npx playwright test tests/e2e/settings-mailbox-theme.spec.ts --project=chromium
+```
+
+Or use the npm script:
+
+```bash
+E2E_BASE_URL='http://127.0.0.1:5173' \
+E2E_API='http://127.0.0.1:8003/api' \
+E2E_SHARED_SECRET='<dev-shared-secret-from-.env>' \
+  pnpm e2e:dev:mailbox-theme
+```
+
+**Important:**
+- **Prod**: Use `E2E_AUTH_STATE=tests/.auth/prod.json`, do **not** set `E2E_SHARED_SECRET`.
+- **Dev**: Use `E2E_SHARED_SECRET` (from `.env`) and let `global-setup-auth.ts` create `tests/.auth/dev.json`.
+
 ## Environment Variables
 
-- `E2E_BASE_URL` - API URL (e.g., `http://127.0.0.1:8000`)
-- `E2E_API` - Full API URL with `/api` (e.g., `http://127.0.0.1:8000/api`)
+- `E2E_BASE_URL` - Frontend URL (e.g., `http://127.0.0.1:5173` or `https://applylens.app`)
+- `E2E_API` - Full API URL with `/api` (e.g., `http://127.0.0.1:8003/api` or `https://api.applylens.app/api`)
+- `E2E_AUTH_STATE` - Path to saved auth state (e.g., `tests/.auth/prod.json` or `tests/.auth/dev.json`)
+- `E2E_SHARED_SECRET` - Secret for dev auth endpoint (only for dev environment, **not** for prod)
 - `SEED_COUNT` - Number of threads to seed (default: 40)
 - `USE_SMOKE_SETUP` - Set to `"true"` to use inbox seeding setup, `"false"` to skip
 - `ALLOW_DEV_ROUTES` - Set to `"1"` in API server environment to enable seed endpoint

@@ -99,11 +99,11 @@
         {
           "title": "@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Switcher",
           "file": "e2e/settings-mailbox-theme.spec.ts",
-          "line": 11,
+          "line": 13,
           "column": 6,
           "specs": [
             {
-              "title": "can switch themes in Settings and persist to /chat",
+              "title": "persists theme selection to localStorage",
               "ok": false,
               "tags": [
                 "settings",
@@ -123,363 +123,160 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 12068,
+                      "duration": 13872,
                       "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:21:30",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    14 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    14 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:135:32",
                         "location": {
                           "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                          "column": 30,
-                          "line": 21
+                          "column": 32,
+                          "line": 135
                         },
-                        "snippet": "\u001b[0m \u001b[90m 19 |\u001b[39m     \u001b[90m// 2. Verify theme settings panel exists\u001b[39m\n \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// 3. Verify all three theme options are present\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[0m"
+                        "snippet": "\u001b[0m \u001b[90m 133 |\u001b[39m\n \u001b[90m 134 |\u001b[39m     \u001b[90m// Ensure RadioGroup has actually selected it\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     \u001b[36mawait\u001b[39m expect(bananaOption)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'data-state'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'checked'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m\n \u001b[90m 137 |\u001b[39m     \u001b[90m// Read localStorage from the browser context\u001b[39m\n \u001b[90m 138 |\u001b[39m     \u001b[36mconst\u001b[39m storedTheme \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
                       },
                       "errors": [
                         {
                           "location": {
                             "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                            "column": 30,
-                            "line": 21
+                            "column": 32,
+                            "line": 135
                           },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n\n\u001b[0m \u001b[90m 19 |\u001b[39m     \u001b[90m// 2. Verify theme settings panel exists\u001b[39m\n \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// 3. Verify all three theme options are present\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:21:30\u001b[22m"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    14 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 133 |\u001b[39m\n \u001b[90m 134 |\u001b[39m     \u001b[90m// Ensure RadioGroup has actually selected it\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     \u001b[36mawait\u001b[39m expect(bananaOption)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'data-state'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'checked'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m\n \u001b[90m 137 |\u001b[39m     \u001b[90m// Read localStorage from the browser context\u001b[39m\n \u001b[90m 138 |\u001b[39m     \u001b[36mconst\u001b[39m storedTheme \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:135:32\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-11-21T02:33:55.108Z",
+                      "startTime": "2025-11-21T14:28:47.779Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium\\test-failed-1.png"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-6f91a-e-selection-to-localStorage-chromium\\test-failed-1.png"
                         },
                         {
                           "name": "video",
                           "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium\\video.webm"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-6f91a-e-selection-to-localStorage-chromium\\video.webm"
                         },
                         {
                           "name": "error-context",
                           "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium\\error-context.md"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-6f91a-e-selection-to-localStorage-chromium\\error-context.md"
                         }
                       ],
                       "errorLocation": {
                         "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                        "column": 30,
-                        "line": 21
+                        "column": 32,
+                        "line": 135
                       }
                     },
                     {
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 11944,
+                      "duration": 11967,
                       "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:21:30",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    14 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    14 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:135:32",
                         "location": {
                           "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                          "column": 30,
-                          "line": 21
+                          "column": 32,
+                          "line": 135
                         },
-                        "snippet": "\u001b[0m \u001b[90m 19 |\u001b[39m     \u001b[90m// 2. Verify theme settings panel exists\u001b[39m\n \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// 3. Verify all three theme options are present\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[0m"
+                        "snippet": "\u001b[0m \u001b[90m 133 |\u001b[39m\n \u001b[90m 134 |\u001b[39m     \u001b[90m// Ensure RadioGroup has actually selected it\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     \u001b[36mawait\u001b[39m expect(bananaOption)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'data-state'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'checked'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m\n \u001b[90m 137 |\u001b[39m     \u001b[90m// Read localStorage from the browser context\u001b[39m\n \u001b[90m 138 |\u001b[39m     \u001b[36mconst\u001b[39m storedTheme \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
                       },
                       "errors": [
                         {
                           "location": {
                             "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                            "column": 30,
-                            "line": 21
+                            "column": 32,
+                            "line": 135
                           },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n\n\u001b[0m \u001b[90m 19 |\u001b[39m     \u001b[90m// 2. Verify theme settings panel exists\u001b[39m\n \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// 3. Verify all three theme options are present\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:21:30\u001b[22m"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    14 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"null\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 133 |\u001b[39m\n \u001b[90m 134 |\u001b[39m     \u001b[90m// Ensure RadioGroup has actually selected it\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     \u001b[36mawait\u001b[39m expect(bananaOption)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'data-state'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'checked'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m\n \u001b[90m 137 |\u001b[39m     \u001b[90m// Read localStorage from the browser context\u001b[39m\n \u001b[90m 138 |\u001b[39m     \u001b[36mconst\u001b[39m storedTheme \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:135:32\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 1,
-                      "startTime": "2025-11-21T02:34:08.037Z",
+                      "startTime": "2025-11-21T14:29:02.748Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium-retry1\\test-failed-1.png"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-6f91a-e-selection-to-localStorage-chromium-retry1\\test-failed-1.png"
                         },
                         {
                           "name": "video",
                           "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium-retry1\\video.webm"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-6f91a-e-selection-to-localStorage-chromium-retry1\\video.webm"
                         },
                         {
                           "name": "error-context",
                           "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium-retry1\\error-context.md"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-6f91a-e-selection-to-localStorage-chromium-retry1\\error-context.md"
                         },
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium-retry1\\trace.zip"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-6f91a-e-selection-to-localStorage-chromium-retry1\\trace.zip"
                         }
                       ],
                       "errorLocation": {
                         "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                        "column": 30,
-                        "line": 21
+                        "column": 32,
+                        "line": 135
                       }
                     },
                     {
                       "workerIndex": 2,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 12793,
+                      "status": "interrupted",
+                      "duration": 4336,
                       "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:21:30",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    6 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m      - unexpected value \"null\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    6 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m      - unexpected value \"null\"\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:135:32",
                         "location": {
                           "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                          "column": 30,
-                          "line": 21
+                          "column": 32,
+                          "line": 135
                         },
-                        "snippet": "\u001b[0m \u001b[90m 19 |\u001b[39m     \u001b[90m// 2. Verify theme settings panel exists\u001b[39m\n \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// 3. Verify all three theme options are present\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[0m"
+                        "snippet": "\u001b[0m \u001b[90m 133 |\u001b[39m\n \u001b[90m 134 |\u001b[39m     \u001b[90m// Ensure RadioGroup has actually selected it\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     \u001b[36mawait\u001b[39m expect(bananaOption)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'data-state'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'checked'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m\n \u001b[90m 137 |\u001b[39m     \u001b[90m// Read localStorage from the browser context\u001b[39m\n \u001b[90m 138 |\u001b[39m     \u001b[36mconst\u001b[39m storedTheme \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m"
                       },
                       "errors": [
                         {
                           "location": {
                             "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                            "column": 30,
-                            "line": 21
+                            "column": 32,
+                            "line": 135
                           },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n\n\u001b[0m \u001b[90m 19 |\u001b[39m     \u001b[90m// 2. Verify theme settings panel exists\u001b[39m\n \u001b[90m 20 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 21 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 22 |\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[90m// 3. Verify all three theme options are present\u001b[39m\n \u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m expect(\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:21:30\u001b[22m"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveAttribute\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('mailbox-theme-option-bananaPro')\nExpected: \u001b[32m\"checked\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toHaveAttribute\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-option-bananaPro')\u001b[22m\n\u001b[2m    6 × locator resolved to <div data-testid=\"mailbox-theme-option-bananaPro\" class=\"rounded-lg bg-card text-card-foreground shadow-sm flex h-full flex-col justify-between gap-2 border transition p-3 ring-1 ring-primary border-primary\">…</div>\u001b[22m\n\u001b[2m      - unexpected value \"null\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 133 |\u001b[39m\n \u001b[90m 134 |\u001b[39m     \u001b[90m// Ensure RadioGroup has actually selected it\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     \u001b[36mawait\u001b[39m expect(bananaOption)\u001b[33m.\u001b[39mtoHaveAttribute(\u001b[32m'data-state'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'checked'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m\n \u001b[90m 137 |\u001b[39m     \u001b[90m// Read localStorage from the browser context\u001b[39m\n \u001b[90m 138 |\u001b[39m     \u001b[36mconst\u001b[39m storedTheme \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:135:32\u001b[22m"
+                        },
+                        {
+                          "message": "Error: browserContext.close: Target page, context or browser has been closed"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 2,
-                      "startTime": "2025-11-21T02:34:21.018Z",
+                      "startTime": "2025-11-21T14:29:15.791Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium-retry2\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium-retry2\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-3aeca-ettings-and-persist-to-chat-chromium-retry2\\error-context.md"
-                        }
-                      ],
+                      "attachments": [],
                       "errorLocation": {
                         "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                        "column": 30,
-                        "line": 21
+                        "column": 32,
+                        "line": 135
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "2e186032b8cb9bb434e8-2d9f5dd49aea5949e2b0",
+              "id": "2e186032b8cb9bb434e8-29d26602d792b40771b0",
               "file": "e2e/settings-mailbox-theme.spec.ts",
-              "line": 12,
-              "column": 3
-            },
-            {
-              "title": "Active badge shows on selected theme",
-              "ok": false,
-              "tags": [
-                "settings",
-                "mailbox-theme",
-                "authRequired",
-                "prodSafe"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 3,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 12116,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:103:30",
-                        "location": {
-                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                          "column": 30,
-                          "line": 103
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 101 |\u001b[39m     \u001b[90m// Classic should be default (or whatever was selected last)\u001b[39m\n \u001b[90m 102 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m\n \u001b[90m 105 |\u001b[39m     \u001b[90m// Select Banana Pro\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-option-bananaPro\"\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                            "column": 30,
-                            "line": 103
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n\n\u001b[0m \u001b[90m 101 |\u001b[39m     \u001b[90m// Classic should be default (or whatever was selected last)\u001b[39m\n \u001b[90m 102 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m\n \u001b[90m 105 |\u001b[39m     \u001b[90m// Select Banana Pro\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-option-bananaPro\"\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:103:30\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-21T02:34:34.876Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                        "column": 30,
-                        "line": 103
-                      }
-                    },
-                    {
-                      "workerIndex": 4,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 14219,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:103:30",
-                        "location": {
-                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                          "column": 30,
-                          "line": 103
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 101 |\u001b[39m     \u001b[90m// Classic should be default (or whatever was selected last)\u001b[39m\n \u001b[90m 102 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m\n \u001b[90m 105 |\u001b[39m     \u001b[90m// Select Banana Pro\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-option-bananaPro\"\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                            "column": 30,
-                            "line": 103
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n\n\u001b[0m \u001b[90m 101 |\u001b[39m     \u001b[90m// Classic should be default (or whatever was selected last)\u001b[39m\n \u001b[90m 102 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m\n \u001b[90m 105 |\u001b[39m     \u001b[90m// Select Banana Pro\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-option-bananaPro\"\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:103:30\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2025-11-21T02:34:48.057Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium-retry1\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium-retry1\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium-retry1\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium-retry1\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                        "column": 30,
-                        "line": 103
-                      }
-                    },
-                    {
-                      "workerIndex": 5,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 11597,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:103:30",
-                        "location": {
-                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                          "column": 30,
-                          "line": 103
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 101 |\u001b[39m     \u001b[90m// Classic should be default (or whatever was selected last)\u001b[39m\n \u001b[90m 102 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m\n \u001b[90m 105 |\u001b[39m     \u001b[90m// Select Banana Pro\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-option-bananaPro\"\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                            "column": 30,
-                            "line": 103
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('mailbox-theme-settings')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('mailbox-theme-settings')\u001b[22m\n\n\n\u001b[0m \u001b[90m 101 |\u001b[39m     \u001b[90m// Classic should be default (or whatever was selected last)\u001b[39m\n \u001b[90m 102 |\u001b[39m     \u001b[36mconst\u001b[39m themePanel \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-settings\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 103 |\u001b[39m     \u001b[36mawait\u001b[39m expect(themePanel)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 104 |\u001b[39m\n \u001b[90m 105 |\u001b[39m     \u001b[90m// Select Banana Pro\u001b[39m\n \u001b[90m 106 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m\"mailbox-theme-option-bananaPro\"\u001b[39m)\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts:103:30\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 2,
-                      "startTime": "2025-11-21T02:35:03.284Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium-retry2\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium-retry2\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-settings-mailbox-theme-ecc92-dge-shows-on-selected-theme-chromium-retry2\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\settings-mailbox-theme.spec.ts",
-                        "column": 30,
-                        "line": 103
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "2e186032b8cb9bb434e8-54fefd400604354736c5",
-              "file": "e2e/settings-mailbox-theme.spec.ts",
-              "line": 96,
+              "line": 120,
               "column": 3
             }
           ]
@@ -489,11 +286,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-11-21T02:33:47.488Z",
-    "duration": 87582.436,
+    "startTime": "2025-11-21T14:28:46.305Z",
+    "duration": 36251.611000000004,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 2,
+    "unexpected": 1,
     "flaky": 0
   }
 }

@@ -42,6 +42,79 @@ export interface MailboxTheme {
     activeGlow: string;  // tighter glow for active pills/buttons
   };
 
+  // Enhanced tokens for Banana Pro visual polish
+  hero?: {
+    bg: string;           // Gradient background for hero header
+    glow: string;         // Box shadow for hero card
+    iconRing: string;     // Outline color for assistant icon
+    iconGlow: string;     // Shadow for assistant icon
+    badgeBg: string;      // Background gradient for "Agent V2" badge
+    badgeText: string;    // Text color for badge
+    badgeGlow: string;    // Shadow for badge
+  };
+
+  chatShell?: {
+    bg: string;           // Background for main chat container
+    borderTop: string;    // Top border color
+    glowTop: string;      // Top glow shadow
+  };
+
+  tool?: {
+    default: {
+      bg: string;
+      border: string;
+      text: string;
+    };
+    hover: {
+      bg: string;
+      border: string;
+      text: string;
+      scale?: string;     // Transform scale on hover
+    };
+    active: {
+      bg: string;
+      text: string;
+      glow: string;
+    };
+  };
+
+  inputBar?: {
+    bg: string;
+    border: string;
+    glow: string;
+    placeholderText: string;
+    caretColor: string;
+    toggleTrackActive: string;
+    toggleThumb: string;
+    toggleGlow: string;
+  };
+
+  primaryButton?: {
+    bg: string;
+    glow: string;
+    hoverGlow: string;
+  };
+
+  card?: {
+    intent: {
+      suspicious: {
+        stripColor: string;
+        stripGlow: string;
+        hoverBg?: string;
+      };
+      bills: {
+        stripColor: string;
+        stripGlow: string;
+        hoverBg?: string;
+      };
+      followups: {
+        stripColor: string;
+        stripGlow: string;
+        hoverBg?: string;
+      };
+    };
+  };
+
   layout: {
     heroHeight: "compact" | "tall";
     shellMaxWidth: number;       // px

@@ -123,10 +123,13 @@ function MailToolStrip({ activeTool, onToolChange }: MailToolStripProps) {
                   size="sm"
                   variant="ghost"
                   className={cn(
-                    'gap-2 rounded-full px-3 text-xs font-medium transition h-8',
+                    'gap-2 rounded-full px-3 text-xs font-medium transition-all duration-150 h-8',
                     isActive
                       ? themeClasses.toolPillActive
-                      : themeClasses.toolPill
+                      : cn(
+                          themeClasses.toolPill,
+                          themeId === 'bananaPro' && 'hover:scale-[1.02]'
+                        )
                   )}
                   data-testid={`mailtool-${tool.id}`}
                   onClick={() => onToolChange(tool.id)}
@@ -173,7 +176,7 @@ export default function MailChat() {
   const [userEmail] = useState('leoklemet.pa@gmail.com') // TODO: Read from auth context
 
   // Mailbox theme
-  const { themeId } = useMailboxTheme()
+  const { themeId, theme } = useMailboxTheme()
   const themeClasses = getMailboxThemeClasses(themeId)
 
   // Feature flags
@@ -1109,11 +1112,41 @@ export default function MailChat() {
   return (
     <div className="flex flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-8" data-testid="agent-mail-chat">
       {/* Hero header */}
-      <Card className="border border-slate-800/80 bg-gradient-to-r from-slate-950/80 via-slate-900/80 to-slate-950/60 shadow-lg">
+      <Card
+        className={cn(
+          "border shadow-lg",
+          themeId === 'bananaPro'
+            ? "border-slate-800/80 bg-gradient-to-r from-slate-950/95 via-slate-900/92 to-slate-950/95 rounded-3xl px-6 py-4"
+            : "border-slate-800/80 bg-gradient-to-r from-slate-950/80 via-slate-900/80 to-slate-950/60"
+        )}
+        style={
+          themeId === 'bananaPro' && theme.hero
+            ? { boxShadow: theme.hero.glow }
+            : undefined
+        }
+      >
         <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-sky-500/10 ring-1 ring-sky-500/40">
-              <MailSearch className="h-4 w-4 text-sky-300" />
+            {/* Assistant icon with Banana Pro glow */}
+            <div
+              className={cn(
+                "inline-flex items-center justify-center",
+                themeId === 'bananaPro'
+                  ? "h-11 w-11 rounded-full bg-slate-900"
+                  : "h-9 w-9 rounded-2xl bg-sky-500/10 ring-1 ring-sky-500/40"
+              )}
+              style={
+                themeId === 'bananaPro' && theme.hero
+                  ? {
+                      outline: `2px solid ${theme.hero.iconRing}`,
+                      boxShadow: theme.hero.iconGlow,
+                    }
+                  : undefined
+              }
+            >
+              <MailSearch className={cn(
+                themeId === 'bananaPro' ? "h-5 w-5 text-yellow-300" : "h-4 w-4 text-sky-300"
+              )} />
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -1122,7 +1155,17 @@ export default function MailChat() {
                 </h1>
                 <Badge
                   variant="outline"
-                  className="border-emerald-500/40 bg-emerald-500/10 text-[10px] uppercase tracking-wide text-emerald-300"
+                  className={cn(
+                    "text-[10px] uppercase tracking-wide",
+                    themeId === 'bananaPro'
+                      ? "rounded-full bg-gradient-to-r from-yellow-400/90 to-amber-300 text-slate-900 border-transparent font-medium"
+                      : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                  )}
+                  style={
+                    themeId === 'bananaPro' && theme.hero
+                      ? { boxShadow: theme.hero.badgeGlow }
+                      : undefined
+                  }
                 >
                   Agent V2 · Learning
                 </Badge>
@@ -1201,7 +1244,7 @@ export default function MailChat() {
       <Card className={cn(themeClasses.chatShell)} data-testid="chat-shell">
         {/* Top accent border */}
         <div className={cn("h-0.5 w-full rounded-t-2xl", themeClasses.chatShellBorder)} />
-        
+
         <CardContent className="p-4 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto">
         {messages.map((msg, i) => {
           const isAssistant = msg.role === 'assistant'
@@ -1226,13 +1269,22 @@ export default function MailChat() {
 
             <div
               className={cn(
-                'max-w-[80%] rounded-2xl px-4 py-2.5 text-sm',
+                'max-w-[80%] px-4 py-2.5 text-sm',
                 msg.role === 'user'
-                  ? 'bg-sky-500/90 text-slate-950 shadow-sm'
+                  ? themeId === 'bananaPro'
+                    ? 'bg-yellow-400 text-slate-950 rounded-2xl'
+                    : 'bg-sky-500/90 text-slate-950 shadow-sm rounded-2xl'
                   : msg.error
-                  ? 'bg-red-950/30 border border-red-900/50 text-slate-50'
-                  : 'bg-slate-900/90 text-slate-50 ring-1 ring-slate-800/80'
+                  ? 'bg-red-950/30 border border-red-900/50 text-slate-50 rounded-2xl'
+                  : themeId === 'bananaPro'
+                  ? 'bg-slate-900/80 text-slate-50 border border-yellow-400/60 rounded-2xl'
+                  : 'bg-slate-900/90 text-slate-50 ring-1 ring-slate-800/80 rounded-2xl'
               )}
+              style={
+                msg.role === 'user' && themeId === 'bananaPro' && theme.chatShell
+                  ? { boxShadow: '0 0 18px rgba(250,204,21,0.55)' }
+                  : undefined
+              }
               data-testid={
                 isAssistant
                   ? isThinking
@@ -1498,11 +1550,24 @@ export default function MailChat() {
         </CardContent>
 
         {/* Input Bar */}
-        <CardFooter className="flex flex-col gap-3 border-t border-slate-800/80 bg-slate-950/40 p-4">
-          <div className="flex flex-wrap gap-2 items-center w-full">
+        <CardFooter className={cn(
+          "flex flex-col gap-3 p-4",
+          themeId === 'bananaPro'
+            ? "rounded-full bg-slate-950/90 border border-yellow-200/20 shadow-[0_0_32px_rgba(15,23,42,0.9)]"
+            : "border-t border-slate-800/80 bg-slate-950/40"
+        )}>
+          <div className={cn(
+            "flex flex-wrap gap-2 items-center",
+            themeId === 'bananaPro' ? "w-full" : "w-full"
+          )}>
         <input
           data-testid="chat-input"
-          className="flex-1 min-w-[200px] rounded-xl bg-neutral-900 border border-neutral-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 placeholder:text-neutral-500"
+          className={cn(
+            "flex-1 min-w-[200px] px-4 py-2.5 text-sm focus:outline-none",
+            themeId === 'bananaPro'
+              ? "rounded-full bg-transparent border-none placeholder:text-slate-500 caret-yellow-400 text-slate-50"
+              : "rounded-xl bg-neutral-900 border border-neutral-800 focus:ring-2 focus:ring-emerald-500/50 placeholder:text-neutral-500"
+          )}
           placeholder="Ask your mailbox anything..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -1513,14 +1578,24 @@ export default function MailChat() {
           data-testid="chat-send"
           onClick={() => sendViaAssistant()}
           disabled={busy || !input.trim()}
-          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          className={cn(
+            "transition-all flex items-center gap-2",
+            themeId === 'bananaPro'
+              ? "h-10 w-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-300 text-slate-950 justify-center shadow-[0_0_24px_rgba(250,204,21,0.8)] hover:shadow-[0_0_36px_rgba(250,204,21,1)]"
+              : "px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors"
+          )}
+          style={
+            themeId === 'bananaPro' && (busy || !input.trim())
+              ? { opacity: 0.5, cursor: 'not-allowed' }
+              : undefined
+          }
         >
           {busy ? (
-            <span className="text-sm">...</span>
+            <span className={cn(themeId === 'bananaPro' ? 'text-xs' : 'text-sm')}>...</span>
           ) : (
             <>
-              <Send className="w-4 h-4" />
-              <span className="text-sm font-medium">Send</span>
+              <Send className={cn(themeId === 'bananaPro' ? 'w-5 h-5' : 'w-4 h-4')} />
+              {themeId !== 'bananaPro' && <span className="text-sm font-medium">Send</span>}
             </>
           )}
         </button>
@@ -1552,7 +1627,16 @@ export default function MailChat() {
                 id="remember-switch"
                 checked={remember}
                 onCheckedChange={setRemember}
-                className="data-[state=checked]:bg-sky-600"
+                className={cn(
+                  themeId === 'bananaPro'
+                    ? "data-[state=checked]:bg-yellow-400/60"
+                    : "data-[state=checked]:bg-sky-600"
+                )}
+                style={
+                  themeId === 'bananaPro' && remember
+                    ? { boxShadow: '0 0 12px rgba(250,204,21,0.7)' }
+                    : undefined
+                }
               />
               <Label htmlFor="remember-switch" className="cursor-pointer">
                 Remember sender preferences

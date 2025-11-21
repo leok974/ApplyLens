@@ -39,8 +39,11 @@
     "test:e2e:login": "RUN_LOGIN=1 playwright test tests/e2e/login-bootstrap.spec.ts --project=chromium",
     "test:e2e:login:headed": "RUN_LOGIN=1 playwright test tests/e2e/login-bootstrap.spec.ts --project=chromium --headed",
     "test:e2e:auth:refresh": "RUN_LOGIN=1 STORAGE_STATE=tests/.auth/state.json playwright test tests/e2e/login-bootstrap.spec.ts --project=chromium",
-    "test:e2e:auth:refresh:headed": "RUN_LOGIN=1 STORAGE_STATE=tests/.auth/state.json playwright test tests/e2e/login-bootstrap.spec.ts --project=chromium --headed"
+    "test:e2e:auth:refresh:headed": "RUN_LOGIN=1 STORAGE_STATE=tests/.auth/state.json playwright test tests/e2e/login-bootstrap.spec.ts --project=chromium --headed",
+    "e2e:prod:mailbox-theme": "playwright test tests/e2e/settings-mailbox-theme.spec.ts --project=chromium",
+    "e2e:dev:mailbox-theme": "playwright test tests/e2e/settings-mailbox-theme.spec.ts --project=chromium"
   },
+  "_comment_e2e_scripts": "E2E mailbox theme scripts rely on env vars. Example (PowerShell, prod): $env:E2E_BASE_URL='https://applylens.app'; $env:E2E_API='https://api.applylens.app/api'; $env:E2E_AUTH_STATE='tests/.auth/prod.json'; pnpm e2e:prod:mailbox-theme",
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-dialog": "^1.1.15",

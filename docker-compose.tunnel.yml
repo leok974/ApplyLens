@@ -9,27 +9,26 @@ services:
       - infra_net
       - applylens_applylens-prod
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep cloudflared || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+    # Healthcheck disabled: cloudflared image lacks shell utilities
+    # Tunnel status is visible in logs via "Registered tunnel connection" messages
 
-  cfd-b:
-    image: cloudflare/cloudflared:latest
-    container_name: cfd-b
-    command: tunnel run
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN}
-    networks:
-      - infra_net
-      - applylens_applylens-prod
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep cloudflared || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+  # DISABLED 2025-11-21: DNS resolution failures for applylens-web-prod and applylens-api-prod
+  # Caused intermittent 502 errors when Cloudflare load-balanced requests to this connector
+  # cfd-b:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: cfd-b
+  #   command: tunnel run
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN}
+  #   networks:
+  #     - infra_net
+  #     - applylens_applylens-prod
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pgrep cloudflared || exit 1"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
 
 networks:
   infra_net:

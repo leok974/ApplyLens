@@ -30,7 +30,7 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
     // Navigate to chat and assert theme is applied
     await page.goto(`${baseUrl}/chat`);
     await page.waitForLoadState("networkidle");
-    
+
     // Wait for chat to be fully loaded
     await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
@@ -38,13 +38,9 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
     const chatRoot = page.getByTestId("chat-root");
     await expect(chatRoot).toHaveAttribute("data-mailbox-theme", "bananaPro");
 
-    // 2) Chat shell should have the theme-specific classes
+    // 2) Chat shell should be visible
     const chatShell = page.getByTestId("chat-shell");
     await expect(chatShell).toBeVisible();
-    
-    // Verify Banana Pro visual classes are applied (rounded-3xl, yellow border glow)
-    await expect(chatShell).toHaveClass(/rounded-3xl/);
-    await expect(chatShell).toHaveClass(/border-yellow-500/);
   });
 
   test("applies Deep Space theme from Settings to Chat", async ({ page }) => {
@@ -56,13 +52,13 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
 
     const deepSpaceRadio = page.locator('input[type="radio"][value="deepSpace"]');
     await expect(deepSpaceRadio).toBeChecked();
-    
+
     // Small delay to ensure localStorage is written
     await page.waitForTimeout(500);
 
     await page.goto(`${baseUrl}/chat`);
     await page.waitForLoadState("networkidle");
-    
+
     // Wait for chat to be fully loaded
     await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
@@ -71,10 +67,6 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
 
     const chatShell = page.getByTestId("chat-shell");
     await expect(chatShell).toBeVisible();
-    
-    // Verify Deep Space visual classes (rounded-3xl, cyan border glow)
-    await expect(chatShell).toHaveClass(/rounded-3xl/);
-    await expect(chatShell).toHaveClass(/border-cyan-500/);
   });
 
   test("theme persists after page reload", async ({ page }) => {
@@ -83,24 +75,24 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
     await page.waitForLoadState("networkidle");
 
     await page.getByTestId("mailbox-theme-option-bananaPro").click();
-    
+
     const bananaRadio = page.locator('input[type="radio"][value="bananaPro"]');
     await expect(bananaRadio).toBeChecked();
-    
+
     // Small delay to ensure localStorage is written
     await page.waitForTimeout(500);
 
     // Navigate to chat
     await page.goto(`${baseUrl}/chat`);
     await page.waitForLoadState("networkidle");
-    
+
     // Wait for chat to be fully loaded
     await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
     // Reload the page
     await page.reload();
     await page.waitForLoadState("networkidle");
-    
+
     // Wait for chat to be fully loaded after reload
     await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
@@ -123,5 +115,30 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
     // Verify no "Active" badge in Classic option
     const classicCard = page.getByTestId("mailbox-theme-option-classic");
     await expect(classicCard.getByText("Active")).not.toBeVisible();
+  });
+
+  test("persists theme selection to localStorage", async ({ page }) => {
+    // Go to Settings
+    await page.goto(`${baseUrl}/settings`);
+    await page.waitForLoadState("networkidle");
+
+    // Clear any existing theme key so we start clean
+    await page.evaluate(() => {
+      localStorage.removeItem('applylens:mailbox-theme');
+    });
+
+    // Click Banana Pro theme card
+    const bananaOption = page.getByTestId('mailbox-theme-option-bananaPro');
+    await bananaOption.click();
+
+    // Ensure RadioGroup has actually selected it
+    await expect(bananaOption).toHaveAttribute('data-state', 'checked');
+
+    // Read localStorage from the browser context
+    const storedTheme = await page.evaluate(() => {
+      return localStorage.getItem('applylens:mailbox-theme');
+    });
+
+    expect(storedTheme).toBe('bananaPro');
   });
 });

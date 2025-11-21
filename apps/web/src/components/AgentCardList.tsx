@@ -75,7 +75,7 @@ interface AgentCardListProps {
 }
 
 export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback }) => {
-  const { themeId } = useMailboxTheme();
+  const { themeId, theme } = useMailboxTheme();
   const themeClasses = getMailboxThemeClasses(themeId);
 
   if (!cards || cards.length === 0) return null;
@@ -98,6 +98,16 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
             ? themeClasses.intentStripBills
             : themeClasses.intentStripFollowups;
 
+        // Get hover background for Banana Pro
+        const hoverBg =
+          themeId === 'bananaPro' && theme.card?.intent
+            ? intent === 'suspicious'
+              ? theme.card.intent.suspicious.hoverBg
+              : intent === 'bills'
+              ? theme.card.intent.bills.hoverBg
+              : theme.card.intent.followups.hoverBg
+            : undefined;
+
         return (
           <div
             key={`${card.kind}-${idx}`}
@@ -106,7 +116,7 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
             data-mailbox-card="true"
             data-testid={`agent-card-${card.kind}`}
           >
-            {/* Left intent strip */}
+            {/* Left intent strip with glow */}
             <div
               aria-hidden="true"
               className={cn('mt-2 mb-2 ml-0.5 w-1.5 rounded-full', intentStripClass)}
@@ -170,7 +180,17 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
                     {items.slice(0, 3).map((item: any, idx: number) => (
                       <li
                         key={item.id ?? item.thread_id ?? idx}
-                        className="flex items-start gap-2 rounded-lg px-2 py-1.5 text-slate-50 transition-colors hover:bg-slate-800/30"
+                        className={cn(
+                          "flex items-start gap-2 rounded-lg px-2 py-1.5 text-slate-50 transition-colors",
+                          themeId === 'bananaPro'
+                            ? `hover:bg-[${hoverBg}]`
+                            : "hover:bg-slate-800/30"
+                        )}
+                        style={
+                          themeId === 'bananaPro' && hoverBg
+                            ? { '--hover-bg': hoverBg } as React.CSSProperties
+                            : undefined
+                        }
                         data-testid="agent-card-item"
                       >
                         <ChevronRight
@@ -210,7 +230,12 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full text-emerald-400 hover:text-emerald-300"
+                      className={cn(
+                        "h-7 w-7 rounded-full",
+                        themeId === 'bananaPro'
+                          ? "text-yellow-300/80 hover:bg-yellow-400/10 hover:text-yellow-200 border border-transparent hover:border-yellow-300/50"
+                          : "text-emerald-400 hover:text-emerald-300"
+                      )}
                       data-testid="agent-feedback-helpful"
                       onClick={() => onFeedback(card.kind, 'helpful')}
                     >
@@ -219,7 +244,12 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full text-sky-400 hover:text-sky-300"
+                      className={cn(
+                        "h-7 w-7 rounded-full",
+                        themeId === 'bananaPro'
+                          ? "text-yellow-300/80 hover:bg-yellow-400/10 hover:text-yellow-200 border border-transparent hover:border-yellow-300/50"
+                          : "text-sky-400 hover:text-sky-300"
+                      )}
                       data-testid="agent-feedback-not-helpful"
                       onClick={() => onFeedback(card.kind, 'not_helpful')}
                     >
@@ -228,7 +258,12 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-full text-slate-400 hover:text-slate-300"
+                      className={cn(
+                        "h-7 w-7 rounded-full",
+                        themeId === 'bananaPro'
+                          ? "text-yellow-300/80 hover:bg-yellow-400/10 hover:text-yellow-200 border border-transparent hover:border-yellow-300/50"
+                          : "text-slate-400 hover:text-slate-300"
+                      )}
                       data-testid="agent-feedback-hide"
                       onClick={() => onFeedback(card.kind, 'hide')}
                     >
