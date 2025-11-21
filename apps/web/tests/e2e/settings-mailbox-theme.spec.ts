@@ -24,9 +24,15 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
     const bananaRadio = page.locator('input[type="radio"][value="bananaPro"]');
     await expect(bananaRadio).toBeChecked();
 
+    // Small delay to ensure localStorage is written
+    await page.waitForTimeout(500);
+
     // Navigate to chat and assert theme is applied
     await page.goto(`${baseUrl}/chat`);
     await page.waitForLoadState("networkidle");
+    
+    // Wait for chat to be fully loaded
+    await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
     // 1) Theme id should be reflected on chat-root
     const chatRoot = page.getByTestId("chat-root");
@@ -50,9 +56,15 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
 
     const deepSpaceRadio = page.locator('input[type="radio"][value="deepSpace"]');
     await expect(deepSpaceRadio).toBeChecked();
+    
+    // Small delay to ensure localStorage is written
+    await page.waitForTimeout(500);
 
     await page.goto(`${baseUrl}/chat`);
     await page.waitForLoadState("networkidle");
+    
+    // Wait for chat to be fully loaded
+    await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
     const chatRoot = page.getByTestId("chat-root");
     await expect(chatRoot).toHaveAttribute("data-mailbox-theme", "deepSpace");
@@ -74,14 +86,23 @@ test.describe("@settings @mailbox-theme @authRequired @prodSafe Mailbox Theme Sw
     
     const bananaRadio = page.locator('input[type="radio"][value="bananaPro"]');
     await expect(bananaRadio).toBeChecked();
+    
+    // Small delay to ensure localStorage is written
+    await page.waitForTimeout(500);
 
     // Navigate to chat
     await page.goto(`${baseUrl}/chat`);
     await page.waitForLoadState("networkidle");
+    
+    // Wait for chat to be fully loaded
+    await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
     // Reload the page
     await page.reload();
     await page.waitForLoadState("networkidle");
+    
+    // Wait for chat to be fully loaded after reload
+    await page.waitForSelector('[data-testid="chat-root"]', { timeout: 10000 });
 
     // Theme should still be Banana Pro (from localStorage)
     const chatRoot = page.getByTestId("chat-root");
