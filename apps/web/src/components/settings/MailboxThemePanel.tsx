@@ -50,7 +50,10 @@ export function MailboxThemePanelInner() {
                       .join(" ")}
                     style={{
                       backgroundColor: t.colors.bgSurfaceElevated,
-                      boxShadow: isActive ? t.shadows.ambientGlow : undefined,
+                      // Don't use ambientGlow (now "none" for clean themes) - use activeGlow for active state
+                      boxShadow: isActive && t.shadows.activeGlow !== "none"
+                        ? t.shadows.activeGlow
+                        : undefined,
                     }}
                     data-testid={`mailbox-theme-option-${t.id}`}
                   >

@@ -450,7 +450,8 @@ services:
     # v0.5.30: Banana Pro polish - clean, localized glows (no muddy overlays, 3 glow sources only)
     # v0.5.31: Remove gradient overlays from hero card (use clean container classes)
     # v0.5.32: Remove ambientGlow and frame backdrop gradient (fully clean, no vignettes)
-    image: leoklemet/applylens-web:0.5.32
+    # v0.5.33: Fix MailboxThemePanel to use activeGlow instead of ambientGlow (now "none")
+    image: leoklemet/applylens-web:0.5.33
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
