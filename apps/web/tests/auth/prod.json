@@ -2,17 +2,17 @@
   "cookies": [
     {
       "name": "session_id",
-      "value": "rbHT_qpPx1RP3mKedrQqH9zecMRPqGXs79v71vq5nPo",
+      "value": "TbGCk_NP9Nyrzf9-rQGH0DVwQ9pwRV7j1At2w8TdKYw",
       "domain": "applylens.app",
       "path": "/",
-      "expires": 1764280052.126,
+      "expires": 1764295344.61,
       "httpOnly": true,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "csrf_token",
-      "value": "nRhbcJ3kYGZ_oMvE-dwoERoElD4kEzuCDEqxRQzssoU",
+      "value": "HZm8xa_ykk-6-kMD2R8UE7tugy8YnY4cskKg6m16pQ4",
       "domain": "applylens.app",
       "path": "/",
       "expires": -1,

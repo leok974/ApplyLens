@@ -19,6 +19,7 @@ export default defineConfig({
     "settings-companion-experimental-styles.spec.ts",  // Bandit toggle UI tests
     "e2e/chat-agent-v2.contract.spec.ts",  // Agent V2 contract tests (mocked)
     "e2e/chat-agent-v2.prod-smoke.spec.ts",  // Agent V2 production smoke tests
+    "e2e/settings-mailbox-theme.spec.ts",  // Mailbox theme switcher [prodSafe]
     "e2e/email-risk-banner.spec.ts",
     "e2e/ux-heartbeat.spec.ts",
     "e2e/search-form.spec.ts",
