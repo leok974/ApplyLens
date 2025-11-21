@@ -45,10 +45,16 @@ export const bananaProTheme: MailboxTheme = {
     activeGlow: "0 0 20px rgba(250,204,21,0.55)",
   },
 
-  // Hero header styling
+  // Page frame - clean canvas with no muddy overlays
+  frame: {
+    canvas: "bg-slate-950",
+    backdrop: "bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950", // subtle, no yellow veil
+  },
+
+  // Hero header - tighter localized glow
   hero: {
-    bg: "linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.92) 50%, rgba(15,23,42,0.95) 100%)",
-    glow: "0 8px 40px rgba(250,204,21,0.25), 0 0 80px rgba(59,130,246,0.15)",
+    container: "bg-slate-950/80 border border-yellow-400/15 rounded-3xl",
+    glow: "0 0 60px rgba(250,204,21,0.30)", // tighter hero glow, not full-page
     iconRing: "rgba(250,204,21,0.7)",
     iconGlow: "0 0 40px rgba(250,204,21,0.6)",
     badgeBg: "linear-gradient(to right, rgba(250,204,21,0.9), rgb(251,191,36))",
@@ -56,14 +62,18 @@ export const bananaProTheme: MailboxTheme = {
     badgeGlow: "0 0 18px rgba(250,204,21,0.7)",
   },
 
-  // Chat shell styling
-  chatShell: {
-    bg: "rgba(15,23,42,0.85)",
-    borderTop: "rgba(250,204,21,0.6)",
-    glowTop: "0 -8px 40px rgba(250,204,21,0.35)",
+  // Chat shell - subtle glow, not full-page
+  shell: {
+    container: "bg-slate-950/80 border border-yellow-400/10 rounded-3xl overflow-hidden",
+    glow: "0 0 80px rgba(250,204,21,0.28)", // subtle shell glow
   },
 
-  // Tool pill styling
+  // Chat shell border (deprecated, kept for compatibility)
+  chatShell: {
+    borderTop: "rgba(250,204,21,0.6)",
+  },
+
+  // Tool pill styling - minimal glows
   tool: {
     default: {
       bg: "transparent",
@@ -71,15 +81,15 @@ export const bananaProTheme: MailboxTheme = {
       text: "rgb(226,232,240)",
     },
     hover: {
-      bg: "rgba(250,204,21,0.1)",
-      border: "rgba(253,224,71,0.4)",
+      bg: "rgba(250,204,21,0.05)", // lighter hover tint
+      border: "rgba(253,224,71,0.3)",
       text: "rgb(241,245,249)",
       scale: "1.02",
     },
     active: {
-      bg: "linear-gradient(to right, rgb(250,204,21), rgb(252,211,77))",
+      bg: "linear-gradient(to bottom right, rgb(250,204,21), rgb(252,211,77))",
       text: "rgb(15,23,42)",
-      glow: "0 0 24px rgba(250,204,21,0.6)",
+      glow: "0 0 20px rgba(250,204,21,0.5)", // smaller active glow
     },
   },
 
@@ -95,11 +105,11 @@ export const bananaProTheme: MailboxTheme = {
     toggleGlow: "0 0 12px rgba(250,204,21,0.7)",
   },
 
-  // Primary button (send button)
+  // Primary button (send button) - strongest glow element
   primaryButton: {
     bg: "linear-gradient(to bottom right, rgb(250,204,21), rgb(251,191,36))",
-    glow: "0 0 24px rgba(250,204,21,0.8)",
-    hoverGlow: "0 0 36px rgba(250,204,21,1)",
+    glow: "0 0 30px rgba(250,204,21,0.7)", // tighter, stronger glow
+    hoverGlow: "0 0 40px rgba(250,204,21,0.9)",
   },
 
   // Card intent strips

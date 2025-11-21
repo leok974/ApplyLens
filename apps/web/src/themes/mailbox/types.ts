@@ -43,9 +43,14 @@ export interface MailboxTheme {
   };
 
   // Enhanced tokens for Banana Pro visual polish
+  frame?: {
+    canvas: string;       // Page background
+    backdrop: string;     // Optional gradient overlay (very subtle)
+  };
+
   hero?: {
-    bg: string;           // Gradient background for hero header
-    glow: string;         // Box shadow for hero card
+    container: string;    // Tailwind classes for hero card
+    glow: string;         // Box shadow for hero card (localized)
     iconRing: string;     // Outline color for assistant icon
     iconGlow: string;     // Shadow for assistant icon
     badgeBg: string;      // Background gradient for "Agent V2" badge
@@ -53,10 +58,13 @@ export interface MailboxTheme {
     badgeGlow: string;    // Shadow for badge
   };
 
+  shell?: {
+    container: string;    // Tailwind classes for chat shell
+    glow: string;         // Box shadow for shell (localized)
+  };
+
   chatShell?: {
-    bg: string;           // Background for main chat container
-    borderTop: string;    // Top border color
-    glowTop: string;      // Top glow shadow
+    borderTop: string;    // Top border color (deprecated, use shell.container instead)
   };
 
   tool?: {

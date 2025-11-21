@@ -8,13 +8,10 @@ import { useMailboxTheme } from '@/hooks/useMailboxTheme'
 import { cn } from '@/lib/utils'
 
 function ChatPageInner() {
-  const { themeId } = useMailboxTheme()
+  const { themeId, theme } = useMailboxTheme()
 
-  // Banana Pro specific styling
-  const isBananaPro = themeId === 'bananaPro'
-  const canvasStyle = isBananaPro
-    ? 'bg-slate-950 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-950'
-    : 'bg-slate-950'
+  // Use theme frame tokens for clean canvas (no muddy overlays)
+  const canvasStyle = theme.frame?.canvas || 'bg-slate-950'
 
   return (
     <div

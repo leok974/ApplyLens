@@ -1240,8 +1240,20 @@ export default function MailChat() {
         </div>
       )}
 
-      {/* Chat Shell Card */}
-      <Card className={cn(themeClasses.chatShell)} data-testid="chat-shell">
+      {/* Chat Shell - localized glow with overflow-hidden */}
+      <Card
+        className={cn(
+          themeId === 'bananaPro' && theme.shell
+            ? theme.shell.container
+            : themeClasses.chatShell
+        )}
+        style={
+          themeId === 'bananaPro' && theme.shell
+            ? { boxShadow: theme.shell.glow }
+            : undefined
+        }
+        data-testid="chat-shell"
+      >
         {/* Top accent border */}
         <div className={cn("h-0.5 w-full rounded-t-2xl", themeClasses.chatShellBorder)} />
 
@@ -1553,7 +1565,7 @@ export default function MailChat() {
         <CardFooter className={cn(
           "flex flex-col gap-3 p-4",
           themeId === 'bananaPro'
-            ? "rounded-full bg-slate-950/90 border border-yellow-200/20 shadow-[0_0_32px_rgba(15,23,42,0.9)]"
+            ? "rounded-full bg-slate-950/90 border border-yellow-200/20"
             : "border-t border-slate-800/80 bg-slate-950/40"
         )}>
           <div className={cn(
@@ -1580,15 +1592,30 @@ export default function MailChat() {
           disabled={busy || !input.trim()}
           className={cn(
             "transition-all flex items-center gap-2",
-            themeId === 'bananaPro'
-              ? "h-10 w-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-300 text-slate-950 justify-center shadow-[0_0_24px_rgba(250,204,21,0.8)] hover:shadow-[0_0_36px_rgba(250,204,21,1)]"
+            themeId === 'bananaPro' && theme.primaryButton
+              ? "h-10 w-10 rounded-full text-slate-950 justify-center"
               : "px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors"
           )}
           style={
-            themeId === 'bananaPro' && (busy || !input.trim())
-              ? { opacity: 0.5, cursor: 'not-allowed' }
+            themeId === 'bananaPro' && theme.primaryButton
+              ? {
+                  background: theme.primaryButton.bg,
+                  boxShadow: theme.primaryButton.glow,
+                  opacity: (busy || !input.trim()) ? 0.5 : 1,
+                  cursor: (busy || !input.trim()) ? 'not-allowed' : 'pointer',
+                }
               : undefined
           }
+          onMouseEnter={(e) => {
+            if (themeId === 'bananaPro' && theme.primaryButton && !busy && input.trim()) {
+              e.currentTarget.style.boxShadow = theme.primaryButton.hoverGlow
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (themeId === 'bananaPro' && theme.primaryButton) {
+              e.currentTarget.style.boxShadow = theme.primaryButton.glow
+            }
+          }}
         >
           {busy ? (
             <span className={cn(themeId === 'bananaPro' ? 'text-xs' : 'text-sm')}>...</span>
