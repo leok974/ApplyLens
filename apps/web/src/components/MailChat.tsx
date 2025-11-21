@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, Sparkles, AlertCircle, Mail, Play } from 'lucide-react'
+import { Send, Sparkles, AlertCircle, Mail, Play, MailSearch, ReceiptText, Trash2, ShieldAlert, BellRing, UserSearch, ScanEye, Bot, User as UserIcon } from 'lucide-react'
 import { sendChatMessage, Message, ChatResponse } from '@/lib/chatClient'
 import { queryMailboxAssistant, AssistantQueryResponse, draftReply, DraftReplyResponse } from '@/lib/api'
 import { ReplyDraftModal } from '@/components/ReplyDraftModal'
@@ -20,55 +20,125 @@ import { FLAGS } from '@/lib/flags'
 import { runMailboxAgent } from '@/api/agent'
 import type { AgentCard } from '@/types/agent'
 import { AgentCardList } from './AgentCardList'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
-interface QuickAction {
+type MailToolId =
+  | 'summarize'
+  | 'bills'
+  | 'clean_promos'
+  | 'unsubscribe'
+  | 'suspicious'
+  | 'followups'
+  | 'interviews'
+
+const MAIL_TOOLS: Array<{
+  id: MailToolId
   label: string
-  text: string
-  icon?: string
-}
-
-const QUICK_ACTIONS: QuickAction[] = [
+  description: string
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  colorClass: string
+}> = [
   {
+    id: 'summarize',
     label: 'Summarize',
-    text: 'Summarize recent emails about my job applications.',
-    icon: '📧',
+    description: 'Quick overview of your inbox.',
+    icon: Sparkles,
+    colorClass: 'text-amber-300',
   },
   {
+    id: 'bills',
     label: 'Bills Due',
-    text: 'What bills are due before Friday? Create calendar reminders.',
-    icon: '💰',
+    description: 'Upcoming & overdue invoices.',
+    icon: ReceiptText,
+    colorClass: 'text-sky-300',
   },
   {
+    id: 'clean_promos',
     label: 'Clean Promos',
-    text: 'Clean up promos older than a week unless they\'re from Best Buy.',
-    icon: '🧹',
+    description: 'Surface / hide low-value promos.',
+    icon: Trash2,
+    colorClass: 'text-pink-300',
   },
   {
+    id: 'unsubscribe',
     label: 'Unsubscribe',
-    text: 'Unsubscribe from newsletters I haven\'t opened in 60 days.',
-    icon: '🚫',
+    description: 'Find newsletters to mute.',
+    icon: ScanEye,
+    colorClass: 'text-emerald-300',
   },
   {
+    id: 'suspicious',
     label: 'Suspicious',
-    text: 'Show suspicious emails from new domains this week and explain why.',
-    icon: '⚠️',
+    description: 'Flag risky / spoofed emails.',
+    icon: ShieldAlert,
+    colorClass: 'text-red-300',
   },
   {
+    id: 'followups',
     label: 'Follow-ups',
-    text: 'Which recruiters haven\'t replied in 5 days? Draft follow-ups.',
-    icon: '💬',
+    description: 'People still waiting on you.',
+    icon: BellRing,
+    colorClass: 'text-indigo-300',
   },
   {
+    id: 'interviews',
     label: 'Find Interviews',
-    text: 'Find interviews from August with confirmed times.',
-    icon: '🔍',
-  },
-  {
-    label: 'Create Tasks',
-    text: 'Create tasks from emails about pending action items.',
-    icon: '✅',
+    description: 'Upcoming & past interview threads.',
+    icon: UserSearch,
+    colorClass: 'text-teal-300',
   },
 ]
+
+interface MailToolStripProps {
+  activeTool: MailToolId
+  onToolChange: (tool: MailToolId) => void
+}
+
+function MailToolStrip({ activeTool, onToolChange }: MailToolStripProps) {
+  return (
+    <TooltipProvider>
+      <div className="flex flex-wrap gap-2">
+        {MAIL_TOOLS.map((tool) => {
+          const Icon = tool.icon
+          const isActive = tool.id === activeTool
+
+          return (
+            <Tooltip key={tool.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={isActive ? 'default' : 'outline'}
+                  className={cn(
+                    'gap-2 rounded-full border-slate-700/70 bg-slate-900/70 text-xs',
+                    isActive &&
+                      'border-sky-500/60 bg-sky-500/10 shadow-[0_0_0_1px_rgba(56,189,248,0.5)]'
+                  )}
+                  data-testid={`mailtool-${tool.id}`}
+                  onClick={() => onToolChange(tool.id)}
+                >
+                  <Icon className={cn('h-3.5 w-3.5', tool.colorClass)} />
+                  <span>{tool.label}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs max-w-xs">
+                {tool.description}
+              </TooltipContent>
+            </Tooltip>
+          )
+        })}
+      </div>
+    </TooltipProvider>
+  )
+}
 
 interface ConversationMessage extends Message {
   id?: string
@@ -121,6 +191,7 @@ export default function MailChat() {
   const [explain, setExplain] = useState(false)
   const [remember, setRemember] = useState(false)
   const [mode, setMode] = useState<'off' | 'run'>('off')  // Actions mode: Preview only / Apply changes
+  const [activeTool, setActiveTool] = useState<MailToolId>('summarize')
   const [intentTokens, setIntentTokens] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -339,6 +410,26 @@ export default function MailChat() {
     if (streamHeartbeatRef.current) {
       window.clearTimeout(streamHeartbeatRef.current)
       streamHeartbeatRef.current = null
+    }
+  }
+
+  // Tool handler: maps tool buttons to quick-action queries
+  const TOOL_QUERIES: Record<MailToolId, string> = {
+    summarize: 'Summarize recent emails about my job applications.',
+    bills: 'What bills are due before Friday? Create calendar reminders.',
+    clean_promos: 'Clean up promos older than a week unless they\'re from Best Buy.',
+    unsubscribe: 'Unsubscribe from newsletters I haven\'t opened in 60 days.',
+    suspicious: 'Show suspicious emails from new domains this week and explain why.',
+    followups: 'Which recruiters haven\'t replied in 5 days? Draft follow-ups.',
+    interviews: 'Find interviews from August with confirmed times.',
+  }
+
+  function handleToolChange(tool: MailToolId) {
+    setActiveTool(tool)
+    // Auto-execute query when tool is selected
+    const query = TOOL_QUERIES[tool]
+    if (query && CHAT_AGENT_V2) {
+      sendViaAssistant(query)
     }
   }
 
@@ -1006,75 +1097,86 @@ export default function MailChat() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4" data-testid="agent-mail-chat">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Chat Column */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Header */}
-          <div className="flex items-center gap-3 pb-2 border-b border-neutral-800">
-            <Sparkles className="w-6 h-6 text-emerald-500" />
-            <div>
-              <h2 className="text-xl font-semibold">Mailbox Assistant</h2>
-              <p className="text-sm text-neutral-400">
-                Ask questions about your emails in natural language
+    <div className="flex flex-1 flex-col gap-4 px-4 pb-6 pt-4 lg:px-8" data-testid="agent-mail-chat">
+      {/* Hero header */}
+      <Card className="border border-slate-800/80 bg-gradient-to-r from-slate-950/80 via-slate-900/80 to-slate-950/60 shadow-lg">
+        <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-sky-500/10 ring-1 ring-sky-500/40">
+              <MailSearch className="h-4 w-4 text-sky-300" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-semibold text-slate-50 sm:text-lg">
+                  Mailbox Assistant
+                </h1>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/40 bg-emerald-500/10 text-[10px] uppercase tracking-wide text-emerald-300"
+                >
+                  Agent V2 · Learning
+                </Badge>
+              </div>
+              <p className="max-w-xl text-xs text-slate-300/80 sm:text-sm">
+                Ask questions about your inbox. I can summarize, find interviews,
+                spot risky emails, clean promos, and keep track of follow-ups.
               </p>
             </div>
           </div>
 
-      {/* Quick Actions */}
-      <div className="flex flex-wrap gap-2">
-        {QUICK_ACTIONS.map((action) => (
-          <button
-            key={action.label}
-            onClick={() => sendViaAssistant(action.text)}
-            disabled={busy}
-            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-          >
-            {action.icon && <span>{action.icon}</span>}
-            <span>{action.label}</span>
-          </button>
-        ))}
-      </div>
+          {/* right side: search identity + time window */}
+          <div className="mt-3 flex flex-col items-start gap-2 text-xs text-slate-300/80 sm:mt-0 sm:items-end">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-3 py-1 ring-1 ring-slate-700/80">
+              <MailSearch className="h-3.5 w-3.5 text-sky-300" />
+              <span className="truncate">
+                Searching as{' '}
+                <span className="font-medium text-slate-100">{userEmail}</span>
+              </span>
+            </div>
 
-      {/* Scope Indicator with Time Window Dropdown */}
-      <div className="mb-3 text-xs text-neutral-400 flex flex-wrap items-center gap-3 justify-between">
-        <span>
-          Searching as <span className="text-neutral-200 font-medium">{userEmail}</span>
-        </span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Time window</span>
+              <select
+                value={windowDays}
+                onChange={(e) => changeWindowDays(Number(e.target.value))}
+                aria-label="Time window (days)"
+                className="rounded-md bg-slate-900/80 px-2 py-1 text-xs ring-1 ring-slate-700/80 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              >
+                <option value={7}>7d</option>
+                <option value={30}>30d</option>
+                <option value={60}>60d</option>
+                <option value={90}>90d</option>
+              </select>
+            </div>
+          </div>
+        </CardHeader>
 
-        <div className="flex items-center gap-2">
-          <span>Time window:</span>
-          <select
-            value={windowDays}
-            onChange={(e) => changeWindowDays(Number(e.target.value))}
-            aria-label="Time window (days)"
-          >
-            <option value={7}>7d</option>
-            <option value={30}>30d</option>
-            <option value={60}>60d</option>
-            <option value={90}>90d</option>
-          </select>
+        <CardContent className="space-y-3 pt-0">
+          {/* Tool strip */}
+          <MailToolStrip activeTool={activeTool} onToolChange={handleToolChange} />
 
-          <button
-            className="ml-2 px-3 py-1.5 rounded-md bg-neutral-900 border border-neutral-800/80
-                       hover:bg-neutral-800 transition-colors
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-600"
-            onClick={openSearchPrefilled}
-            title="Open Search with the same query and window"
-          >
-            Open Search
-          </button>
-        </div>
-      </div>
+          <Separator className="border-slate-800/80" />
 
-      {/* Loading State - Only for Agent V1 (legacy) */}
-      {isThinking && !CHAT_AGENT_V2 && (
-        <div className="text-sm text-neutral-500 my-2">🔄 Searching mailbox …</div>
-      )}
+          {/* Hint bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+            <span>
+              Try asking:{' '}
+              <span className="text-slate-200">
+                "Who do I still owe a reply to?" · "Show risky emails" ·
+                "Summarize this week's inbox"
+              </span>
+            </span>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3 w-3 text-amber-300" />
+              <span>Agent uses your feedback (👍 / 👎 / Hide) to improve over time.</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Error Alert - Enhanced with friendly messaging */}
       {error && (
-        <div className="mt-2 rounded-md border border-amber-600/40 bg-amber-900/20 p-3" data-testid="chat-error-banner">
+        <div className="rounded-md border border-amber-600/40 bg-amber-900/20 p-3" data-testid="chat-error-banner">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" />
             <div>
@@ -1085,8 +1187,9 @@ export default function MailChat() {
         </div>
       )}
 
-      {/* Message History */}
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto">
+      {/* Chat Shell Card */}
+      <Card className="border border-slate-800/80 bg-slate-950/60 shadow-lg">
+        <CardContent className="p-4 space-y-4 min-h-[400px] max-h-[600px] overflow-y-auto">
         {messages.map((msg, i) => {
           const isAssistant = msg.role === 'assistant'
           const isThinking = msg.status === 'thinking'
@@ -1094,16 +1197,29 @@ export default function MailChat() {
           return (
           <div
             key={msg.id ?? i}
-            className={msg.role === 'user' ? 'text-right' : 'text-left'}
+            className={cn(
+              'flex gap-3',
+              msg.role === 'user' ? 'justify-end' : 'justify-start'
+            )}
           >
+            {/* Avatar for assistant */}
+            {isAssistant && (
+              <Avatar className="h-8 w-8 flex-shrink-0 border border-slate-700 bg-slate-900">
+                <AvatarFallback className="bg-slate-900 text-xs text-sky-300">
+                  <Bot className="h-3.5 w-3.5" />
+                </AvatarFallback>
+              </Avatar>
+            )}
+
             <div
-              className={`inline-block max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+              className={cn(
+                'max-w-[80%] rounded-2xl px-4 py-2.5 text-sm',
                 msg.role === 'user'
-                  ? 'bg-emerald-600/20 border border-emerald-600/30'
+                  ? 'bg-sky-500/90 text-slate-950 shadow-sm'
                   : msg.error
-                  ? 'bg-red-950/30 border border-red-900/50'
-                  : 'bg-neutral-800/50'
-              }`}
+                  ? 'bg-red-950/30 border border-red-900/50 text-slate-50'
+                  : 'bg-slate-900/90 text-slate-50 ring-1 ring-slate-800/80'
+              )}
               data-testid={
                 isAssistant
                   ? isThinking
@@ -1114,11 +1230,9 @@ export default function MailChat() {
             >
               {/* Thinking indicator for Agent V2 */}
               {isThinking ? (
-                <span className="flex items-center gap-2">
-                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-neutral-400" />
-                  <span className="text-xs text-neutral-400">
-                    Mailbox Assistant is thinking…
-                  </span>
+                <span className="inline-flex items-center gap-2 text-slate-300">
+                  <Sparkles className="h-3 w-3 animate-pulse text-amber-300" />
+                  Thinking about your mailbox…
                 </span>
               ) : (
                 <>
@@ -1332,37 +1446,47 @@ export default function MailChat() {
                 </div>
               )}
             </div>
+
+            {/* Avatar for user */}
+            {msg.role === 'user' && (
+              <Avatar className="h-8 w-8 flex-shrink-0 border border-slate-700 bg-slate-900">
+                <AvatarFallback className="bg-slate-900 text-xs text-slate-100">
+                  <UserIcon className="h-3.5 w-3.5" />
+                </AvatarFallback>
+              </Avatar>
+            )}
           </div>
         )})}
 
-        {/* Single thinking indicator - only for legacy (Agent V1) */}
-        {isThinking && !CHAT_AGENT_V2 && (
-          <div className="text-left">
-            <div className="inline-block bg-neutral-800/50 rounded-2xl px-4 py-2.5">
-              <div className="flex items-center gap-2 text-sm text-neutral-400">
-                <div className="flex gap-1">
-                  <div
-                    className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"
-                    style={{ animationDelay: '0ms' }}
-                  />
-                  <div
-                    className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <div
-                    className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"
-                    style={{ animationDelay: '300ms' }}
-                  />
-                </div>
-                <span>Thinking...</span>
+      {/* Single thinking indicator - only for legacy (Agent V1) */}
+      {isThinking && !CHAT_AGENT_V2 && (
+        <div className="text-left">
+          <div className="inline-block bg-neutral-800/50 rounded-2xl px-4 py-2.5">
+            <div className="flex items-center gap-2 text-sm text-neutral-400">
+              <div className="flex gap-1">
+                <div
+                  className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"
+                  style={{ animationDelay: '0ms' }}
+                />
+                <div
+                  className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"
+                  style={{ animationDelay: '150ms' }}
+                />
+                <div
+                  className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"
+                  style={{ animationDelay: '300ms' }}
+                />
               </div>
+              <span>Thinking...</span>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+        </CardContent>
 
-      {/* Input Bar */}
-      <div className="flex flex-wrap gap-2 items-center">
+        {/* Input Bar */}
+        <CardFooter className="flex flex-col gap-3 border-t border-slate-800/80 bg-slate-950/40 p-4">
+          <div className="flex flex-wrap gap-2 items-center w-full">
         <input
           data-testid="chat-input"
           className="flex-1 min-w-[200px] rounded-xl bg-neutral-900 border border-neutral-800 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 placeholder:text-neutral-500"
@@ -1388,67 +1512,9 @@ export default function MailChat() {
           )}
         </button>
 
-        {/* Remember sender preferences (was "remember exceptions") */}
-        <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(e) => setRemember(e.target.checked)}
-            className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
-          />
-          Remember sender preferences
-        </label>
-
-        {/* Actions Mode Dropdown (was "mode") */}
-        <label className="text-xs flex items-center gap-2 px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
-          <span className="opacity-70">Actions mode</span>
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as 'off' | 'run')}
-            aria-label="actions mode"
-          >
-            <option value="off">Preview only</option>
-            <option value="run">Apply changes</option>
-          </select>
-        </label>
-
-        {/* DEV-ONLY CONTROLS - Hidden in production */}
-        {isDev && (
-          <>
-            <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
-              <input
-                type="checkbox"
-                checked={fileActions}
-                onChange={(e) => setFileActions(e.target.checked)}
-                className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
-              />
-              file actions to Approvals
-            </label>
-            <label className="flex items-center gap-2 text-xs text-neutral-400 cursor-pointer px-2 py-1 rounded-xl bg-neutral-900 border border-neutral-800">
-              <input
-                type="checkbox"
-                checked={explain}
-                onChange={(e) => setExplain(e.target.checked)}
-                className="rounded border-neutral-700 text-emerald-600 focus:ring-emerald-500/50"
-              />
-              explain my intent
-            </label>
-            <button
-              onClick={() => lastQuery && send(lastQuery, { propose: true })}
-              disabled={busy || !lastQuery}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-              title="Replay last query with actions filed to the Approvals tray"
-            >
-              <Play className="w-4 h-4" />
-              <span className="text-sm font-medium">Run actions now</span>
-            </button>
-          </>
-        )}
-      </div>
-
       {/* Intent Tokens (DEV-ONLY - if explain is enabled and tokens exist) */}
       {isDev && intentTokens.length > 0 && (
-        <details className="mt-3 text-sm">
+        <details className="text-sm">
           <summary className="text-xs text-neutral-400 underline cursor-pointer">
             Intent tokens ({intentTokens.length})
           </summary>
@@ -1464,16 +1530,77 @@ export default function MailChat() {
           </div>
         </details>
       )}
+          </div>
 
-      {/* Tips */}
-      <div className="text-xs text-neutral-500 text-center space-y-1">
-        <div>💡 Try asking:</div>
-        <div className="text-neutral-400">
-          "Who do I still owe a reply to?" • "Show risky emails" • "Summarize this week's inbox"
-        </div>
-      </div>
-        </div>
-      </div>
+          {/* Footer controls row with Switch components */}
+          <div className="flex flex-wrap gap-3 items-center text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="remember-switch"
+                checked={remember}
+                onCheckedChange={setRemember}
+                className="data-[state=checked]:bg-sky-600"
+              />
+              <Label htmlFor="remember-switch" className="cursor-pointer">
+                Remember sender preferences
+              </Label>
+            </div>
+
+            <Separator orientation="vertical" className="h-4" />
+
+            <label className="flex items-center gap-2">
+              <span className="opacity-70">Actions mode</span>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as 'off' | 'run')}
+                aria-label="actions mode"
+                className="rounded-md bg-slate-900/80 px-2 py-1 text-xs ring-1 ring-slate-700/80 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+              >
+                <option value="off">Preview only</option>
+                <option value="run">Apply changes</option>
+              </select>
+            </label>
+
+            {/* DEV-ONLY CONTROLS */}
+            {isDev && (
+              <>
+                <Separator orientation="vertical" className="h-4" />
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="fileactions-switch"
+                    checked={fileActions}
+                    onCheckedChange={setFileActions}
+                    className="data-[state=checked]:bg-sky-600"
+                  />
+                  <Label htmlFor="fileactions-switch" className="cursor-pointer">
+                    file actions to Approvals
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="explain-switch"
+                    checked={explain}
+                    onCheckedChange={setExplain}
+                    className="data-[state=checked]:bg-sky-600"
+                  />
+                  <Label htmlFor="explain-switch" className="cursor-pointer">
+                    explain my intent
+                  </Label>
+                </div>
+                <button
+                  onClick={() => lastQuery && send(lastQuery, { propose: true })}
+                  disabled={busy || !lastQuery}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  title="Replay last query with actions filed to the Approvals tray"
+                >
+                  <Play className="w-4 h-4" />
+                  <span className="text-sm font-medium">Run actions now</span>
+                </button>
+              </>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
 
       {/* Reply Draft Modal (Phase 1.5) */}
       {draftModal && (
