@@ -242,8 +242,8 @@ services:
       CSRF_SECRET_KEY: ${CSRF_SECRET_KEY}
 
       # E2E Testing
-      E2E_PROD: ${E2E_PROD:-0}
-      E2E_SHARED_SECRET: ${E2E_SHARED_SECRET}
+      E2E_PROD: "1"
+      E2E_SHARED_SECRET: "e2e-prod-5a46844ddc9f4cb2"
       SHARED_SECRET: ${SHARED_SECRET}
 
       # Security - reCAPTCHA (optional)
