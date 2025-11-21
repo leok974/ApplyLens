@@ -33,6 +33,7 @@ import {
   ThumbsDown,
   EyeOff,
 } from 'lucide-react';
+import { ThreadListCard } from '@/components/mail/ThreadListCard';
 
 type CardKind =
   | 'suspicious_summary'
@@ -83,6 +84,11 @@ export const AgentCardList: React.FC<AgentCardListProps> = ({ cards, onFeedback 
   return (
     <div className="flex flex-col gap-3" data-testid="agent-card-list">
       {cards.map((card, idx) => {
+        // Handle thread_list cards separately
+        if (card.kind === 'thread_list') {
+          return <ThreadListCard key={`thread-list-${idx}`} card={card} />;
+        }
+
         const intent = getIntentFromKind(card.kind as CardKind);
         const Icon = getIconForIntent(intent);
         const meta = card.meta ?? {};

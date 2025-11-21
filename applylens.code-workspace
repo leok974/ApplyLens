@@ -51,6 +51,14 @@
       "**/test-results/**"
     ],
 
+    // Agent-aware development instructions
+    "workbench.startupEditor": "readme",
+    "github.copilot.chat.agent.instructions": [
+      "For this workspace (ApplyLens), follow the roles and boundaries defined in AGENTS.md and .github/agents/*.md.",
+      "Pick the most specific agent: api-agent for FastAPI/Alembic/Gmail ingest, ui-agent for React/Tailwind/shadcn, test-agent for Vitest/Playwright/Pytest, search-agent for Elasticsearch, docs-agent for docs, dev-deploy-agent for Docker/dev flows, security-agent for auth/risk.",
+      "Never change Cloudflare Tunnel ingress, prod docker-compose routing, CORS/cookie scope, OAuth scopes, or weaken risk/security checks without explicit instruction."
+    ],
+
     // Python side (api)
     "python.analysis.exclude": [
       "**/.venv/**",

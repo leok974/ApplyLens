@@ -25,6 +25,7 @@ ALLOWED_CARD_KINDS = {
     "followups_summary",
     "interviews_summary",
     "generic_summary",
+    "thread_list",
     "error",
 }
 
@@ -77,6 +78,7 @@ class AgentCard(BaseModel):
     - bills_summary: pending payments
     - followups_summary: unanswered emails
     - interviews_summary: job-related emails
+    - thread_list: thread viewer with mail summaries
     - generic_summary: general query results
     - error: fallback when tools fail
 
@@ -99,6 +101,12 @@ class AgentCard(BaseModel):
     meta: Dict[str, Any] = Field(
         default_factory=dict,
         description="Rendering hints: count, time_window_days, mode, etc.",
+    )
+
+    # Thread list for thread_list cards
+    threads: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Mail thread summaries for thread_list kind",
     )
 
     @validator("kind", pre=True)

@@ -6,6 +6,23 @@
 
 Agentic job-inbox MVP: classify job/search emails, extract key facts, and populate a tracker.
 
+
+## Agent-aware development
+
+This repo is set up for specialist "agents" (human or AI) to work safely on different parts of ApplyLens.
+
+- Start with [`AGENTS.md`](./AGENTS.md) for an overview.
+- See `.github/agents/` for role-specific guides:
+  - `api-agent.md` – FastAPI, Alembic, Gmail ingest/backfill, risk scoring, tracker APIs
+  - `ui-agent.md` – React/Vite, Tailwind + shadcn/ui, dark theme & layout polish
+  - `test-agent.md` – Vitest, Playwright, Pytest, contract tests & mocks
+  - `search-agent.md` – Elasticsearch mappings/analyzers, boosts, suggest/typeahead
+  - `docs-agent.md` – runbooks, architecture/security/deploy docs
+  - `dev-deploy-agent.md` – Docker dev flows, smoke tests, safe deploy proposals
+  - `security-agent.md` – auth, SSRF/risk policy, secrets hygiene
+
+When using GitHub Copilot or other assistants, instruct them to follow `AGENTS.md` and the relevant agent file instead of acting as a generalist.
+
 ## 🎯 Features
 
 ✨ **Gmail Integration** - OAuth 2.0 authentication and automated email backfill

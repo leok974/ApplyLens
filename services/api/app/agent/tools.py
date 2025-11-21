@@ -179,6 +179,7 @@ class ToolRegistry:
                 emails.append(
                     {
                         "id": source.get("gmail_id") or hit["_id"],
+                        "thread_id": source.get("thread_id", ""),
                         "subject": source.get("subject", ""),
                         "sender": source.get("sender", ""),
                         "received_at": source.get("received_at"),

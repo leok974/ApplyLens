@@ -279,7 +279,7 @@ INTENT_SYSTEM_PROMPTS: Dict[str, str] = {
         "CRITICAL - Card output rules:\n"
         '- Always use "kind": "generic_summary" for profile cards.\n'
         '- NEVER use "profile_summary" or any other string for the kind field.\n'
-        '- Allowed kinds are ONLY: "suspicious_summary", "bills_summary", "interviews_summary", "followups_summary", "generic_summary", "error".\n'
+        '- Allowed kinds are ONLY: "suspicious_summary", "bills_summary", "interviews_summary", "followups_summary", "thread_list", "generic_summary", "error".\n'
     )
     + SHARED_STYLE_HINT,
     "generic": (
@@ -1058,87 +1058,129 @@ class MailboxAgentOrchestrator:
                 (tr for tr in tool_results if tr.tool_name == "security_scan"),
                 None,
             )
-            matches = []
+
+            # Build thread_list card from security_scan results
+            thread_summaries = []
+            email_ids = []
             if security_scan and security_scan.status == "success":
                 data = security_scan.data or {}
-                matches = data.get("matches", [])
+                risky_emails = data.get("risky_emails", [])
+
+                # Group emails by thread_id
+                thread_map = {}
+                for email in risky_emails:
+                    email_ids.append(email.get("id", ""))
+                    tid = email.get("thread_id") or email.get("id")
+                    if tid not in thread_map:
+                        thread_map[tid] = []
+                    thread_map[tid].append(email)
+
+                # Build MailThreadSummary objects
+                for thread_id, thread_emails in thread_map.items():
+                    # Sort by received_at to get the latest
+                    sorted_emails = sorted(
+                        thread_emails,
+                        key=lambda e: e.get("received_at", ""),
+                        reverse=True,
+                    )
+                    latest = sorted_emails[0]
+
+                    # Build gmail URL
+                    gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{thread_id}"
+
+                    thread_summaries.append(
+                        {
+                            "threadId": thread_id,
+                            "subject": latest.get("subject", ""),
+                            "from": latest.get("sender", "")
+                            or latest.get("from_address", ""),
+                            "to": "",
+                            "lastMessageAt": latest.get("received_at", ""),
+                            "unreadCount": 0,
+                            "riskScore": latest.get("risk_score", 0),
+                            "labels": latest.get("labels", []),
+                            "snippet": latest.get("snippet", ""),
+                            "gmailUrl": gmail_url,
+                        }
+                    )
 
             base_card = AgentCard(
-                kind="suspicious_summary",
+                kind="thread_list",
                 title=spec.zero_title
                 if metrics["matches"] == 0
                 else spec.nonzero_title,
                 body="",
-                email_ids=[m.get("id", "") for m in matches],
+                email_ids=email_ids,
+                threads=thread_summaries[:10],  # Limit to 10 threads
                 meta={
                     "count": metrics["matches"],
                     "time_window_days": time_window_days,
                 },
             )
-
-            if metrics["matches"] == 0:
-                cards.append(base_card)
-            else:
-                # Build items for non-zero case
-                items = []
-                for m in matches[:10]:  # Limit to top 10
-                    items.append(
-                        {
-                            "id": m.get("message_id", ""),
-                            "subject": m.get("subject", ""),
-                            "sender": m.get("from_address", ""),
-                            "risk_level": m.get("risk_level", "low"),
-                            "reasons": m.get("reasons", []),
-                            "received_at": m.get("received_at", ""),
-                        }
-                    )
-                base_card.meta["items"] = items
-                cards.append(base_card)
+            cards.append(base_card)
 
         elif spec.name == "followups":
             email_search = next(
                 (tr for tr in tool_results if tr.tool_name == "email_search"),
                 None,
             )
-            threads = []
+
+            # Build thread_list card from email_search results
+            thread_summaries = []
             if email_search and email_search.status == "success":
                 data = email_search.data or {}
-                threads = [
-                    t for t in data.get("threads", []) if not t.get("replied", True)
-                ]
+                emails = data.get("emails", [])
+
+                # Group emails by thread_id
+                thread_map = {}
+                for email in emails:
+                    tid = email.get("thread_id") or email.get("id")
+                    if tid not in thread_map:
+                        thread_map[tid] = []
+                    thread_map[tid].append(email)
+
+                # Build MailThreadSummary objects
+                for thread_id, thread_emails in thread_map.items():
+                    # Sort by received_at to get the latest
+                    sorted_emails = sorted(
+                        thread_emails,
+                        key=lambda e: e.get("received_at", ""),
+                        reverse=True,
+                    )
+                    latest = sorted_emails[0]
+
+                    # Build gmail URL
+                    gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{thread_id}"
+
+                    thread_summaries.append(
+                        {
+                            "threadId": thread_id,
+                            "subject": latest.get("subject", ""),
+                            "from": latest.get("sender", ""),
+                            "to": "",  # Not available in email_search results
+                            "lastMessageAt": latest.get("received_at", ""),
+                            "unreadCount": 0,
+                            "riskScore": latest.get("risk_score", 0),
+                            "labels": latest.get("labels", []),
+                            "snippet": latest.get("snippet", ""),
+                            "gmailUrl": gmail_url,
+                        }
+                    )
 
             base_card = AgentCard(
-                kind="followups_summary",
+                kind="thread_list",
                 title=spec.zero_title
                 if metrics["needs_reply"] == 0
                 else spec.nonzero_title,
                 body="",
                 email_ids=[],
+                threads=thread_summaries[:10],  # Limit to 10 threads
                 meta={
                     "count": metrics["needs_reply"],
                     "time_window_days": time_window_days,
                 },
             )
-
-            if metrics["needs_reply"] == 0:
-                cards.append(base_card)
-            else:
-                items = []
-                for t in threads[:10]:
-                    items.append(
-                        {
-                            "id": t.get("thread_id", ""),
-                            "company": t.get("company", ""),
-                            "subject": t.get("subject", ""),
-                            "last_from": t.get("last_from", "other"),
-                            "last_received_at": t.get("last_received_at", ""),
-                            "suggested_angle": t.get(
-                                "suggested_angle", "Follow up to maintain momentum"
-                            ),
-                        }
-                    )
-                base_card.meta["items"] = items
-                cards.append(base_card)
+            cards.append(base_card)
 
         elif spec.name == "bills":
             email_search = next(
@@ -1204,6 +1246,70 @@ class MailboxAgentOrchestrator:
 
                 base_card.meta["sections"] = sections
                 cards.append(base_card)
+
+        elif spec.name == "interviews":
+            email_search = next(
+                (tr for tr in tool_results if tr.tool_name == "email_search"),
+                None,
+            )
+
+            # Build thread_list card from email_search results
+            thread_summaries = []
+            if email_search and email_search.status == "success":
+                data = email_search.data or {}
+                emails = data.get("emails", [])
+
+                # Group emails by thread_id
+                thread_map = {}
+                for email in emails:
+                    tid = email.get("thread_id") or email.get("id")
+                    if tid not in thread_map:
+                        thread_map[tid] = []
+                    thread_map[tid].append(email)
+
+                # Build MailThreadSummary objects
+                for thread_id, thread_emails in thread_map.items():
+                    # Sort by received_at to get the latest
+                    sorted_emails = sorted(
+                        thread_emails,
+                        key=lambda e: e.get("received_at", ""),
+                        reverse=True,
+                    )
+                    latest = sorted_emails[0]
+
+                    # Build gmail URL
+                    gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{thread_id}"
+
+                    thread_summaries.append(
+                        {
+                            "threadId": thread_id,
+                            "subject": latest.get("subject", ""),
+                            "from": latest.get("sender", ""),
+                            "to": "",
+                            "lastMessageAt": latest.get("received_at", ""),
+                            "unreadCount": 0,
+                            "riskScore": latest.get("risk_score", 0),
+                            "labels": latest.get("labels", []),
+                            "snippet": latest.get("snippet", ""),
+                            "gmailUrl": gmail_url,
+                        }
+                    )
+
+            # Get interview count from metrics (might be 0)
+            interview_count = metrics.get("interview_invites", 0)
+
+            base_card = AgentCard(
+                kind="thread_list",
+                title=spec.zero_title if interview_count == 0 else spec.nonzero_title,
+                body="",
+                email_ids=[],
+                threads=thread_summaries[:10],  # Limit to 10 threads
+                meta={
+                    "count": interview_count,
+                    "time_window_days": time_window_days,
+                },
+            )
+            cards.append(base_card)
 
         # Add more intent-specific card building as needed
 

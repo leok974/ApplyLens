@@ -85,6 +85,13 @@
       ]
     },
     "terminal.integrated.defaultProfile.windows": "Windows PowerShell",
-    "terminal.integrated.cwd": "d:/ApplyLens/infra"
+    "terminal.integrated.cwd": "d:/ApplyLens/infra",
+
+    "workbench.startupEditor": "readme",
+    "github.copilot.chat.agent.instructions": [
+      "For this workspace (ApplyLens), follow the roles and boundaries defined in AGENTS.md and .github/agents/*.md.",
+      "Primary agents for this workspace: dev-deploy-agent (Docker/infrastructure), docs-agent (documentation), security-agent (secrets/config).",
+      "Never change Cloudflare Tunnel ingress, prod docker-compose routing, CORS/cookie scope, OAuth scopes, or weaken risk/security checks without explicit instruction."
+    ]
   }
 }

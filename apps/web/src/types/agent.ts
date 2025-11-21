@@ -4,6 +4,8 @@
  * Mirrors backend Pydantic schemas for type-safe frontend integration.
  */
 
+import type { MailThreadSummary } from '@/lib/mailThreads';
+
 // ============================================================================
 // Agent Run Contract
 // ============================================================================
@@ -33,6 +35,7 @@ export type AgentCardKind =
   | 'followups_summary'
   | 'interviews_summary'
   | 'generic_summary'
+  | 'thread_list'
   | 'error';
 
 export interface AgentCard {
@@ -41,6 +44,7 @@ export interface AgentCard {
   body: string;
   email_ids: string[];
   meta: Record<string, any>;
+  threads?: MailThreadSummary[]; // For thread_list cards
 }
 
 export interface AgentMetrics {

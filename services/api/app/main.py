@@ -258,6 +258,11 @@ app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
 
+# Thread detail API
+from . import routes_threads  # noqa: E402
+
+app.include_router(routes_threads.router)
+
 # E2E test authentication (only enabled when E2E_PROD=1)
 if os.getenv("E2E_PROD") == "1":
     from . import routes_e2e_auth

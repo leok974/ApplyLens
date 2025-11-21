@@ -1,5 +1,8 @@
 # ApplyLens API
 
+> **Note:** Backend changes should follow the agent guidelines in [AGENTS.md](../../AGENTS.md) and .github/agents/api-agent.md / .github/agents/security-agent.md.
+
+
 FastAPI backend for ApplyLens job inbox application.
 
 ## Development
