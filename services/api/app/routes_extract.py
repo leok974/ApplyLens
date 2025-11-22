@@ -17,6 +17,7 @@ from .email_extractor import extract_from_email as extract_service
 from .gmail_providers import GmailProvider, db_backed_provider, mock_provider
 from .models import Application, AppStatus, GmailToken
 from .settings import settings
+from .core.metrics import applications_created_from_thread_total
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 
@@ -298,6 +299,10 @@ async def backfill_endpoint(
             db.add(app)
             db.commit()
             db.refresh(app)
+
+            # Increment metric for applications created from threads
+            if thread_id:
+                applications_created_from_thread_total.inc()
 
         return BackfillResponse(
             saved=ApplicationResponse(

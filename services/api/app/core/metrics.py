@@ -130,6 +130,12 @@ learning_time_histogram = Histogram(
     ),
 )
 
+# Application Tracking Metrics
+applications_created_from_thread_total = Counter(
+    "applylens_applications_created_from_thread_total",
+    "Total number of applications created from mailbox threads",
+)
+
 
 # Helper Functions
 def track_crypto_operation(operation: str):
