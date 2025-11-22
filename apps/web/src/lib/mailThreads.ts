@@ -13,6 +13,8 @@ export interface MailThreadSummary {
   labels: string[];
   snippet: string;
   gmailUrl: string;
+  applicationId?: number | null; // Linked tracker application
+  applicationStatus?: string | null; // Status from tracker
 }
 
 export interface MailMessage {

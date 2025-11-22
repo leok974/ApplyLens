@@ -3,15 +3,26 @@ import { useMailboxTheme } from '@/hooks/useMailboxTheme';
 import type { MailThreadSummary } from '@/lib/mailThreads';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Plus, ExternalLink } from 'lucide-react';
 
 interface ThreadListProps {
   threads: MailThreadSummary[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   intent: string;
+  onCreateApplication?: (threadId: string) => void;
+  onOpenTracker?: (applicationId: number) => void;
 }
 
-export function ThreadList({ threads, selectedId, onSelect, intent }: ThreadListProps) {
+export function ThreadList({
+  threads,
+  selectedId,
+  onSelect,
+  intent,
+  onCreateApplication,
+  onOpenTracker
+}: ThreadListProps) {
   const { theme } = useMailboxTheme();
 
   if (threads.length === 0) {
@@ -74,7 +85,7 @@ export function ThreadList({ threads, selectedId, onSelect, intent }: ThreadList
                 <p className="text-xs text-slate-500 line-clamp-2">{thread.snippet}</p>
               </div>
 
-              <div className="flex flex-col items-end gap-1 text-xs text-slate-500 shrink-0">
+              <div className="flex flex-col items-end gap-1.5 text-xs text-slate-500 shrink-0">
                 <span>{formatDistanceToNow(new Date(thread.lastMessageAt), { addSuffix: true })}</span>
                 {thread.labels.length > 0 && (
                   <div className="flex gap-1 flex-wrap justify-end">
@@ -90,6 +101,35 @@ export function ThreadList({ threads, selectedId, onSelect, intent }: ThreadList
                       <span className="inline-block px-1.5 py-0.5 text-[10px]">
                         +{thread.labels.length - 2}
                       </span>
+                    )}
+                  </div>
+                )}
+                {/* Application action buttons */}
+                {(intent === 'followups' || intent === 'interviews') && (
+                  <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                    {thread.applicationId ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-[10px] text-yellow-400/90 hover:text-yellow-400 hover:bg-yellow-400/10"
+                        onClick={() => onOpenTracker?.(thread.applicationId!)}
+                        data-testid="thread-action-open-tracker"
+                        data-application-id={thread.applicationId}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Open in Tracker
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-[10px] text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                        onClick={() => onCreateApplication?.(thread.threadId)}
+                        data-testid="thread-action-create"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Create application
+                      </Button>
                     )}
                   </div>
                 )}

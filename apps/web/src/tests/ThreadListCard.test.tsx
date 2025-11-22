@@ -4,9 +4,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { ThreadListCard } from '@/components/mail/ThreadListCard';
 import type { AgentCard } from '@/types/agent';
 import type { MailThreadSummary } from '@/lib/mailThreads';
+import * as api from '@/lib/api';
 
 // Mock the mailbox theme hook
 vi.mock('@/hooks/useMailboxTheme', () => ({
@@ -17,6 +19,19 @@ vi.mock('@/hooks/useMailboxTheme', () => ({
     },
     themeId: 'bananaPro',
   }),
+}));
+
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock API
+vi.mock('@/lib/api', () => ({
+  createApplicationFromEmail: vi.fn(),
 }));
 
 // Mock fetch
@@ -76,12 +91,20 @@ const mockCard: AgentCard = {
 };
 
 describe('ThreadListCard', () => {
+  const renderWithRouter = (card: AgentCard) => {
+    return render(
+      <MemoryRouter>
+        <ThreadListCard card={card} />
+      </MemoryRouter>
+    );
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders with thread data', () => {
-    render(<ThreadListCard card={mockCard} />);
+    renderWithRouter(mockCard);
 
     // Check card header
     expect(screen.getAllByText('Follow-up Threads')[0]).toBeInTheDocument();
@@ -99,7 +122,7 @@ describe('ThreadListCard', () => {
   });
 
   it('selects first thread by default', () => {
-    render(<ThreadListCard card={mockCard} />);
+    renderWithRouter(mockCard);
 
     // First thread row should have data-selected="true"
     const rows = screen.getAllByTestId('thread-row');
@@ -108,7 +131,7 @@ describe('ThreadListCard', () => {
   });
 
   it('changes selected thread when clicking another row', async () => {
-    render(<ThreadListCard card={mockCard} />);
+    renderWithRouter(mockCard);
 
     // Find all thread rows
     const rows = screen.getAllByTestId('thread-row');
@@ -125,14 +148,14 @@ describe('ThreadListCard', () => {
   });
 
   it('renders intent badge for non-generic intents', () => {
-    render(<ThreadListCard card={mockCard} />);
+    renderWithRouter(mockCard);
 
     // Should show "followups" badge
     expect(screen.getByText('followups')).toBeInTheDocument();
   });
 
   it('renders risk badges on risky threads', () => {
-    render(<ThreadListCard card={mockCard} />);
+    renderWithRouter(mockCard);
 
     // Thread 2 has riskScore 0.8, should show Risk badge
     const riskBadges = screen.getAllByText('Risk');
@@ -140,7 +163,7 @@ describe('ThreadListCard', () => {
   });
 
   it('renders follow-up badges for followup intent', () => {
-    render(<ThreadListCard card={mockCard} />);
+    renderWithRouter(mockCard);
 
     // All threads in a followups card should show Follow-up badge
     const followUpBadges = screen.getAllByText('Follow-up');
@@ -148,7 +171,7 @@ describe('ThreadListCard', () => {
   });
 
   it('renders labels for threads', () => {
-    render(<ThreadListCard card={mockCard} />);
+    renderWithRouter(mockCard);
 
     // Check for some label badges using getAllByText since labels appear multiple times
     expect(screen.getAllByText('INBOX').length).toBeGreaterThan(0);
@@ -165,7 +188,7 @@ describe('ThreadListCard', () => {
       meta: {},
     };
 
-    const { container } = render(<ThreadListCard card={nonThreadCard} />);
+    const { container } = renderWithRouter(nonThreadCard);
     expect(container.firstChild).toBeNull();
   });
 
@@ -175,7 +198,7 @@ describe('ThreadListCard', () => {
       threads: [mockThreads[0]],
     };
 
-    render(<ThreadListCard card={singleThreadCard} />);
+    renderWithRouter(singleThreadCard);
     expect(screen.getByText('1 thread')).toBeInTheDocument();
   });
 
@@ -189,7 +212,7 @@ describe('ThreadListCard', () => {
       },
     };
 
-    render(<ThreadListCard card={cardWithMeta} />);
+    renderWithRouter(cardWithMeta);
 
     const pill = screen.getByTestId('agent-card-meta-pill');
     expect(pill).toBeInTheDocument();
@@ -207,7 +230,7 @@ describe('ThreadListCard', () => {
       },
     };
 
-    render(<ThreadListCard card={cardWithMeta} />);
+    renderWithRouter(cardWithMeta);
 
     const pill = screen.getByTestId('agent-card-meta-pill');
     expect(pill.textContent).toContain('1 item');
@@ -223,7 +246,7 @@ describe('ThreadListCard', () => {
       },
     };
 
-    render(<ThreadListCard card={cardWithoutCount} />);
+    renderWithRouter(cardWithoutCount);
 
     const pill = screen.queryByTestId('agent-card-meta-pill');
     expect(pill).not.toBeInTheDocument();
@@ -238,7 +261,7 @@ describe('ThreadListCard', () => {
       },
     };
 
-    render(<ThreadListCard card={cardWithoutTimeWindow} />);
+    renderWithRouter(cardWithoutTimeWindow);
 
     const pill = screen.queryByTestId('agent-card-meta-pill');
     expect(pill).not.toBeInTheDocument();
@@ -250,7 +273,7 @@ describe('ThreadListCard', () => {
       intent: 'followups',
     };
 
-    render(<ThreadListCard card={cardWithIntent} />);
+    renderWithRouter(cardWithIntent);
 
     expect(
       screen.getByText('Click a conversation to see details here, or open it in Gmail to reply.')
@@ -264,10 +287,131 @@ describe('ThreadListCard', () => {
       meta: {},
     };
 
-    render(<ThreadListCard card={cardWithoutIntent} />);
+    renderWithRouter(cardWithoutIntent);
 
     expect(
       screen.queryByText('Click a conversation to see details here, or open it in Gmail to reply.')
     ).not.toBeInTheDocument();
+  });
+
+  // Application tracking integration tests
+  describe('Application tracking', () => {
+    const renderWithRouter = (card: AgentCard) => {
+      return render(
+        <MemoryRouter>
+          <ThreadListCard card={card} />
+        </MemoryRouter>
+      );
+    };
+
+    it('shows "Create application" button for followups intent when not linked', () => {
+      const followupsCard: AgentCard = {
+        ...mockCard,
+        meta: { intent: 'followups' },
+      };
+
+      renderWithRouter(followupsCard);
+
+      const createButtons = screen.getAllByTestId('thread-action-create');
+      expect(createButtons.length).toBeGreaterThan(0);
+      expect(createButtons[0]).toHaveTextContent('Create application');
+    });
+
+    it('shows "Create application" button for interviews intent when not linked', () => {
+      const interviewsCard: AgentCard = {
+        ...mockCard,
+        meta: { intent: 'interviews' },
+        threads: mockThreads,
+      };
+
+      renderWithRouter(interviewsCard);
+
+      const createButtons = screen.getAllByTestId('thread-action-create');
+      expect(createButtons.length).toBeGreaterThan(0);
+    });
+
+    it('does not show application buttons for other intents', () => {
+      const billsCard: AgentCard = {
+        ...mockCard,
+        meta: { intent: 'bills' },
+      };
+
+      renderWithRouter(billsCard);
+
+      expect(screen.queryByTestId('thread-action-create')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('thread-action-open-tracker')).not.toBeInTheDocument();
+    });
+
+    it('shows "Open in Tracker" button when thread is linked to application', () => {
+      const linkedThreads: MailThreadSummary[] = [
+        {
+          ...mockThreads[0],
+          applicationId: 42,
+          applicationStatus: 'active',
+        },
+      ];
+
+      const linkedCard: AgentCard = {
+        ...mockCard,
+        threads: linkedThreads,
+      };
+
+      renderWithRouter(linkedCard);
+
+      const openButton = screen.getByTestId('thread-action-open-tracker');
+      expect(openButton).toBeInTheDocument();
+      expect(openButton).toHaveTextContent('Open in Tracker');
+      expect(openButton).toHaveAttribute('data-application-id', '42');
+    });
+
+    it('calls createApplicationFromEmail when Create application is clicked', async () => {
+      const mockCreate = vi.spyOn(api, 'createApplicationFromEmail').mockResolvedValue({
+        application_id: 123,
+        linked_email_id: 1,
+      });
+
+      renderWithRouter(mockCard);
+
+      const createButton = screen.getAllByTestId('thread-action-create')[0];
+      fireEvent.click(createButton);
+
+      await waitFor(() => {
+        expect(mockCreate).toHaveBeenCalled();
+      });
+    });
+
+    it('updates button to "Open in Tracker" after successful creation', async () => {
+      vi.spyOn(api, 'createApplicationFromEmail').mockResolvedValue({
+        application_id: 999,
+        linked_email_id: 1,
+      });
+
+      renderWithRouter(mockCard);
+
+      const createButton = screen.getAllByTestId('thread-action-create')[0];
+      fireEvent.click(createButton);
+
+      await waitFor(() => {
+        const openButton = screen.getByTestId('thread-action-open-tracker');
+        expect(openButton).toBeInTheDocument();
+        expect(openButton).toHaveAttribute('data-application-id', '999');
+      });
+    });
+
+    it('shows toast error when application creation fails', async () => {
+      const { toast } = await import('sonner');
+      vi.spyOn(api, 'createApplicationFromEmail').mockRejectedValue(
+        new Error('Failed to create')
+      );
+
+      renderWithRouter(mockCard);
+
+      const createButton = screen.getAllByTestId('thread-action-create')[0];
+      fireEvent.click(createButton);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to create application');
+      });
+    });
   });
 });

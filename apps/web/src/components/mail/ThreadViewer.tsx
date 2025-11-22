@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import type { MailThreadSummary, MailThreadDetail, MailMessage } from '@/lib/mailThreads';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Check, AlertTriangle, Copy, Clock } from 'lucide-react';
+import { ExternalLink, Check, AlertTriangle, Copy, Clock, Plus, Briefcase } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ThreadViewerProps {
   threadId: string | null;
   summary: MailThreadSummary | null;
+  onCreateApplication?: (threadId: string) => void;
 }
 
-export function ThreadViewer({ threadId, summary }: ThreadViewerProps) {
+export function ThreadViewer({ threadId, summary, onCreateApplication }: ThreadViewerProps) {
+  const navigate = useNavigate();
   const [detail, setDetail] = useState<MailThreadDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,12 +77,24 @@ export function ThreadViewer({ threadId, summary }: ThreadViewerProps) {
       <div className="mb-4 border-b border-slate-800/50 pb-4">
         <div className="flex items-start justify-between gap-3 mb-2">
           <h3 className="text-base font-semibold text-slate-100">{summary.subject}</h3>
-          {isRisky && (
-            <Badge variant="destructive" className="shrink-0">
-              <AlertTriangle className="mr-1 h-3 w-3" />
-              Risky
-            </Badge>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {isRisky && (
+              <Badge variant="destructive" className="shrink-0">
+                <AlertTriangle className="mr-1 h-3 w-3" />
+                Risky
+              </Badge>
+            )}
+            {summary.applicationId && (
+              <Badge
+                variant="outline"
+                className="shrink-0 border-yellow-400/30 text-yellow-400"
+                data-testid="thread-viewer-app-badge"
+              >
+                <Briefcase className="mr-1 h-3 w-3" />
+                Application linked
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="space-y-1 text-sm text-slate-400">
@@ -125,6 +140,31 @@ export function ThreadViewer({ threadId, summary }: ThreadViewerProps) {
             Open in Gmail
           </a>
         </Button>
+
+        {/* Application action */}
+        {summary.applicationId ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
+            onClick={() => navigate(`/applications?highlight=${summary.applicationId}`)}
+            data-testid="thread-viewer-open-tracker"
+          >
+            <Briefcase className="mr-1.5 h-3.5 w-3.5" />
+            Open in Tracker
+          </Button>
+        ) : onCreateApplication && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-slate-700 text-slate-300"
+            onClick={() => onCreateApplication(threadId!)}
+            data-testid="thread-viewer-create-app"
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Create application
+          </Button>
+        )}
 
         <Button variant="outline" size="sm" className="border-slate-700 text-slate-300">
           <Check className="mr-1.5 h-3.5 w-3.5" />

@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ThreadList } from './ThreadList';
 import { ThreadViewer } from './ThreadViewer';
 import type { AgentCard } from '@/types/agent';
+import type { MailThreadSummary } from '@/lib/mailThreads';
 import { Badge } from '@/components/ui/badge';
+import { createApplicationFromEmail } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface ThreadListCardProps {
   card: AgentCard;
@@ -15,10 +19,12 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
     return null;
   }
 
-  const threads = card.threads;
+  const navigate = useNavigate();
+  const [threads, setThreads] = useState<MailThreadSummary[]>(card.threads);
   const [selectedId, setSelectedId] = useState<string | null>(
     threads[0]?.threadId ?? null
   );
+  const [creatingApp, setCreatingApp] = useState<string | null>(null);
 
   const selectedSummary = threads.find((t) => t.threadId === selectedId) ?? null;
 
@@ -26,6 +32,51 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
   const intent = card.intent ?? (card.meta?.intent as string) ?? 'generic';
   const count = card.meta?.count;
   const timeWindowDays = card.meta?.time_window_days;
+
+  // Handler: Create application from thread
+  const handleCreateApplication = async (threadId: string) => {
+    const thread = threads.find((t) => t.threadId === threadId);
+    if (!thread) return;
+
+    // For now, we need to find/create an email ID from the thread
+    // The API expects an email_id (int), but we have threadId (string)
+    // We'll need to call a backend endpoint to get the email_id for a thread
+    // For POC, we'll show a toast and update local state
+    setCreatingApp(threadId);
+
+    try {
+      // TODO: Need to resolve threadId -> email_id mapping
+      // For now, parse threadId as integer if possible, or call a helper endpoint
+      const emailIdMatch = threadId.match(/\d+/);
+      if (!emailIdMatch) {
+        throw new Error('Could not extract email ID from thread');
+      }
+      const emailId = parseInt(emailIdMatch[0], 10);
+
+      const result = await createApplicationFromEmail(emailId);
+
+      // Update local thread state with the new application ID
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.threadId === threadId
+            ? { ...t, applicationId: result.application_id, applicationStatus: 'active' }
+            : t
+        )
+      );
+
+      toast.success('Application created from this thread');
+    } catch (error) {
+      console.error('Failed to create application:', error);
+      toast.error('Failed to create application');
+    } finally {
+      setCreatingApp(null);
+    }
+  };
+
+  // Handler: Open tracker with application pre-selected
+  const handleOpenTracker = (applicationId: number) => {
+    navigate(`/applications?highlight=${applicationId}`);
+  };
 
   return (
     <div
@@ -87,10 +138,16 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
           selectedId={selectedId}
           onSelect={setSelectedId}
           intent={intent}
+          onCreateApplication={handleCreateApplication}
+          onOpenTracker={handleOpenTracker}
         />
 
         <div className="md:mt-0">
-          <ThreadViewer threadId={selectedId} summary={selectedSummary} />
+          <ThreadViewer
+            threadId={selectedId}
+            summary={selectedSummary}
+            onCreateApplication={handleCreateApplication}
+          />
         </div>
       </div>
 
