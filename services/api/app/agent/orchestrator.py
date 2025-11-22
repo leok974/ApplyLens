@@ -909,16 +909,9 @@ class MailboxAgentOrchestrator:
                 user_id=user_id,
             )
 
-            answer, cards = await complete_agent_answer(
-                request=request,
-                intent=intent,
-                tool_results=tool_results,
-                email_contexts=email_contexts,
-                kb_contexts=kb_contexts,
-            )
-
-            # Build deterministic cards from tool results for scan intents
-            # This prevents the LLM from overriding our thread_list cards
+            # Build deterministic cards FIRST for scan intents
+            # This allows the LLM to reference card metadata in its answer
+            deterministic_card_objects = []
             intent_spec = self._get_intent_spec(intent)
             if intent_spec:
                 # Build metrics first (needed by card builder)
@@ -936,6 +929,19 @@ class MailboxAgentOrchestrator:
                     time_window_days=request.context.time_window_days,
                 )
 
+            # Use structured LLM answering with citations
+            # Pass deterministic cards so LLM can reference metadata
+            answer, cards = await complete_agent_answer(
+                request=request,
+                intent=intent,
+                tool_results=tool_results,
+                email_contexts=email_contexts,
+                kb_contexts=kb_contexts,
+                tool_cards=deterministic_card_objects if intent_spec else None,
+            )
+
+            # Merge deterministic cards with LLM cards for scan intents
+            if intent_spec:
                 # Convert AgentCard objects to dicts for merging
                 tool_cards = [card.dict() for card in deterministic_card_objects]
 

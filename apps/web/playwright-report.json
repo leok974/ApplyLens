@@ -41,7 +41,7 @@
       {
         "outputDir": "D:/ApplyLens/apps/web/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 2,
         "metadata": {
           "actualWorkers": 1
         },
@@ -87,7 +87,7 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.56.0",
-    "workers": 4,
+    "workers": 1,
     "webServer": null
   },
   "suites": [
@@ -101,11 +101,11 @@
         {
           "title": "@prodSafe @chat @threads Thread Viewer v1",
           "file": "e2e/chat-thread-viewer.spec.ts",
-          "line": 11,
+          "line": 15,
           "column": 6,
           "specs": [
             {
-              "title": "shows thread list card with selectable rows",
+              "title": "smoke: Follow-ups toolbar button shows thread list UI",
               "ok": false,
               "tags": [
                 "prodSafe",
@@ -124,62 +124,173 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 32418,
+                      "duration": 18945,
                       "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('textarea[placeholder*=\"Ask\"]')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for locator('textarea[placeholder*=\"Ask\"]')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('textarea[placeholder*=\"Ask\"]')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for locator('textarea[placeholder*=\"Ask\"]')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:22:25",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30",
                         "location": {
                           "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                          "column": 25,
-                          "line": 22
+                          "column": 30,
+                          "line": 36
                         },
-                        "snippet": "\u001b[0m \u001b[90m 20 |\u001b[39m     \u001b[90m// Wait specifically for the input to appear (authentication might still be loading)\u001b[39m\n \u001b[90m 21 |\u001b[39m     \u001b[36mconst\u001b[39m input \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'textarea[placeholder*=\"Ask\"]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m expect(input)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m30000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                         \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 23 |\u001b[39m     \n \u001b[90m 24 |\u001b[39m     \u001b[90m// Send a query that should return thread_list card\u001b[39m\n \u001b[90m 25 |\u001b[39m     \u001b[36mawait\u001b[39m input\u001b[33m.\u001b[39mfill(\u001b[32m'Show people I still owe a reply to'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                        "snippet": "\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
                       },
                       "errors": [
                         {
                           "location": {
                             "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                            "column": 25,
-                            "line": 22
+                            "column": 30,
+                            "line": 36
                           },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('textarea[placeholder*=\"Ask\"]')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for locator('textarea[placeholder*=\"Ask\"]')\u001b[22m\n\n\n  20 |     // Wait specifically for the input to appear (authentication might still be loading)\n  21 |     const input = page.locator('textarea[placeholder*=\"Ask\"]');\n> 22 |     await expect(input).toBeVisible({ timeout: 30000 });\n     |                         ^\n  23 |     \n  24 |     // Send a query that should return thread_list card\n  25 |     await input.fill('Show people I still owe a reply to');\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:22:25"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n\n\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-11-22T02:53:11.454Z",
+                      "startTime": "2025-11-22T18:25:39.943Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-5fb52-t-card-with-selectable-rows-chromium\\test-failed-1.png"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium\\test-failed-1.png"
                         },
                         {
                           "name": "video",
                           "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-5fb52-t-card-with-selectable-rows-chromium\\video.webm"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium\\video.webm"
                         },
                         {
                           "name": "error-context",
                           "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-5fb52-t-card-with-selectable-rows-chromium\\error-context.md"
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium\\error-context.md"
                         }
                       ],
                       "errorLocation": {
                         "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                        "column": 25,
-                        "line": 22
+                        "column": 30,
+                        "line": 36
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 25013,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30",
+                        "location": {
+                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                          "column": 30,
+                          "line": 36
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                            "column": 30,
+                            "line": 36
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n\n\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-22T18:26:00.329Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                        "column": 30,
+                        "line": 36
+                      }
+                    },
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 23078,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30",
+                        "location": {
+                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                          "column": 30,
+                          "line": 36
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                            "column": 30,
+                            "line": 36
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n\n\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 2,
+                      "startTime": "2025-11-22T18:26:26.434Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry2\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry2\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry2\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                        "column": 30,
+                        "line": 36
                       }
                     }
                   ],
                   "status": "unexpected"
                 }
               ],
-              "id": "aae99bbee1a8d8a3813c-8bd2eca77ec51b48adba",
+              "id": "aae99bbee1a8d8a3813c-f6a4b65df4d67124bd8c",
               "file": "e2e/chat-thread-viewer.spec.ts",
-              "line": 12,
+              "line": 17,
               "column": 3
             }
           ]
@@ -189,8 +300,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-11-22T02:53:08.184Z",
-    "duration": 35879.008,
+    "startTime": "2025-11-22T18:25:37.121Z",
+    "duration": 72606.455,
     "expected": 0,
     "skipped": 0,
     "unexpected": 1,

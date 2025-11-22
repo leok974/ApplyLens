@@ -174,7 +174,8 @@ services:
     # v0.5.8: Intent override - explicit intent for toolbar buttons Banana Pro theme visual polish - warm yellow SaaS cockpit design
     # v0.5.8: Intent override - explicit intent for toolbar buttons Card merging - prevent LLM from nuking thread_list cards
     # v0.5.9: Count fix - meta.count in summary cards (was incorrectly at top level)
-    image: leoklemet/applylens-api:0.5.9-count-fix
+    # v0.5.10: Card-aware answering - LLM references card metadata, no hallucinated company names
+    image: leoklemet/applylens-api:0.5.10-card-aware
     container_name: applylens-api-prod
     environment:
       # Database

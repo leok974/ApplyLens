@@ -235,16 +235,35 @@ async def complete_agent_answer(
     tool_results: List[ToolResult],
     email_contexts: List[RAGContext],
     kb_contexts: List[RAGContext],
+    tool_cards: Optional[List[AgentCard]] = None,
 ) -> Tuple[str, List[AgentCard]]:
     """
     Ask the LLM to synthesize a natural-language answer and card definitions
     from the tools + RAG contexts.
+
+    For scan intents, tool_cards are passed to extract metadata for card-aware answers.
 
     Returns (answer, cards).
     """
     tools_block = _summarize_tool_results(tool_results)
     emails_block = _summarize_rag_contexts(email_contexts)
     kb_block = _summarize_rag_contexts(kb_contexts)
+
+    # Extract card metadata for scan intents (card-aware answering)
+    card_metadata = ""
+    if intent in SCAN_INTENTS and tool_cards:
+        summary_card = next((c for c in tool_cards if "summary" in c.kind), None)
+        if summary_card and summary_card.meta:
+            count = summary_card.meta.get("count", 0)
+            time_window = summary_card.meta.get("time_window_days", 30)
+            card_metadata = dedent(
+                f"""
+                CARD METADATA (use these exact numbers in your answer):
+                - Items found: {count}
+                - Time window: {time_window} days
+                - Intent: {intent}
+                """
+            ).strip()
 
     # Build card generation instructions based on intent
     if intent in SCAN_INTENTS:
@@ -254,6 +273,31 @@ async def complete_agent_answer(
             Cards are already built deterministically from tool results.
             Only provide natural-language text in the "answer" field.
             Set "cards" to an empty array: "cards": []
+
+            CARD-AWARE ANSWERING RULES FOR SCAN INTENTS:
+
+            You MUST follow these rules to prevent hallucination:
+
+            1. DO NOT invent specific details:
+               - NO company names (no "Company A", "Company B", "Acme Corp", etc.)
+               - NO role titles (no "Marketing Specialist", "Software Engineer", etc.)
+               - NO specific dates (no "[Insert Date]", "March 15th", etc.)
+               - NO fabricated email subjects or senders
+
+            2. DO reference the UI cards:
+               - Use phrases like "listed in the card below" or "see the list below"
+               - Mention the count and time window from CARD METADATA
+               - Explain that the card shows the actual details
+
+            3. DO provide generic, actionable strategies:
+               - Give 2-4 short tips or message templates
+               - Keep templates generic (no company names)
+               - Focus on angles, tone, and approach
+
+            4. Structure your answer like this:
+               - First sentence: Summarize what you found (use exact count + time window)
+               - Second sentence: Point to the card for details
+               - Remaining: 2-4 generic strategies or tips
             """
         ).strip()
     else:
@@ -292,15 +336,51 @@ async def complete_agent_answer(
         INTENT: {intent}
 
         Intent-specific guidelines:
-        - suspicious: Keep answer short (1-2 paragraphs + bullets). Explain WHY emails are risky (domains, urgency, payments). Be actionable.
-        - bills: Focus on due dates, amounts, senders. Group into "due soon", "overdue", "other". Be concise.
-        - interviews: Organize into sections: "Upcoming", "Waiting on recruiter", "Closed". Include company, role, dates, next actions.
-        - followups: Prioritize top 3-5 follow-ups. Include company, role, last email date, suggested angle.
+
+        - followups:
+          * Start with: "I found N conversations in the last X days where you may still owe a reply."
+          * Then: "They're listed in the card below."
+          * Provide 2-4 generic follow-up message templates (e.g., "Express continued interest", "Request status update")
+          * DO NOT list specific companies, roles, or dates
+
+        - unsubscribe:
+          * Start with: "I found N newsletters in the last X days that you haven't opened."
+          * Then: "See the list below—each has an unsubscribe link."
+          * Provide tips for batch-cleaning or setting up filters
+          * DO NOT list specific newsletter names
+
+        - clean_promos:
+          * Start with: "I found N promotional emails in the last X days."
+          * Then: "The card below shows which senders are most frequent."
+          * Provide strategies for bulk archiving or filtering
+          * DO NOT list specific companies
+
+        - bills:
+          * If count > 0: "I found N bills in the last X days (Y due soon, Z overdue)."
+          * If count = 0: "You're all caught up—no bills found in the last X days."
+          * Then: "The card below groups them by status" (if count > 0)
+          * Provide tips for prioritizing payments
+          * DO NOT invent specific bill amounts or vendors
+
+        - interviews:
+          * Start with: "I found N interview-related emails in the last X days."
+          * Then: "The card below groups them by status."
+          * Provide generic follow-up strategies for different stages
+          * DO NOT list specific companies or roles
+
+        - suspicious:
+          * If count > 0: "I found N emails that look risky in the last X days."
+          * If count = 0: "I didn't find any obviously risky emails in the last X days."
+          * Then: Explain what you scanned for (domains, urgency, payment requests)
+          * Provide tips for spotting phishing
+          * DO NOT list specific sender names or subjects
+
         - profile: Quantitative overview. Mention total emails, recent window, label/risk breakdowns. High-level trends only.
         - generic: Short and practical. 1 paragraph + bullet list of suggested actions.
 
         Always:
         - Base your reasoning ONLY on the tools and context provided.
+        - Use exact counts and time windows from CARD METADATA (do not contradict them).
         - Prefer conservative, security-aware answers.
         - If you are not sure about legitimacy of an email, say so and explain why.
         - Avoid repeating the exact same sentence multiple times.
@@ -322,6 +402,8 @@ async def complete_agent_answer(
 
         MODE:
         {request.mode}
+
+        {card_metadata}
 
         TOOL RESULTS:
         {tools_block}
