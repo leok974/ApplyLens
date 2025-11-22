@@ -27,7 +27,7 @@ from app.schemas_agent import (
 from app.agent.tools import ToolRegistry
 from app.agent.metrics import record_agent_run, record_tool_call
 from app.agent.rag import retrieve_email_contexts, retrieve_kb_contexts
-from app.agent.answering import complete_agent_answer
+from app.agent.answering import complete_agent_answer, merge_cards_with_llm
 from app.es import ES_URL, ES_ENABLED
 from elasticsearch import AsyncElasticsearch
 
@@ -909,6 +909,32 @@ class MailboxAgentOrchestrator:
                 kb_contexts=kb_contexts,
             )
 
+            # Build deterministic cards from tool results for scan intents
+            # This prevents the LLM from overriding our thread_list cards
+            intent_spec = self._get_intent_spec(intent)
+            if intent_spec:
+                # Build deterministic cards (summary + thread_list)
+                deterministic_card_objects = self._build_cards_from_spec(
+                    spec=intent_spec,
+                    tool_results=tool_results,
+                    time_window_days=request.context.time_window_days,
+                )
+
+                # Convert AgentCard objects to dicts for merging
+                tool_cards = [card.dict() for card in deterministic_card_objects]
+
+                # Convert LLM cards to dicts (they're already AgentCard objects)
+                llm_cards = [card.dict() for card in cards] if cards else None
+
+                # Merge: tool cards always win, LLM cards only add extras
+                merged_card_dicts = merge_cards_with_llm(
+                    tool_cards=tool_cards,
+                    llm_cards=llm_cards,
+                )
+
+                # Convert back to AgentCard objects
+                cards = [AgentCard(**card_dict) for card_dict in merged_card_dicts]
+
             # Calculate total RAG sources
             total_rag_sources = rag_email_count + rag_kb_count
 
@@ -1044,6 +1070,10 @@ class MailboxAgentOrchestrator:
         # Add more intent-specific metrics as needed
 
         return metrics
+
+    def _get_intent_spec(self, intent_name: str) -> Optional[IntentSpec]:
+        """Get IntentSpec for a given intent name."""
+        return INTENT_SPECS.get(intent_name)
 
     def _build_thread_summary(
         self,

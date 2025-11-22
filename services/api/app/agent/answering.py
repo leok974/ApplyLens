@@ -12,7 +12,7 @@ import logging
 import os
 import httpx
 from textwrap import dedent
-from typing import List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional
 
 from app.schemas_agent import (
     AgentRunRequest,
@@ -29,6 +29,56 @@ OLLAMA_BASE = os.getenv("OLLAMA_BASE", "http://infra-ollama-1:11434").rstrip("/"
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3:latest")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+# Intents that use deterministic card building
+SCAN_INTENTS = {
+    "followups",
+    "unsubscribe",
+    "suspicious",
+    "bills",
+    "clean_promos",
+    "interviews",
+}
+
+
+def merge_cards_with_llm(
+    *,
+    tool_cards: List[Dict[str, Any]],
+    llm_cards: Optional[List[Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Combine deterministic tool cards with any extra LLM cards.
+
+    Rules:
+    - Tool cards always win for `thread_list` and summary cards.
+    - LLM cards are only allowed to add *extra* non-conflicting cards
+      (e.g. tips, tiny summaries) if they exist.
+
+    This prevents the LLM from overriding our carefully constructed
+    thread_list cards with single summary cards.
+    """
+    if not llm_cards:
+        return tool_cards
+
+    # Index tool cards by (kind, intent) so we don't duplicate
+    existing_keys = set()
+    for c in tool_cards:
+        key = (c.get("kind"), c.get("intent"))
+        existing_keys.add(key)
+
+    merged: List[Dict[str, Any]] = list(tool_cards)
+
+    for c in llm_cards:
+        key = (c.get("kind"), c.get("intent"))
+
+        # Never allow LLM to override thread_list or summary cards
+        if key in existing_keys:
+            continue
+
+        # Allow extra small helper cards if you ever want that
+        merged.append(c)
+
+    return merged
 
 
 def _summarize_tool_results(tool_results: List[ToolResult]) -> str:
@@ -196,6 +246,45 @@ async def complete_agent_answer(
     emails_block = _summarize_rag_contexts(email_contexts)
     kb_block = _summarize_rag_contexts(kb_contexts)
 
+    # Build card generation instructions based on intent
+    if intent in SCAN_INTENTS:
+        card_instructions = dedent(
+            """
+            IMPORTANT: Do NOT create or modify UI cards for this intent.
+            Cards are already built deterministically from tool results.
+            Only provide natural-language text in the "answer" field.
+            Set "cards" to an empty array: "cards": []
+            """
+        ).strip()
+    else:
+        card_instructions = dedent(
+            """
+            You MUST respond with **valid JSON** matching this schema:
+
+            {
+              "answer": "one-paragraph natural language answer for the user",
+              "cards": [
+                {
+                  "kind": "suspicious_summary | bills_summary | followups_summary | interviews_summary | generic_summary | error",
+                  "title": "short title for the UI card",
+                  "body": "short summary body (do not just copy `answer`)",
+                  "email_ids": ["id1", "id2"],
+                  "meta": { "count": 3, "time_window_days": 7, "mode": "preview_only" }
+                }
+              ]
+            }
+
+            Rules:
+            - Use email_ids only from the email contexts we provide (where you see [email_id=...]).
+            - If there are no matching emails, clearly say that in both `answer` and the card.
+            - Do not invent email IDs.
+            - Do not repeat the same sentence in both `answer` and card `body`;
+              the card should be a compact summary or status line.
+            - If tools or context show an error, produce one `error` card and explain briefly.
+            - Use intent-appropriate card kind: {intent}_summary for most cases.
+            """
+        ).strip()
+
     system_prompt = dedent(
         f"""
         You are the Mailbox Assistant inside ApplyLens, an email-focused assistant.
@@ -217,31 +306,9 @@ async def complete_agent_answer(
         - Avoid repeating the exact same sentence multiple times.
         - Keep answers concise and practical.
         - Do NOT restate tool data exhaustively; summarize and prioritize.
-
-        You MUST respond with **valid JSON** matching this schema:
-
-        {{
-          "answer": "one-paragraph natural language answer for the user",
-          "cards": [
-            {{
-              "kind": "suspicious_summary | bills_summary | followups_summary | interviews_summary | generic_summary | error",
-              "title": "short title for the UI card",
-              "body": "short summary body (do not just copy `answer`)",
-              "email_ids": ["id1", "id2"],
-              "meta": {{ "count": 3, "time_window_days": 7, "mode": "preview_only" }}
-            }}
-          ]
-        }}
-
-        Rules:
-        - Use email_ids only from the email contexts we provide (where you see [email_id=...]).
-        - If there are no matching emails, clearly say that in both `answer` and the card.
-        - Do not invent email IDs.
-        - Do not repeat the same sentence in both `answer` and card `body`;
-          the card should be a compact summary or status line.
-        - If tools or context show an error, produce one `error` card and explain briefly.
         - Respond with ONLY the JSON object, no additional text.
-        - Use intent-appropriate card kind: {intent}_summary for most cases.
+
+        {card_instructions}
         """
     ).strip()
 

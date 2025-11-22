@@ -5,7 +5,7 @@ Write-Host "🧪 Thread List Card Smoke Tests (Production)" -ForegroundColor Cya
 Write-Host "="*60 -ForegroundColor Cyan
 
 $API_BASE = "https://applylens.app"
-$TEST_USER = "smoke-test@applylens.app"
+$TEST_USER = "leoklemet.pa@gmail.com"
 
 function Test-AgentIntent {
     param(
@@ -24,7 +24,7 @@ function Test-AgentIntent {
     } | ConvertTo-Json -Compress
 
     try {
-        $response = curl.exe -s -X POST "$API_BASE/v2/agent/run" `
+        $response = curl.exe -s -X POST "$API_BASE/api/v2/agent/run" `
             -H "Content-Type: application/json" `
             -d $body
 
