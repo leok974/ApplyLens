@@ -45,6 +45,7 @@ export default function Tracker() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [statusFilter, setStatusFilter] = useState<AppStatus | ''>(searchParams.get('status') as AppStatus || '')
+  const [fromMailboxFilter, setFromMailboxFilter] = useState(false)
   const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ company: '', role: '', source: '' })
@@ -236,6 +237,20 @@ export default function Tracker() {
           ))}
         </select>
         <button
+          onClick={() => setFromMailboxFilter(!fromMailboxFilter)}
+          data-testid="filter-from-mailbox"
+          className={`px-3 py-2 text-sm rounded transition flex items-center gap-2 ${
+            fromMailboxFilter
+              ? 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/50 hover:bg-yellow-400/30'
+              : 'border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+          }`}
+          title={fromMailboxFilter ? 'Showing only mail-linked applications' : 'Show only applications from mailbox'}
+        >
+          <Mail className="h-4 w-4" />
+          From Mailbox
+          {fromMailboxFilter && <span className="font-semibold">✓</span>}
+        </button>
+        <button
           className="ml-auto px-3 py-2 text-sm border rounded hover:bg-gray-50 transition"
           onClick={() => (document.getElementById('create-dialog') as any)?.showModal?.()}
           data-testid="tracker-new-btn"
@@ -257,7 +272,7 @@ export default function Tracker() {
           <div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading…</div>
         ) : (
           <div className="divide-y divide-zinc-300 dark:divide-zinc-700">
-            {applications.map((r) => (
+            {(fromMailboxFilter ? applications.filter(a => a.thread_id) : applications).map((r) => (
               <div
                 key={`app-${r.id}`}
                 className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
