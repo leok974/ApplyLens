@@ -10,17 +10,18 @@ import { test, expect } from '@playwright/test';
 
 test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
   test('shows thread list card with selectable rows', async ({ page }) => {
-    // Force cache bypass
-    await page.goto('/', { waitUntil: 'networkidle' });
-    await page.reload({ waitUntil: 'networkidle' });
-
+    // Navigate to chat (auth handled by storageState)
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Wait for chat interface to load
-    await expect(page.getByTestId('chat-root')).toBeVisible();
+    await expect(page.getByTestId('chat-root')).toBeVisible({ timeout: 15000 });
+
+    // Wait specifically for the input to appear (authentication might still be loading)
+    const input = page.locator('textarea[placeholder*="Ask"]');
+    await expect(input).toBeVisible({ timeout: 30000 });
 
     // Send a query that should return thread_list card
-    const input = page.locator('textarea[placeholder*="Ask"]');
     await input.fill('Show people I still owe a reply to');
     await input.press('Enter');
 
@@ -43,6 +44,7 @@ test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
 
   test('first thread is selected by default and viewer shows details', async ({ page }) => {
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Send query
     const input = page.locator('textarea[placeholder*="Ask"]');
@@ -67,6 +69,7 @@ test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
 
   test('clicking a thread row updates the viewer', async ({ page }) => {
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Send query
     const input = page.locator('textarea[placeholder*="Ask"]');
@@ -103,6 +106,7 @@ test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
 
   test('Open in Gmail button has correct href', async ({ page }) => {
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Send query
     const input = page.locator('textarea[placeholder*="Ask"]');
@@ -131,6 +135,7 @@ test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
 
   test('thread rows show risk badges for risky threads', async ({ page }) => {
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Send query that might return risky threads
     const input = page.locator('textarea[placeholder*="Ask"]');
@@ -161,6 +166,7 @@ test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
 
   test('thread viewer shows message timeline', async ({ page }) => {
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Send query
     const input = page.locator('textarea[placeholder*="Ask"]');
@@ -192,6 +198,7 @@ test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
 
   test('thread card shows thread count badge', async ({ page }) => {
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Send query
     const input = page.locator('textarea[placeholder*="Ask"]');
@@ -213,6 +220,7 @@ test.describe('@prodSafe @chat @threads Thread Viewer v1', () => {
     }
 
     await page.goto('/chat');
+    await page.waitForLoadState("networkidle");
 
     // Send query
     const input = page.locator('textarea[placeholder*="Ask"]');

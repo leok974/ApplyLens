@@ -262,4 +262,134 @@ describe('mapAgentResultToCards – Agent V2 intents', () => {
     const items = card.meta?.items as any[] | undefined;
     expect(items?.length).toBe(3);
   });
+
+  it('maps followups to summary + thread_list when threads exist', () => {
+    const agentResult: any = {
+      status: 'done',
+      intent: 'followups',
+      cards: [
+        {
+          kind: 'followups_summary',
+          title: 'Conversations Waiting on Your Reply',
+          body: 'You have multiple follow-ups awaiting your reply.',
+          email_ids: [],
+          meta: { count: 2, time_window_days: 30 },
+        },
+        {
+          kind: 'thread_list',
+          intent: 'followups',
+          title: 'Conversations Waiting on Your Reply',
+          body: '',
+          email_ids: [],
+          meta: { count: 2, time_window_days: 30 },
+          threads: [
+            {
+              threadId: 't1',
+              subject: 'Follow-up on interview',
+              from: 'recruiter@company.com',
+              lastMessageAt: '2025-11-20T10:00:00Z',
+              snippet: 'Looking forward to hearing back...',
+            },
+            {
+              threadId: 't2',
+              subject: 'Application status',
+              from: 'hr@startup.io',
+              lastMessageAt: '2025-11-19T15:30:00Z',
+              snippet: 'Could you provide an update?',
+            },
+          ],
+        },
+      ],
+    };
+
+    const cards = mapAgentResultToCards(agentResult);
+
+    expect(cards).toHaveLength(2);
+
+    // First card: summary
+    const summaryCard = cards[0];
+    expect(summaryCard.kind).toBe('followups_summary');
+    expect(summaryCard.meta?.count).toBe(2);
+
+    // Second card: thread_list
+    const threadCard = cards[1];
+    expect(threadCard.kind).toBe('thread_list');
+    expect(threadCard.intent).toBe('followups');
+    expect(threadCard.threads).toHaveLength(2);
+    expect(threadCard.threads?.[0]?.threadId).toBe('t1');
+  });
+
+  it('maps unsubscribe to summary + thread_list when newsletters found', () => {
+    const agentResult: any = {
+      status: 'done',
+      intent: 'unsubscribe',
+      cards: [
+        {
+          kind: 'generic_summary',
+          title: 'Unsubscribe from Unopened Newsletters',
+          body: '46 newsletters found that haven\'t been opened in 60 days.',
+          email_ids: [],
+          meta: { count: 46, time_window_days: 60 },
+        },
+        {
+          kind: 'thread_list',
+          intent: 'unsubscribe',
+          title: 'Unsubscribe from Unopened Newsletters',
+          body: '',
+          email_ids: [],
+          meta: { count: 46, time_window_days: 60 },
+          threads: [
+            {
+              threadId: 'n1',
+              subject: 'Weekly Newsletter #234',
+              from: 'news@example.com',
+              lastMessageAt: '2025-09-15T08:00:00Z',
+            },
+            {
+              threadId: 'n2',
+              subject: 'Monthly Digest',
+              from: 'digest@marketing.com',
+              lastMessageAt: '2025-09-10T12:00:00Z',
+            },
+          ],
+        },
+      ],
+    };
+
+    const cards = mapAgentResultToCards(agentResult);
+
+    expect(cards).toHaveLength(2);
+
+    const summaryCard = cards[0];
+    expect(summaryCard.kind).toBe('generic_summary');
+    expect(summaryCard.body).toContain('46 newsletters');
+
+    const threadCard = cards[1];
+    expect(threadCard.kind).toBe('thread_list');
+    expect(threadCard.intent).toBe('unsubscribe');
+    expect(threadCard.threads).toHaveLength(2);
+  });
+
+  it('returns only summary card when count is zero (no thread_list)', () => {
+    const agentResult: any = {
+      status: 'done',
+      intent: 'suspicious',
+      cards: [
+        {
+          kind: 'generic_summary',
+          title: 'No Suspicious Emails Found',
+          body: 'You\'re all caught up – I couldn\'t find anything matching this in the last 30 days.',
+          email_ids: [],
+          meta: { count: 0, time_window_days: 30 },
+        },
+      ],
+    };
+
+    const cards = mapAgentResultToCards(agentResult);
+
+    // Only summary card, NO thread_list card when count is 0
+    expect(cards).toHaveLength(1);
+    expect(cards[0].kind).toBe('generic_summary');
+    expect(cards[0].meta?.count).toBe(0);
+  });
 });

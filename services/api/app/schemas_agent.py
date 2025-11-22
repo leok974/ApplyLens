@@ -91,6 +91,12 @@ class AgentCard(BaseModel):
     title: str = Field(..., description="Card title for UI")
     body: str = Field(..., description="Card summary body (different from answer)")
 
+    # Intent for thread_list cards
+    intent: Optional[str] = Field(
+        default=None,
+        description="Intent type for thread_list cards (e.g., followups, suspicious, bills)",
+    )
+
     # Email/message IDs this card is based on (for highlighting / "sources")
     email_ids: List[str] = Field(
         default_factory=list,
@@ -241,6 +247,48 @@ class ProfileStatsParams(BaseModel):
     """Parameters for profile_stats tool."""
 
     time_window_days: int = Field(30, ge=1, le=365)
+
+
+# ============================================================================
+# Thread List Card Contract
+# ============================================================================
+
+
+class ThreadSummary(BaseModel):
+    """
+    Unified thread summary contract for thread_list cards.
+
+    Used by ThreadViewer component to display email threads.
+    """
+
+    thread_id: str = Field(..., alias="threadId")
+    subject: str
+    sender: str = Field(..., alias="from")
+    snippet: Optional[str] = None
+    last_seen_at: datetime = Field(..., alias="lastMessageAt")
+    labels: List[str] = Field(default_factory=list)
+    risk_score: Optional[int] = Field(None, alias="riskScore")
+    is_unread: Optional[bool] = Field(None, alias="unreadCount")
+    gmail_url: Optional[str] = Field(None, alias="gmailUrl")
+
+    class Config:
+        populate_by_name = True
+        allow_population_by_field_name = True
+
+
+class ThreadListCard(BaseModel):
+    """
+    Thread list card for Thread Viewer UI component.
+
+    Emitted alongside summary cards when threads exist.
+    """
+
+    kind: Literal["thread_list"]
+    intent: str  # e.g. "followups", "unsubscribe", "suspicious"
+    title: str
+    time_window_days: Optional[int] = None
+    mode: Literal["normal", "preview_only"] = "normal"
+    threads: List[Dict[str, Any]]  # ThreadSummary objects as dicts
 
 
 # ============================================================================

@@ -41,7 +41,7 @@
       {
         "outputDir": "D:/ApplyLens/apps/web/test-results",
         "repeatEach": 1,
-        "retries": 2,
+        "retries": 0,
         "metadata": {
           "actualWorkers": 1
         },
@@ -73,6 +73,7 @@
           "e2e/search-renders.spec.ts",
           "e2e/search-derived-and-tooltip.spec.ts",
           "e2e/prod-search-smoke.spec.ts",
+          "e2e/chat-thread-viewer.spec.ts",
           "chat-mailbox-ambient-glow.spec.ts",
           "ui/header-logo.spec.ts",
           "search.interactions.spec.ts",
@@ -86,31 +87,30 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.56.0",
-    "workers": 2,
+    "workers": 4,
     "webServer": null
   },
   "suites": [
     {
-      "title": "chat-mailbox-ambient-glow.spec.ts",
-      "file": "chat-mailbox-ambient-glow.spec.ts",
+      "title": "e2e\\chat-thread-viewer.spec.ts",
+      "file": "e2e/chat-thread-viewer.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "@prodSafe @prod @chat @theme",
-          "file": "chat-mailbox-ambient-glow.spec.ts",
-          "line": 3,
+          "title": "@prodSafe @chat @threads Thread Viewer v1",
+          "file": "e2e/chat-thread-viewer.spec.ts",
+          "line": 11,
           "column": 6,
           "specs": [
             {
-              "title": "Banana Pro has no ambient frame overlay",
-              "ok": true,
+              "title": "shows thread list card with selectable rows",
+              "ok": false,
               "tags": [
                 "prodSafe",
-                "prod",
                 "chat",
-                "theme"
+                "threads"
               ],
               "tests": [
                 {
@@ -123,73 +123,63 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4904,
-                      "errors": [],
-                      "stdout": [
+                      "status": "failed",
+                      "duration": 32418,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('textarea[placeholder*=\"Ask\"]')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for locator('textarea[placeholder*=\"Ask\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('textarea[placeholder*=\"Ask\"]')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for locator('textarea[placeholder*=\"Ask\"]')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:22:25",
+                        "location": {
+                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                          "column": 25,
+                          "line": 22
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 20 |\u001b[39m     \u001b[90m// Wait specifically for the input to appear (authentication might still be loading)\u001b[39m\n \u001b[90m 21 |\u001b[39m     \u001b[36mconst\u001b[39m input \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'textarea[placeholder*=\"Ask\"]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m expect(input)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m30000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                         \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 23 |\u001b[39m     \n \u001b[90m 24 |\u001b[39m     \u001b[90m// Send a query that should return thread_list card\u001b[39m\n \u001b[90m 25 |\u001b[39m     \u001b[36mawait\u001b[39m input\u001b[33m.\u001b[39mfill(\u001b[32m'Show people I still owe a reply to'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
                         {
-                          "text": "Frame boxShadow: rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px\n"
+                          "location": {
+                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                            "column": 25,
+                            "line": 22
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('textarea[placeholder*=\"Ask\"]')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for locator('textarea[placeholder*=\"Ask\"]')\u001b[22m\n\n\n  20 |     // Wait specifically for the input to appear (authentication might still be loading)\n  21 |     const input = page.locator('textarea[placeholder*=\"Ask\"]');\n> 22 |     await expect(input).toBeVisible({ timeout: 30000 });\n     |                         ^\n  23 |     \n  24 |     // Send a query that should return thread_list card\n  25 |     await input.fill('Show people I still owe a reply to');\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:22:25"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-22T02:53:11.454Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-5fb52-t-card-with-selectable-rows-chromium\\test-failed-1.png"
                         },
                         {
-                          "text": "Frame backgroundImage: none\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-21T17:49:12.605Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "aaa33237e70e16210acd-d553dc1cd5596aaf7160",
-              "file": "chat-mailbox-ambient-glow.spec.ts",
-              "line": 4,
-              "column": 3
-            },
-            {
-              "title": "Banana Pro has only 3 localized glows (hero, shell, send button)",
-              "ok": true,
-              "tags": [
-                "prodSafe",
-                "prod",
-                "chat",
-                "theme"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 4937,
-                      "errors": [],
-                      "stdout": [
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-5fb52-t-card-with-selectable-rows-chromium\\video.webm"
+                        },
                         {
-                          "text": "Frame boxShadow (test 2): rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px\n"
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-5fb52-t-card-with-selectable-rows-chromium\\error-context.md"
                         }
                       ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-21T17:49:17.609Z",
-                      "annotations": [],
-                      "attachments": []
+                      "errorLocation": {
+                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
+                        "column": 25,
+                        "line": 22
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "aaa33237e70e16210acd-512e744134ad24029d25",
-              "file": "chat-mailbox-ambient-glow.spec.ts",
-              "line": 51,
+              "id": "aae99bbee1a8d8a3813c-8bd2eca77ec51b48adba",
+              "file": "e2e/chat-thread-viewer.spec.ts",
+              "line": 12,
               "column": 3
             }
           ]
@@ -199,11 +189,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-11-21T17:49:11.776Z",
-    "duration": 10857.796,
-    "expected": 2,
+    "startTime": "2025-11-22T02:53:08.184Z",
+    "duration": 35879.008,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }

@@ -45,6 +45,7 @@ export interface AgentCard {
   email_ids: string[];
   meta: Record<string, any>;
   threads?: MailThreadSummary[]; // For thread_list cards
+  intent?: string; // For thread_list cards - e.g. "followups", "suspicious", etc.
 }
 
 export interface AgentMetrics {

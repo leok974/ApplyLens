@@ -101,6 +101,14 @@ INTENT_SPECS: Dict[MailboxIntent, IntentSpec] = {
         zero_title="No Promotional Emails Found",
         nonzero_title="Promotions & Newsletters",
     ),
+    "unsubscribe": IntentSpec(
+        name="unsubscribe",
+        default_time_window_days=60,
+        tools=["email_search", "unsubscribe_finder"],
+        require_counts=True,
+        zero_title="No Unopened Newsletters",
+        nonzero_title="Unsubscribe from Unopened Newsletters",
+    ),
     "profile": IntentSpec(
         name="profile",
         default_time_window_days=60,
@@ -1037,6 +1045,121 @@ class MailboxAgentOrchestrator:
 
         return metrics
 
+    def _build_thread_summary(
+        self,
+        thread_id: str,
+        thread_emails: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Build a ThreadSummary dict from a group of emails."""
+        # Sort by received_at to get the latest
+        sorted_emails = sorted(
+            thread_emails,
+            key=lambda e: e.get("received_at", ""),
+            reverse=True,
+        )
+        latest = sorted_emails[0]
+
+        # Build gmail URL
+        gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{thread_id}"
+
+        return {
+            "threadId": thread_id,
+            "subject": latest.get("subject", ""),
+            "from": latest.get("sender", "") or latest.get("from_address", ""),
+            "to": "",
+            "lastMessageAt": latest.get("received_at", ""),
+            "unreadCount": 0,
+            "riskScore": latest.get("risk_score", 0),
+            "labels": latest.get("labels", []),
+            "snippet": latest.get("snippet", ""),
+            "gmailUrl": gmail_url,
+        }
+
+    def _group_emails_by_thread(
+        self,
+        emails: List[Dict[str, Any]],
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Group emails by thread_id."""
+        thread_map = {}
+        for email in emails:
+            tid = email.get("thread_id") or email.get("id")
+            if tid not in thread_map:
+                thread_map[tid] = []
+            thread_map[tid].append(email)
+        return thread_map
+
+    def _build_thread_cards(
+        self,
+        *,
+        intent: str,
+        title: str,
+        summary_body_if_any: Optional[str],
+        threads: List[Dict[str, Any]],
+        time_window_days: int,
+        preview_only: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        Build both summary and thread_list cards using unified contract.
+
+        Returns:
+            - Summary card (followups_summary/generic_summary) with count
+            - Thread list card (thread_list) only if threads is non-empty
+
+        This guarantees:
+        - No "multiple follow-ups" with count: 0
+        - Thread viewer only appears when threads actually exist
+        """
+        count = len(threads)
+
+        # Summary card - use intent-specific kind for backwards compatibility
+        summary_kind = (
+            "followups_summary" if intent == "followups" else "generic_summary"
+        )
+
+        summary_card: Dict[str, Any] = {
+            "kind": summary_kind,
+            "title": title,
+            "time_window_days": time_window_days,
+            "mode": "preview_only" if preview_only else "normal",
+            "count": count,
+            "threads": [],  # Legacy field - keep empty
+            "email_ids": [],
+        }
+
+        # Set body based on count
+        if count == 0:
+            summary_card["body"] = (
+                "You're all caught up – I couldn't find anything matching this in the last "
+                f"{time_window_days} days."
+            )
+        else:
+            summary_card["body"] = summary_body_if_any or (
+                f"I found {count} item{'s' if count != 1 else ''} for this scan "
+                f"in the last {time_window_days} days."
+            )
+
+        cards: List[Dict[str, Any]] = [summary_card]
+
+        # Thread list card - only when we have threads
+        if count > 0:
+            thread_list_card = {
+                "kind": "thread_list",
+                "intent": intent,
+                "title": title,
+                "time_window_days": time_window_days,
+                "mode": "normal",
+                "threads": threads[:10],  # Limit to 10 threads
+                "email_ids": [],
+                "body": "",
+                "meta": {
+                    "count": count,
+                    "time_window_days": time_window_days,
+                },
+            }
+            cards.append(thread_list_card)
+
+        return cards
+
     def _build_cards_from_spec(
         self,
         spec: IntentSpec,
@@ -1047,9 +1170,9 @@ class MailboxAgentOrchestrator:
         """
         Build card data structures with zero/non-zero handling per intent spec.
 
-        Returns list of AgentCard objects following the contract:
-        - Zero results: zero_title, empty items
-        - Non-zero results: nonzero_title, populated items
+        Uses unified _build_thread_cards helper to ensure consistency:
+        - Summary card always present
+        - Thread list card only when threads exist
         """
         cards = []
 
@@ -1059,65 +1182,40 @@ class MailboxAgentOrchestrator:
                 None,
             )
 
-            # Build thread_list card from security_scan results
+            # Build thread summaries from security_scan results
             thread_summaries = []
-            email_ids = []
             if security_scan and security_scan.status == "success":
                 data = security_scan.data or {}
                 risky_emails = data.get("risky_emails", [])
 
-                # Group emails by thread_id
-                thread_map = {}
-                for email in risky_emails:
-                    email_ids.append(email.get("id", ""))
-                    tid = email.get("thread_id") or email.get("id")
-                    if tid not in thread_map:
-                        thread_map[tid] = []
-                    thread_map[tid].append(email)
-
-                # Build MailThreadSummary objects
+                thread_map = self._group_emails_by_thread(risky_emails)
                 for thread_id, thread_emails in thread_map.items():
-                    # Sort by received_at to get the latest
-                    sorted_emails = sorted(
-                        thread_emails,
-                        key=lambda e: e.get("received_at", ""),
-                        reverse=True,
-                    )
-                    latest = sorted_emails[0]
-
-                    # Build gmail URL
-                    gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{thread_id}"
-
                     thread_summaries.append(
-                        {
-                            "threadId": thread_id,
-                            "subject": latest.get("subject", ""),
-                            "from": latest.get("sender", "")
-                            or latest.get("from_address", ""),
-                            "to": "",
-                            "lastMessageAt": latest.get("received_at", ""),
-                            "unreadCount": 0,
-                            "riskScore": latest.get("risk_score", 0),
-                            "labels": latest.get("labels", []),
-                            "snippet": latest.get("snippet", ""),
-                            "gmailUrl": gmail_url,
-                        }
+                        self._build_thread_summary(thread_id, thread_emails)
                     )
 
-            base_card = AgentCard(
-                kind="thread_list",
-                title=spec.zero_title
-                if metrics["matches"] == 0
-                else spec.nonzero_title,
-                body="",
-                email_ids=email_ids,
-                threads=thread_summaries[:10],  # Limit to 10 threads
-                meta={
-                    "count": metrics["matches"],
-                    "time_window_days": time_window_days,
-                },
+            # Use unified card builder
+            count = len(thread_summaries)
+            title = spec.zero_title if count == 0 else spec.nonzero_title
+            summary_body = (
+                f"{count} suspicious email{'s' if count != 1 else ''} found "
+                f"in the last {time_window_days} days."
+                if count > 0
+                else None
             )
-            cards.append(base_card)
+
+            card_dicts = self._build_thread_cards(
+                intent="suspicious",
+                title=title,
+                summary_body_if_any=summary_body,
+                threads=thread_summaries,
+                time_window_days=time_window_days,
+                preview_only=True,
+            )
+
+            # Convert dicts to AgentCard objects
+            for card_dict in card_dicts:
+                cards.append(AgentCard(**card_dict))
 
         elif spec.name == "followups":
             email_search = next(
@@ -1125,127 +1223,42 @@ class MailboxAgentOrchestrator:
                 None,
             )
 
-            # Build thread_list card from email_search results
+            # Build thread summaries from email_search results
             thread_summaries = []
             if email_search and email_search.status == "success":
                 data = email_search.data or {}
                 emails = data.get("emails", [])
 
-                # Group emails by thread_id
-                thread_map = {}
-                for email in emails:
-                    tid = email.get("thread_id") or email.get("id")
-                    if tid not in thread_map:
-                        thread_map[tid] = []
-                    thread_map[tid].append(email)
-
-                # Build MailThreadSummary objects
+                thread_map = self._group_emails_by_thread(emails)
                 for thread_id, thread_emails in thread_map.items():
-                    # Sort by received_at to get the latest
-                    sorted_emails = sorted(
-                        thread_emails,
-                        key=lambda e: e.get("received_at", ""),
-                        reverse=True,
-                    )
-                    latest = sorted_emails[0]
-
-                    # Build gmail URL
-                    gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{thread_id}"
-
                     thread_summaries.append(
-                        {
-                            "threadId": thread_id,
-                            "subject": latest.get("subject", ""),
-                            "from": latest.get("sender", ""),
-                            "to": "",  # Not available in email_search results
-                            "lastMessageAt": latest.get("received_at", ""),
-                            "unreadCount": 0,
-                            "riskScore": latest.get("risk_score", 0),
-                            "labels": latest.get("labels", []),
-                            "snippet": latest.get("snippet", ""),
-                            "gmailUrl": gmail_url,
-                        }
+                        self._build_thread_summary(thread_id, thread_emails)
                     )
 
-            base_card = AgentCard(
-                kind="thread_list",
-                title=spec.zero_title
-                if metrics["needs_reply"] == 0
-                else spec.nonzero_title,
-                body="",
-                email_ids=[],
-                threads=thread_summaries[:10],  # Limit to 10 threads
-                meta={
-                    "count": metrics["needs_reply"],
-                    "time_window_days": time_window_days,
-                },
-            )
-            cards.append(base_card)
-
-        elif spec.name == "bills":
-            email_search = next(
-                (tr for tr in tool_results if tr.tool_name == "email_search"),
-                None,
-            )
-            bills = []
-            if email_search and email_search.status == "success":
-                data = email_search.data or {}
-                bills = data.get("bills", [])
-
-            base_card = AgentCard(
-                kind="bills_summary",
-                title=spec.zero_title
-                if metrics["total_bills"] == 0
-                else spec.nonzero_title,
-                body="",
-                email_ids=[],
-                meta={
-                    "total": metrics["total_bills"],
-                    "due_soon": metrics["due_soon"],
-                    "overdue": metrics["overdue"],
-                    "other": metrics["other"],
-                    "time_window_days": time_window_days,
-                },
+            # Use unified card builder
+            count = len(thread_summaries)
+            title = spec.zero_title if count == 0 else spec.nonzero_title
+            summary_body = (
+                (
+                    "You have multiple follow-ups awaiting your reply."
+                    if count > 1
+                    else "You have 1 follow-up awaiting your reply."
+                )
+                if count > 0
+                else None
             )
 
-            if metrics["total_bills"] == 0:
-                cards.append(base_card)
-            else:
-                # Group bills into sections
-                due_soon_items = [b for b in bills if b.get("status") == "due_soon"]
-                overdue_items = [b for b in bills if b.get("status") == "overdue"]
-                other_items = [
-                    b for b in bills if b.get("status") not in ["due_soon", "overdue"]
-                ]
+            card_dicts = self._build_thread_cards(
+                intent="followups",
+                title=title,
+                summary_body_if_any=summary_body,
+                threads=thread_summaries,
+                time_window_days=time_window_days,
+                preview_only=True,
+            )
 
-                sections = []
-                if due_soon_items:
-                    sections.append(
-                        {
-                            "id": "due_soon",
-                            "title": "Due soon (next 7 days)",
-                            "items": due_soon_items[:5],
-                        }
-                    )
-                if overdue_items:
-                    sections.append(
-                        {
-                            "id": "overdue",
-                            "title": "Overdue",
-                            "items": overdue_items[:5],
-                        }
-                    )
-                if other_items:
-                    sections.append(
-                        {
-                            "id": "other",
-                            "title": "Other bills",
-                            "items": other_items[:5],
-                        }
-                    )
-
-                base_card.meta["sections"] = sections
-                cards.append(base_card)
+            for card_dict in card_dicts:
+                cards.append(AgentCard(**card_dict))
 
         elif spec.name == "interviews":
             email_search = next(
@@ -1253,65 +1266,146 @@ class MailboxAgentOrchestrator:
                 None,
             )
 
-            # Build thread_list card from email_search results
+            # Build thread summaries from email_search results
             thread_summaries = []
             if email_search and email_search.status == "success":
                 data = email_search.data or {}
                 emails = data.get("emails", [])
 
-                # Group emails by thread_id
-                thread_map = {}
-                for email in emails:
-                    tid = email.get("thread_id") or email.get("id")
-                    if tid not in thread_map:
-                        thread_map[tid] = []
-                    thread_map[tid].append(email)
-
-                # Build MailThreadSummary objects
+                thread_map = self._group_emails_by_thread(emails)
                 for thread_id, thread_emails in thread_map.items():
-                    # Sort by received_at to get the latest
-                    sorted_emails = sorted(
-                        thread_emails,
-                        key=lambda e: e.get("received_at", ""),
-                        reverse=True,
-                    )
-                    latest = sorted_emails[0]
-
-                    # Build gmail URL
-                    gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{thread_id}"
-
                     thread_summaries.append(
-                        {
-                            "threadId": thread_id,
-                            "subject": latest.get("subject", ""),
-                            "from": latest.get("sender", ""),
-                            "to": "",
-                            "lastMessageAt": latest.get("received_at", ""),
-                            "unreadCount": 0,
-                            "riskScore": latest.get("risk_score", 0),
-                            "labels": latest.get("labels", []),
-                            "snippet": latest.get("snippet", ""),
-                            "gmailUrl": gmail_url,
-                        }
+                        self._build_thread_summary(thread_id, thread_emails)
                     )
 
-            # Get interview count from metrics (might be 0)
-            interview_count = metrics.get("interview_invites", 0)
+            # Use unified card builder
+            count = len(thread_summaries)
+            title = spec.zero_title if count == 0 else spec.nonzero_title
+            summary_body = (
+                f"{count} interview-related email{'s' if count != 1 else ''} found "
+                f"in the last {time_window_days} days."
+                if count > 0
+                else None
+            )
 
+            card_dicts = self._build_thread_cards(
+                intent="interviews",
+                title=title,
+                summary_body_if_any=summary_body,
+                threads=thread_summaries,
+                time_window_days=time_window_days,
+                preview_only=True,
+            )
+
+            for card_dict in card_dicts:
+                cards.append(AgentCard(**card_dict))
+
+        elif spec.name == "unsubscribe" or spec.name == "clean_promos":
+            email_search = next(
+                (tr for tr in tool_results if tr.tool_name == "email_search"),
+                None,
+            )
+
+            # Build thread summaries from email_search results
+            thread_summaries = []
+            if email_search and email_search.status == "success":
+                data = email_search.data or {}
+                emails = data.get("emails", [])
+
+                thread_map = self._group_emails_by_thread(emails)
+                for thread_id, thread_emails in thread_map.items():
+                    thread_summaries.append(
+                        self._build_thread_summary(thread_id, thread_emails)
+                    )
+
+            # Use unified card builder
+            count = len(thread_summaries)
+            if spec.name == "unsubscribe":
+                title = (
+                    "Unsubscribe from Unopened Newsletters"
+                    if count > 0
+                    else "No Unopened Newsletters"
+                )
+                summary_body = (
+                    f"{count} newsletters found that haven't been opened in {time_window_days} days."
+                    if count > 0
+                    else None
+                )
+            else:  # clean_promos
+                title = spec.zero_title if count == 0 else spec.nonzero_title
+                summary_body = (
+                    f"{count} promotional email{'s' if count != 1 else ''} found "
+                    f"in the last {time_window_days} days."
+                    if count > 0
+                    else None
+                )
+
+            card_dicts = self._build_thread_cards(
+                intent=spec.name,
+                title=title,
+                summary_body_if_any=summary_body,
+                threads=thread_summaries,
+                time_window_days=time_window_days,
+                preview_only=True,
+            )
+
+            for card_dict in card_dicts:
+                cards.append(AgentCard(**card_dict))
+
+        elif spec.name == "bills":
+            email_search = next(
+                (tr for tr in tool_results if tr.tool_name == "email_search"),
+                None,
+            )
+
+            # Build thread summaries from email_search results
+            thread_summaries = []
+            if email_search and email_search.status == "success":
+                data = email_search.data or {}
+                emails = data.get("emails", [])
+
+                thread_map = self._group_emails_by_thread(emails)
+                for thread_id, thread_emails in thread_map.items():
+                    thread_summaries.append(
+                        self._build_thread_summary(thread_id, thread_emails)
+                    )
+
+            # Use unified card builder
+            count = len(thread_summaries)
+            title = spec.zero_title if count == 0 else spec.nonzero_title
+            summary_body = (
+                f"{count} bill{'s' if count != 1 else ''} found "
+                f"in the last {time_window_days} days."
+                if count > 0
+                else None
+            )
+
+            card_dicts = self._build_thread_cards(
+                intent="bills",
+                title=title,
+                summary_body_if_any=summary_body,
+                threads=thread_summaries,
+                time_window_days=time_window_days,
+                preview_only=True,
+            )
+
+            for card_dict in card_dicts:
+                cards.append(AgentCard(**card_dict))
+
+        # Fallback for other intents
+        else:
+            # Generic summary card
             base_card = AgentCard(
-                kind="thread_list",
-                title=spec.zero_title if interview_count == 0 else spec.nonzero_title,
+                kind="generic_summary",
+                title="Search Results",
                 body="",
                 email_ids=[],
-                threads=thread_summaries[:10],  # Limit to 10 threads
+                threads=[],
                 meta={
-                    "count": interview_count,
                     "time_window_days": time_window_days,
                 },
             )
             cards.append(base_card)
-
-        # Add more intent-specific card building as needed
 
         return cards
 

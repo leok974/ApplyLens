@@ -22,8 +22,8 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
 
   const selectedSummary = threads.find((t) => t.threadId === selectedId) ?? null;
 
-  // Extract intent from meta or use a default
-  const intent = (card.meta?.intent as string) ?? 'generic';
+  // Extract intent - prefer top-level field, fallback to meta for backwards compatibility
+  const intent = card.intent ?? (card.meta?.intent as string) ?? 'generic';
 
   return (
     <div
@@ -52,7 +52,9 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
                 intent === 'suspicious' && 'border-red-400/30 text-red-400',
                 intent === 'followups' && 'border-yellow-400/30 text-yellow-400',
                 intent === 'bills' && 'border-blue-400/30 text-blue-400',
-                intent === 'interviews' && 'border-purple-400/30 text-purple-400'
+                intent === 'interviews' && 'border-purple-400/30 text-purple-400',
+                intent === 'unsubscribe' && 'border-orange-400/30 text-orange-400',
+                intent === 'clean_promos' && 'border-green-400/30 text-green-400'
               )}
             >
               {intent}
