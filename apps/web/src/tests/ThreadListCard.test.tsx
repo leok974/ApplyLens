@@ -178,4 +178,96 @@ describe('ThreadListCard', () => {
     render(<ThreadListCard card={singleThreadCard} />);
     expect(screen.getByText('1 thread')).toBeInTheDocument();
   });
+
+  it('renders metadata pill when count and time_window_days are present', () => {
+    const cardWithMeta: AgentCard = {
+      ...mockCard,
+      meta: {
+        intent: 'followups',
+        count: 10,
+        time_window_days: 90
+      },
+    };
+
+    render(<ThreadListCard card={cardWithMeta} />);
+
+    const pill = screen.getByTestId('agent-card-meta-pill');
+    expect(pill).toBeInTheDocument();
+    expect(pill.textContent).toContain('10 items');
+    expect(pill.textContent).toContain('90 days');
+  });
+
+  it('renders "1 item" for singular count in pill', () => {
+    const cardWithMeta: AgentCard = {
+      ...mockCard,
+      meta: {
+        intent: 'followups',
+        count: 1,
+        time_window_days: 30
+      },
+    };
+
+    render(<ThreadListCard card={cardWithMeta} />);
+
+    const pill = screen.getByTestId('agent-card-meta-pill');
+    expect(pill.textContent).toContain('1 item');
+    expect(pill.textContent).not.toContain('items');
+  });
+
+  it('does not render pill when count is missing', () => {
+    const cardWithoutCount: AgentCard = {
+      ...mockCard,
+      meta: {
+        intent: 'followups',
+        time_window_days: 90
+      },
+    };
+
+    render(<ThreadListCard card={cardWithoutCount} />);
+
+    const pill = screen.queryByTestId('agent-card-meta-pill');
+    expect(pill).not.toBeInTheDocument();
+  });
+
+  it('does not render pill when time_window_days is missing', () => {
+    const cardWithoutTimeWindow: AgentCard = {
+      ...mockCard,
+      meta: {
+        intent: 'followups',
+        count: 10
+      },
+    };
+
+    render(<ThreadListCard card={cardWithoutTimeWindow} />);
+
+    const pill = screen.queryByTestId('agent-card-meta-pill');
+    expect(pill).not.toBeInTheDocument();
+  });
+
+  it('renders UX hint for thread_list cards with intent', () => {
+    const cardWithIntent: AgentCard = {
+      ...mockCard,
+      intent: 'followups',
+    };
+
+    render(<ThreadListCard card={cardWithIntent} />);
+
+    expect(
+      screen.getByText('Click a conversation to see details here, or open it in Gmail to reply.')
+    ).toBeInTheDocument();
+  });
+
+  it('does not render UX hint when intent is missing', () => {
+    const cardWithoutIntent: AgentCard = {
+      ...mockCard,
+      intent: undefined,
+      meta: {},
+    };
+
+    render(<ThreadListCard card={cardWithoutIntent} />);
+
+    expect(
+      screen.queryByText('Click a conversation to see details here, or open it in Gmail to reply.')
+    ).not.toBeInTheDocument();
+  });
 });

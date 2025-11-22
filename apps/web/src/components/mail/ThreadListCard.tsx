@@ -24,6 +24,8 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
 
   // Extract intent - prefer top-level field, fallback to meta for backwards compatibility
   const intent = card.intent ?? (card.meta?.intent as string) ?? 'generic';
+  const count = card.meta?.count;
+  const timeWindowDays = card.meta?.time_window_days;
 
   return (
     <div
@@ -35,8 +37,18 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
     >
       {/* Header */}
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-100">{card.title}</h3>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-100">{card.title}</h3>
+            {count != null && timeWindowDays != null && (
+              <div
+                data-testid="agent-card-meta-pill"
+                className="text-xs text-slate-300/80"
+              >
+                {count} {count === 1 ? 'item' : 'items'} · last {timeWindowDays} days
+              </div>
+            )}
+          </div>
           {card.body && (
             <p className="mt-1 text-xs text-slate-400">{card.body}</p>
           )}
@@ -81,6 +93,13 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
           <ThreadViewer threadId={selectedId} summary={selectedSummary} />
         </div>
       </div>
+
+      {/* UX hint for scan intents */}
+      {card.kind === 'thread_list' && card.intent && (
+        <p className="mt-2 text-xs text-slate-400/80">
+          Click a conversation to see details here, or open it in Gmail to reply.
+        </p>
+      )}
     </div>
   );
 }
