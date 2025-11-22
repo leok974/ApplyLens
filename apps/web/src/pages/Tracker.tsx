@@ -5,6 +5,7 @@ import StatusChip from '../components/StatusChip'
 import InlineNote from '../components/InlineNote'
 import CreateFromEmailButton from '../components/CreateFromEmailButton'
 import { NOTE_SNIPPETS } from '../config/tracker'
+import { Mail } from 'lucide-react'
 
 // Toast variants for different status transitions
 type ToastVariant = 'default' | 'success' | 'warning' | 'error' | 'info'
@@ -30,6 +31,12 @@ const STATUS_LABELS: Record<AppStatus, string> = {
 }
 
 const STATUS_OPTIONS: AppStatus[] = ['applied', 'hr_screen', 'interview', 'offer', 'rejected', 'on_hold', 'ghosted']
+
+// Helper to generate Gmail thread link
+function gmailLink(threadId?: string): string {
+  if (!threadId) return '#'
+  return `https://mail.google.com/mail/u/0/#inbox/${threadId}`
+}
 
 export default function Tracker() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -257,7 +264,21 @@ export default function Tracker() {
                 data-testid="tracker-row"
                 data-id={r.id}
               >
-                <div className="col-span-3 font-semibold text-zinc-900 dark:text-zinc-100">{r.company}</div>
+                <div className="col-span-3 font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  {r.company}
+                  {r.thread_id && (
+                    <button
+                      onClick={() => window.open(gmailLink(r.thread_id), '_blank')}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded-full bg-yellow-400/10 text-yellow-400/90 hover:bg-yellow-400/20 border border-yellow-400/20 transition-colors"
+                      data-testid="mail-linked-badge"
+                      title="Linked to Mailbox Assistant thread - Click to open in Gmail"
+                      aria-label={`Open ${r.company} email thread in Gmail`}
+                    >
+                      <Mail className="h-3 w-3" />
+                      <span className="font-medium">Mail</span>
+                    </button>
+                  )}
+                </div>
                 <div className="col-span-3 text-zinc-900 dark:text-zinc-100">{r.role}</div>
                 <div className="col-span-2 text-zinc-500 dark:text-zinc-400">{r.source || '—'}</div>
                 <div className="col-span-2">
