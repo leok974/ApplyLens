@@ -80,6 +80,26 @@ export function ThreadList({
                       Follow-up
                     </Badge>
                   )}
+                  {thread.applicationStatus && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-xs px-1.5 py-0',
+                        thread.applicationStatus === 'offer' && 'border-emerald-400/30 text-emerald-400',
+                        thread.applicationStatus === 'interview' && 'border-blue-400/30 text-blue-400',
+                        thread.applicationStatus === 'rejected' && 'border-red-400/30 text-red-400',
+                        thread.applicationStatus === 'applied' && 'border-slate-400/30 text-slate-400',
+                        thread.applicationStatus === 'hr_screen' && 'border-cyan-400/30 text-cyan-400',
+                        thread.applicationStatus === 'on_hold' && 'border-orange-400/30 text-orange-400',
+                        thread.applicationStatus === 'ghosted' && 'border-slate-500/30 text-slate-500'
+                      )}
+                      data-testid="thread-app-status-badge"
+                    >
+                      {thread.applicationStatus === 'hr_screen' ? 'HR Screen' :
+                       thread.applicationStatus === 'on_hold' ? 'On Hold' :
+                       thread.applicationStatus.charAt(0).toUpperCase() + thread.applicationStatus.slice(1)}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400 truncate mb-1">{thread.from}</p>
                 <p className="text-xs text-slate-500 line-clamp-2">{thread.snippet}</p>
