@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listApplications, updateApplication, createApplication, AppOut, AppStatus, fetchTrackerApplications, TrackerRow } from '../lib/api'
+import { needsFollowup } from '../lib/trackerFilters'
 import StatusChip from '../components/StatusChip'
 import InlineNote from '../components/InlineNote'
 import CreateFromEmailButton from '../components/CreateFromEmailButton'
@@ -46,6 +47,7 @@ export default function Tracker() {
   const [search, setSearch] = useState(searchParams.get('q') || '')
   const [statusFilter, setStatusFilter] = useState<AppStatus | ''>(searchParams.get('status') as AppStatus || '')
   const [fromMailboxFilter, setFromMailboxFilter] = useState(false)
+  const [needsFollowupFilter, setNeedsFollowupFilter] = useState(false)
   const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ company: '', role: '', source: '' })
@@ -166,6 +168,13 @@ export default function Tracker() {
     return `https://mail.google.com/mail/u/0/#inbox/${thread}`
   }
 
+  // Calculate metrics from current filtered data
+  const metrics = {
+    total: applications.length,
+    fromMailbox: applications.filter(a => a.thread_id).length,
+    needsFollowup: applications.filter(a => needsFollowup(a)).length,
+  }
+
   return (
     <div className="space-y-5">
       {/* Toast notification with variants */}
@@ -206,6 +215,35 @@ export default function Tracker() {
             </div>
           </div>
         )}
+
+      {/* Summary Metrics Tile */}
+      {!loading && applications.length > 0 && (
+        <div
+          data-testid="tracker-summary-tile"
+          className="surface-card p-4 border border-zinc-300 dark:border-zinc-700 rounded-lg"
+        >
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100" data-testid="metric-total">
+                {metrics.total}
+              </div>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Total Applications</div>
+            </div>
+            <div className="text-center border-l border-zinc-300 dark:border-zinc-700">
+              <div className="text-2xl font-bold text-yellow-400" data-testid="metric-from-mailbox">
+                {metrics.fromMailbox}
+              </div>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">From Mailbox</div>
+            </div>
+            <div className="text-center border-l border-zinc-300 dark:border-zinc-700">
+              <div className="text-2xl font-bold text-cyan-400" data-testid="metric-needs-followup">
+                {metrics.needsFollowup}
+              </div>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Needs Follow-up</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
@@ -251,6 +289,22 @@ export default function Tracker() {
           {fromMailboxFilter && <span className="font-semibold">✓</span>}
         </button>
         <button
+          onClick={() => setNeedsFollowupFilter(!needsFollowupFilter)}
+          data-testid="filter-needs-followup"
+          className={`px-3 py-2 text-sm rounded transition flex items-center gap-2 ${
+            needsFollowupFilter
+              ? 'bg-cyan-400/20 text-cyan-400 border border-cyan-400/50 hover:bg-cyan-400/30'
+              : 'border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+          }`}
+          title={needsFollowupFilter ? 'Showing applications that may need follow-up' : 'Show applications that may need follow-up'}
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+          Needs follow-up
+          {needsFollowupFilter && <span className="font-semibold">✓</span>}
+        </button>
+        <button
           className="ml-auto px-3 py-2 text-sm border rounded hover:bg-gray-50 transition"
           onClick={() => (document.getElementById('create-dialog') as any)?.showModal?.()}
           data-testid="tracker-new-btn"
@@ -261,6 +315,19 @@ export default function Tracker() {
 
       {/* Applications Table */}
       <div className="surface-card overflow-hidden">
+        {(fromMailboxFilter || needsFollowupFilter) && (
+          <div className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-300 dark:border-zinc-700">
+            {fromMailboxFilter && needsFollowupFilter && (
+              <span>Showing applications from mailbox that may need follow-up</span>
+            )}
+            {fromMailboxFilter && !needsFollowupFilter && (
+              <span>Showing only applications linked to email threads</span>
+            )}
+            {!fromMailboxFilter && needsFollowupFilter && (
+              <span>Showing applications in early stages (applied, HR screen, interview) with email threads</span>
+            )}
+          </div>
+        )}
         <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 surface-panel px-3 py-2 text-xs font-medium border-b border-zinc-300 dark:border-zinc-700">
           <div className="col-span-3">Company</div>
           <div className="col-span-3">Role</div>
@@ -272,7 +339,10 @@ export default function Tracker() {
           <div className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading…</div>
         ) : (
           <div className="divide-y divide-zinc-300 dark:divide-zinc-700">
-            {(fromMailboxFilter ? applications.filter(a => a.thread_id) : applications).map((r) => (
+            {applications
+              .filter(a => !fromMailboxFilter || a.thread_id)
+              .filter(a => !needsFollowupFilter || needsFollowup(a))
+              .map((r) => (
               <div
                 key={`app-${r.id}`}
                 className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
