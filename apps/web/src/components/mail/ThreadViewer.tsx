@@ -147,7 +147,7 @@ export function ThreadViewer({ threadId, summary, onCreateApplication }: ThreadV
             variant="outline"
             size="sm"
             className="border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
-            onClick={() => navigate(`/applications?highlight=${summary.applicationId}`)}
+            onClick={() => navigate(`/tracker?appId=${summary.applicationId}`)}
             data-testid="thread-viewer-open-tracker"
           >
             <Briefcase className="mr-1.5 h-3.5 w-3.5" />

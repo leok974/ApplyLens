@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listApplications, updateApplication, createApplication, AppOut, AppStatus, fetchTrackerApplications, TrackerRow } from '../lib/api'
 import { needsFollowup } from '../lib/trackerFilters'
@@ -51,7 +51,8 @@ export default function Tracker() {
   const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ company: '', role: '', source: '' })
-
+  const [selectedAppId, setSelectedAppId] = useState<number | null>(null)
+  const selectedRowRef = useRef<HTMLDivElement | null>(null)
   // Show toast helper
   const showToast = (message: string, variant: ToastVariant = 'default') => {
     setToast({ message, variant })
@@ -71,6 +72,31 @@ export default function Tracker() {
       setSearchParams(newParams, { replace: true })
     }
   }, [searchParams, setSearchParams])
+
+  // Handle deep-link from Thread Viewer via ?appId=<id>
+  useEffect(() => {
+    const appIdParam = searchParams.get('appId')
+    if (appIdParam) {
+      const appId = parseInt(appIdParam, 10)
+      if (!isNaN(appId)) {
+        setSelectedAppId(appId)
+        // Clear the param after reading it
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete('appId')
+        setSearchParams(newParams, { replace: true })
+      }
+    }
+  }, [searchParams, setSearchParams])
+
+  // Scroll to selected row when data loads
+  useEffect(() => {
+    if (selectedAppId && !loading && selectedRowRef.current) {
+      // scrollIntoView may not be available in test environment
+      if (typeof selectedRowRef.current.scrollIntoView === 'function') {
+        selectedRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }, [selectedAppId, loading])
 
   const fetchRows = async () => {
     setLoading(true)
@@ -342,12 +368,20 @@ export default function Tracker() {
             {applications
               .filter(a => !fromMailboxFilter || a.thread_id)
               .filter(a => !needsFollowupFilter || needsFollowup(a))
-              .map((r) => (
+              .map((r) => {
+                const isSelected = selectedAppId === r.id
+                return (
               <div
                 key={`app-${r.id}`}
-                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
+                ref={isSelected ? selectedRowRef : null}
+                className={`grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm transition ${
+                  isSelected
+                    ? 'bg-yellow-400/10 border-l-4 border-yellow-400 dark:bg-yellow-400/5'
+                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                }`}
                 data-testid="tracker-row"
                 data-id={r.id}
+                data-selected={isSelected ? 'true' : undefined}
               >
                 <div className="col-span-3 font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                   {r.company}
@@ -423,7 +457,8 @@ export default function Tracker() {
                   </div>
                 </div>
               </div>
-            ))}
+                )
+              })}
             {applications.length === 0 && trackerRows.length > 0 && (
               <>
                 {trackerRows.map((row, idx) => (

@@ -4,9 +4,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { ThreadViewer } from '@/components/mail/ThreadViewer';
 import type { MailThreadSummary } from '@/lib/mailThreads';
+
+// Mock useNavigate
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock fetch
 global.fetch = vi.fn(() =>
@@ -24,6 +34,7 @@ global.fetch = vi.fn(() =>
 describe('ThreadViewer - Application tracking', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockClear();
   });
 
   const renderWithRouter = (props: any) => {
@@ -192,5 +203,51 @@ describe('ThreadViewer - Application tracking', () => {
 
     // Should NOT show create button
     expect(screen.queryByTestId('thread-viewer-create-app')).not.toBeInTheDocument();
+  });
+
+  it('navigates to /tracker?appId=<id> when "Open in Tracker" is clicked', () => {
+    const linkedSummary: MailThreadSummary = {
+      threadId: 'thread-6',
+      subject: 'Application Status',
+      from: 'hiring@company.com',
+      lastMessageAt: '2025-01-15T10:00:00Z',
+      labels: ['INBOX'],
+      snippet: 'Update on your application...',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-6',
+      applicationId: 456,
+    };
+
+    renderWithRouter({
+      threadId: 'thread-6',
+      summary: linkedSummary,
+    });
+
+    const button = screen.getByTestId('thread-viewer-open-tracker');
+    fireEvent.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=456');
+  });
+
+  it('navigates with correct appId for different applications', () => {
+    const linkedSummary: MailThreadSummary = {
+      threadId: 'thread-7',
+      subject: 'Interview Confirmation',
+      from: 'recruiter@tech.com',
+      lastMessageAt: '2025-01-15T10:00:00Z',
+      labels: ['INBOX'],
+      snippet: 'Confirming our interview...',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-7',
+      applicationId: 789,
+    };
+
+    renderWithRouter({
+      threadId: 'thread-7',
+      summary: linkedSummary,
+    });
+
+    const button = screen.getByTestId('thread-viewer-open-tracker');
+    fireEvent.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=789');
   });
 });
