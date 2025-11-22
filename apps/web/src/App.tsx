@@ -5,6 +5,10 @@ import Applications from './pages/Applications'
 import Settings from './pages/Settings'
 import SettingsSecurity from './pages/SettingsSecurity'
 import SettingsSendersPage from './pages/SettingsSendersPage'
+import CompanionSettings from './pages/settings/CompanionSettings'
+import ExtensionLanding from './pages/extension/ExtensionLanding'
+import ExtensionSupport from './pages/extension/ExtensionSupport'
+import ExtensionPrivacy from './pages/extension/ExtensionPrivacy'
 import Landing from './pages/Landing'
 import LoginGuard from './pages/LoginGuard'
 import { AppShell } from './components/AppShell'
@@ -23,9 +27,15 @@ export default function App() {
   return (
     <ToastProvider>
       <TooltipProvider delayDuration={100}>
-        <Routes>
-          {/* Public landing page */}
-          <Route path="/welcome" element={<Landing />} />
+        <div data-testid="app-root">
+          <Routes>
+            {/* Public landing page */}
+            <Route path="/welcome" element={<Landing />} />
+
+            {/* Public extension pages */}
+            <Route path="/extension" element={<ExtensionLanding />} />
+            <Route path="/extension/support" element={<ExtensionSupport />} />
+            <Route path="/extension/privacy" element={<ExtensionPrivacy />} />
 
           {/* Protected routes */}
           <Route path="/*" element={
@@ -45,14 +55,16 @@ export default function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/settings/security" element={<SettingsSecurity />} />
                   <Route path="/settings/senders" element={<SettingsSendersPage />} />
+                  <Route path="/settings/companion" element={<CompanionSettings />} />
                   <Route path="/policy-studio" element={<PolicyStudio />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AppShell>
             </LoginGuard>
           } />
-        </Routes>
-        <Toaster />
+          </Routes>
+          <Toaster />
+        </div>
       </TooltipProvider>
     </ToastProvider>
   )

@@ -4,9 +4,35 @@ global:
 
 rule_files:
   - /etc/prometheus/alerts.yml
+  - /etc/prometheus/rules/applylens-prod-alerts.yml
 
 scrape_configs:
   - job_name: applylens-api
     metrics_path: /metrics
     static_configs:
       - targets: ["api:8003"]   # API container DNS name from compose
+
+  # DevDiag HTTP - Monitor diagnostic service
+  - job_name: devdiag-http
+    metrics_path: /metrics
+    scheme: https
+    static_configs:
+      - targets: ["devdiag.leoklemet.com:443"]
+
+  # Blackbox Exporter - Monitor public endpoints
+  - job_name: blackbox-applylens
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://applylens.app/
+          - https://applylens.app/api/ready
+          - https://applylens.app/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

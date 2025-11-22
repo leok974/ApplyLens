@@ -22,6 +22,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from .db import Base
+from .settings import settings
+
+# Use JSON for SQLite, JSONB for PostgreSQL
+JSONType = JSON if "sqlite" in settings.sql_database_url.lower() else JSONB
 
 
 class User(Base):
@@ -241,7 +245,7 @@ class ActionsAudit(Base):
     confidence = Column(Float, nullable=True)  # Confidence score 0-1
     rationale = Column(Text, nullable=True)  # Human-readable explanation
     payload = Column(
-        JSONB, nullable=True
+        JSONType, nullable=True
     )  # Action-specific data (e.g., {"label": "important"})
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
@@ -608,8 +612,8 @@ class AgentAuditLog(Base):
     duration_ms = Column(Float, nullable=True)
 
     # Execution details
-    plan = Column(JSONB, nullable=True)
-    artifacts = Column(JSONB, nullable=True)
+    plan = Column(JSONType, nullable=True)
+    artifacts = Column(JSONType, nullable=True)
     error = Column(String(2048), nullable=True)
 
     # Metadata
@@ -679,7 +683,7 @@ class AgentApproval(Base):
     executed = Column(Boolean, default=False, nullable=False)
     executed_at = Column(DateTime(timezone=True), nullable=True)
     execution_result = Column(
-        JSONB, nullable=True
+        JSONType, nullable=True
     )  # Result of executing the approved action
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -807,3 +811,88 @@ class UserSenderOverride(Base):
 
     def __repr__(self):
         return f"<UserSenderOverride(user={self.user_id}, sender={self.sender}, safe={self.safe}, muted={self.muted})>"
+
+
+class ExtensionApplication(Base):
+    """Job applications logged from browser extension."""
+
+    __tablename__ = "extension_applications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_email = Column(String(320), nullable=False, index=True)
+    company = Column(String(255), nullable=False, index=True)
+    role = Column(String(512), nullable=False)
+    job_url = Column(Text, nullable=True)
+    source = Column(String(128), nullable=False, index=True)
+    applied_at = Column(DateTime(timezone=True), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self):
+        return f"<ExtensionApplication(id={self.id}, company={self.company}, role={self.role})>"
+
+
+class ExtensionOutreach(Base):
+    """Recruiter outreach logged from browser extension."""
+
+    __tablename__ = "extension_outreach"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_email = Column(String(320), nullable=False, index=True)
+    company = Column(String(255), nullable=False, index=True)
+    role = Column(String(512), nullable=False)
+    recruiter_name = Column(String(255), nullable=True)
+    recruiter_profile_url = Column(Text, nullable=True)
+    message_preview = Column(Text, nullable=True)
+    source = Column(String(128), nullable=False, index=True)
+    sent_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self):
+        return f"<ExtensionOutreach(id={self.id}, company={self.company}, recruiter={self.recruiter_name})>"
+
+
+class AgentFeedback(Base):
+    """User feedback on Agent V2 cards and items for learning loop."""
+
+    __tablename__ = "agent_feedback"
+
+    id = Column(String(64), primary_key=True)  # UUID
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(String(64), nullable=False, index=True)
+    intent = Column(Text, nullable=False)
+    query = Column(Text, nullable=True)
+    run_id = Column(String(64), nullable=True)
+    card_id = Column(Text, nullable=False)
+    item_id = Column(Text, nullable=True)
+    label = Column(Text, nullable=False)  # helpful | not_helpful | hide | done
+    thread_id = Column(Text, nullable=True, index=True)
+    message_id = Column(Text, nullable=True)
+    feedback_metadata = Column("metadata", JSONType, nullable=True)
+
+    __table_args__ = (
+        Index(
+            "ix_agent_feedback_user_intent_created_at",
+            "user_id",
+            "intent",
+            "created_at",
+        ),
+    )
+
+    def __repr__(self):
+        return f"<AgentFeedback(id={self.id}, user={self.user_id}, intent={self.intent}, label={self.label})>"
+
+
+class AgentPreferences(Base):
+    """Cached per-user preferences for fast Agent V2 filtering."""
+
+    __tablename__ = "agent_preferences"
+
+    user_id = Column(String(64), primary_key=True)
+    data = Column(JSONType, nullable=False, server_default=text("'{}'::jsonb"))
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self):
+        return f"<AgentPreferences(user={self.user_id})>"

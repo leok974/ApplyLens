@@ -4,9 +4,9 @@ import secrets
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session as DBSession
 from app.db import get_db
-from app.models import User, OAuthToken
+from app.models import User, OAuthToken, Session as SessionModel
 from app.config import agent_settings
 from app.auth.google import build_auth_url, exchange_code_for_tokens, get_userinfo
 from app.auth.session import new_session, set_cookie, clear_cookie
@@ -20,6 +20,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.get("/csrf")
+def get_csrf_token(response: Response):
+    """Issue CSRF token cookie for frontend JavaScript to read."""
+    issue_csrf_cookie(response)
+    return {"ok": True}
 
 
 @router.get("/google/login")
@@ -48,7 +55,7 @@ async def google_login(request: Request):
 
 @router.get("/google/callback")
 async def google_callback(
-    code: str, state: str, request: Request, db: Session = Depends(get_db)
+    code: str, state: str, request: Request, db: DBSession = Depends(get_db)
 ):
     """Handle Google OAuth callback."""
     try:
@@ -179,12 +186,12 @@ async def google_callback(
 
 
 @router.post("/logout", response_model=SessionResponse)
-async def logout(response: Response, request: Request, db: Session = Depends(get_db)):
+async def logout(response: Response, request: Request, db: DBSession = Depends(get_db)):
     """Logout current user by clearing session."""
     # Optionally delete session from database
     sid = request.cookies.get("session_id")
     if sid:
-        sess = db.query(Session).filter(Session.id == sid).first()
+        sess = db.query(SessionModel).filter(SessionModel.id == sid).first()
         if sess:
             db.delete(sess)
             db.commit()
@@ -195,7 +202,7 @@ async def logout(response: Response, request: Request, db: Session = Depends(get
 
 @router.post("/demo/start", response_model=SessionResponse)
 async def demo_start(
-    request: Request, response: Response, db: Session = Depends(get_db)
+    request: Request, response: Response, db: DBSession = Depends(get_db)
 ):
     """Start a demo session with read-only access."""
     if not agent_settings.ALLOW_DEMO:

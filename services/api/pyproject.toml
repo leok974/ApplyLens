@@ -1,6 +1,6 @@
 [project]
 name = "applylens-api"
-version = "0.1.0"
+version = "0.5.0"
 description = "ApplyLens FastAPI backend"
 requires-python = ">=3.10"
 dependencies = [
@@ -14,6 +14,7 @@ dependencies = [
   "python-multipart",
   "orjson",
   "elasticsearch>=8.12,<9",
+  "aiohttp",  # For async Elasticsearch
   "httpx",
   "itsdangerous",  # For SessionMiddleware
   "google-auth>=2.30.0",
@@ -28,7 +29,7 @@ dependencies = [
   "starlette-exporter",
   "prometheus-client",
   "python-json-logger",
-  "redis>=5.0.0",
+  "redis[hiredis]>=5.0.0",
   # Phase 2: Email categorization & ML
   "scikit-learn>=1.3.0",
   # Phase 5.3: Active learning scheduling
@@ -40,6 +41,8 @@ dependencies = [
   "scipy>=1.11.0",
   "PyYAML>=6.0",
   "tldextract",
+  # Phase 3.1: LLM generation
+  "openai>=1.0.0",
 ]
 
 [project.optional-dependencies]

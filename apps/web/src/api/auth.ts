@@ -3,7 +3,7 @@
  */
 
 import { api } from './fetcher';
-import { API_BASE } from '@/lib/apiBase';
+import { API_BASE, apiFetch } from '@/lib/apiBase';
 
 export interface User {
   id: string;
@@ -45,6 +45,20 @@ export function clearCurrentUser(): void {
 }
 
 /**
+ * Get current user from /auth/me endpoint
+ * Uses apiFetch to ensure proper routing through API base
+ */
+export async function getMe(): Promise<User | null> {
+  try {
+    const data = await apiFetch('/auth/me', { method: 'GET' });
+    return data as User;
+  } catch (error) {
+    console.error('Failed to fetch /auth/me:', error);
+    return null;
+  }
+}
+
+/**
  * Fetch current user from API and cache the result
  * Use this in components that need to ensure user data is loaded
  */
@@ -55,17 +69,10 @@ export async function fetchAndCacheCurrentUser(): Promise<User | null> {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/auth/me`, {
-      method: "GET",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      return cachedUser;
+    const data = await getMe();
+    if (data) {
+      cachedUser = data;
     }
-
-    const data = await response.json();
-    cachedUser = data;
     return cachedUser;
   } catch (error) {
     console.error("Failed to fetch current user:", error);
@@ -75,17 +82,14 @@ export async function fetchAndCacheCurrentUser(): Promise<User | null> {
 
 /**
  * Start a demo session
+ * Uses apiFetch to ensure CSRF token is set before making the request
  */
 export async function startDemo(): Promise<SessionResponse> {
-  const response = await api("/auth/demo/start", {
-    method: "POST",
+  const data = await apiFetch('/auth/demo/start', {
+    method: 'POST',
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to start demo session");
-  }
-
-  return response.json();
+  return { ok: true, user: data };
 }
 
 /**
@@ -97,11 +101,12 @@ export function loginWithGoogle(): void {
 
 /**
  * Logout current user
+ * Uses apiFetch to ensure proper CSRF handling and soft navigation
  */
 export async function logout(): Promise<void> {
-  await api("/auth/logout", {
-    method: "POST",
-  });
+  await apiFetch('/auth/logout', { method: 'POST' });
+  // Clear cached user data
+  clearCurrentUser();
 }
 
 /**

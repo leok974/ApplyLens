@@ -41,9 +41,6 @@ export default function Search() {
   const suggestionAbortController = useRef<AbortController | null>(null)
   const hydratedRef = useRef(false)
 
-  // Thread viewer state
-  const thread = useThreadViewer()
-
   // Debug mode for score visibility (controlled via URL: ?debugScore=1)
   const debugScore = searchParams.get('debugScore') === '1' || searchParams.get('debugScore') === 'true'
 
@@ -117,6 +114,26 @@ export default function Search() {
     total,
     runSearch,
   } = useSearchModel(initialState.query, initialState.filters, initialState.sort)
+
+  // Thread viewer state - map results to items with ids
+  const thread = useThreadViewer(
+    (Array.isArray(results) ? results : []).map((rawHit: any) => {
+      const h = mapHit(rawHit);
+      return { id: String(h.id || '') };
+    }).filter(item => item.id) // filter out any empty ids
+  )
+
+  // Phase 4: derived values for ThreadViewer
+  const totalCount = thread.items.length;
+  // TODO(thread-viewer v1.4.5):
+  // handledCount is now driven by local optimistic state.
+  // Eventually this should come from the canonical row model (server-sourced),
+  // but this is good enough for operator UX.
+  const handledCount = thread.items.filter(
+    (it: any) => it.archived || it.quarantined
+  ).length;
+
+  const bulkCount = thread.selectedBulkIds.size;
 
   // Clear all filters and reset to defaults
   const clearAllFilters = useCallback(() => {
@@ -507,20 +524,34 @@ export default function Search() {
               key={safeKey}
               data-testid="result-item"
               data-id={h.id || `fallback-${i}`}
-              tabIndex={0}
-              role="article"
-              aria-label={`Email: ${h.subject}`}
-              className="surface-card density-x density-y transition-all hover:shadow-lg focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
-              onClick={() => h.id && thread.showThread(String(h.id))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  if (h.id) {
-                    thread.showThread(String(h.id))
-                  }
-                }
-              }}
+              className="flex items-start gap-2"
             >
+              {/* TODO(thread-viewer v1.4):
+                  bulk triage selection checkbox.
+                  Eventually we'll hide this unless we're in "batch mode" UI.
+              */}
+              <input
+                type="checkbox"
+                className="h-3 w-3 mt-3 rounded border-zinc-400 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+                checked={thread.selectedBulkIds.has(String(h.id))}
+                onChange={() => thread.toggleBulkSelect(String(h.id))}
+                onClick={(evt) => evt.stopPropagation()}
+              />
+              <div
+                tabIndex={0}
+                role="article"
+                aria-label={`Email: ${h.subject}`}
+                className="surface-card density-x density-y transition-all hover:shadow-lg focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer flex-1"
+                onClick={() => h.id && thread.showThread(String(h.id))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    if (h.id) {
+                      thread.showThread(String(h.id))
+                    }
+                  }
+                }}
+              >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <h3
@@ -593,6 +624,7 @@ export default function Search() {
                   dangerouslySetInnerHTML={toMarkedHTML(h.snippet)}
                 />
               )}
+              </div>
             </li>
           )
           })}
@@ -604,6 +636,20 @@ export default function Search() {
         emailId={thread.selectedId}
         isOpen={thread.isOpen}
         onClose={thread.closeThread}
+        goPrev={thread.goPrev}
+        goNext={thread.goNext}
+        advanceAfterAction={thread.advanceAfterAction}
+        items={thread.items}
+        selectedIndex={thread.selectedIndex}
+        autoAdvance={thread.autoAdvance}
+        setAutoAdvance={(val) => thread.setAutoAdvance(val)}
+        handledCount={handledCount}
+        totalCount={totalCount}
+        bulkCount={bulkCount}
+        onBulkArchive={thread.bulkArchive}
+        onBulkMarkSafe={thread.bulkMarkSafe}
+        onBulkQuarantine={thread.bulkQuarantine}
+        isBulkMutating={thread.isBulkMutating}
       />
     </div>
   )

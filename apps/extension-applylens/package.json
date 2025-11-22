@@ -1,0 +1,19 @@
+{
+  "name": "extension-applylens",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:ui": "vitest",
+    "e2e": "playwright test -c ./playwright.config.ts",
+    "e2e:ext": "playwright test -c ./playwright.with-extension.config.ts",
+    "e2e:panel": "playwright test --config=playwright.panel.config.ts",
+    "e2e:companion": "playwright test -c ./playwright.config.ts -g \"@companion\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "vitest": "^2.0.0",
+    "@types/chrome": "^0.0.273",
+    "http-server": "^14.1.1",
+    "jsdom": "^27.0.1"
+  }
+}

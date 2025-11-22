@@ -10,8 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import ThemeToggle from "@/components/ThemeToggle"
-import { HealthBadge } from "@/components/HealthBadge"
-import { Link, NavLink, useLocation } from "react-router-dom"
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { relabel, rebuildProfile, startBackfillJob, cancelJob } from "@/lib/api"
 import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/use-toast"
@@ -21,6 +20,7 @@ import { Sparkles, LogOut, User, ShieldCheck, X } from "lucide-react"
 import { logout, getCurrentUser, fetchAndCacheCurrentUser, type User as UserType } from "@/api/auth"
 import { cn } from "@/lib/utils"
 import { useJobPoller } from "@/hooks/useJobPoller"
+import { FLAGS } from "@/lib/flags"
 
 const USER_EMAIL = "leoklemet.pa@gmail.com" // TODO: Read from auth context
 
@@ -32,6 +32,7 @@ export function AppHeader() {
   const [jobId, setJobId] = useState<string | undefined>()
   const { toast } = useToast()
   const location = useLocation()
+  const navigate = useNavigate()
 
   // Poll job status with exponential backoff
   const jobStatus = useJobPoller(jobId)
@@ -198,11 +199,14 @@ export function AppHeader() {
   }
 
   const handleLogout = async () => {
+    console.log('[AppHeader] handleLogout called - starting logout');
     try {
-      await logout()
-      window.location.href = "/welcome"
+      await logout();
+      console.log('[AppHeader] logout() completed, navigating to /welcome');
+      navigate('/welcome', { replace: true });
+      console.log('[AppHeader] navigate() called');
     } catch (error) {
-      console.error("Logout failed:", error)
+      console.error("[AppHeader] Logout failed:", error);
       toast({
         title: "Logout failed",
         description: "Please try again",
@@ -254,15 +258,13 @@ export function AppHeader() {
               <Tab to="/chat" label="Chat" />
               <Tab to="/tracker" label="Tracker" />
               <Tab to="/profile" label="Profile" />
+              {FLAGS.COMPANION && <Tab to="/extension" label="Companion" data-testid="nav-companion" />}
               <Tab to="/settings" label="Settings" />
             </div>
           </nav>
 
           {/* ACTIONS — keep to the right; never shrink smaller than content */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Warehouse Health Badge */}
-            <HealthBadge />
-
             {/* Job Progress Indicator */}
             {jobStatus && jobStatus.state !== 'done' && (
               <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-md bg-muted border">
@@ -444,10 +446,11 @@ export function AppHeader() {
   )
 }
 
-function Tab({ to, label }: { to: string; label: string }) {
+function Tab({ to, label, "data-testid": dataTestId }: { to: string; label: string; "data-testid"?: string }) {
   return (
     <NavLink
       to={to}
+      data-testid={dataTestId}
       className={({ isActive }) =>
         cn(
           "px-3 h-9 inline-flex items-center rounded-md text-sm",

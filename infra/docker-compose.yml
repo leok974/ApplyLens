@@ -62,6 +62,13 @@ services:
       GOOGLE_REDIRECT_URI_DEV: ${GOOGLE_REDIRECT_URI_DEV}
       # Phase 4: Agent Governance
       HMAC_SECRET: ${HMAC_SECRET}
+      ALLOW_DEV_ROUTES: ${ALLOW_DEV_ROUTES}
+      # DevDiag HTTP
+      DEVDIAG_BASE: ${DEVDIAG_BASE}
+      DEVDIAG_JWT: ${DEVDIAG_JWT}
+      DEVDIAG_ENABLED: ${DEVDIAG_ENABLED:-1}
+      DEVDIAG_TIMEOUT_S: ${DEVDIAG_TIMEOUT_S:-120}
+      DEVDIAG_ALLOW_HOSTS: ${DEVDIAG_ALLOW_HOSTS:-applylens.app,.applylens.app,api.applylens.app}
     volumes:
       - ../services/api:/app
       - ./secrets:/secrets:ro
@@ -124,7 +131,8 @@ services:
       - kibana
       - prometheus
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # Mount only the dev vhost
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
     ports:
       - "8888:80"  # Local debug port; Cloudflare Tunnel will use nginx:80 internally
@@ -134,6 +142,33 @@ services:
         aliases:
           - applylens.int
 
+  # -----------------------------------------------------------------------------------
+  # SHARED CLOUDFLARE NAMED TUNNEL CONNECTOR
+  #
+  # - This is the ONLY tunnel used for:
+  #     - applylens.app
+  #     - siteagents.app
+  #     - leoklemet.com (portfolio)
+  #     - ledger-mind.org (LedgerMind web + API)
+  #
+  # RULES:
+  # - DO NOT add a separate cloudflared container for LedgerMind.
+  # - DO NOT override --config with a local config.yml containing ingress rules.
+  #   The ingress is managed in the Cloudflare dashboard only.
+  # - DO NOT change the tunnel name/uuid without also updating:
+  #     - Cloudflare Zero Trust -> Tunnels (all hostnames)
+  #     - CNAMEs in each DNS zone.
+  #
+  # - This container MUST be on `infra_net` so it can reach:
+  #     - ledgermind-web.int:80
+  #     - ledgermind-api.int:8000
+  #     - siteagent-ui.int:80
+  #     - siteagent-api.int:8000
+  #     - applylens-web:80
+  #     - applylens-api:8003
+  #     - portfolio.int:80
+  #     - devdiag-http:8080
+  # -----------------------------------------------------------------------------------
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: infra-cloudflared
@@ -144,7 +179,15 @@ services:
       - nginx
     restart: unless-stopped
     networks:
+      - infra_net  # ✅ CRITICAL: needed for ledgermind-web.int / ledgermind-api.int
+      - applylens_applylens-prod  # ✅ CRITICAL: needed for applylens-nginx:80 / applylens-api-prod:8000
       - default
+
+networks:
+  infra_net:
+    external: true
+  applylens_applylens-prod:
+    external: true
 
 volumes:
   db_data:

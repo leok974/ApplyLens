@@ -1,0 +1,74 @@
+{
+  "folders": [
+    {
+      "name": "web",
+      "path": "apps/web"
+    },
+    {
+      "name": "api",
+      "path": "services/api"
+    }
+  ],
+  "settings": {
+    // 🔒 Keep VS Code from melting down
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/.next/**": true,
+      "**/coverage/**": true,
+      "**/playwright-report/**": true,
+      "**/test-results/**": true,
+      "**/.pytest_cache/**": true,
+      "**/__pycache__/**": true,
+      "**/.mypy_cache/**": true,
+      "**/*.log": true,
+      "**/*.sqlite": true
+    },
+    "search.exclude": {
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/.next/**": true,
+      "**/coverage/**": true,
+      "**/playwright-report/**": true,
+      "**/test-results/**": true,
+      "**/.pytest_cache/**": true,
+      "**/__pycache__/**": true,
+      "**/.mypy_cache/**": true
+    },
+
+    // Give TS more headroom (web)
+    "typescript.tsserver.maxTsServerMemory": 4096,
+
+    // Copilot / LLM extensions: don't slurp giant folders
+    "github.copilot.chat.ignoreFiles": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.next/**",
+      "**/coverage/**",
+      "**/playwright-report/**",
+      "**/test-results/**"
+    ],
+
+    // Agent-aware development instructions
+    "workbench.startupEditor": "readme",
+    "github.copilot.chat.agent.instructions": [
+      "For this workspace (ApplyLens), follow the roles and boundaries defined in AGENTS.md and .github/agents/*.md.",
+      "Pick the most specific agent: api-agent for FastAPI/Alembic/Gmail ingest, ui-agent for React/Tailwind/shadcn, test-agent for Vitest/Playwright/Pytest, search-agent for Elasticsearch, docs-agent for docs, dev-deploy-agent for Docker/dev flows, security-agent for auth/risk.",
+      "Never change Cloudflare Tunnel ingress, prod docker-compose routing, CORS/cookie scope, OAuth scopes, or weaken risk/security checks without explicit instruction."
+    ],
+
+    // Python side (api)
+    "python.analysis.exclude": [
+      "**/.venv/**",
+      "**/__pycache__/**",
+      "**/.pytest_cache/**"
+    ],
+
+    // General perf safety
+    "editor.largeFileOptimizations": true,
+    "git.excludeGitIgnore": true,
+    "powershell.cwd": "web"
+  }
+}

@@ -1,14 +1,45 @@
 import { useEffect, useState } from 'react';
 import { X, ExternalLink, Shield, Archive, AlertTriangle, RefreshCw } from 'lucide-react';
-import { fetchThreadDetail, MessageDetail } from '../lib/api';
+import { fetchThreadDetail, fetchThreadAnalysis, MessageDetail } from '../lib/api';
+import { ThreadRiskAnalysis } from '../types/thread';
+import { ThreadViewerItem } from '../hooks/useThreadViewer';
 import { safeFormatDate } from '../lib/date';
 import { Badge } from './ui/badge';
 import { cn } from '../lib/utils';
+import { RiskAnalysisSection } from './RiskAnalysisSection';
+import { ThreadActionBar } from './ThreadActionBar';
+import { toast } from 'sonner';
+import { track } from '../lib/analytics';
+import { ThreadSummarySection } from './ThreadSummarySection';
+import { ConversationTimelineSection } from './ConversationTimelineSection';
 
 export interface ThreadViewerProps {
   emailId: string | null;
   isOpen: boolean;
   onClose: () => void;
+
+  // NEW for Phase 3 navigation:
+  goPrev: () => void;
+  goNext: () => void;
+  advanceAfterAction: () => void;
+
+  // NEW for Phase 2.5 progress tracking:
+  items?: ThreadViewerItem[];
+  selectedIndex?: number | null;
+
+  // NEW Phase 4 props
+  autoAdvance: boolean;
+  setAutoAdvance: (val: boolean) => void;
+
+  handledCount: number;
+  totalCount: number;
+
+  bulkCount: number;
+  onBulkArchive: () => void;
+  onBulkMarkSafe: () => void;
+  onBulkQuarantine: () => void;
+  isBulkMutating?: boolean;
+
   onArchive?: (id: string) => void;
   onMarkSafe?: (id: string) => void;
   onQuarantine?: (id: string) => void;
@@ -18,6 +49,20 @@ export function ThreadViewer({
   emailId,
   isOpen,
   onClose,
+  goPrev,
+  goNext,
+  advanceAfterAction,
+  items = [],
+  selectedIndex = null,
+  autoAdvance,
+  setAutoAdvance,
+  handledCount,
+  totalCount,
+  bulkCount,
+  onBulkArchive,
+  onBulkMarkSafe,
+  onBulkQuarantine,
+  isBulkMutating = false,
   onArchive,
   onMarkSafe,
   onQuarantine,
@@ -25,6 +70,103 @@ export function ThreadViewer({
   const [threadData, setThreadData] = useState<MessageDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Analysis state
+  const [analysis, setAnalysis] = useState<ThreadRiskAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  // Optimistic mutation state
+  const [isMutating, setIsMutating] = useState(false);
+
+  // TODO(thread-viewer v1.2):
+  // Wire these actions to real backend endpoints:
+  //  - POST /messages/:id/mark-safe
+  //  - POST /messages/:id/quarantine
+  //  - POST /messages/:id/archive
+  // After mutation:
+  //  - refresh list row state in parent list (Inbox/Search/Actions)
+  //  - show toast confirmation
+  //  - optionally auto-advance to next item
+
+  async function handleMarkSafe() {
+    if (!threadData) return;
+    setIsMutating(true);
+    try {
+      // optimistic UI example: clear any 'quarantined' flag, maybe lower risk badge in UI
+      setThreadData((prev) =>
+        prev
+          ? {
+              ...prev,
+              quarantined: false,
+              // you can also imagine prev.status = "safe"
+            }
+          : prev
+      );
+      // await api.post(`/messages/${threadData.message_id}/mark-safe`)  <-- future
+      toast.success('✅ Marked as safe', {
+        description: 'Email marked as safe and removed from review queue'
+      });
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
+  async function handleQuarantine() {
+    if (!threadData) return;
+    setIsMutating(true);
+    try {
+      // optimistic UI example: set quarantined true in local state
+      setThreadData((prev) =>
+        prev
+          ? {
+              ...prev,
+              quarantined: true,
+            }
+          : prev
+      );
+      // await api.post(`/messages/${threadData.message_id}/quarantine`) <-- future
+      toast.warning('🔒 Quarantined', {
+        description: 'Email quarantined. Visible in Actions page.'
+      });
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
+  async function handleArchive() {
+    if (!threadData) return;
+    setIsMutating(true);
+    try {
+      // optimistic UI: mark archived locally
+      setThreadData((prev) =>
+        prev
+          ? {
+              ...prev,
+              archived: true,
+            }
+          : prev
+      );
+      // await api.post(`/messages/${threadData.message_id}/archive`) <-- future
+      toast.success('📥 Archived and advanced', {
+        description: 'Email archived successfully'
+      });
+    } finally {
+      setIsMutating(false);
+      // OPTIONAL NICE TOUCH:
+      // after archiving, we could auto-close the drawer:
+      // onClose();
+    }
+  }
+
+  function handleOpenExternal() {
+    if (!threadData) return;
+    // assume threadData has something like gmailUrl or externalUrl from backend
+    // fallback: no-op if it doesn't exist yet
+    if ((threadData as any).externalUrl) {
+      window.open((threadData as any).externalUrl, "_blank", "noopener,noreferrer");
+    }
+  }
 
   // Fetch thread data when opened with an emailId
   useEffect(() => {
@@ -55,19 +197,82 @@ export function ThreadViewer({
     };
   }, [isOpen, emailId]);
 
-  // Handle Escape key to close
+  // TODO(thread-viewer v1.1): Once backend supports thread-level analysis,
+  // replace emailId with proper threadId. For now, we fetch analysis per emailId.
+  // Fetch risk analysis after base thread data loads
+  useEffect(() => {
+    if (!isOpen || !emailId || loading || error) {
+      return;
+    }
+
+    let cancelled = false;
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+
+    fetchThreadAnalysis(emailId)
+      .then((data) => {
+        if (!cancelled) {
+          setAnalysis(data);
+          setAnalysisLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setAnalysisError(String(err));
+          setAnalysisLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, emailId, loading, error]);
+
+  // TODO(thread-viewer v1.3):
+  // Keyboard triage mode:
+  //  - ArrowUp / ArrowDown navigate between threads
+  //  - "D" archives current and advances
+  // In the future we can add "Q" for quarantine and "S" for mark safe.
+  // We intentionally do NOT close the drawer on navigation;
+  // we just swap which thread is showing.
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
+    function onKey(e: KeyboardEvent) {
+      // Don't steal keys if user is typing in an input/textarea/select/contentEditable.
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
       }
-    };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        goPrev();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        // Phase 2 gave us handleArchive(); call that, then auto-advance.
+        handleArchive();
+        advanceAfterAction();
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isOpen, onClose, goPrev, goNext, advanceAfterAction, handleArchive]);
 
   if (!isOpen) {
     return null;
@@ -83,6 +288,7 @@ export function ThreadViewer({
 
       {/* Drawer panel */}
       <aside
+        data-testid="thread-viewer"
         className={cn(
           'fixed top-0 right-0 h-full w-full md:w-[480px] bg-card border-l border-border z-50',
           'flex flex-col shadow-2xl',
@@ -97,9 +303,18 @@ export function ThreadViewer({
               {loading ? 'Loading...' : threadData?.subject || 'Email Detail'}
             </h2>
             {threadData && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {safeFormatDate(threadData.received_at)}
-              </p>
+              <>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {safeFormatDate(threadData.received_at)}
+                </p>
+                {/* Progress counter */}
+                {items.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-1 font-medium">
+                    {items.filter(i => i.archived || i.quarantined).length} of {items.length} handled
+                    {selectedIndex !== null && ` • ${selectedIndex + 1}/${items.length}`}
+                  </p>
+                )}
+              </>
             )}
           </div>
           <button
@@ -172,6 +387,27 @@ export function ThreadViewer({
                     </Badge>
                   )}
                 </div>
+
+                {/* Risk Analysis Section */}
+                <RiskAnalysisSection
+                  loading={analysisLoading}
+                  error={analysisError}
+                  analysis={analysis}
+                />
+
+                {/* TODO(thread-viewer v1.5):
+                    summary + timeline come from backend (or fallback mock in fetchThreadDetail()).
+                    The goal is "I can understand this thread in 10 seconds.
+                    I don't have to scroll 40 quoted replies to know what's happening." */}
+
+                {/* Rolling summary of the conversation */}
+                <ThreadSummarySection
+                  summary={threadData?.summary}
+                  messageId={emailId}
+                />
+
+                {/* Timeline of interaction */}
+                <ConversationTimelineSection timeline={threadData?.timeline} />
               </div>
 
               {/* Message body */}
@@ -190,6 +426,34 @@ export function ThreadViewer({
                     No message content available.
                   </p>
                 )}
+
+                {/* Inline Action Bar */}
+                {/* TODO(thread-viewer v1.4):
+                     - handledCount, bulkCount, etc. will come from parent page state.
+                       For now, parent can just stub them (0, items.length, selectedBulkIds.size).
+                     - autoAdvance is user preference; we persist it in hook state.
+                */}
+                <ThreadActionBar
+                  disabled={isMutating}
+                  quarantined={Boolean(threadData?.quarantined)}
+                  onMarkSafe={handleMarkSafe}
+                  onQuarantine={handleQuarantine}
+                  onArchive={handleArchive}
+                  onOpenExternal={handleOpenExternal}
+                  autoAdvance={autoAdvance}
+                  onToggleAutoAdvance={() => {
+                    const newValue = !autoAdvance;
+                    setAutoAdvance(newValue);
+                    track({ name: 'auto_advance_toggle', enabled: newValue });
+                  }}
+                  handledCount={handledCount}
+                  totalCount={totalCount}
+                  bulkCount={bulkCount}
+                  onBulkArchive={onBulkArchive}
+                  onBulkMarkSafe={onBulkMarkSafe}
+                  onBulkQuarantine={onBulkQuarantine}
+                  isBulkMutating={isBulkMutating}
+                />
               </div>
             </>
           )}

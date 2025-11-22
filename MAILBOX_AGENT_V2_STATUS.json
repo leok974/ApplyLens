@@ -1,0 +1,294 @@
+{
+  "project": "ApplyLens",
+  "component": "Mailbox Agent V2",
+  "version": "0.5.3",
+  "environment": "production",
+  "deployed_at": "2025-11-19T18:12:00Z",
+  "git_commit": "1602699",
+  "docker_image": "leoklemet/applylens-api:0.5.3",
+  "data_state": {
+    "es_index": "gmail_emails",
+    "total_emails": 4909,
+    "last_7_days": 216,
+    "last_30_days": 1585,
+    "user_id": "leoklemet.pa@gmail.com",
+    "user_id_field": {
+      "type": "text",
+      "filter": "match",
+      "note": "Added to all docs via update_by_query"
+    }
+  },
+  "agent_tools": {
+    "email_search": {
+      "status": "ok",
+      "implementation": "AsyncElasticsearch BM25",
+      "filters": {
+        "user_id": "match (required)",
+        "time_window_days": "optional (default: 30)",
+        "labels": "optional (no default)",
+        "risk_min": "optional (removed from orchestrator defaults)"
+      },
+      "max_results": 50
+    },
+    "security_scan": {
+      "status": "ok",
+      "redis_cache": "DomainRiskCache (30d TTL)",
+      "risk_logic": "DB risk_score + domain caching",
+      "threshold": 0.5,
+      "fallback": "Fetches emails via email_search if no email_ids provided"
+    },
+    "thread_detail": {
+      "status": "stub",
+      "next_step": "Implement Postgres query for thread messages"
+    },
+    "applications_lookup": {
+      "status": "stub",
+      "next_step": "Map emails to job_applications table"
+    },
+    "profile_stats": {
+      "status": "stub",
+      "next_step": "Aggregate inbox analytics (sender, label, risk buckets)"
+    },
+    "rag": {
+      "status": "ok",
+      "sources": [
+        "emails (gmail_emails, AsyncElasticsearch)",
+        "kb (agent_kb, 8 docs seeded)"
+      ],
+      "context_retrieval": "BM25 + score threshold"
+    }
+  },
+  "llm_integration": {
+    "structured_response": true,
+    "providers": {
+      "primary": "ollama (llama3:latest)",
+      "fallback": "openai (gpt-4o-mini)",
+      "current": "openai (ollama connection issues)"
+    },
+    "schema": {
+      "answer": "string (natural language summary)",
+      "cards": [
+        {
+          "kind": "suspicious_summary|bills_summary|followups_summary|interviews_summary|generic_summary|error",
+          "title": "string",
+          "body": "string",
+          "email_ids": ["array of gmail_id references"],
+          "meta": {
+            "count": "number",
+            "time_window_days": "number",
+            "mode": "string"
+          }
+        }
+      ]
+    },
+    "json_enforcement": true,
+    "retry_logic": true
+  },
+  "runtime_health": {
+    "container_status": "healthy",
+    "redis_latency_ms": 2,
+    "test_results": {
+      "test_a_generic_query": {
+        "query": "Show my recent emails",
+        "emails_scanned": 20,
+        "total_found": 1118,
+        "tools_used": ["email_search"],
+        "duration_ms": 6481,
+        "status": "ok"
+      },
+      "test_b_specific_query": {
+        "query": "Show suspicious emails from the last 365 days about lottery winnings",
+        "emails_scanned": 50,
+        "total_found": 2642,
+        "suspicious_detected": 0,
+        "tools_used": ["email_search", "security_scan"],
+        "duration_ms": 7580,
+        "status": "ok"
+      },
+      "test_c_suspicious_week": {
+        "query": "Show suspicious emails from this week",
+        "emails_scanned": 50,
+        "suspicious_detected": 1,
+        "tools_used": ["email_search", "security_scan"],
+        "duration_ms": 11260,
+        "status": "ok"
+      }
+    }
+  },
+  "prometheus_metrics": {
+    "namespace": "mailbox_agent_",
+    "metrics": [
+      {
+        "name": "mailbox_agent_runs_total",
+        "type": "counter",
+        "labels": ["intent", "mode", "status"]
+      },
+      {
+        "name": "mailbox_agent_run_duration_seconds",
+        "type": "histogram",
+        "labels": []
+      },
+      {
+        "name": "mailbox_agent_tool_calls_total",
+        "type": "counter",
+        "labels": ["tool", "status"]
+      },
+      {
+        "name": "mailbox_agent_tool_latency_seconds",
+        "type": "histogram",
+        "labels": ["tool"]
+      },
+      {
+        "name": "mailbox_agent_rag_context_count",
+        "type": "counter",
+        "labels": ["source"]
+      },
+      {
+        "name": "mailbox_agent_redis_hits_total",
+        "type": "counter",
+        "labels": ["kind", "result"]
+      },
+      {
+        "name": "mailbox_agent_redis_errors_total",
+        "type": "counter",
+        "labels": ["kind"]
+      },
+      {
+        "name": "mailbox_agent_redis_latency_seconds",
+        "type": "histogram",
+        "labels": []
+      }
+    ]
+  },
+  "known_issues": {
+    "ollama_connection": {
+      "severity": "medium",
+      "description": "Ollama connection failing, falling back to OpenAI",
+      "impact": "Slightly higher latency, OpenAI costs",
+      "mitigation": "OpenAI fallback working correctly",
+      "next_step": "Check Ollama container/service availability"
+    },
+    "missing_email_ids_in_cards": {
+      "severity": "low",
+      "description": "Cards have empty email_ids arrays",
+      "impact": "Cannot highlight specific emails in UI",
+      "next_step": "Pass email IDs from tool results to LLM, extract from answer"
+    }
+  },
+  "next_steps": [
+    {
+      "priority": "P0",
+      "task": "Fix Ollama connectivity",
+      "assignee": "devops",
+      "estimate": "30m"
+    },
+    {
+      "priority": "P0",
+      "task": "Wire /chat UI to /agent/mailbox/run behind VITE_CHAT_AGENT_V2 flag",
+      "assignee": "frontend",
+      "estimate": "2h",
+      "files": [
+        "apps/web/src/pages/Chat.tsx",
+        "apps/web/src/api/agent.ts",
+        "apps/web/src/components/AgentCard.tsx"
+      ]
+    },
+    {
+      "priority": "P1",
+      "task": "Add Playwright @chat @agent spec",
+      "assignee": "qa",
+      "estimate": "1h",
+      "file": "apps/web/tests/e2e/chat-agent-basic.spec.ts"
+    },
+    {
+      "priority": "P1",
+      "task": "Add Grafana panels for agent metrics",
+      "assignee": "devops",
+      "estimate": "1h",
+      "panels": [
+        "Runs by status (agent_runs_total)",
+        "Tool calls by status (agent_tool_calls_total)",
+        "Redis hit rate (agent_redis_hits_total)",
+        "RAG context volume (agent_rag_context_count)"
+      ]
+    },
+    {
+      "priority": "P1",
+      "task": "Implement email_ids extraction in LLM responses",
+      "assignee": "backend",
+      "estimate": "2h",
+      "description": "Update answering.py to extract email IDs from tool results and pass to cards"
+    },
+    {
+      "priority": "P2",
+      "task": "Implement thread_detail tool",
+      "assignee": "backend",
+      "estimate": "3h"
+    },
+    {
+      "priority": "P2",
+      "task": "Implement applications_lookup tool",
+      "assignee": "backend",
+      "estimate": "3h"
+    },
+    {
+      "priority": "P2",
+      "task": "Implement profile_stats tool",
+      "assignee": "backend",
+      "estimate": "2h"
+    },
+    {
+      "priority": "P2",
+      "task": "Tune UX for empty/error states in chat panel",
+      "assignee": "frontend",
+      "estimate": "2h",
+      "states": [
+        "emails_scanned=0",
+        "ES unavailable",
+        "Redis unavailable",
+        "LLM timeout"
+      ]
+    },
+    {
+      "priority": "P3",
+      "task": "Add alert for agent_runs_total{status='error'} > 0 for 10m",
+      "assignee": "devops",
+      "estimate": "30m"
+    }
+  ],
+  "deployment_checklist": {
+    "backend": [
+      "✅ Docker image built (0.5.3)",
+      "✅ Image pushed to registry",
+      "✅ Container deployed",
+      "✅ Health check passing",
+      "✅ Agent endpoint responding",
+      "✅ Email search returning results",
+      "✅ Security scan working",
+      "✅ RAG retrieval working",
+      "✅ Redis caching working",
+      "✅ Metrics recorded",
+      "✅ Git pushed to GitHub"
+    ],
+    "frontend": [
+      "⏳ Feature flag added (VITE_CHAT_AGENT_V2)",
+      "⏳ Agent API client created",
+      "⏳ AgentCard component created",
+      "⏳ Chat UI wired to agent endpoint",
+      "⏳ Empty states handled",
+      "⏳ Error states handled"
+    ],
+    "testing": [
+      "✅ Manual smoke tests (3/3 passing)",
+      "⏳ Playwright E2E spec",
+      "⏳ Load testing",
+      "⏳ Error injection testing"
+    ],
+    "monitoring": [
+      "✅ Prometheus metrics exposed",
+      "⏳ Grafana dashboard created",
+      "⏳ Alerts configured",
+      "⏳ Log aggregation configured"
+    ]
+  }
+}

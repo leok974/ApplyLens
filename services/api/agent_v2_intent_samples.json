@@ -1,0 +1,261 @@
+{
+  "suspicious": {
+    "run_id": "793462d8-8d0c-4413-abd9-3c370776987b",
+    "user_id": "leoklemet.pa@gmail.com",
+    "query": "Show suspicious or scam emails from the last 14 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "suspicious",
+    "answer": "No specific suspicious or scam emails were found in the last 14 days, but it's important to remain vigilant. Be cautious of emails from unknown domains, especially those that create a sense of urgency or request payment information.",
+    "cards": [
+      {
+        "kind": "suspicious_summary",
+        "title": "No Suspicious Emails Found",
+        "body": "No suspicious or scam emails detected in the last 14 days.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 14,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "security_scan"
+    ],
+    "metrics": {
+      "emails_scanned": 50,
+      "tool_calls": 2,
+      "rag_sources": 3,
+      "duration_ms": 10250,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T21:10:34.227514",
+    "completed_at": "2025-11-19T21:10:34.227473",
+    "error_message": null
+  },
+  "bills": {
+    "run_id": "9aa30c77-6fca-4ed4-a8b4-0075f070d466",
+    "user_id": "leoklemet.pa@gmail.com",
+    "query": "Show my bills and invoices from the last 30 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "bills",
+    "answer": "I couldn't find specific bills or invoices from the last 30 days in your emails. Please check your inbox or provide more details to help narrow down the search.",
+    "cards": [
+      {
+        "kind": "bills_summary",
+        "title": "No Bills Found",
+        "body": "No bills or invoices were identified in the last 30 days.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 30,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "applications_lookup"
+    ],
+    "metrics": {
+      "emails_scanned": 20,
+      "tool_calls": 2,
+      "rag_sources": 3,
+      "duration_ms": 4326,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T21:10:38.842862",
+    "completed_at": "2025-11-19T21:10:38.842835",
+    "error_message": null
+  },
+  "interviews": {
+    "run_id": "0443bf2f-42b6-4e7c-8206-7223cfa66721",
+    "user_id": "leoklemet.pa@gmail.com",
+    "query": "Show my interview and recruiter emails from the last 30 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "interviews",
+    "answer": "I found a total of 1540 emails related to your interviews and recruiter communications from the last 30 days. However, I cannot provide specific details about these emails due to a technical issue. Please check your email client directly for more information.",
+    "cards": [
+      {
+        "kind": "error",
+        "title": "Technical Issue",
+        "body": "Unable to retrieve specific interview and recruiter email details due to a missing parameter.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 30,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "applications_lookup",
+      "thread_detail"
+    ],
+    "metrics": {
+      "emails_scanned": 20,
+      "tool_calls": 3,
+      "rag_sources": 3,
+      "duration_ms": 4328,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T21:10:43.462904",
+    "completed_at": "2025-11-19T21:10:43.462870",
+    "error_message": null
+  },
+  "followups": {
+    "run_id": "acf781e3-d5a5-4e05-a6b4-fee8947c9a03",
+    "user_id": "leoklemet.pa@gmail.com",
+    "query": "Which recruiter or interview threads should I follow up on?",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "followups",
+    "answer": "I couldn't find specific follow-up threads related to recruiters or interviews based on the available data. You may want to review your recent applications or emails for any that require follow-up.",
+    "cards": [
+      {
+        "kind": "followups_summary",
+        "title": "No Follow-up Threads Found",
+        "body": "No specific recruiter or interview threads identified for follow-up.",
+        "email_ids": [],
+        "meta": {
+          "count": 0,
+          "time_window_days": 7,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search",
+      "applications_lookup",
+      "thread_detail"
+    ],
+    "metrics": {
+      "emails_scanned": 20,
+      "tool_calls": 3,
+      "rag_sources": 3,
+      "duration_ms": 8928,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T21:10:52.677407",
+    "completed_at": "2025-11-19T21:10:52.677375",
+    "error_message": null
+  },
+  "profile": {
+    "run_id": "b34573b3-6712-454b-8c89-358435193373",
+    "user_id": "leoklemet.pa@gmail.com",
+    "query": "Give me a profile and stats overview of my job-search inbox for the last 60 days",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "profile",
+    "answer": "In the last 60 days, your job-search inbox has seen a total of 1557 emails analyzed. This indicates a high level of activity, suggesting you are actively engaging with various opportunities. It's important to maintain organization by categorizing these emails effectively to streamline your job search process.",
+    "cards": [
+      {
+        "kind": "generic_summary",
+        "title": "Job Search Email Overview",
+        "body": "1557 emails analyzed in the last 60 days, indicating active engagement.",
+        "email_ids": [],
+        "meta": {
+          "count": 1557,
+          "time_window_days": 60,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "profile_stats",
+      "email_search"
+    ],
+    "metrics": {
+      "emails_scanned": 10,
+      "tool_calls": 2,
+      "rag_sources": 3,
+      "duration_ms": 8971,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T21:11:01.894779",
+    "completed_at": "2025-11-19T21:11:01.894749",
+    "error_message": null
+  },
+  "generic": {
+    "run_id": "9cf52849-5909-48f9-95de-d80d3af51001",
+    "user_id": "leoklemet.pa@gmail.com",
+    "query": "Show me my recent job application emails and what I should prioritize next",
+    "mode": "preview_only",
+    "context": {
+      "time_window_days": 30,
+      "filters": {},
+      "session_id": null
+    },
+    "status": "done",
+    "intent": "generic",
+    "answer": "You have a significant number of job application emails, but without specific details on their status, it's hard to prioritize. Consider organizing your applications in a spreadsheet to track companies, roles, and statuses. Focus on following up with recruiters from companies where you've had interviews or submitted applications recently.",
+    "cards": [
+      {
+        "kind": "generic_summary",
+        "title": "Job Application Emails Overview",
+        "body": "1510 job application emails found; prioritize organizing and following up.",
+        "email_ids": [],
+        "meta": {
+          "count": 1510,
+          "time_window_days": 7,
+          "mode": "preview_only"
+        }
+      }
+    ],
+    "tools_used": [
+      "email_search"
+    ],
+    "metrics": {
+      "emails_scanned": 20,
+      "tool_calls": 1,
+      "rag_sources": 3,
+      "duration_ms": 4605,
+      "redis_hits": 0,
+      "redis_misses": 0,
+      "llm_used": "ollama"
+    },
+    "created_at": "2025-11-19T21:11:06.777851",
+    "completed_at": "2025-11-19T21:11:06.777787",
+    "error_message": null
+  }
+}

@@ -1,6 +1,16 @@
 import logging
 import os
 
+# Load .env early (dev only) - ensures environment variables are available
+# Skip if running in Docker with SKIP_DOTENV=1
+if not os.getenv("SKIP_DOTENV"):
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except Exception:
+        pass
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -13,26 +23,69 @@ from . import auth_google, health, oauth_google, routes_extract, routes_gmail
 from .db import Base, engine
 from .es import ensure_index
 from .routers import applications, emails, search, suggest, search_debug
+from .routers import version as version_router
+from .routers import agent as agent_router
 from .settings import settings
 from .tracing import init_tracing
 from .config import agent_settings
 from .core.csrf import CSRFMiddleware
 from .core.limiter import RateLimitMiddleware
 from .core.metrics import metrics_router
+from .routers import dev_shims
 
 # CORS allowlist from environment (comma-separated)
 ALLOWED_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:5175").split(",")
 
+# Add chrome extension support for dev mode
+if os.getenv("APPLYLENS_DEV") == "1":
+    # Support chrome extensions and any localhost port for development
+    ALLOWED_ORIGINS.extend(
+        [
+            "chrome-extension://*",
+            "http://localhost",
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+        ]
+    )
+
 app = FastAPI(title="ApplyLens API")
 
-# Add rate limiting middleware (before CSRF)
+# Prometheus middleware for HTTP metrics (outermost layer)
+app.add_middleware(
+    PrometheusMiddleware,
+    app_name="applylens_api",
+    group_paths=True,  # coalesce dynamic paths
+    prefix="applylens_http",  # e.g. applylens_http_requests_total
+)
+
+# CORS middleware (must be before CSRF to handle preflight OPTIONS requests)
+if os.getenv("APPLYLENS_DEV") == "1":
+    # Dev mode: Use regex to support wildcards (chrome-extension://* and localhost:*)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"(chrome-extension://.*|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?)",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+else:
+    # Production: Use explicit allowlist
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[o.strip() for o in ALLOWED_ORIGINS if o.strip()],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+
+# Rate limiting middleware (after CORS, before CSRF)
 app.add_middleware(
     RateLimitMiddleware,
     capacity=agent_settings.RATE_LIMIT_MAX_REQ,
     window=agent_settings.RATE_LIMIT_WINDOW_SEC,
 )
 
-# Add CSRF protection middleware (before session middleware)
+# CSRF protection middleware (after CORS, before session)
 app.add_middleware(CSRFMiddleware)
 
 # Add session middleware for OAuth state management
@@ -52,6 +105,15 @@ async def _maybe_create_tables():
     Prefer Alembic migrations in real environments; this is only for local/dev if enabled.
     Disabled in test environment to avoid DB connection at import time.
     """
+    # Log critical environment variables for debugging
+    log = logging.getLogger("uvicorn")
+    log.info(
+        f"🔧 Runtime config: APPLYLENS_DEV={os.getenv('APPLYLENS_DEV')}, "
+        f"DATABASE_URL={settings.sql_database_url[:50]}..., "
+        f"DEVDIAG_BASE={os.getenv('DEVDIAG_BASE')}, "
+        f"DEVDIAG_ENABLED={os.getenv('DEVDIAG_ENABLED')}"
+    )
+
     if settings.CREATE_TABLES_ON_STARTUP:
         Base.metadata.create_all(bind=engine)
 
@@ -59,26 +121,18 @@ async def _maybe_create_tables():
 # Initialize OpenTelemetry tracing (optional, controlled by OTEL_ENABLED)
 init_tracing(app)
 
-# Prometheus middleware for HTTP metrics
-app.add_middleware(
-    PrometheusMiddleware,
-    app_name="applylens_api",
-    group_paths=True,  # coalesce dynamic paths
-    prefix="applylens_http",  # e.g. applylens_http_requests_total
-)
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[o.strip() for o in ALLOWED_ORIGINS if o.strip()],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
-
 
 @app.on_event("startup")
 def _startup():
+    # Log key environment variables for troubleshooting
+    logger.info(
+        f"🔧 Runtime config: APPLYLENS_DEV={os.getenv('APPLYLENS_DEV')}, "
+        f"DATABASE_URL={settings.sql_database_url[:30]}..., "
+        f"ES_ENABLED={os.getenv('ES_ENABLED', 'true')}, "
+        f"DEVDIAG_BASE={os.getenv('DEVDIAG_BASE')}, "
+        f"DEVDIAG_ENABLED={os.getenv('DEVDIAG_ENABLED')}"
+    )
+
     # Make sure ES index exists (no‑op if disabled)
     ensure_index()
 
@@ -137,6 +191,9 @@ def get_runtime_config():
 # Health endpoints (include new enhanced module)
 app.include_router(health.router)
 
+# Version endpoint (build metadata)
+app.include_router(version_router.router)
+
 # Metrics endpoints (security events + Prometheus)
 app.include_router(metrics_router)
 
@@ -147,12 +204,44 @@ def debug_500():
     raise HTTPException(status_code=500, detail="Debug error for alert testing")
 
 
-# Include routers
+# Dev shim router - must come early enough that /api/auth/* and
+# /api/actions/tray are handled before any more specific 404s.
+if os.getenv("APPLYLENS_DEV") == "1":
+    app.include_router(dev_shims.router)
+
+
+# Dev routers FIRST - Must be before production routers to win path matches
+# Dev seed router - Test data seeding (dev only)
+from .routers import dev_seed  # noqa: E402
+
+app.include_router(dev_seed.router)
+
+# Dev risk router - Email risk assessment stubs (dev only)
+# MUST BE BEFORE emails.router to win /emails/{id}/risk-advice
+from .routers import dev_risk  # noqa: E402
+
+app.include_router(dev_risk.router)
+app.include_router(dev_risk.emails_risk_router)  # /emails/* paths (no prefix)
+
+# Dev backfill router - Gmail backfill stubs (dev only)
+from .routers import dev_backfill  # noqa: E402
+
+app.include_router(dev_backfill.router)
+
+# Include production routers
 app.include_router(emails.router)
 app.include_router(search.router)
 app.include_router(search_debug.router)  # Debug diagnostics for search
 app.include_router(suggest.router)
 app.include_router(applications.router)
+
+# Agent router - Mailbox Agent v2 (AI assistant)
+app.include_router(agent_router.router)
+
+# Agent feedback - Learning loop for Agent V2
+from . import routes_agent_feedback  # noqa: E402
+
+app.include_router(routes_agent_feedback.router, prefix="/api")
 
 # Auth router - Google OAuth and demo mode
 from .routers import auth as auth_router  # noqa: E402
@@ -168,6 +257,25 @@ app.include_router(auth_google.router)
 app.include_router(routes_gmail.router)
 app.include_router(oauth_google.router)
 app.include_router(routes_extract.router)
+
+# Thread detail API
+from . import routes_threads  # noqa: E402
+
+app.include_router(routes_threads.router)
+
+# E2E test authentication (only enabled when E2E_PROD=1)
+if os.getenv("E2E_PROD") == "1":
+    from . import routes_e2e_auth
+
+    app.include_router(routes_e2e_auth.router)
+    logging.getLogger("uvicorn").info(
+        "🧪 E2E auth endpoint enabled at /api/auth/e2e/login"
+    )
+
+# Companion learning loop
+from .routers import extension_learning  # noqa: E402
+
+app.include_router(extension_learning.router)
 
 # Async Gmail backfill with job tracking (v0.4.17)
 from .routers import gmail_backfill  # noqa: E402
@@ -202,6 +310,16 @@ app.include_router(actions.router)
 app.include_router(inbox_actions.router)
 app.include_router(senders.router)  # /settings/senders
 app.include_router(tracker.router)  # /tracker
+
+# Browser Extension API (dev-only)
+from .routers import extension  # noqa: E402
+
+app.include_router(extension.router)  # /api/extension/* + /api/profile/*
+
+# DevDiag Proxy (ops diagnostics)
+from .routers import devdiag_proxy  # noqa: E402
+
+app.include_router(devdiag_proxy.router, prefix="/api")  # /api/ops/diag/*
 
 # Phase 5 - Chat Assistant
 from .routers import chat  # noqa: E402
@@ -431,3 +549,16 @@ except Exception as e:
     import traceback
 
     traceback.print_exc()
+
+# Dev-only routes for E2E testing (seed data, etc.)
+# Only available when ALLOW_DEV_ROUTES=1 environment variable is set
+if os.getenv("ALLOW_DEV_ROUTES") == "1":
+    try:
+        from .routers import dev_seed
+
+        app.include_router(dev_seed.router)
+        logger.info("[OK] Dev seed router registered at /api/dev/*")
+    except ImportError as e:
+        logger.error(f"[WARN] Dev seed module import failed: {e}")
+    except Exception as e:
+        logger.error(f"[ERROR] Error loading dev seed router: {e}", exc_info=True)

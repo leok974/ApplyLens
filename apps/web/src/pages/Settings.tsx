@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getRecencyScale, setRecencyScale, RecencyScale } from '../state/searchPrefs'
 import { Card } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Info, User as UserIcon } from 'lucide-react'
 import { features } from '../config/features'
+import { FLAGS } from '@/lib/flags'
 import { ProfileMetrics } from '../components/ProfileMetrics'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { logoutUser } from '@/lib/api'
+import { logout } from '@/api/auth'
 import { getCurrentUser, fetchAndCacheCurrentUser } from '@/api/auth'
+import { VersionCard } from '@/components/settings/VersionCard'
+import { HealthBadge } from '@/components/HealthBadge'
+import { MailboxThemePanel } from '@/components/settings/MailboxThemePanel'
 
 export default function Settings() {
+  const navigate = useNavigate()
   const [scale, setScale] = useState<RecencyScale>(getRecencyScale())
   const [accountEmail, setAccountEmail] = useState<string | null>(null)
 
@@ -41,7 +47,15 @@ export default function Settings() {
   }
 
   async function handleLogout() {
-    await logoutUser()
+    console.log('[Settings] handleLogout called - starting logout');
+    try {
+      await logout();
+      console.log('[Settings] logout() completed, navigating to /welcome');
+      navigate('/welcome', { replace: true });
+      console.log('[Settings] navigate() called');
+    } catch (error) {
+      console.error('[Settings] logout failed:', error);
+    }
   }
 
   return (
@@ -75,6 +89,9 @@ export default function Settings() {
             </div>
           </div>
         </Card>
+
+        {/* Mailbox Theme */}
+        <MailboxThemePanel />
 
         {/* Warehouse Metrics (feature-flagged) */}
         {features.warehouseMetrics && (
@@ -125,6 +142,52 @@ export default function Settings() {
         <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-6">
           More settings coming soon: muted senders, safe senders, data sync controls.
         </div>
+
+        {/* Browser Companion link (feature-flagged) */}
+        {FLAGS.COMPANION && (
+          <div className="mt-6 p-4 rounded-lg border bg-zinc-50 dark:bg-zinc-800/50">
+            <h3 className="text-sm font-medium mb-2">Browser Companion</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
+              Install the Chrome extension to autofill ATS forms and draft recruiter messages.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/settings/companion')}
+            >
+              View Companion Settings
+            </Button>
+          </div>
+        )}
+
+        {/* Warehouse Status */}
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+            Warehouse Status
+          </h3>
+          <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground max-w-[70%]">
+              Shows the health of your ApplyLens analytics warehouse and recent
+              backfills. If something looks off in charts or scoring, check here.
+            </p>
+            <HealthBadge />
+          </div>
+        </div>
+
+        {/* About Section */}
+        <section className="space-y-3 mt-6">
+          <div>
+            <h2 className="text-xl font-semibold">About</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+              Build metadata for support and debugging. Share this if something looks off.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <VersionCard />
+            {/* leave room for future cards (license, telemetry, etc.) */}
+          </div>
+        </section>
     </div>
   )
 }

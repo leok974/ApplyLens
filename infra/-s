@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- Favicons - multiple sizes for best browser support -->
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png" />
+
+    <!-- Apple Touch Icon (iOS) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./icon-180x180.png" />
+
+    <!-- Android/Chrome -->
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512x512.png" />
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="./site.webmanifest" />
+
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#667eea" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="build-id" content="1761854330013" />
+    <title>ApplyLens - Job Inbox</title>
+    <script type="module" crossorigin src="/assets/index-1761854330013.C20EYxSb.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-1761854330013.D6Nh4lho.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

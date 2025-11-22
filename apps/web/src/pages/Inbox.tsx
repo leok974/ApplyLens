@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getGmailStatus, getGmailInbox, initiateGmailAuth, Email, GmailConnectionStatus } from '../lib/api'
 import EmailCard from '../components/EmailCard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -17,6 +18,7 @@ const LABEL_FILTERS = [
 ]
 
 export default function Inbox() {
+  const [searchParams] = useSearchParams()
   const [status, setStatus] = useState<GmailConnectionStatus | null>(null)
   const [emails, setEmails] = useState<Email[]>([])
   const [total, setTotal] = useState(0)
@@ -26,7 +28,34 @@ export default function Inbox() {
   const [err, setErr] = useState<string | null>(null)
 
   // Thread viewer state
-  const thread = useThreadViewer()
+  const thread = useThreadViewer(emails.map(e => ({ id: String(e.id) })))
+
+  // Phase 4: derived values for ThreadViewer
+  const totalCount = thread.items.length;
+  // TODO(thread-viewer v1.4.5):
+  // handledCount is now driven by local optimistic state.
+  // Eventually this should come from the canonical row model (server-sourced),
+  // but this is good enough for operator UX.
+  const handledCount = thread.items.filter(
+    (it: any) => it.archived || it.quarantined
+  ).length;
+
+  const bulkCount = thread.selectedBulkIds.size;
+
+  // Deep-link support: /inbox?open=<emailId>
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId || !thread.showThread) return
+
+    // Try to open the thread if it exists in current emails
+    const targetEmail = emails.find(e => String(e.id) === openId)
+    if (targetEmail) {
+      thread.showThread(String(targetEmail.id))
+    } else {
+      // Email not in current page - could fetch it or show warning
+      console.warn(`Deep-link target email ${openId} not found in current inbox view`)
+    }
+  }, [searchParams, emails, thread])
 
   // Check connection status on mount
   useEffect(() => {
@@ -161,10 +190,29 @@ export default function Inbox() {
               {emails.map(e => (
                 <div
                   key={e.id}
-                  onClick={() => thread.showThread(String(e.id))}
-                  className="cursor-pointer"
+                  data-testid="thread-row"
+                  data-thread-id={String(e.id)}
+                  data-selected={thread.selectedId === String(e.id) ? "true" : "false"}
+                  className="flex items-start gap-2"
                 >
-                  <EmailCard e={e} />
+                  {/* TODO(thread-viewer v1.4):
+                      bulk triage selection checkbox.
+                      Eventually we'll hide this unless we're in "batch mode" UI.
+                  */}
+                  <input
+                    type="checkbox"
+                    data-testid="thread-row-checkbox"
+                    className="h-3 w-3 mt-3 rounded border-zinc-400 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+                    checked={thread.selectedBulkIds.has(String(e.id))}
+                    onChange={() => thread.toggleBulkSelect(String(e.id))}
+                    onClick={(evt) => evt.stopPropagation()}
+                  />
+                  <div
+                    onClick={() => thread.showThread(String(e.id))}
+                    className="cursor-pointer flex-1"
+                  >
+                    <EmailCard e={e} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -199,6 +247,20 @@ export default function Inbox() {
         emailId={thread.selectedId}
         isOpen={thread.isOpen}
         onClose={thread.closeThread}
+        goPrev={thread.goPrev}
+        goNext={thread.goNext}
+        advanceAfterAction={thread.advanceAfterAction}
+        items={thread.items}
+        selectedIndex={thread.selectedIndex}
+        autoAdvance={thread.autoAdvance}
+        setAutoAdvance={(val) => thread.setAutoAdvance(val)}
+        handledCount={handledCount}
+        totalCount={totalCount}
+        bulkCount={bulkCount}
+        onBulkArchive={thread.bulkArchive}
+        onBulkMarkSafe={thread.bulkMarkSafe}
+        onBulkQuarantine={thread.bulkQuarantine}
+        isBulkMutating={thread.isBulkMutating}
       />
     </div>
   )

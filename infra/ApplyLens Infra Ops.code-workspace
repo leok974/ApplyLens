@@ -1,0 +1,97 @@
+{
+  "folders": [
+    {
+      "path": "d:/ApplyLens/infra"
+    },
+    {
+      "path": "d:/ApplyLens/infra/nginx"
+    },
+    {
+      "path": "d:/ApplyLens/infra/cloudflared"
+    },
+    {
+      "path": "d:/ApplyLens/infra/prometheus"
+    },
+    {
+      "path": "d:/ApplyLens/infra/grafana"
+    },
+    {
+      "path": "d:/ApplyLens/infra/elasticsearch"
+    },
+    {
+      "path": "d:/ApplyLens/scripts"
+    },
+    {
+      "path": "d:/ApplyLens/docs"
+    }
+  ],
+  "settings": {
+    "window.restoreWindows": "none",
+    "workbench.editor.restoreViewState": false,
+    "telemetry.telemetryLevel": "off",
+    "git.ignoreLimitWarning": true,
+    "problems.showCurrentInStatus": false,
+    "files.associations": {
+      "*.yml": "yaml",
+      "*.yaml": "yaml",
+      "*.conf": "nginx",
+      "docker-compose.*.yml": "yaml"
+    },
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true,
+      "**/.idea": true,
+      "**/.vscode": false,
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/.cache": true,
+      "**/.pytest_cache": true,
+      "**/.mypy_cache": true,
+      "**/.venv": true,
+      "**/venv": true
+    },
+    "search.exclude": {
+      "**/.git": true,
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/.cache": true,
+      "**/.pytest_cache": true,
+      "**/.mypy_cache": true,
+      "**/.venv": true,
+      "**/venv": true,
+      "**/data/**": true,
+      "**/logs/**": true
+    },
+    "files.watcherExclude": {
+      "**/.git/**": true,
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/.cache/**": true,
+      "**/.pytest_cache/**": true,
+      "**/.mypy_cache/**": true,
+      "**/.venv/**": true,
+      "**/venv/**": true,
+      "**/data/**": true,
+      "**/logs/**": true
+    },
+    "yaml.schemas": {
+      "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json": [
+        "d:/ApplyLens/infra/docker-compose.yml",
+        "d:/ApplyLens/docker-compose.prod.yml",
+        "d:/ApplyLens/docker-compose.override.yml"
+      ]
+    },
+    "terminal.integrated.defaultProfile.windows": "Windows PowerShell",
+    "terminal.integrated.cwd": "d:/ApplyLens/infra",
+
+    "workbench.startupEditor": "readme",
+    "github.copilot.chat.agent.instructions": [
+      "For this workspace (ApplyLens), follow the roles and boundaries defined in AGENTS.md and .github/agents/*.md.",
+      "Primary agents for this workspace: dev-deploy-agent (Docker/infrastructure), docs-agent (documentation), security-agent (secrets/config).",
+      "Never change Cloudflare Tunnel ingress, prod docker-compose routing, CORS/cookie scope, OAuth scopes, or weaken risk/security checks without explicit instruction."
+    ]
+  }
+}

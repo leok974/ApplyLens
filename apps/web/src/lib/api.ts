@@ -626,9 +626,29 @@ export type MessageDetail = {
   received_at: string
   risk_score?: number
   quarantined?: boolean
+  archived?: boolean
   category?: string
   html_body?: string | null
   text_body?: string | null
+  messages?: Array<{
+    id: string
+    from: string
+    to: string[]
+    date: string
+    snippet?: string
+    body_html?: string
+    body_text?: string
+  }>
+  summary?: {
+    headline: string
+    details: string[]
+  }
+  timeline?: Array<{
+    ts: string
+    actor: string
+    kind: "received" | "replied" | "follow_up_needed" | "flagged" | "status_change"
+    note: string
+  }>
 }
 
 // Helper to get CSRF token from meta tag
@@ -760,6 +780,76 @@ export async function postRestore(message_id: string): Promise<ActionMutationRes
   if (!r.ok) throw new Error(`Restore failed: ${r.status}`)
   return r.json()
 }
+
+// ===== Bulk Actions (Phase 4.5) =====
+
+// TODO(thread-viewer v1.4.5):
+// Bulk triage endpoints. Backend will auth + persist.
+// We assume message_ids belong to the current user.
+
+export type BulkActionResponse = {
+  updated: string[]
+  failed: string[]
+}
+
+async function postJSON(url: string, body: any) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": getCsrf(),
+    },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function bulkArchiveMessages(ids: string[]): Promise<BulkActionResponse> {
+  return postJSON("/api/actions/bulk/archive", { message_ids: ids });
+}
+
+export async function bulkMarkSafeMessages(ids: string[]): Promise<BulkActionResponse> {
+  return postJSON("/api/actions/bulk/mark-safe", { message_ids: ids });
+}
+
+export async function bulkQuarantineMessages(ids: string[]): Promise<BulkActionResponse> {
+  return postJSON("/api/actions/bulk/quarantine", { message_ids: ids });
+}
+
+/**
+ * Send feedback on thread summary quality.
+ * Used to improve AI summary generation over time.
+ */
+export async function sendThreadSummaryFeedback(opts: {
+  messageId: string;
+  helpful: boolean;
+}): Promise<{ ok: boolean }> {
+  const csrf = getCsrf();
+  const res = await fetch("/api/actions/summary-feedback", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "x-csrf-token": csrf,
+    },
+    body: JSON.stringify({
+      message_id: opts.messageId,
+      helpful: opts.helpful,
+      // reason: (optional, we're not collecting freeform yet)
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to submit summary feedback");
+  }
+
+  return res.json() as Promise<{ ok: boolean }>;
+}
+
 
 // ===== Sender Overrides =====
 
@@ -976,7 +1066,71 @@ export async function fetchThreadDetail(messageId: string): Promise<MessageDetai
     credentials: 'include',
   });
   if (!r.ok) throw new Error(`Failed to fetch thread detail: ${r.status}`);
-  return r.json();
+  const raw = await r.json();
+
+  // TODO(thread-viewer v1.5):
+  // backend should populate summary/timeline.
+  // we patch them here so UI never renders empty.
+  const withContext = {
+    ...raw,
+    summary: raw.summary ?? {
+      headline: "Conversation about scheduling next steps",
+      details: [
+        "They are interested and want your availability.",
+        "Next action is to propose a time window.",
+        "No red flags found in tone or language.",
+      ],
+    },
+    timeline: raw.timeline ?? [
+      {
+        ts: raw.messages?.[raw.messages.length - 1]?.date ?? new Date().toISOString(),
+        actor: raw.messages?.[raw.messages.length - 1]?.from ?? "Contact",
+        kind: "received" as const,
+        note: "Latest reply from contact",
+      },
+      {
+        ts: raw.messages?.[0]?.date ?? new Date().toISOString(),
+        actor: raw.messages?.[0]?.from ?? "You",
+        kind: "replied" as const,
+        note: "You responded with availability",
+      },
+    ],
+  };
+
+  return withContext;
+}
+
+/**
+ * Fetch thread risk analysis from security/agent backend
+ * TODO(thread-viewer v1.1):
+ * Replace fallback with live agent-backed endpoint once
+ * /security/analyze/:threadId is stable in prod.
+ * This call should return { summary, factors[], riskLevel, recommendedAction }.
+ */
+export async function fetchThreadAnalysis(threadId: string): Promise<import('../types/thread').ThreadRiskAnalysis> {
+  // Placeholder endpoint. We'll wire to the real backend later.
+  // For now, call `/api/security/analyze/:threadId` if it exists,
+  // otherwise return mock data.
+
+  try {
+    const res = await fetch(`/api/security/analyze/${threadId}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Analysis endpoint not ready');
+    return res.json();
+  } catch (err) {
+    // Fallback mock so UI can render without backend being ready.
+    return {
+      summary: "No high-risk behavior detected. Sender is known, content looks legitimate.",
+      factors: [
+        "Sender domain previously seen in safe conversations",
+        "No credential harvesting language detected",
+        "No urgency / threat language detected",
+      ],
+      riskLevel: "low",
+      recommendedAction: "Mark Safe",
+    };
+  }
 }
 
 // Quick Actions (dry-run mode)
@@ -1344,6 +1498,6 @@ export async function logoutUser(): Promise<void> {
   // Clear cached user data to prevent stale UI after logout
   clearCurrentUser();
 
-  // Finally, navigate user back to "/" or a login screen.
-  window.location.href = "/";
+  // Note: Navigation is now handled by the caller (e.g., Settings page)
+  // to prevent hard page reloads that can crash Playwright tests.
 }

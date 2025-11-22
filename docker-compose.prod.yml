@@ -88,7 +88,7 @@ services:
     image: docker.elastic.co/kibana/kibana:8.13.4
     container_name: applylens-kibana-prod
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://es:9200
       - SERVER_NAME=applylens-kibana
       - SERVER_HOST=0.0.0.0
     ports:
@@ -169,13 +169,21 @@ services:
     # v0.4.27: Enhanced Actions page with drawer, explanations, and optimistic UI updates
     # v0.4.26: Implemented Actions page with real backend endpoints
     # v0.4.25: Added /api/tracker endpoint for Gmail-derived applications
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Agent V2 Learning Loop - feedback routes + aggregation endpoint
     # v0.4.49: Profile warehouse integration + Ollama production deployment
-    image: leoklemet/applylens-api:v0.4.51
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Banana Pro theme visual polish - warm yellow SaaS cockpit design
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Card merging - prevent LLM from nuking thread_list cards
+    # v0.5.9: Count fix - meta.count in summary cards (was incorrectly at top level)
+    # Card-aware answering - LLM references card metadata, no hallucinated company names
+    # Zero-results phrasing - Don't say "card below" when count=0
+    image: leoklemet/applylens-api:0.5.11-zero-results
     container_name: applylens-api-prod
     environment:
       # Database
-      # Note: Password contains ! which is URL-encoded as %21
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:4c9248fc7d7d477d919ccc431b1bbd36%21PgA1@db:5432/${POSTGRES_DB:-applylens}
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-4c9248fc7d7d477d919ccc431b1bbd36!PgA1}@db:5432/${POSTGRES_DB:-applylens}"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-4c9248fc7d7d477d919ccc431b1bbd36!PgA1}
+      POSTGRES_DB: ${POSTGRES_DB:-applylens}
 
       # API Configuration
       ENV: production
@@ -185,7 +193,7 @@ services:
 
       # Elasticsearch
       ES_ENABLED: ${ES_ENABLED:-true}
-      ES_URL: http://elasticsearch:9200
+      ES_URL: http://es:9200
       ES_RECREATE_ON_START: "false"
       ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-gmail_emails}
 
@@ -196,8 +204,8 @@ services:
       # CRITICAL: Using shared infra-ollama-1 container on infra_net network
       # DO NOT change to http://localhost:11434 - must use container hostname
       # DO NOT change model back to gpt-oss:20b - too slow for production
-      OLLAMA_BASE: "http://infra-ollama-1:11434"
-      OLLAMA_MODEL: "llama3:latest"  # 4.7GB, 2-4s response time (quoted for YAML colon handling)
+      OLLAMA_BASE: "http://ai-finance-agent-oss-clean-ollama-1:11434"
+      OLLAMA_MODEL: "gpt-oss:20b"  # 4.7GB, 2-4s response time (quoted for YAML colon handling)
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
 
@@ -219,9 +227,16 @@ services:
 
       # Application
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
+
+      # Build Metadata
+      APP_VERSION: '0.5.3'
+      APP_BUILD_SHA: '6f22dfe'
+      APP_BUILD_TIME: '2025-11-19T02:00:45Z'
+      APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
       # Feature Flags
+      ALLOW_DEV_ROUTES: "0"  # Production: Disable dev routes
       CHAT_STREAMING_ENABLED: ${CHAT_STREAMING_ENABLED:-true}  # Canary toggle for SSE streaming
       ALLOW_ACTION_MUTATIONS: "true"  # v0.4.29: Enable mutations for lifecycle management
 
@@ -230,6 +245,11 @@ services:
 
       # Security - CSRF Protection
       CSRF_SECRET_KEY: ${CSRF_SECRET_KEY}
+
+      # E2E Testing
+      E2E_PROD: "1"
+      E2E_SHARED_SECRET: "e2e-prod-5a46844ddc9f4cb2"
+      SHARED_SECRET: ${SHARED_SECRET}
 
       # Security - reCAPTCHA (optional)
       RECAPTCHA_ENABLED: ${RECAPTCHA_ENABLED:-false}
@@ -242,6 +262,9 @@ services:
       GCP_PROJECT: ${GCP_PROJECT}
       BQ_MARTS_DATASET: ${BQ_MARTS_DATASET:-gmail_marts}
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/secrets/applylens-warehouse-key.json}
+
+      # Gmail Backfill API Key
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
 
       # Monitoring
       PROMETHEUS_ENABLED: "true"
@@ -260,18 +283,124 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://localhost:8003/ready || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 40s
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/ready')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
     networks:
       applylens-prod:
         aliases:
           - applylens-api.internal
       infra_net:  # Connect to infra network for Ollama access
+      shared-ollama:  # Connect to shared Ollama container
+
+  # =============================================================================
+  # BACKFILL SCHEDULER (Automated Gmail Backfill)
+  # =============================================================================
+  backfill:
+    image: python:3.11-slim
+    container_name: applylens-backfill
+    restart: unless-stopped
+    networks:
+      - applylens-prod
+    environment:
+      # Internal call to API (no Cloudflare)
+      API_URL: http://applylens-api-prod:8003/gmail/backfill
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      EVERY_MINUTES: ${BACKFILL_EVERY_MINUTES:-30}
+      BACKFILL_DAYS: ${BACKFILL_DAYS:-2}
+      TZ: America/New_York
+    volumes:
+      - ./infra/backfill:/app:ro
+    working_dir: /app
+    command: ["python", "/app/runner.py"]
+    depends_on:
+      api:
+        condition: service_healthy
+    labels:
+      - "com.applylens.role=backfill"
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 5m
+      timeout: 15s
+      retries: 1
+      start_period: 90s
+
+  # =============================================================================
+  # AUTOFILL AGGREGATOR (Companion Learning Loop)
+  # =============================================================================
+  autofill-aggregator:
+    image: python:3.11-slim
+    container_name: applylens-autofill-aggregator
+    restart: unless-stopped
+    networks:
+      - applylens-prod
+    environment:
+      # Database connection (same as API)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-applylens}
+
+      # Feature flag and configuration
+      COMPANION_AUTOFILL_AGG_ENABLED:
+      AGG_EVERY_HOURS:
+      AGG_LOOKBACK_DAYS:
+      TZ: America/New_York
+
+      # Python path for imports
+      PYTHONPATH: /api
+    volumes:
+      - ./infra/autofill-aggregator:/app:ro
+      - ./services/api:/api:ro
+    working_dir: /app
+    command: ["python", "/app/runner.py"]
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    labels:
+      - "com.applylens.role=autofill-aggregator"
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 10m
+      timeout: 30s
+      retries: 2
+      start_period: 120s
+
+  # =============================================================================
+  # AGENT FEEDBACK AGGREGATOR (Learning Loop)
+  # =============================================================================
+  agent-feedback-cron:
+    image: python:3.11-slim
+    container_name: applylens-agent-feedback-cron
+    restart: unless-stopped
+    networks:
+      - applylens-prod
+    environment:
+      # Internal call to API (no Cloudflare, no /api prefix for internal calls)
+      API_URL: http://applylens-api-prod:8003/v2/agent/feedback/aggregate
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      EVERY_HOURS: ${AGENT_FEEDBACK_EVERY_HOURS:-6}
+      TIMEOUT: ${AGENT_FEEDBACK_TIMEOUT:-120}
+      TZ: America/New_York
+    volumes:
+      - ./infra/agent-feedback-cron:/app:ro
+    working_dir: /app
+    command: >
+      sh -c "pip install --quiet -r /app/requirements.txt && python /app/runner.py"
+    depends_on:
+      api:
+        condition: service_healthy
+    labels:
+      - "com.applylens.role=agent-feedback-cron"
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 1h
+      timeout: 15s
+      retries: 2
+      start_period: 90s
 
   # =============================================================================
   # WEB (Frontend)
@@ -320,10 +449,27 @@ services:
     # v0.4.62: Filter pill styles + working category filters (fix param mismatch)
     # v0.4.63: Hardened filter pills for dark panels (stronger contrast, semantic colors)
     # v0.4.64: Theme-aware select fields - global styling for light/dark modes
-    image: leoklemet/applylens-web:0.4.64
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Mailbox theme classes wired to UI (chat shell, tool pills, agent cards)
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Banana Pro theme visual polish - hero header, tool pills, chat bubbles, input bar with gradients and glows
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Banana Pro polish - clean, localized glows (no muddy overlays, 3 glow sources only)
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Remove gradient overlays from hero card (use clean container classes)
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Remove ambientGlow and frame backdrop gradient (fully clean, no vignettes)
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Fix MailboxThemePanel to use activeGlow instead of ambientGlow (now "none")
+    # v0.5.8: Intent override - explicit intent for toolbar buttons Add frame.container/glow tokens, mailbox-frame testid, E2E test for no ambient overlay
+    image: leoklemet/applylens-web:0.5.34
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
+
+      # Build Metadata (Web)
+      - VITE_BUILD_FLAVOR=prod
+      - VITE_APP_VERSION=0.5.3
+      - VITE_BUILD_GIT_SHA=6f22dfe
+      - VITE_BUILD_TIME=2025-11-19T02:00:45Z
+
+      # Feature Flags
+      - VITE_FEATURE_COMPANION=1
+      - VITE_CHAT_AGENT_V2=1
     ports:
       - "${WEB_PORT:-5175}:80"
     depends_on:
@@ -333,6 +479,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 20s
     restart: unless-stopped
     networks:
       - applylens-prod
@@ -420,10 +567,11 @@ services:
       - kibana
       - prometheus
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
     restart: unless-stopped
     networks:
       applylens-prod:
@@ -476,3 +624,5 @@ networks:
         - subnet: 172.25.0.0/16
   infra_net:
     external: true  # Use existing infra network with Ollama
+  shared-ollama:
+    external: true  # Shared Ollama network (ai-finance-agent-oss-clean-ollama-1)

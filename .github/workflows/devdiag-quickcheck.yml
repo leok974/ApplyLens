@@ -1,0 +1,31 @@
+name: DevDiag Quickcheck (HTTP)
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  devdiag:
+    runs-on: ubuntu-latest
+    env:
+      DEVDIAG_BASE: ${{ secrets.DEVDIAG_BASE }}
+      DEVDIAG_JWT: ${{ secrets.DEVDIAG_JWT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Health Check
+        run: |
+          test -n "$DEVDIAG_BASE"
+          curl -fsS "$DEVDIAG_BASE/healthz" | jq .
+
+      - name: Probe ApplyLens (app preset)
+        run: |
+          body='{"url":"https://applylens.app","preset":"app","tenant":"applylens"}'
+          hdr=("-H" "content-type: application/json")
+          [ -n "$DEVDIAG_JWT" ] && hdr+=("-H" "authorization: Bearer $DEVDIAG_JWT")
+          curl -fsS -X POST "$DEVDIAG_BASE/diag/run" "${hdr[@]}" -d "$body" > diag.json
+          echo "### DevDiag — Top problem codes" >> $GITHUB_STEP_SUMMARY
+          jq -r '.result.problems[]?.code' diag.json | sort | uniq -c | sort -nr | head -20 | sed "s/^/* /" >> $GITHUB_STEP_SUMMARY || true
+          # Policy gate (tune threshold)
+          jq -e '(.result.problems // [] | length) < 25' diag.json

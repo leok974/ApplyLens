@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { apiUrl } from "../lib/apiUrl";
 
 interface LoginGuardProps {
@@ -6,6 +7,17 @@ interface LoginGuardProps {
 }
 
 type Me = { id: string; email: string } | null;
+
+/**
+ * Check if we're in dev mode bypass (localhost without production API)
+ */
+function isDevModeBypass(): boolean {
+  return (
+    import.meta.env.DEV &&
+    window.location.hostname === "localhost" &&
+    import.meta.env.VITE_BYPASS_AUTH === "true"
+  );
+}
 
 /**
  * Fetch user from /api/auth/me with proper error handling.
@@ -17,6 +29,11 @@ type Me = { id: string; email: string } | null;
  * - 200 → user object
  */
 async function getMe(signal?: AbortSignal): Promise<Me | "degraded"> {
+  // Dev mode bypass - return mock user
+  if (isDevModeBypass()) {
+    console.info("[LoginGuard] DEV MODE - Bypassing auth with mock user");
+    return { id: "dev-user-local", email: "dev@localhost" };
+  }
   try {
     const r = await fetch(apiUrl("/api/auth/me"), {
       credentials: "include",
@@ -79,15 +96,25 @@ async function getMe(signal?: AbortSignal): Promise<Me | "degraded"> {
  * LoginGuard - Auth check WITHOUT loops.
  *
  * KEY FIXES:
- * 1. 401 → Show login CTA (NO redirect, NO retry)
+ * 1. 401 → Redirect to /welcome (NO retry)
  * 2. 5xx/network → Show degraded UI + exponential backoff retry
  * 3. Effect runs ONCE (proper cleanup with AbortController)
- * 4. No window.location.href calls (breaks SPA navigation)
+ * 4. Uses React Router navigate (no window.location.href)
  */
 export default function LoginGuard({ children }: LoginGuardProps) {
   const [authState, setAuthState] = useState<"checking" | "authenticated" | "unauthenticated" | "degraded">("checking");
   const stopRef = useRef(false);
   const ctrlRef = useRef<AbortController | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect to /welcome when unauthenticated
+  useEffect(() => {
+    if (authState === "unauthenticated" && location.pathname !== '/welcome') {
+      console.log('[LoginGuard] Redirecting unauthenticated user to /welcome from', location.pathname);
+      navigate('/welcome', { replace: true });
+    }
+  }, [authState, location.pathname, navigate]);
 
   useEffect(() => {
     stopRef.current = false;
@@ -118,7 +145,7 @@ export default function LoginGuard({ children }: LoginGuardProps) {
       attempt = 0;
 
       if (me === null) {
-        // User not authenticated - show login CTA (NO LOOP!)
+        // User not authenticated - set state and let useEffect handle redirect
         setAuthState("unauthenticated");
         return;
       }

@@ -2,7 +2,65 @@
 
 Automation scripts for building, deploying, and rolling back ApplyLens Docker images.
 
-## Scripts
+## Production Operations
+
+### ✅ check-applylens-prod.ps1
+**NEW** - Comprehensive production smoke test that verifies all production systems.
+
+**Usage:**
+```powershell
+.\scripts\check-applylens-prod.ps1
+```
+
+**Tests:**
+- ✅ Web application endpoints (`/`, `/index.html`)
+- ✅ API health and authentication
+- ✅ Cloudflare tunnel connectors (cfd-a, cfd-b)
+- ✅ Docker container status
+- ✅ Network configuration
+- ✅ Recent connector errors
+
+**Output:**
+```
+✅ All checks passed!
+❌ Errors: 2
+⚠️  Warnings: 1
+```
+
+**When to use:**
+- After deployment
+- Troubleshooting 502 errors
+- Daily health checks
+- Before making infrastructure changes
+
+---
+
+### 🌐 show-tunnel-connectors.ps1
+**NEW** - Quick status display for Cloudflare tunnel connectors.
+
+**Usage:**
+```powershell
+# Quick view
+.\scripts\show-tunnel-connectors.ps1
+
+# Detailed view with logs
+.\scripts\show-tunnel-connectors.ps1 -Detailed
+```
+
+**Output:**
+```
+Status: 2 running / 5 total ✅
+```
+
+**When to use:**
+- Check which connectors are active
+- Verify network configuration
+- Debug tunnel routing issues
+- Monitor connector health
+
+---
+
+## Build & Deploy Scripts
 
 ### 🔨 build-and-tag.ps1
 Build and tag Docker images with proper versioning and metadata.

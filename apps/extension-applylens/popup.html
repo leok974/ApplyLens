@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ApplyLens</title>
+    <style>
+      body { font: 13px/1.4 system-ui, sans-serif; margin: 10px; min-width: 280px; }
+      .row { margin: 6px 0; }
+      .ok { color: #16a34a }
+      .bad { color: #dc2626 }
+      .muted { color: #64748b; font-size: 11px; }
+      code { background:#111827; color:#e5e7eb; padding:2px 4px; border-radius:4px; }
+      ul { list-style: none; padding: 0; margin: 4px 0; font-size: 11px; }
+      ul li { padding: 3px 0; color: #475569; }
+    </style>
+  </head>
+  <body>
+    <div class="row"><strong>ApplyLens Companion</strong></div>
+    <div class="row">API: <span id="api"></span></div>
+    <div class="row">Profile: <span id="profile"></span></div>
+    <hr />
+    <div class="row">
+      <button id="scan">Scan form & suggest answers</button>
+    </div>
+    <div class="row">
+      <button id="dm">Draft recruiter DM (LinkedIn)</button>
+    </div>
+    <hr />
+    <section>
+      <h3>Learning Settings</h3>
+      <div class="row">
+        <label>
+          <input type="checkbox" id="learning-enabled" />
+          Improve autofill using my data
+        </label>
+      </div>
+      <div class="row">
+        <button id="reset-learning">Reset all learning data</button>
+      </div>
+      <div class="row muted">
+        Learning helps improve field detection and answer quality over time.
+        All data is stored locally and synced anonymously.
+      </div>
+    </section>
+    <hr />
+    <section>
+      <h3>Recent activity</h3>
+      <div style="display:flex; gap:12px;">
+        <div style="flex:1;">
+          <div class="muted">Applications</div>
+          <ul id="hist-apps"></ul>
+        </div>
+        <div style="flex:1;">
+          <div class="muted">Outreach</div>
+          <ul id="hist-out"></ul>
+        </div>
+      </div>
+    </section>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

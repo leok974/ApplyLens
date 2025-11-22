@@ -1,0 +1,54 @@
+{
+  "name": "ApplyLens Companion – Autofill job applications & recruiter DMs",
+  "short_description": "Smart autofill for Greenhouse/Lever/Workday and tailored recruiter DMs using your ApplyLens profile.",
+  "description": "ApplyLens Companion helps you move faster:\n\n• Scan job application forms (Greenhouse, Lever, Workday, and more) and suggest concise, relevant answers using your ApplyLens profile\n• Draft tailored recruiter DMs for LinkedIn\n• (Optional) Log applications and outreach to your ApplyLens tracker\n\nPrivacy-first:\n• Only captures metadata you choose to log (company, role, job URL, recruiter name/profile, short DM preview)\n• No selling of data; no background browsing history; no sensitive info collection\n• All communication is HTTPS; you can delete logs anytime from ApplyLens\n\nGet started:\n1) Install the extension\n2) Open a job application page → click the extension → \"Scan form & suggest\"\n3) On LinkedIn profile pages → \"Draft recruiter DM\" → copy/paste\n\nSupport: leoklemet.pa@gmail.com",
+  "category": "Productivity",
+  "language": "en",
+  "homepage_url": "https://applylens.app/extension",
+  "support_url": "https://applylens.app/extension/support",
+  "privacy_policy_url": "https://applylens.app/extension/privacy",
+  "screenshots": [
+    {"url": "https://applylens.app/extension/assets/screen1.png", "description": "Scan forms & suggest answers"},
+    {"url": "https://applylens.app/extension/assets/screen2.png", "description": "Draft recruiter DMs"},
+    {"url": "https://applylens.app/extension/assets/screen3.png", "description": "Browser Companion settings & activity"}
+  ],
+  "promotional_tile": "https://applylens.app/extension/assets/promo-1280x800.png",
+  "icons": {
+    "128": "icons/128.png"
+  },
+  "permissions_summary": [
+    {
+      "permission": "activeTab",
+      "purpose": "Only when you click the extension, reads visible fields to generate answers."
+    },
+    {
+      "permission": "scripting",
+      "purpose": "Injects the content script on the current tab to scan fields and fill suggestions."
+    },
+    {
+      "permission": "host_permissions",
+      "hosts": [
+        "https://*.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://*.myworkdayjobs.com/*",
+        "https://www.linkedin.com/*",
+        "https://applylens.app/*",
+        "https://api.applylens.app/*"
+      ],
+      "purpose": "Limit to sites where you'll use autofill/DM features."
+    }
+  ],
+  "data_safety": {
+    "collects_data": true,
+    "data_types": [
+      {"category": "User activity", "items": ["Company name", "Role title", "Job URL", "Timestamps"]},
+      {"category": "Personal info", "items": ["Recruiter name (user-provided)", "LinkedIn profile URL (optional)", "Short DM preview (optional)"]}
+    ],
+    "shared": false,
+    "sold": false,
+    "processed_ephemerally": true,
+    "data_deletion": "You can delete logged application/outreach entries from ApplyLens at any time; this removes them from our systems.",
+    "encryption_in_transit": true
+  },
+  "release_notes": "Initial public release: form autofill for common ATS, recruiter DM drafting, optional logging to ApplyLens."
+}

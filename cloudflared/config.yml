@@ -1,0 +1,19 @@
+tunnel: 08d5feee-f504-47a2-a1f2-b86564900991
+credentials-file: /etc/cloudflared/creds.json
+
+ingress:
+  - hostname: applylens.app
+    service: http://applylens-web:80
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: false
+  - hostname: api.applylens.app
+    service: http://applylens-api:8003
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: false
+  - service: http_status:404
+
+# Keep more paths alive to multiple edges
+warp-routing:
+  enabled: true

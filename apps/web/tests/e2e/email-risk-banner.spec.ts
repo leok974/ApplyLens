@@ -1,8 +1,8 @@
 import { test, expect, request } from "@playwright/test";
 
 const ES_URL = process.env.ES_URL || "http://localhost:9200";
-const API_BASE = process.env.API_BASE || "http://localhost:8000";
-const WEB_BASE = process.env.WEB_BASE || "http://localhost:5175";
+const API_BASE = process.env.E2E_API || process.env.API_BASE || "http://localhost:8000";
+const WEB_BASE = process.env.E2E_BASE_URL || process.env.WEB_BASE || "http://localhost:5175";
 const TEST_INDEX = process.env.ES_INDEX || "gmail_emails-999999";
 const PIPELINE = process.env.ES_PIPELINE || "applylens_emails_v3";
 
