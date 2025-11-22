@@ -11,7 +11,6 @@ Skip if LLM is not available.
 
 import pytest
 import os
-from unittest.mock import MagicMock
 
 from app.agent.answering import complete_agent_answer
 from app.schemas_agent import AgentCard
@@ -27,13 +26,16 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def mock_dependencies():
     """Mock dependencies for complete_agent_answer"""
+    from app.schemas_agent import AgentRunRequest
+
     return {
-        "db": MagicMock(),
-        "user_id": "test_user",
-        "query_text": "test query",
-        "email_context": [],
-        "latest_agent_response": None,
-        "agent_manager": MagicMock(),
+        "request": AgentRunRequest(
+            user_id="test_user",
+            query="test query",
+        ),
+        "tool_results": [],
+        "email_contexts": [],
+        "kb_contexts": [],
     }
 
 
@@ -46,6 +48,8 @@ async def test_followups_zero_results_no_card_reference(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="followups_summary",
+            title="Follow-ups",
+            body="No conversations found",
             meta={"count": 0, "time_window_days": 90},
             data={},
         )
@@ -76,6 +80,8 @@ async def test_unsubscribe_zero_results_no_list_reference(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="unsubscribe_summary",
+            title="Newsletters",
+            body="No unopened newsletters",
             meta={"count": 0, "time_window_days": 30},
             data={},
         )
@@ -103,6 +109,8 @@ async def test_suspicious_zero_results_no_card_reference(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="suspicious_summary",
+            title="Suspicious Emails",
+            body="No risky emails found",
             meta={"count": 0, "time_window_days": 7},
             data={},
         )
@@ -124,6 +132,8 @@ async def test_bills_zero_results_no_card_reference(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="bills_summary",
+            title="Bills",
+            body="No bills found",
             meta={"count": 0, "time_window_days": 30},
             data={},
         )
@@ -147,6 +157,8 @@ async def test_interviews_zero_results_no_card_reference(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="interviews_summary",
+            title="Interviews",
+            body="No interview emails",
             meta={"count": 0, "time_window_days": 14},
             data={},
         )
@@ -173,6 +185,8 @@ async def test_clean_promos_zero_results_no_card_reference(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="clean_promos_summary",
+            title="Promotions",
+            body="No promotional emails",
             meta={"count": 0, "time_window_days": 60},
             data={},
         )
@@ -202,6 +216,8 @@ async def test_followups_with_results_references_card(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="followups_summary",
+            title="Follow-ups",
+            body="3 conversations need replies",
             meta={"count": 3, "time_window_days": 30},
             data={},
         )
@@ -226,6 +242,8 @@ async def test_unsubscribe_with_results_references_list(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="unsubscribe_summary",
+            title="Newsletters",
+            body="9 unopened newsletters",
             meta={"count": 9, "time_window_days": 90},
             data={},
         )
@@ -250,6 +268,8 @@ async def test_no_fabricated_company_names(mock_dependencies):
     tool_cards = [
         AgentCard(
             kind="followups_summary",
+            title="Follow-ups",
+            body="2 conversations need replies",
             meta={"count": 2, "time_window_days": 30},
             data={},
         )
