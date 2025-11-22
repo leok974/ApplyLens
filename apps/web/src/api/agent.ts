@@ -16,6 +16,7 @@ import type {
 export interface RunAgentOptions {
   timeWindowDays?: number;
   filters?: Record<string, unknown>;
+  intent?: string; // Explicit intent override: followups, suspicious, bills, interviews, clean_promos, unsubscribe
 }
 
 /**
@@ -41,6 +42,7 @@ export async function runMailboxAgent(
     user_id: undefined, // Backend derives user from session
     query,
     mode: 'preview_only' as const,
+    intent: options?.intent, // Explicit intent override (bypasses classification)
     context: {
       time_window_days: options?.timeWindowDays ?? 30,
       filters: options?.filters ?? {},

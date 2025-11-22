@@ -170,6 +170,10 @@ class AgentRunRequest(BaseModel):
     query: str = Field(..., min_length=1, description="User's natural language query")
     mode: Literal["preview_only", "apply_actions"] = "preview_only"
     context: AgentContext = Field(default_factory=AgentContext)
+    intent: Optional[str] = Field(
+        default=None,
+        description="Explicit intent override (bypasses classification): suspicious, bills, interviews, followups, clean_promos, unsubscribe, profile, generic",
+    )
     user_id: Optional[str] = Field(
         default=None,
         description="Gmail account ID or user identifier (derived from session if not provided)",

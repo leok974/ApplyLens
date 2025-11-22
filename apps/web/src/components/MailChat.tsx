@@ -437,12 +437,24 @@ export default function MailChat() {
     interviews: 'Find interviews from August with confirmed times.',
   }
 
+  // Map tool IDs to explicit intent names (bypasses LLM classification)
+  const TOOL_INTENTS: Partial<Record<MailToolId, string>> = {
+    bills: 'bills',
+    clean_promos: 'clean_promos',
+    unsubscribe: 'unsubscribe',
+    suspicious: 'suspicious',
+    followups: 'followups',
+    interviews: 'interviews',
+    // summarize intentionally omitted - uses generic intent
+  }
+
   function handleToolChange(tool: MailToolId) {
     setActiveTool(tool)
-    // Auto-execute query when tool is selected
+    // Auto-execute query when tool is selected with explicit intent
     const query = TOOL_QUERIES[tool]
+    const intent = TOOL_INTENTS[tool]
     if (query && CHAT_AGENT_V2) {
-      sendViaAssistant(query)
+      sendViaAssistant(query, { intent })
     }
   }
 
@@ -796,7 +808,7 @@ export default function MailChat() {
     )
   }
 
-  async function sendViaAssistant(explicitText?: string) {
+  async function sendViaAssistant(explicitText?: string, options?: { intent?: string }) {
     const userText = (explicitText ?? input).trim()
     if (!userText) return
 
@@ -830,7 +842,10 @@ export default function MailChat() {
       // Note: Do NOT set busy here - Agent V2 uses message-level status
 
       try {
-        const res = await runMailboxAgent(userText, { timeWindowDays: windowDays })
+        const res = await runMailboxAgent(userText, {
+          timeWindowDays: windowDays,
+          intent: options?.intent, // Pass explicit intent if provided
+        })
 
         // DEBUG: Log full response
         console.log("[Agent V2] Response:", JSON.stringify(res, null, 2))

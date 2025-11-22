@@ -579,9 +579,17 @@ class MailboxAgentOrchestrator:
         start_time = datetime.utcnow()
 
         try:
-            # 1. Classify intent using deterministic classifier
-            intent = classify_intent(request.query)
-            logger.info(f"Agent run: query='{request.query}', intent='{intent}'")
+            # 1. Classify intent (or use explicit override from request)
+            if request.intent:
+                intent = request.intent
+                logger.info(
+                    f"Agent run: query='{request.query}', intent='{intent}' (explicit)"
+                )
+            else:
+                intent = classify_intent(request.query)
+                logger.info(
+                    f"Agent run: query='{request.query}', intent='{intent}' (classified)"
+                )
 
             # 2. Plan tool execution based on intent
             tool_plan = self._plan_tools(intent, request)

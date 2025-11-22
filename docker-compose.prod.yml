@@ -173,7 +173,7 @@ services:
     # v0.4.49: Profile warehouse integration + Ollama production deployment
     # v0.5.29: Banana Pro theme visual polish - warm yellow SaaS cockpit design
     # v0.5.6: Card merging - prevent LLM from nuking thread_list cards
-    image: leoklemet/applylens-api:0.5.6-card-merge
+    image: leoklemet/applylens-api:0.5.7-card-merge-fix
     container_name: applylens-api-prod
     environment:
       # Database
