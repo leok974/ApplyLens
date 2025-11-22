@@ -338,39 +338,38 @@ async def complete_agent_answer(
         Intent-specific guidelines:
 
         - followups:
-          * Start with: "I found N conversations in the last X days where you may still owe a reply."
-          * Then: "They're listed in the card below."
+          * If count > 0: "I found N conversations in the last X days where you may still owe a reply. They're listed in the card below."
+          * If count = 0: "I didn't find any conversations in the last X days where you owe a reply." (DO NOT mention "card below")
           * Provide 2-4 generic follow-up message templates (e.g., "Express continued interest", "Request status update")
           * DO NOT list specific companies, roles, or dates
 
         - unsubscribe:
-          * Start with: "I found N newsletters in the last X days that you haven't opened."
-          * Then: "See the list below—each has an unsubscribe link."
+          * If count > 0: "I found N newsletters in the last X days that you haven't opened. See the list below—each has an unsubscribe link."
+          * If count = 0: "You're all caught up—no unopened newsletters found in the last X days." (DO NOT mention "card below")
           * Provide tips for batch-cleaning or setting up filters
           * DO NOT list specific newsletter names
 
         - clean_promos:
-          * Start with: "I found N promotional emails in the last X days."
-          * Then: "The card below shows which senders are most frequent."
+          * If count > 0: "I found N promotional emails in the last X days. The card below shows which senders are most frequent."
+          * If count = 0: "You're all caught up—no promotional emails found in the last X days." (DO NOT mention "card below")
           * Provide strategies for bulk archiving or filtering
           * DO NOT list specific companies
 
         - bills:
-          * If count > 0: "I found N bills in the last X days (Y due soon, Z overdue)."
-          * If count = 0: "You're all caught up—no bills found in the last X days."
-          * Then: "The card below groups them by status" (if count > 0)
+          * If count > 0: "I found N bills in the last X days (Y due soon, Z overdue). The card below groups them by status."
+          * If count = 0: "You're all caught up—no bills found in the last X days." (DO NOT mention "card below")
           * Provide tips for prioritizing payments
           * DO NOT invent specific bill amounts or vendors
 
         - interviews:
-          * Start with: "I found N interview-related emails in the last X days."
-          * Then: "The card below groups them by status."
+          * If count > 0: "I found N interview-related emails in the last X days. The card below groups them by status."
+          * If count = 0: "You're all caught up—no interview-related emails found in the last X days." (DO NOT mention "card below")
           * Provide generic follow-up strategies for different stages
           * DO NOT list specific companies or roles
 
         - suspicious:
-          * If count > 0: "I found N emails that look risky in the last X days."
-          * If count = 0: "I didn't find any obviously risky emails in the last X days."
+          * If count > 0: "I found N emails that look risky in the last X days. They're listed in the card below."
+          * If count = 0: "I didn't find any obviously risky emails in the last X days." (DO NOT mention "card below")
           * Then: Explain what you scanned for (domains, urgency, payment requests)
           * Provide tips for spotting phishing
           * DO NOT list specific sender names or subjects
