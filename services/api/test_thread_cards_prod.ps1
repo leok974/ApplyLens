@@ -11,17 +11,28 @@ function Test-AgentIntent {
     param(
         [string]$IntentQuery,
         [string]$ExpectedIntent,
-        [string]$TestName
+        [string]$TestName,
+        [string]$ExplicitIntent = $null
     )
 
     Write-Host "`n🔍 Testing: $TestName" -ForegroundColor Yellow
     Write-Host "   Query: $IntentQuery" -ForegroundColor Gray
+    if ($ExplicitIntent) {
+        Write-Host "   Explicit Intent: $ExplicitIntent" -ForegroundColor Magenta
+    }
 
     $body = @{
         query = $IntentQuery
         mode = "preview_only"
         user_id = $TEST_USER
-    } | ConvertTo-Json -Compress
+    }
+
+    # Add explicit intent if provided
+    if ($ExplicitIntent) {
+        $body.intent = $ExplicitIntent
+    }
+
+    $body = $body | ConvertTo-Json -Compress
 
     try {
         $response = curl.exe -s -X POST "$API_BASE/api/v2/agent/run" `
@@ -53,7 +64,8 @@ function Test-AgentIntent {
                     Write-Host "        Title: $($card.title)" -ForegroundColor Cyan
                 }
                 elseif ($card.kind -match "summary") {
-                    Write-Host "        Count: $($card.count)" -ForegroundColor Cyan
+                    $displayCount = if ($card.meta.count -ne $null) { $card.meta.count } else { $card.count }
+                    Write-Host "        Count: $displayCount" -ForegroundColor Cyan
                     Write-Host "        Body: $($card.body.Substring(0, [Math]::Min(50, $card.body.Length)))..." -ForegroundColor Cyan
                 }
             }
@@ -62,18 +74,29 @@ function Test-AgentIntent {
             if ($hasSummary) {
                 $summaryCard = $json.cards | Where-Object { $_.kind -match "summary" } | Select-Object -First 1
 
-                # Check if count matches thread_list presence
-                if ($summaryCard.count -eq 0 -and $hasThreadList) {
-                    Write-Host "   ❌ FAIL: count=0 but thread_list card exists!" -ForegroundColor Red
-                    return $false
-                }
-                elseif ($summaryCard.count -gt 0 -and -not $hasThreadList) {
-                    Write-Host "   ⚠️  WARNING: count>0 but no thread_list card" -ForegroundColor Yellow
-                    return $false
+                # Get count from card.meta.count (new location) or fallback to card.count (legacy)
+                $count = if ($summaryCard.meta.count -ne $null) { $summaryCard.meta.count } else { $summaryCard.count }
+
+                # Validate contract: thread_list should only appear when count > 0
+                if ($count -eq 0) {
+                    # count=0: should have NO thread_list card
+                    if ($hasThreadList) {
+                        Write-Host "   ❌ FAIL: count=0 but thread_list card exists!" -ForegroundColor Red
+                        return $false
+                    } else {
+                        Write-Host "   ✅ PASS: No items found (count=0, no thread_list)" -ForegroundColor Green
+                        return $true
+                    }
                 }
                 else {
-                    Write-Host "   ✅ PASS: Card contract valid" -ForegroundColor Green
-                    return $true
+                    # count>0: should have thread_list card
+                    if (-not $hasThreadList) {
+                        Write-Host "   ❌ FAIL: count=$count but no thread_list card!" -ForegroundColor Red
+                        return $false
+                    } else {
+                        Write-Host "   ✅ PASS: Card contract valid (count=$count, has thread_list)" -ForegroundColor Green
+                        return $true
+                    }
                 }
             }
         }
@@ -104,10 +127,11 @@ $results += Test-AgentIntent `
     -ExpectedIntent "suspicious" `
     -TestName "Suspicious Intent"
 
-# Test 3: Unsubscribe
+# Test 3: Unsubscribe (with explicit intent)
 $results += Test-AgentIntent `
     -IntentQuery "Show me newsletters I should unsubscribe from" `
     -ExpectedIntent "unsubscribe" `
+    -ExplicitIntent "unsubscribe" `
     -TestName "Unsubscribe Intent"
 
 # Test 4: Bills
@@ -122,10 +146,11 @@ $results += Test-AgentIntent `
     -ExpectedIntent "interviews" `
     -TestName "Interviews Intent"
 
-# Test 6: Clean Promos
+# Test 6: Clean Promos (with explicit intent)
 $results += Test-AgentIntent `
     -IntentQuery "Show me promotional emails to clean up" `
     -ExpectedIntent "clean_promos" `
+    -ExplicitIntent "clean_promos" `
     -TestName "Clean Promos Intent"
 
 # Summary

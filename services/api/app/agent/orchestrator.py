@@ -1167,9 +1167,12 @@ class MailboxAgentOrchestrator:
             "title": title,
             "time_window_days": time_window_days,
             "mode": "preview_only" if preview_only else "normal",
-            "count": count,
             "threads": [],  # Legacy field - keep empty
             "email_ids": [],
+            "meta": {
+                "count": count,
+                "time_window_days": time_window_days,
+            },
         }
 
         # Set body based on count
