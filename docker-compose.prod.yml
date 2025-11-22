@@ -176,7 +176,8 @@ services:
     # v0.5.9: Count fix - meta.count in summary cards (was incorrectly at top level)
     # Card-aware answering - LLM references card metadata, no hallucinated company names
     # Zero-results phrasing - Don't say "card below" when count=0
-    image: leoklemet/applylens-api:0.5.11-zero-results
+    # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
+    image: leoklemet/applylens-api:0.5.1
     container_name: applylens-api-prod
     environment:
       # Database
@@ -229,9 +230,9 @@ services:
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
 
       # Build Metadata
-      APP_VERSION: '0.5.3'
-      APP_BUILD_SHA: '6f22dfe'
-      APP_BUILD_TIME: '2025-11-19T02:00:45Z'
+      APP_VERSION: '0.5.1'
+      APP_BUILD_SHA: '921484b'
+      APP_BUILD_TIME: '2025-11-22T20:16:47Z'
       APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
@@ -456,16 +457,17 @@ services:
     # v0.5.8: Intent override - explicit intent for toolbar buttons Remove ambientGlow and frame backdrop gradient (fully clean, no vignettes)
     # v0.5.8: Intent override - explicit intent for toolbar buttons Fix MailboxThemePanel to use activeGlow instead of ambientGlow (now "none")
     # v0.5.8: Intent override - explicit intent for toolbar buttons Add frame.container/glow tokens, mailbox-frame testid, E2E test for no ambient overlay
-    image: leoklemet/applylens-web:0.5.34
+    # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
+    image: leoklemet/applylens-web:0.5.1
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
 
       # Build Metadata (Web)
       - VITE_BUILD_FLAVOR=prod
-      - VITE_APP_VERSION=0.5.3
-      - VITE_BUILD_GIT_SHA=6f22dfe
-      - VITE_BUILD_TIME=2025-11-19T02:00:45Z
+      - VITE_APP_VERSION=0.5.1
+      - VITE_BUILD_GIT_SHA=921484b
+      - VITE_BUILD_TIME=2025-11-22T20:16:47Z
 
       # Feature Flags
       - VITE_FEATURE_COMPANION=1
