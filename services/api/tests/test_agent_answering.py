@@ -294,3 +294,118 @@ async def test_no_fabricated_company_names(mock_dependencies):
         assert (
             term not in answer
         ), f"Answer contains forbidden hallucinated term: {term}"
+
+
+# --- APPLICATION STATUS AWARENESS ---
+
+
+@pytest.mark.asyncio
+async def test_followups_with_application_status_mentions_tracker(mock_dependencies):
+    """followups with applicationStatus data should mention Tracker status"""
+    tool_cards = [
+        AgentCard(
+            kind="followups_summary",
+            title="Follow-ups",
+            body="2 conversations need replies",
+            meta={"count": 2, "time_window_days": 30},
+            data={},
+        ),
+        AgentCard(
+            kind="thread_list",
+            title="Follow-ups",
+            threads=[
+                {
+                    "threadId": "thread1",
+                    "subject": "Re: Application",
+                    "from": "recruiter@example.com",
+                    "lastMessageAt": "2024-01-15T10:00:00Z",
+                    "labels": [],
+                    "snippet": "Following up...",
+                    "gmailUrl": "https://mail.google.com/mail",
+                    "applicationId": 1,
+                    "applicationStatus": "applied",
+                },
+                {
+                    "threadId": "thread2",
+                    "subject": "Interview feedback",
+                    "from": "hr@company.com",
+                    "lastMessageAt": "2024-01-14T09:00:00Z",
+                    "labels": [],
+                    "snippet": "Thanks for interviewing...",
+                    "gmailUrl": "https://mail.google.com/mail",
+                    "applicationId": 2,
+                    "applicationStatus": "ghosted",
+                },
+            ],
+            meta={"count": 2, "time_window_days": 30},
+            data={},
+        ),
+    ]
+
+    answer, _ = await complete_agent_answer(
+        **mock_dependencies,
+        intent="followups",
+        tool_cards=tool_cards,
+    )
+
+    # Should mention application status or tracker
+    answer_lower = answer.lower()
+    assert (
+        "tracker" in answer_lower
+        or "status" in answer_lower
+        or "process" in answer_lower
+        or "applied" in answer_lower
+        or "ghosted" in answer_lower
+    ), "Answer should reference application status when available"
+
+    # Should still avoid hallucinations
+    assert "Company A" not in answer
+    assert "Company B" not in answer
+
+
+@pytest.mark.asyncio
+async def test_followups_without_application_status_no_tracker_mention(
+    mock_dependencies,
+):
+    """followups without applicationStatus should not force Tracker mention"""
+    tool_cards = [
+        AgentCard(
+            kind="followups_summary",
+            title="Follow-ups",
+            body="1 conversation needs reply",
+            meta={"count": 1, "time_window_days": 30},
+            data={},
+        ),
+        AgentCard(
+            kind="thread_list",
+            title="Follow-ups",
+            threads=[
+                {
+                    "threadId": "thread1",
+                    "subject": "General inquiry",
+                    "from": "contact@example.com",
+                    "lastMessageAt": "2024-01-15T10:00:00Z",
+                    "labels": [],
+                    "snippet": "Question about...",
+                    "gmailUrl": "https://mail.google.com/mail",
+                    # No applicationId or applicationStatus
+                }
+            ],
+            meta={"count": 1, "time_window_days": 30},
+            data={},
+        ),
+    ]
+
+    answer, _ = await complete_agent_answer(
+        **mock_dependencies,
+        intent="followups",
+        tool_cards=tool_cards,
+    )
+
+    # Should have generic follow-up guidance
+    assert "1" in answer
+    assert "below" in answer.lower() or "listed" in answer.lower()
+
+    # Answer is valid even without status mention
+    # (just checking it doesn't error out)
+    assert len(answer) > 20

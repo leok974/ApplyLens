@@ -1277,6 +1277,23 @@ class MailboxAgentOrchestrator:
                 (tr for tr in tool_results if tr.tool_name == "email_search"),
                 None,
             )
+            applications_lookup = next(
+                (tr for tr in tool_results if tr.tool_name == "applications_lookup"),
+                None,
+            )
+
+            # Build thread_id -> application mapping
+            app_map = {}
+            if applications_lookup and applications_lookup.status == "success":
+                apps_data = applications_lookup.data or {}
+                applications = apps_data.get("applications", [])
+                for app in applications:
+                    tid = app.get("thread_id")
+                    if tid:
+                        app_map[tid] = {
+                            "applicationId": app.get("id"),
+                            "applicationStatus": app.get("status"),
+                        }
 
             # Build thread summaries from email_search results
             thread_summaries = []
@@ -1286,9 +1303,11 @@ class MailboxAgentOrchestrator:
 
                 thread_map = self._group_emails_by_thread(emails)
                 for thread_id, thread_emails in thread_map.items():
-                    thread_summaries.append(
-                        self._build_thread_summary(thread_id, thread_emails)
-                    )
+                    summary = self._build_thread_summary(thread_id, thread_emails)
+                    # Enrich with application data if available
+                    if thread_id in app_map:
+                        summary.update(app_map[thread_id])
+                    thread_summaries.append(summary)
 
             # Use unified card builder
             count = len(thread_summaries)

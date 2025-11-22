@@ -256,12 +256,29 @@ async def complete_agent_answer(
         if summary_card and summary_card.meta:
             count = summary_card.meta.get("count", 0)
             time_window = summary_card.meta.get("time_window_days", 30)
+
+            # Check for application status data in thread_list cards
+            has_app_status = False
+            app_statuses = []
+            thread_list_card = next(
+                (c for c in tool_cards if c.kind == "thread_list"), None
+            )
+            if thread_list_card and hasattr(thread_list_card, "threads"):
+                for thread in thread_list_card.threads:
+                    if isinstance(thread, dict) and thread.get("applicationStatus"):
+                        has_app_status = True
+                        app_statuses.append(thread["applicationStatus"])
+
+            status_note = ""
+            if has_app_status:
+                status_note = f"\n- Application status data available: Yes (statuses include: {', '.join(set(app_statuses))})"
+
             card_metadata = dedent(
                 f"""
                 CARD METADATA (use these exact numbers in your answer):
                 - Items found: {count}
                 - Time window: {time_window} days
-                - Intent: {intent}
+                - Intent: {intent}{status_note}
                 """
             ).strip()
 
@@ -340,6 +357,8 @@ async def complete_agent_answer(
         - followups:
           * If count > 0: "I found N conversations in the last X days where you may still owe a reply. They're listed in the card below."
           * If count = 0: "I didn't find any conversations in the last X days where you owe a reply." (DO NOT mention "card below")
+          * If applicationStatus data is present in cards: Mention that some conversations have Tracker status indicators showing where you are in the process
+          * If you see "applied" or "ghosted" status: These might be higher priority to follow up on
           * Provide 2-4 generic follow-up message templates (e.g., "Express continued interest", "Request status update")
           * DO NOT list specific companies, roles, or dates
 
