@@ -913,10 +913,18 @@ class MailboxAgentOrchestrator:
             # This prevents the LLM from overriding our thread_list cards
             intent_spec = self._get_intent_spec(intent)
             if intent_spec:
+                # Build metrics first (needed by card builder)
+                metrics_dict = self._build_metrics_from_spec(
+                    spec=intent_spec,
+                    tool_results=tool_results,
+                    time_window_days=request.context.time_window_days,
+                )
+
                 # Build deterministic cards (summary + thread_list)
                 deterministic_card_objects = self._build_cards_from_spec(
                     spec=intent_spec,
                     tool_results=tool_results,
+                    metrics=metrics_dict,
                     time_window_days=request.context.time_window_days,
                 )
 

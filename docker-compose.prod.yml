@@ -172,8 +172,8 @@ services:
     # v0.5.15: Agent V2 Learning Loop - feedback routes + aggregation endpoint
     # v0.4.49: Profile warehouse integration + Ollama production deployment
     # v0.5.29: Banana Pro theme visual polish - warm yellow SaaS cockpit design
-    # v0.5.5: Unified thread_list card contract for all intents
-    image: leoklemet/applylens-api:0.5.5-thread-list-unified
+    # v0.5.6: Card merging - prevent LLM from nuking thread_list cards
+    image: leoklemet/applylens-api:0.5.6-card-merge
     container_name: applylens-api-prod
     environment:
       # Database
