@@ -176,3 +176,61 @@ def metrics_health():
     Returns basic status information.
     """
     return {"status": "healthy", "metrics_available": True, "endpoint": "/metrics"}
+
+
+@metrics_router.get("/metrics/summary")
+def metrics_summary():
+    """
+    Internal metrics summary endpoint.
+
+    Returns a summary of key metrics for admin/internal use:
+    - Total scan runs in the last 7 days
+    - Total applications created from threads
+
+    This is a lightweight endpoint for quick health checks and dashboards.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy.orm import Session
+    from app.db import SessionLocal
+    from app.models import AgentAuditLog
+    from prometheus_client import REGISTRY
+
+    # Get applications created from threads metric value
+    apps_from_threads = 0
+    try:
+        for metric in REGISTRY.collect():
+            if metric.name == "applylens_applications_created_from_thread_total":
+                for sample in metric.samples:
+                    if (
+                        sample.name
+                        == "applylens_applications_created_from_thread_total_total"
+                    ):
+                        apps_from_threads = int(sample.value)
+                        break
+    except Exception:
+        pass  # Metric not available yet
+
+    # Get scan runs in last 7 days from database
+    scan_runs_7d = 0
+    try:
+        db: Session = SessionLocal()
+        try:
+            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            scan_runs_7d = (
+                db.query(AgentAuditLog)
+                .filter(
+                    AgentAuditLog.started_at >= seven_days_ago,
+                    AgentAuditLog.agent == "mailbox_assistant",
+                )
+                .count()
+            )
+        finally:
+            db.close()
+    except Exception:
+        pass  # Database not available or table doesn't exist
+
+    return {
+        "scan_runs_last_7_days": scan_runs_7d,
+        "applications_created_from_threads_total": apps_from_threads,
+        "generated_at": datetime.utcnow().isoformat(),
+    }
