@@ -6,6 +6,7 @@ Provides:
 2. Divergence metrics between Elasticsearch and BigQuery
 3. Activity and analytics metrics for dashboards
 4. Risk divergence metrics from Prometheus (24h comparison)
+5. Thread Viewer → Tracker click tracking for observability
 """
 
 import os
@@ -17,6 +18,7 @@ import logging
 import httpx
 
 from fastapi import APIRouter, Response, HTTPException
+from pydantic import BaseModel
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     CollectorRegistry,
@@ -24,6 +26,7 @@ from prometheus_client import (
     generate_latest,
 )
 from app.utils.cache import cache_get, cache_set
+from app.agent.metrics import record_thread_to_tracker_click
 from google.cloud import bigquery
 
 logger = logging.getLogger(__name__)
@@ -559,3 +562,64 @@ async def categories_30d() -> list[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Categories query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Thread Viewer → Tracker Observability
+# ============================================================================
+
+
+class ThreadToTrackerClickPayload(BaseModel):
+    """
+    Payload for tracking "Open in Tracker" clicks from Thread Viewer.
+
+    Fields:
+    - application_id: ID of the application that was linked (for debugging, not logged)
+    - intent: Intent that generated the thread list (e.g., "followups", "bills")
+
+    Privacy: Only IDs and intent names are accepted; no PII is logged.
+    """
+
+    application_id: int
+    intent: str | None = None
+
+
+@router.post("/thread-to-tracker-click", summary="Track Thread Viewer → Tracker clicks")
+async def thread_to_tracker_click(
+    payload: ThreadToTrackerClickPayload,
+) -> Dict[str, Any]:
+    """
+    Track when a user clicks "Open in Tracker" from Thread Viewer.
+
+    This endpoint is called by the frontend to provide observability for the
+    Chat → Thread Viewer → Tracker user flow.
+
+    Flow:
+    1. User runs a scan intent (followups/bills/etc) → applylens_agent_runs_total++
+    2. Agent returns thread_list card → applylens_agent_threadlist_returned_total++
+    3. User clicks "Open in Tracker" → applylens_agent_thread_to_tracker_click_total++ (this endpoint)
+
+    Privacy:
+    - Only application_id (integer) and intent (string) are logged
+    - No email addresses, subjects, or other PII
+
+    Returns:
+        {"ok": True, "application_id": <id>}
+    """
+    try:
+        # Increment Prometheus counter
+        record_thread_to_tracker_click()
+
+        # Log non-PII data for debugging
+        logger.info(
+            f"Thread-to-tracker click: application_id={payload.application_id}, "
+            f"intent={payload.intent or 'unknown'}"
+        )
+
+        return {
+            "ok": True,
+            "application_id": payload.application_id,
+        }
+    except Exception as e:
+        logger.error(f"Failed to record thread-to-tracker click: {e}")
+        raise HTTPException(status_code=500, detail="Failed to record click metric")

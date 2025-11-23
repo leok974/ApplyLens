@@ -12,9 +12,10 @@ interface ThreadViewerProps {
   threadId: string | null;
   summary: MailThreadSummary | null;
   onCreateApplication?: (threadId: string) => void;
+  intent?: string; // Current intent (e.g., 'followups', 'bills') for observability
 }
 
-export function ThreadViewer({ threadId, summary, onCreateApplication }: ThreadViewerProps) {
+export function ThreadViewer({ threadId, summary, onCreateApplication, intent }: ThreadViewerProps) {
   const navigate = useNavigate();
   const [detail, setDetail] = useState<MailThreadDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -147,7 +148,22 @@ export function ThreadViewer({ threadId, summary, onCreateApplication }: ThreadV
             variant="outline"
             size="sm"
             className="border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
-            onClick={() => navigate(`/tracker?appId=${summary.applicationId}`)}
+            onClick={() => {
+              // Track thread-to-tracker click for observability (fire-and-forget)
+              fetch('/metrics/thread-to-tracker-click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  application_id: summary.applicationId,
+                  intent: intent ?? undefined,
+                }),
+              }).catch(() => {
+                // Swallow errors – don't block navigation
+              });
+
+              // Navigate to tracker
+              navigate(`/tracker?appId=${summary.applicationId}`);
+            }}
             data-testid="thread-viewer-open-tracker"
           >
             <Briefcase className="mr-1.5 h-3.5 w-3.5" />

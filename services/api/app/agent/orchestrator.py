@@ -25,7 +25,11 @@ from app.schemas_agent import (
     AgentMetrics,
 )
 from app.agent.tools import ToolRegistry
-from app.agent.metrics import record_agent_run, record_tool_call
+from app.agent.metrics import (
+    record_agent_run,
+    record_tool_call,
+    record_threadlist_returned,
+)
 from app.agent.rag import retrieve_email_contexts, retrieve_kb_contexts
 from app.agent.answering import complete_agent_answer, merge_cards_with_llm
 from app.es import ES_URL, ES_ENABLED
@@ -640,6 +644,18 @@ class MailboxAgentOrchestrator:
                 status="success",
                 duration_ms=duration_ms,
             )
+
+            # 9. Track thread_list card returns for Thread Viewer → Tracker observability
+            thread_list_cards = [c for c in cards if c.kind == "thread_list"]
+            if thread_list_cards:
+                # Sum up thread counts from all thread_list cards
+                total_threads = sum(
+                    len(c.threads)
+                    if hasattr(c, "threads") and c.threads
+                    else c.meta.get("count", 0)
+                    for c in thread_list_cards
+                )
+                record_threadlist_returned(intent=intent, thread_count=total_threads)
 
             return response
 
