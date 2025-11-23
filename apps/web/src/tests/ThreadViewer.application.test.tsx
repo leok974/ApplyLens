@@ -286,17 +286,17 @@ describe('ThreadViewer - Application tracking', () => {
       const button = screen.getByTestId('thread-viewer-open-tracker');
       fireEvent.click(button);
 
-      // Should call metrics endpoint
+      // Should call metrics endpoint with POST method and correct body
       expect(global.fetch).toHaveBeenCalledWith(
         '/metrics/thread-to-tracker-click',
-        expect.objectContaining({
+        {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             application_id: 123,
             intent: 'followups',
           }),
-        })
+        }
       );
 
       // Should also navigate
@@ -324,17 +324,17 @@ describe('ThreadViewer - Application tracking', () => {
       const button = screen.getByTestId('thread-viewer-open-tracker');
       fireEvent.click(button);
 
-      // Should call metrics endpoint with undefined intent
+      // Should call metrics endpoint with POST method and undefined intent
       expect(global.fetch).toHaveBeenCalledWith(
         '/metrics/thread-to-tracker-click',
-        expect.objectContaining({
+        {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             application_id: 456,
             intent: undefined,
           }),
-        })
+        }
       );
 
       expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=456');
@@ -406,12 +406,14 @@ describe('ThreadViewer - Application tracking', () => {
 
       expect(global.fetch).toHaveBeenCalledWith(
         '/metrics/thread-to-tracker-click',
-        expect.objectContaining({
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             application_id: 999,
             intent: 'bills',
           }),
-        })
+        }
       );
     });
 

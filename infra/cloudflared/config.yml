@@ -11,10 +11,27 @@ originRequest:
   keepAliveTimeout: 90s
 
 ingress:
+  # LedgerMind UI
+  - hostname: app.ledger-mind.org
+    service: http://ai-finance.int:80
+  - hostname: ledger-mind.org
+    service: http://ai-finance.int:80
+  - hostname: www.ledger-mind.org
+    service: http://ai-finance.int:80
+
+  # LedgerMind API (direct access)
+  - hostname: api.ledger-mind.org
+    service: http://ai-finance-api.int:8000
+
+  # ApplyLens UI
   - hostname: applylens.app
     service: http://applylens-web-prod:80
   - hostname: www.applylens.app
     service: http://applylens-web-prod:80
+
+  # ApplyLens API
   - hostname: api.applylens.app
-    service: http://applylens-api-prod:8000
+    service: http://applylens-api-prod:8003
+
+  # Fallback
   - service: http_status:404

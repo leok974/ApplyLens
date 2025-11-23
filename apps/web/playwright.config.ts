@@ -30,6 +30,8 @@ export default defineConfig({
     "e2e/search-derived-and-tooltip.spec.ts",
     "e2e/prod-search-smoke.spec.ts",  // Production-safe smoke tests
     "e2e/chat-thread-viewer.spec.ts",  // Thread Viewer v1 [prodSafe]
+    "e2e/chat-thread-tracker-flow.spec.ts",  // Thread Viewer → Tracker deep-link flow [prodSafe]
+    "e2e/today-triage.spec.ts",  // Today inbox triage panel [prodSafe]
     "chat-mailbox-ambient-glow.spec.ts",  // Banana Pro theme overlay verification [prodSafe]
     "ui/header-logo.spec.ts",
     "search.interactions.spec.ts",
