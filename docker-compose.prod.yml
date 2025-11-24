@@ -178,9 +178,9 @@ services:
     # Zero-results phrasing - Don't say "card below" when count=0
     # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
     # v0.6.0: Today Panel - Inbox triage with 6 scan intents, thread mini-lists, responsive grid UI
-    # v0.6.1: Fix 405 error on Today page - correct API endpoint path
+    # v0.6.1: Thread Viewer follow-up draft feature (POST /v2/agent/followup-draft)
     # v0.6.2: Add Prometheus histogram for Today endpoint duration tracking (p50/p90/p99)
-    image: leoklemet/applylens-api:0.6.2
+    image: leoklemet/applylens-api:0.6.1
     container_name: applylens-api-prod
     environment:
       # Database
@@ -462,9 +462,9 @@ services:
     # v0.5.8: Intent override - explicit intent for toolbar buttons Add frame.container/glow tokens, mailbox-frame testid, E2E test for no ambient overlay
     # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
     # v0.6.0: Today Panel - /today route with 6 scan intents, thread mini-lists, action buttons
-    # v0.6.1: Fix 405 error on Today page - correct API endpoint path
+    # v0.6.1: Thread Viewer follow-up draft button with clipboard copy
     # v0.6.2: Progress indicator UX - progress bar, skeleton states, custom empty messages
-    image: leoklemet/applylens-web:0.6.2
+    image: leoklemet/applylens-web:0.6.1
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production

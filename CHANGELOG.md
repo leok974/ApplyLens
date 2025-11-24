@@ -5,6 +5,51 @@ All notable changes to ApplyLens will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2025-11-24
+
+### ✨ Features
+
+#### Thread Viewer – AI-Powered Follow-up Drafts
+- **POST /v2/agent/followup-draft endpoint** - Generate AI follow-up emails for recruiter threads
+  - Uses Agent V2 orchestrator with thread_detail tool for context
+  - Integrates with Ollama (llama3:latest) primary, OpenAI (gpt-4o-mini) fallback
+  - Accepts `user_id`, `thread_id`, `application_id` (optional), `mode="preview_only"`
+  - Returns JSON: `{subject, body}` for professional recruiter follow-ups
+  - Reference: `services/api/app/routers/agent.py`, `services/api/app/agent/orchestrator.py`
+
+- **Thread Viewer "Draft follow-up" button** - UI integration for draft generation
+  - Purple-themed button with Sparkles icon in Thread Viewer header
+  - Displays AI-generated draft in purple card with subject/body sections
+  - **Copy to clipboard** actions: Full draft (subject + body) or body only
+  - Error handling with toast notifications
+  - Auto-clears draft on dismiss
+  - Reference: `apps/web/src/components/mail/ThreadViewer.tsx`, `apps/web/src/hooks/useFollowupDraft.ts`
+
+- **Analytics & Metrics** - Usage tracking for follow-up draft feature
+  - Prometheus metric: `applylens_followup_draft_requested_total{source="thread_viewer"}`
+  - Analytics events: `followup_draft_generated`, `followup_draft_error`, `followup_draft_copied`, `followup_draft_body_copied`
+  - Reference: `services/api/app/metrics.py`, `apps/web/src/lib/analytics.ts`
+
+### 🧪 Testing
+
+- **Backend unit tests** - Comprehensive test coverage for draft endpoint
+  - 5 tests for `/v2/agent/followup-draft` endpoint
+  - 3 tests for `orchestrator.draft_followup()` method
+  - Reference: `services/api/tests/test_agent_followup_draft.py`
+
+- **Frontend unit tests** - React Testing Library tests for UI
+  - 8 tests covering button render, draft generation, clipboard copy, error handling
+  - Reference: `apps/web/src/test/ThreadViewer.followupDraft.test.tsx`
+
+### 📚 Documentation
+
+- Added schemas: `FollowupDraft`, `FollowupDraftRequest`, `FollowupDraftResponse`
+- LLM integration: Temperature 0.3, JSON format enforced
+- Clipboard API integration for copy actions
+- Purple theming for AI-generated content (consistent with Agent V2)
+
+---
+
 ## [0.5.0] - 2025-01-27
 
 ### 🐛 Critical Fixes

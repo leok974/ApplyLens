@@ -16,10 +16,10 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session as DBSession
 
 if TYPE_CHECKING:
     from app.schemas_agent import FollowupDraftRequest, FollowupDraftResponse
-    from sqlalchemy.orm import Session
 
 from app.schemas_agent import (
     AgentRunRequest,
@@ -1514,7 +1514,7 @@ class MailboxAgentOrchestrator:
     async def draft_followup(
         self,
         req: "FollowupDraftRequest",
-        db: Session,
+        db: DBSession,
     ) -> "FollowupDraftResponse":
         """Generate draft follow-up email for recruiter thread."""
         from app.schemas_agent import FollowupDraftResponse, FollowupDraft
