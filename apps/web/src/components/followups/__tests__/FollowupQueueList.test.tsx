@@ -183,7 +183,7 @@ describe('FollowupQueueList', () => {
     const doneButton = screen.getByTestId('toggle-done-button');
     await user.click(doneButton);
 
-    expect(onToggleDone).toHaveBeenCalledWith(mockItems[0]);
+    expect(onToggleDone).toHaveBeenCalledWith(mockItems[0], true);
     expect(onSelect).not.toHaveBeenCalled(); // Should not trigger row selection
   });
 

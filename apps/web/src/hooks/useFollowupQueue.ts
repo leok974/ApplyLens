@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFollowupQueue, QueueItem, QueueMeta } from '@/lib/api';
+import { getFollowupQueue, updateFollowupState, QueueItem, QueueMeta } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface UseFollowupQueueReturn {
   items: QueueItem[];
@@ -8,7 +9,7 @@ interface UseFollowupQueueReturn {
   error: string | null;
   selectedItem: QueueItem | null;
   setSelectedItem: (item: QueueItem | null) => void;
-  markDone: (item: QueueItem) => void;
+  markDone: (item: QueueItem, isDone: boolean) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -44,21 +45,51 @@ export function useFollowupQueue(): UseFollowupQueueReturn {
     }
   }, []);
 
-  const markDone = useCallback((item: QueueItem) => {
-    // Update local state - no backend persistence yet
+  const markDone = useCallback(async (item: QueueItem, isDone: boolean) => {
+    // Optimistically update local state
+    const previousItems = items;
+    const previousMeta = queueMeta;
+
     setItems((prevItems) =>
       prevItems.map((i) =>
         i.thread_id === item.thread_id
-          ? { ...i, is_done: !i.is_done }
+          ? { ...i, is_done: isDone }
           : i
       )
     );
 
-    // If marking done the selected item, deselect it
-    if (selectedItem?.thread_id === item.thread_id && !item.is_done) {
-      setSelectedItem(null);
+    // Update meta counts
+    if (queueMeta) {
+      const deltaDone = isDone ? 1 : -1;
+      setQueueMeta({
+        ...queueMeta,
+        done_count: queueMeta.done_count + deltaDone,
+        remaining_count: queueMeta.remaining_count - deltaDone,
+      });
     }
-  }, [selectedItem]);
+
+    try {
+      await updateFollowupState({
+        thread_id: item.thread_id,
+        application_id: item.application_id,
+        is_done: isDone,
+      });
+
+      toast.success(isDone ? 'Marked as done' : 'Marked as not done');
+
+      // If marking done the selected item, deselect it
+      if (selectedItem?.thread_id === item.thread_id && isDone) {
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      // Rollback on error
+      setItems(previousItems);
+      setQueueMeta(previousMeta);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to update follow-up state'
+      );
+    }
+  }, [items, queueMeta, selectedItem]);
 
   useEffect(() => {
     loadQueue();

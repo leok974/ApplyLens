@@ -896,3 +896,26 @@ class AgentPreferences(Base):
 
     def __repr__(self):
         return f"<AgentPreferences(user={self.user_id})>"
+
+
+class FollowupQueueState(Base):
+    """Persistent state for follow-up queue items (done/not done)."""
+
+    __tablename__ = "followup_queue_state"
+
+    user_id = Column(Text, primary_key=True, nullable=False)
+    thread_id = Column(Text, primary_key=True, nullable=False)
+    application_id = Column(Integer, nullable=True)
+    is_done = Column(Boolean, nullable=False, server_default=text("false"))
+    done_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    __table_args__ = (Index("ix_followup_queue_state_user_id", "user_id"),)
+
+    def __repr__(self):
+        return f"<FollowupQueueState(user={self.user_id}, thread={self.thread_id}, done={self.is_done})>"

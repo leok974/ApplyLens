@@ -36,6 +36,7 @@ try:
     AGENT_TODAY_DURATION_SECONDS = metrics_module.AGENT_TODAY_DURATION_SECONDS
     FOLLOWUP_DRAFT_REQUESTS = metrics_module.FOLLOWUP_DRAFT_REQUESTS
     FOLLOWUP_QUEUE_REQUESTS = metrics_module.FOLLOWUP_QUEUE_REQUESTS
+    FOLLOWUP_QUEUE_ITEM_DONE = metrics_module.FOLLOWUP_QUEUE_ITEM_DONE
 except (ImportError, AttributeError):
     # Fallback - create empty placeholders
     from prometheus_client import Counter, Gauge, Histogram, Summary
@@ -82,6 +83,10 @@ except (ImportError, AttributeError):
         "applylens_followup_queue_requested_total",
         "Follow-up queue requests",
     )
+    FOLLOWUP_QUEUE_ITEM_DONE = Counter(
+        "applylens_followup_queue_item_done_total",
+        "Follow-up queue items marked as done",
+    )
 
     def record_tool(tool_name: str, hits: int, window_days: int = 30) -> None:
         """Fallback record_tool function"""
@@ -113,4 +118,5 @@ __all__ = [
     "AGENT_TODAY_DURATION_SECONDS",
     "FOLLOWUP_DRAFT_REQUESTS",
     "FOLLOWUP_QUEUE_REQUESTS",
+    "FOLLOWUP_QUEUE_ITEM_DONE",
 ]

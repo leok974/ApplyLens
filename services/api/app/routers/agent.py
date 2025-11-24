@@ -21,6 +21,7 @@ from app.schemas_agent import (
     FollowupDraftResponse,
     FollowupQueueRequest,
     FollowupQueueResponse,
+    FollowupStateUpdate,
 )
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
@@ -29,6 +30,7 @@ from app.metrics import (
     AGENT_TODAY_DURATION_SECONDS,
     FOLLOWUP_DRAFT_REQUESTS,
     FOLLOWUP_QUEUE_REQUESTS,
+    FOLLOWUP_QUEUE_ITEM_DONE,
 )
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
@@ -615,11 +617,34 @@ async def get_followup_queue(
         # Sort by priority descending
         queue_items.sort(key=lambda x: x.priority, reverse=True)
 
+        # Fetch followup state for this user
+        from app.models import FollowupQueueState
+
+        state_rows = (
+            db.query(FollowupQueueState)
+            .filter(FollowupQueueState.user_id == user_id)
+            .all()
+        )
+        state_by_thread = {row.thread_id: row for row in state_rows}
+
+        # Apply state to queue items
+        done_count = 0
+        for item in queue_items:
+            state = state_by_thread.get(item.thread_id)
+            if state:
+                item.is_done = state.is_done
+                if state.is_done:
+                    done_count += 1
+
+        remaining_count = len(queue_items) - done_count
+
         return FollowupQueueResponse(
             status="ok",
             queue_meta=QueueMeta(
                 total=len(queue_items),
                 time_window_days=payload.time_window_days,
+                done_count=done_count,
+                remaining_count=remaining_count,
             ),
             items=queue_items,
         )
@@ -629,3 +654,74 @@ async def get_followup_queue(
         return FollowupQueueResponse(
             status="error", message=f"Failed to generate followup queue: {str(e)}"
         )
+
+
+@router.post("/followups/state")
+async def update_followup_state(
+    payload: FollowupStateUpdate,
+    req: Request,
+    db: DBSession = Depends(get_db),
+):
+    """
+    Update the done state of a follow-up item.
+
+    Upserts into followup_queue_state table.
+    """
+    from app.models import FollowupQueueState
+    from datetime import datetime, timezone
+
+    try:
+        # Resolve user_id from session
+        user_id = (
+            req.state.session_user_id if hasattr(req.state, "session_user_id") else None
+        )
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        # Find existing state row
+        state = (
+            db.query(FollowupQueueState)
+            .filter(
+                FollowupQueueState.user_id == user_id,
+                FollowupQueueState.thread_id == payload.thread_id,
+            )
+            .first()
+        )
+
+        if state:
+            # Update existing
+            old_is_done = state.is_done
+            state.is_done = payload.is_done
+            state.application_id = payload.application_id
+
+            # Set done_at when transitioning to done
+            if payload.is_done and not old_is_done:
+                state.done_at = datetime.now(timezone.utc)
+                FOLLOWUP_QUEUE_ITEM_DONE.inc()
+            elif not payload.is_done and old_is_done:
+                # Reset done_at when unmarking
+                state.done_at = None
+        else:
+            # Create new
+            state = FollowupQueueState(
+                user_id=user_id,
+                thread_id=payload.thread_id,
+                application_id=payload.application_id,
+                is_done=payload.is_done,
+                done_at=datetime.now(timezone.utc) if payload.is_done else None,
+            )
+            db.add(state)
+
+            if payload.is_done:
+                FOLLOWUP_QUEUE_ITEM_DONE.inc()
+
+        db.commit()
+
+        return {"ok": True}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error updating followup state")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

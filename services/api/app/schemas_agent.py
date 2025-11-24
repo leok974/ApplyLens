@@ -445,6 +445,8 @@ class QueueMeta(BaseModel):
 
     total: int
     time_window_days: int
+    done_count: int = 0
+    remaining_count: int = 0
 
 
 class QueueItem(BaseModel):
@@ -478,3 +480,11 @@ class FollowupQueueResponse(BaseModel):
     queue_meta: Optional[QueueMeta] = None
     items: List[QueueItem] = []
     message: Optional[str] = None
+
+
+class FollowupStateUpdate(BaseModel):
+    """Update the done state of a follow-up item."""
+
+    thread_id: str
+    application_id: Optional[int] = None
+    is_done: bool

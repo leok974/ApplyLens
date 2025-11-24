@@ -8,7 +8,7 @@ interface FollowupQueueListProps {
   items: QueueItem[];
   selectedItem: QueueItem | null;
   onSelect: (item: QueueItem) => void;
-  onToggleDone: (item: QueueItem) => void;
+  onToggleDone: (item: QueueItem, isDone: boolean) => void;
 }
 
 function getStatusColor(status?: string): string {
@@ -101,7 +101,7 @@ export function FollowupQueueList({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onToggleDone(item);
+                  onToggleDone(item, !item.is_done);
                 }}
                 className="mt-0.5 flex-shrink-0"
                 data-testid="toggle-done-button"

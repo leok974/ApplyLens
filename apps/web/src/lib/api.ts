@@ -900,6 +900,8 @@ export async function generateFollowupDraft(
 export interface QueueMeta {
   total: number;
   time_window_days: number;
+  done_count: number;
+  remaining_count: number;
 }
 
 export interface QueueItem {
@@ -950,6 +952,32 @@ export async function getFollowupQueue(
   }
 
   return res.json() as Promise<FollowupQueueResponse>;
+}
+
+export interface UpdateFollowupStateRequest {
+  thread_id: string;
+  application_id?: number;
+  is_done: boolean;
+}
+
+export async function updateFollowupState(
+  req: UpdateFollowupStateRequest
+): Promise<{ ok: boolean }> {
+  const res = await fetch('/v2/agent/followups/state', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-csrf-token': getCsrf(),
+    },
+    credentials: 'include',
+    body: JSON.stringify(req),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to update followup state: ${res.statusText}`);
+  }
+
+  return res.json() as Promise<{ ok: boolean }>;
 }
 
 

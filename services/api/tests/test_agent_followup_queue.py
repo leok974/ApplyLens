@@ -214,6 +214,80 @@ class TestFollowupQueueEndpoint:
         assert response.items[0].thread_id == "high"
         assert response.items[2].thread_id == "low"
 
+    @pytest.mark.asyncio
+    async def test_followup_queue_applies_done_state(self):
+        """Test that existing followup_queue_state rows mark items as done."""
+        from app.routers.agent import get_followup_queue
+        from app.models import Application, FollowupQueueState
+
+        mock_request = MagicMock(spec=Request)
+        mock_request.state.session_user_id = "test-user"
+
+        mock_orchestrator = AsyncMock()
+        mock_orchestrator.get_followup_queue.return_value = {
+            "threads": [
+                {"thread_id": "thread-1", "priority": 50},
+                {"thread_id": "thread-2", "priority": 60},
+                {"thread_id": "thread-3", "priority": 40},
+            ],
+            "time_window_days": 30,
+        }
+
+        # Mock database with one application and one done state
+        mock_db = MagicMock()
+
+        # Application for thread-1
+        mock_app = MagicMock(spec=Application)
+        mock_app.id = 100
+        mock_app.thread_id = "thread-1"
+        mock_app.company = "Test Co"
+        mock_app.role = "Engineer"
+        mock_app.status = "applied"
+
+        # State marking thread-2 as done
+        mock_state = MagicMock(spec=FollowupQueueState)
+        mock_state.user_id = "test-user"
+        mock_state.thread_id = "thread-2"
+        mock_state.is_done = True
+
+        # Setup query mocks
+        def query_side_effect(model):
+            mock_query = MagicMock()
+            if model == Application:
+                mock_query.filter.return_value.all.return_value = [mock_app]
+            elif model == FollowupQueueState:
+                mock_query.filter.return_value.all.return_value = [mock_state]
+            return mock_query
+
+        mock_db.query.side_effect = query_side_effect
+
+        with patch(
+            "app.routers.agent.get_orchestrator", return_value=mock_orchestrator
+        ):
+            payload = FollowupQueueRequest(user_id="test-user")
+            response = await get_followup_queue(payload, mock_request, mock_db)
+
+        assert response.status == "ok"
+        assert response.queue_meta.total == 3
+        assert response.queue_meta.done_count == 1
+        assert response.queue_meta.remaining_count == 2
+
+        # Find thread-2 and verify it's marked done
+        thread_2_item = next(
+            item for item in response.items if item.thread_id == "thread-2"
+        )
+        assert thread_2_item.is_done is True
+
+        # Other threads should not be done
+        thread_1_item = next(
+            item for item in response.items if item.thread_id == "thread-1"
+        )
+        thread_3_item = next(
+            item for item in response.items if item.thread_id == "thread-3"
+        )
+        assert thread_1_item.is_done is False
+        assert thread_3_item.is_done is False
+
 
 class TestOrchestratorGetFollowupQueue:
     """Tests for orchestrator.get_followup_queue method."""

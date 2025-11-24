@@ -83,9 +83,24 @@ export function FollowupQueue() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-zinc-100 mb-1">Follow-up Queue</h2>
           {queueMeta && (
-            <p className="text-sm text-zinc-400">
-              {queueMeta.total} {queueMeta.total === 1 ? 'item' : 'items'} in the last {queueMeta.time_window_days} days
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-zinc-400">
+                {queueMeta.total} {queueMeta.total === 1 ? 'item' : 'items'} in the last {queueMeta.time_window_days} days
+              </p>
+              {/* Progress bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-zinc-500">
+                  <span>{queueMeta.done_count} / {queueMeta.total} done</span>
+                  <span>{Math.round((queueMeta.done_count / queueMeta.total) * 100)}%</span>
+                </div>
+                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-600 transition-all duration-300"
+                    style={{ width: `${(queueMeta.done_count / queueMeta.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

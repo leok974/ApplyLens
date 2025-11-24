@@ -21,6 +21,8 @@ vi.mock('@/components/ThreadViewer', () => ({
 const mockQueueMeta: QueueMeta = {
   total: 2,
   time_window_days: 30,
+  done_count: 0,
+  remaining_count: 2,
 };
 
 const mockItems: QueueItem[] = [
@@ -152,6 +154,31 @@ describe('FollowupQueue', () => {
     expect(screen.getByTestId('followup-queue-list')).toBeInTheDocument();
   });
 
+  it('renders progress bar with correct counts', () => {
+    const metaWithProgress: QueueMeta = {
+      total: 5,
+      time_window_days: 30,
+      done_count: 2,
+      remaining_count: 3,
+    };
+
+    vi.mocked(useFollowupQueueModule.useFollowupQueue).mockReturnValue({
+      items: mockItems,
+      queueMeta: metaWithProgress,
+      isLoading: false,
+      error: null,
+      selectedItem: null,
+      setSelectedItem: vi.fn(),
+      markDone: vi.fn(),
+      refresh: vi.fn(),
+    });
+
+    render(<FollowupQueue />);
+
+    expect(screen.getByText('2 / 5 done')).toBeInTheDocument();
+    expect(screen.getByText('40%')).toBeInTheDocument();
+  });
+
   it('shows placeholder when no item is selected', () => {
     vi.mocked(useFollowupQueueModule.useFollowupQueue).mockReturnValue({
       items: mockItems,
@@ -207,5 +234,28 @@ describe('FollowupQueue', () => {
 
     const list = screen.getByTestId('followup-queue-list');
     expect(list).toBeInTheDocument();
+  });
+
+  it('calls markDone when toggle button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockMarkDone = vi.fn();
+
+    vi.mocked(useFollowupQueueModule.useFollowupQueue).mockReturnValue({
+      items: mockItems,
+      queueMeta: mockQueueMeta,
+      isLoading: false,
+      error: null,
+      selectedItem: null,
+      setSelectedItem: vi.fn(),
+      markDone: mockMarkDone,
+      refresh: vi.fn(),
+    });
+
+    render(<FollowupQueue />);
+
+    const toggleButtons = screen.getAllByTestId('toggle-done-button');
+    await user.click(toggleButtons[0]);
+
+    expect(mockMarkDone).toHaveBeenCalledWith(mockItems[0], true);
   });
 });

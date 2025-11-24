@@ -214,3 +214,8 @@ FOLLOWUP_QUEUE_REQUESTS = Counter(
     "applylens_followup_queue_requested_total",
     "Number of follow-up queue requests",
 )
+
+FOLLOWUP_QUEUE_ITEM_DONE = Counter(
+    "applylens_followup_queue_item_done_total",
+    "Number of follow-up queue items marked as done",
+)
