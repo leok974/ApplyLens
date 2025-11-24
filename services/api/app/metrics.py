@@ -219,3 +219,9 @@ FOLLOWUP_QUEUE_ITEM_DONE = Counter(
     "applylens_followup_queue_item_done_total",
     "Number of follow-up queue items marked as done",
 )
+
+INTERVIEW_PREP_REQUESTS = Counter(
+    "applylens_interview_prep_requested_total",
+    "Number of interview prep requests",
+    ["source"],
+)

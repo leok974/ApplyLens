@@ -9,6 +9,8 @@ import { ExternalLink, Check, AlertTriangle, Copy, Clock, Plus, Briefcase, Spark
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFollowupDraft } from '@/hooks/useFollowupDraft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useInterviewPrep } from '@/hooks/useInterviewPrep';
+import { InterviewPrepPanel } from '@/components/interviews/InterviewPrepPanel';
 
 interface ThreadViewerProps {
   threadId: string | null;
@@ -25,6 +27,10 @@ export function ThreadViewer({ threadId, summary, onCreateApplication, intent }:
 
   // Follow-up draft generation
   const { draft, isGenerating, generateDraft, clearDraft, copyDraftToClipboard, copyBodyToClipboard } = useFollowupDraft();
+
+  // Interview prep
+  const [showInterviewPrep, setShowInterviewPrep] = useState(false);
+  const { data: prepData, isLoading: prepLoading, error: prepError, loadPrep, reset: resetPrep } = useInterviewPrep();
 
   useEffect(() => {
     if (!threadId) {
@@ -149,31 +155,50 @@ export function ThreadViewer({ threadId, summary, onCreateApplication, intent }:
 
         {/* Application action */}
         {summary.applicationId ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
-            onClick={() => {
-              // Track thread-to-tracker click for observability (fire-and-forget)
-              fetch('/metrics/thread-to-tracker-click', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  application_id: summary.applicationId,
-                  intent: intent ?? undefined,
-                }),
-              }).catch(() => {
-                // Swallow errors – don't block navigation
-              });
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
+              onClick={() => {
+                // Track thread-to-tracker click for observability (fire-and-forget)
+                fetch('/metrics/thread-to-tracker-click', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    application_id: summary.applicationId,
+                    intent: intent ?? undefined,
+                  }),
+                }).catch(() => {
+                  // Swallow errors – don't block navigation
+                });
 
-              // Navigate to tracker
-              navigate(`/tracker?appId=${summary.applicationId}`);
-            }}
-            data-testid="thread-viewer-open-tracker"
-          >
-            <Briefcase className="mr-1.5 h-3.5 w-3.5" />
-            Open in Tracker
-          </Button>
+                // Navigate to tracker
+                navigate(`/tracker?appId=${summary.applicationId}`);
+              }}
+              data-testid="thread-viewer-open-tracker"
+            >
+              <Briefcase className="mr-1.5 h-3.5 w-3.5" />
+              Open in Tracker
+            </Button>
+
+            {/* Interview prep button for interview-related statuses */}
+            {(summary.applicationStatus === 'hr_screen' || summary.applicationStatus === 'interview') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-blue-400/30 text-blue-400 hover:bg-blue-400/10"
+                onClick={async () => {
+                  setShowInterviewPrep(true);
+                  await loadPrep(summary.applicationId!, threadId || undefined);
+                }}
+                data-testid="threadviewer-interview-prep"
+              >
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                Interview Prep
+              </Button>
+            )}
+          </>
         ) : onCreateApplication && (
           <Button
             variant="outline"
@@ -385,6 +410,44 @@ function MessageCard({ message, isFirst }: { message: MailMessage; isFirst: bool
           ) : (
             <p className="text-sm text-slate-500 italic">No message body available</p>
           )}
+        </div>
+      )}
+
+      {/* Interview Prep Modal */}
+      {showInterviewPrep && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {prepLoading && (
+              <div className="p-8 text-center">
+                <div className="text-sm text-muted-foreground">Loading interview prep...</div>
+              </div>
+            )}
+            {prepError && (
+              <div className="p-8 text-center">
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  Failed to load interview prep: {prepError.message}
+                </div>
+                <button
+                  className="mt-4 px-3 py-2 text-sm border rounded hover:bg-muted"
+                  onClick={() => {
+                    setShowInterviewPrep(false);
+                    resetPrep();
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+            {prepData && (
+              <InterviewPrepPanel
+                prep={prepData}
+                onClose={() => {
+                  setShowInterviewPrep(false);
+                  resetPrep();
+                }}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>

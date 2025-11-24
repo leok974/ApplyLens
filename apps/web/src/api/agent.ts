@@ -99,3 +99,55 @@ export async function getAgentHealth(): Promise<AgentHealthResponse> {
   const response = await apiFetch('/agent/health');
   return response as AgentHealthResponse;
 }
+
+/**
+ * Interview Prep API
+ */
+
+export interface InterviewPrepSection {
+  title: string;
+  bullets: string[];
+}
+
+export interface InterviewPrepResponse {
+  company: string;
+  role: string;
+  interview_status?: string | null;
+  interview_date?: string | null;
+  interview_format?: string | null;
+  timeline: string[];
+  sections: InterviewPrepSection[];
+}
+
+/**
+ * Get interview preparation materials for an application.
+ *
+ * @example
+ * ```ts
+ * const prep = await getInterviewPrep({
+ *   applicationId: 42,
+ *   threadId: 'thread-abc123'
+ * });
+ * ```
+ */
+export async function getInterviewPrep(params: {
+  applicationId: number;
+  threadId?: string;
+}): Promise<InterviewPrepResponse> {
+  const body = {
+    application_id: params.applicationId,
+    thread_id: params.threadId ?? null,
+    preview_only: true,
+  };
+
+  const response = await apiFetch('/v2/agent/interview-prep', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify(body),
+  });
+
+  return response as InterviewPrepResponse;
+}

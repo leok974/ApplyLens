@@ -22,6 +22,8 @@ from app.schemas_agent import (
     FollowupQueueRequest,
     FollowupQueueResponse,
     FollowupStateUpdate,
+    InterviewPrepRequest,
+    InterviewPrepResponse,
 )
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
@@ -31,6 +33,7 @@ from app.metrics import (
     FOLLOWUP_DRAFT_REQUESTS,
     FOLLOWUP_QUEUE_REQUESTS,
     FOLLOWUP_QUEUE_ITEM_DONE,
+    INTERVIEW_PREP_REQUESTS,
 )
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
@@ -775,3 +778,105 @@ async def update_followup_state(
         logger.exception("Error updating followup state")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/interview-prep", response_model=InterviewPrepResponse)
+async def get_interview_prep(
+    payload: InterviewPrepRequest,
+    req: Request,
+    db: DBSession = Depends(get_db),
+) -> InterviewPrepResponse:
+    """
+    Generate interview preparation materials for an application.
+
+    Loads application metadata and related email threads, then uses LLM to generate
+    structured interview prep content including:
+    - Company and role overview
+    - Timeline of application progress
+    - Interview details (date, format, status)
+    - Preparation sections (what to review, questions to ask)
+
+    Example request:
+    ```json
+    {
+      "application_id": 42,
+      "thread_id": "thread-abc123",
+      "preview_only": true
+    }
+    ```
+
+    Example response:
+    ```json
+    {
+      "company": "Acme Corp",
+      "role": "Senior Software Engineer",
+      "interview_status": "Scheduled",
+      "interview_date": "2025-12-01T14:00:00Z",
+      "interview_format": "Zoom",
+      "timeline": ["Applied on Nov 15", "HR screen on Nov 20", "Interview scheduled for Dec 1"],
+      "sections": [
+        {
+          "title": "What to Review",
+          "bullets": ["Review job description", "Research company products", "Prepare examples"]
+        },
+        {
+          "title": "Questions to Ask",
+          "bullets": ["Ask about team structure", "Inquire about tech stack", "Learn about growth opportunities"]
+        }
+      ]
+    }
+    ```
+    """
+    try:
+        # Record metric
+        source = "tracker" if not payload.thread_id else "thread_viewer"
+        INTERVIEW_PREP_REQUESTS.labels(source=source).inc()
+
+        # Resolve user_id from session
+        user_id = None
+        sid = req.cookies.get("session_id")
+        if sid:
+            sess = db.query(SessionModel).filter(SessionModel.id == sid).first()
+            if sess and sess.user_id:
+                from app.models import User as UserModel
+
+                user = db.query(UserModel).filter(UserModel.id == sess.user_id).first()
+                if user and user.email:
+                    user_id = user.email
+                    logger.info(
+                        f"Interview Prep: resolved user_id={user_id} from session"
+                    )
+
+        if not user_id:
+            logger.warning("Interview Prep: no user_id resolved, returning 401")
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        # Create request context for orchestrator
+        from app.config import RequestContext
+
+        ctx = RequestContext(user_id=user_id, db_session=db)
+
+        # Call orchestrator
+        orchestrator = MailboxAgentOrchestrator(ctx=ctx)
+        response = await orchestrator.interview_prep(payload)
+
+        logger.info(
+            f"Interview Prep: completed for application_id={payload.application_id}, thread_id={payload.thread_id}"
+        )
+        return response
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"Interview Prep validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception(
+            "Interview Prep endpoint failed",
+            extra={
+                "payload": payload.dict() if hasattr(payload, "dict") else str(payload)
+            },
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate interview prep: {str(e)}"
+        )

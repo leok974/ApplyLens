@@ -19,7 +19,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session as DBSession
 
 if TYPE_CHECKING:
-    from app.schemas_agent import FollowupDraftRequest, FollowupDraftResponse
+    from app.schemas_agent import (
+        FollowupDraftRequest,
+        FollowupDraftResponse,
+        InterviewPrepRequest,
+        InterviewPrepResponse,
+    )
 
 from app.schemas_agent import (
     AgentRunRequest,
@@ -1729,3 +1734,214 @@ Generate a professional follow-up email as JSON."""
                     )
 
         return {"threads": threads, "time_window_days": time_window_days}
+
+    async def interview_prep(
+        self, req: "InterviewPrepRequest"
+    ) -> "InterviewPrepResponse":
+        """
+        Build an interview prep kit from application + threads.
+
+        Loads application metadata and related email threads, then uses LLM to generate
+        structured interview preparation content including timeline, key details, and
+        preparation sections.
+        """
+        from app.schemas_agent import (
+            InterviewPrepResponse,
+            InterviewPrepSection,
+        )
+        from app.models import Application
+        from app.gmail_service import GmailService
+
+        if not self.ctx or not self.ctx.db:
+            raise ValueError("Database context required for interview_prep")
+
+        # 1. Load application
+        stmt = select(Application).where(Application.id == req.application_id)
+        result = await self.ctx.db.execute(stmt)
+        app = result.scalar_one_or_none()
+
+        if not app:
+            raise ValueError(f"Application {req.application_id} not found")
+
+        # 2. Load related email threads
+        gmail = GmailService(self.ctx)
+        threads = []
+
+        if req.thread_id:
+            # Load specific thread
+            thread_data = await gmail.get_thread(req.thread_id)
+            if thread_data:
+                threads.append(thread_data)
+        else:
+            # Load all threads for this application
+            # Search by company name in subject/body
+            query = (
+                f"from:*{app.company}* OR to:*{app.company}* OR subject:*{app.company}*"
+            )
+            search_results = await gmail.search_emails(query, max_results=10)
+
+            for thread_id in search_results:
+                thread_data = await gmail.get_thread(thread_id)
+                if thread_data:
+                    threads.append(thread_data)
+
+        # 3. Build structured payload for LLM
+        messages_text = []
+        for thread in threads:
+            for msg in thread.get("messages", []):
+                date = msg.get("date", "")
+                sender = msg.get("from", "")
+                subject = msg.get("subject", "")
+                body = msg.get("body", "")[:500]  # Truncate long emails
+                messages_text.append(
+                    f"Date: {date}\nFrom: {sender}\nSubject: {subject}\n{body}\n"
+                )
+
+        # 4. Call LLM with interview_prep prompt
+        system_prompt = """You are an interview preparation assistant for ApplyLens.
+
+Your task is to generate structured interview prep materials based on a job application and related email thread(s).
+
+CRITICAL RULES:
+1. Do NOT invent extra interviews or details not present in the emails
+2. Use company name and role EXACTLY as provided in the application
+3. Extract interview date/time/format ONLY if explicitly mentioned in emails
+4. Keep each section concise: max 180 words and 3-7 bullets per section
+5. Output valid JSON matching the exact schema provided
+
+RESPONSE FORMAT (valid JSON only):
+{
+  "company": "exact company name from application",
+  "role": "exact role from application",
+  "interview_status": "current status (e.g., 'Scheduled', 'Completed', 'Pending') or null",
+  "interview_date": "ISO datetime if mentioned in emails, else null",
+  "interview_format": "format if mentioned (e.g., 'Zoom', 'Onsite', 'Phone') or null",
+  "timeline": ["step 1", "step 2", "step 3"],
+  "sections": [
+    {
+      "title": "What to Review",
+      "bullets": ["point 1", "point 2", "point 3"]
+    },
+    {
+      "title": "Questions to Ask",
+      "bullets": ["question 1", "question 2", "question 3"]
+    }
+  ]
+}
+
+TIMELINE RULES:
+- Extract 3-6 chronological steps from application dates and emails
+- Examples: "Applied on Jan 5", "HR screen on Jan 12", "Interview scheduled for Jan 20"
+- Keep each step under 15 words
+
+SECTION RULES:
+- Generate 2-3 sections total
+- Common section titles: "What to Review", "Questions to Ask", "Key Points to Mention"
+- Each section should have 3-7 concise bullet points
+- Focus on actionable, specific guidance
+"""
+
+        # Build user prompt with application and email data
+        user_prompt = f"""Application Details:
+Company: {app.company}
+Role: {app.role}
+Status: {app.status}
+Applied Date: {app.applied_at if hasattr(app, 'applied_at') else 'Unknown'}
+
+Email Threads ({len(threads)} total):
+{chr(10).join(messages_text) if messages_text else 'No email threads found'}
+
+Generate interview prep materials following the JSON schema in the system prompt."""
+
+        # Call LLM
+        try:
+            prep_data = await self._call_llm_for_interview_prep(
+                system_prompt, user_prompt
+            )
+
+            # Validate and construct response
+            return InterviewPrepResponse(
+                company=prep_data.get("company", app.company),
+                role=prep_data.get("role", app.role),
+                interview_status=prep_data.get("interview_status"),
+                interview_date=prep_data.get("interview_date"),
+                interview_format=prep_data.get("interview_format"),
+                timeline=prep_data.get("timeline", []),
+                sections=[
+                    InterviewPrepSection(**section)
+                    for section in prep_data.get("sections", [])
+                ],
+            )
+
+        except Exception as e:
+            logger.error(f"Interview prep LLM call failed: {e}")
+            # Return minimal fallback response
+            return InterviewPrepResponse(
+                company=app.company,
+                role=app.role,
+                timeline=[
+                    f"Applied: {app.applied_at if hasattr(app, 'applied_at') else 'Unknown'}"
+                ],
+                sections=[
+                    InterviewPrepSection(
+                        title="Preparation Notes",
+                        bullets=[
+                            "Review the job description and requirements",
+                            "Research the company's recent news and products",
+                            "Prepare examples from your experience",
+                        ],
+                    )
+                ],
+            )
+
+    async def _call_llm_for_interview_prep(
+        self, system_prompt: str, user_prompt: str, timeout_s: float = 20.0
+    ) -> Dict[str, Any]:
+        """Call LLM for interview prep and parse JSON response."""
+        import json
+        from app.llm_provider import get_llm_client
+
+        client = get_llm_client()
+
+        if client.provider == "ollama":
+            # Ollama streaming approach
+            full_text = ""
+            async for chunk in client.stream_generate(
+                prompt=f"{system_prompt}\n\n{user_prompt}",
+                temperature=0.7,
+                max_tokens=2000,
+            ):
+                if chunk:
+                    full_text += chunk
+
+            # Parse JSON from response
+            try:
+                # Try to find JSON in response
+                start = full_text.find("{")
+                end = full_text.rfind("}") + 1
+                if start >= 0 and end > start:
+                    json_str = full_text[start:end]
+                    return json.loads(json_str)
+                else:
+                    raise ValueError("No JSON found in LLM response")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse LLM JSON response: {e}")
+                raise
+
+        else:
+            # OpenAI/other providers
+            response = await client.generate(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.7,
+                max_tokens=2000,
+            )
+
+            # Parse JSON from response
+            try:
+                return json.loads(response)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse LLM JSON response: {e}")
+                raise

@@ -497,3 +497,35 @@ class FollowupSummary(BaseModel):
     done_count: int
     remaining_count: int
     time_window_days: int
+
+
+# =============================================================================
+# Interview Prep
+# =============================================================================
+
+
+class InterviewPrepRequest(BaseModel):
+    """Request to generate interview preparation materials."""
+
+    application_id: int
+    thread_id: Optional[str] = None
+    preview_only: bool = True
+
+
+class InterviewPrepSection(BaseModel):
+    """A section of interview prep content with bullets."""
+
+    title: str
+    bullets: List[str]
+
+
+class InterviewPrepResponse(BaseModel):
+    """Interview preparation kit with timeline and structured sections."""
+
+    company: str
+    role: str
+    interview_status: Optional[str] = None
+    interview_date: Optional[datetime] = None
+    interview_format: Optional[str] = None  # e.g. "Zoom", "Onsite", "Phone"
+    timeline: List[str]  # human-readable steps
+    sections: List[InterviewPrepSection]  # e.g. "What to review", "Questions to ask"
