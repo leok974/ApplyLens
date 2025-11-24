@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, ExternalLink, Inbox } from 'lucide-react';
+import { Loader2, Mail, ExternalLink, PanelRightOpen } from 'lucide-react';
 import { apiUrl } from '@/lib/apiUrl';
 import { cn } from '@/lib/utils';
 import type { MailThreadSummary } from '@/lib/mailThreads';
@@ -68,16 +70,31 @@ interface TodayResponse {
 
 export default function Today() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<TodayResponse | null>(null);
+  const loadingIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     const fetchToday = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+      setStatus('loading');
+      setProgress(0);
+      setError(null);
 
+      // Fake-but-smooth progress while backend works
+      if (loadingIntervalRef.current !== null) {
+        window.clearInterval(loadingIntervalRef.current);
+      }
+      loadingIntervalRef.current = window.setInterval(() => {
+        setProgress((prev) => {
+          // Creep up to 90% max, we'll jump to 100% on success
+          if (prev >= 90) return prev;
+          return prev + 3;
+        });
+      }, 300);
+
+      try {
         const response = await fetch(apiUrl('/api/v2/agent/today'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -94,15 +111,29 @@ export default function Today() {
 
         const result: TodayResponse = await response.json();
         setData(result);
+        setStatus('success');
+        setProgress(100);
       } catch (err) {
         console.error('Error fetching today triage:', err);
         setError(err instanceof Error ? err.message : 'Failed to load today\'s triage');
+        setStatus('error');
+        setProgress(100);
       } finally {
-        setLoading(false);
+        if (loadingIntervalRef.current !== null) {
+          window.clearInterval(loadingIntervalRef.current);
+          loadingIntervalRef.current = null;
+        }
       }
     };
 
     fetchToday();
+
+    // Clean up interval on unmount
+    return () => {
+      if (loadingIntervalRef.current !== null) {
+        window.clearInterval(loadingIntervalRef.current);
+      }
+    };
   }, []);
 
   // Handler: Open thread in Gmail
@@ -122,12 +153,54 @@ export default function Today() {
     navigate(`/applications?highlight=${applicationId}`);
   };
 
-  if (loading) {
+  // Render loading state with progress indicator
+  if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading today's triage...</p>
+      <div className="container mx-auto p-6 max-w-7xl">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Today</h1>
+          <p className="text-muted-foreground">
+            What should you do with your inbox today?
+          </p>
+        </div>
+
+        {/* Progress indicator */}
+        <div className="flex flex-col gap-4 items-center justify-center py-16">
+          <div className="flex items-center gap-2 text-sm text-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Preparing today&apos;s triage… {progress}%</span>
+          </div>
+          <div className="w-full max-w-md">
+            <Progress value={progress} className="h-1.5" />
+          </div>
+          <p className="text-xs text-muted-foreground text-center max-w-md">
+            Scanning follow-ups, bills, newsletters, promos and risk in the background.
+          </p>
+        </div>
+
+        {/* Skeleton grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {['followups', 'bills', 'interviews', 'unsubscribe', 'clean_promos', 'suspicious'].map((intent) => (
+            <Card key={intent} className="animate-pulse">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="h-5 w-28 rounded-full bg-muted" />
+                    <div className="h-3 w-40 rounded-full bg-muted/60" />
+                  </div>
+                  <div className="h-6 w-12 rounded-full bg-muted" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="h-20 w-full rounded-md bg-muted/60" />
+                  <div className="h-20 w-full rounded-md bg-muted/40" />
+                  <div className="h-20 w-full rounded-md bg-muted/20" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -194,70 +267,147 @@ export default function Today() {
 
               <CardContent>
                 {!hasThreads ? (
-                  <p className="text-sm text-muted-foreground italic">
-                    All clear! 🎉
-                  </p>
+                  // Empty state
+                  <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-3 py-6 text-center">
+                    {intentData.intent === 'followups' && (
+                      <>
+                        <p className="text-sm font-medium text-emerald-400">
+                          You&apos;re all caught up 🎉
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          No follow-ups needed from the last {intentData.summary.time_window_days} days.
+                        </p>
+                      </>
+                    )}
+                    {intentData.intent === 'bills' && (
+                      <>
+                        <p className="text-sm font-medium text-foreground">
+                          No bills pending ✨
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          No invoices or receipts in the last {intentData.summary.time_window_days} days.
+                        </p>
+                      </>
+                    )}
+                    {intentData.intent === 'interviews' && (
+                      <>
+                        <p className="text-sm font-medium text-foreground">
+                          No interviews scheduled 📅
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          No interview invites in the last {intentData.summary.time_window_days} days.
+                        </p>
+                      </>
+                    )}
+                    {intentData.intent === 'unsubscribe' && (
+                      <>
+                        <p className="text-sm font-medium text-foreground">
+                          Clean inbox 🚫
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          No unwanted newsletters in the last {intentData.summary.time_window_days} days.
+                        </p>
+                      </>
+                    )}
+                    {intentData.intent === 'clean_promos' && (
+                      <>
+                        <p className="text-sm font-medium text-foreground">
+                          Inbox is promo-light ✨
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          No marketing threads flagged in the last {intentData.summary.time_window_days} days.
+                        </p>
+                      </>
+                    )}
+                    {intentData.intent === 'suspicious' && (
+                      <>
+                        <p className="text-sm font-medium text-emerald-400">
+                          All clear! 🛡️
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          No suspicious emails in the last {intentData.summary.time_window_days} days.
+                        </p>
+                      </>
+                    )}
+                    <p className="mt-2 text-[11px] text-muted-foreground/70">
+                      This panel updates automatically as new mail comes in.
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {intentData.threads.slice(0, 5).map((thread) => (
                       <div
                         key={thread.threadId}
-                        className="group p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
-                        onClick={() => handleOpenInGmail(thread.threadId)}
+                        className="rounded-md border border-border/50 hover:border-border transition-colors overflow-hidden"
                       >
-                        <div className="flex items-start gap-2">
-                          <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {thread.subject || '(No subject)'}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {thread.from}
-                            </p>
-                            {thread.snippet && (
-                              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                                {thread.snippet}
+                        {/* Thread content */}
+                        <div
+                          className="p-3 cursor-pointer hover:bg-accent/30 transition-colors"
+                          onClick={() => handleOpenInGmail(thread.threadId)}
+                        >
+                          <div className="flex items-start gap-2">
+                            <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {thread.subject || '(No subject)'}
                               </p>
-                            )}
-
-                            {/* Action buttons */}
-                            <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenInThreadViewer(thread.threadId);
-                                }}
-                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                              >
-                                <Inbox className="h-3 w-3" />
-                                Thread Viewer
-                              </button>
-
-                              {thread.applicationId && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenInTracker(thread.applicationId!);
-                                  }}
-                                  className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  Tracker
-                                </button>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {thread.from}
+                              </p>
+                              {thread.snippet && (
+                                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                                  {thread.snippet}
+                                </p>
                               )}
-
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenInGmail(thread.threadId);
-                                }}
-                                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                Gmail
-                              </button>
                             </div>
                           </div>
+                        </div>
+
+                        {/* Action buttons footer */}
+                        <div className="flex items-center gap-2 px-3 py-2 border-t border-border/50 bg-muted/20">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenInThreadViewer(thread.threadId);
+                            }}
+                            className="h-7 rounded-full px-3 text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20"
+                            data-testid="open-thread-viewer"
+                          >
+                            <PanelRightOpen className="h-3 w-3 mr-1" />
+                            Thread Viewer
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenInGmail(thread.threadId);
+                            }}
+                            className="h-7 rounded-full px-3 text-xs bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-400 hover:text-zinc-300 border border-zinc-500/20"
+                            data-testid="open-gmail"
+                          >
+                            <Mail className="h-3 w-3 mr-1" />
+                            Gmail
+                          </Button>
+
+                          {thread.applicationId && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenInTracker(thread.applicationId!);
+                              }}
+                              className="h-7 rounded-full px-3 text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-purple-500/20"
+                              data-testid="open-tracker"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Tracker
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}

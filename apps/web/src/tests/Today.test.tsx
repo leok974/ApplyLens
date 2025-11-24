@@ -40,7 +40,7 @@ describe('Today Page', () => {
 
     renderWithRouter();
 
-    expect(screen.getByText(/Loading today's triage/i)).toBeInTheDocument();
+    expect(screen.getByText(/Preparing today's triage/i)).toBeInTheDocument();
   });
 
   it('renders error state when API call fails', async () => {
@@ -149,7 +149,7 @@ describe('Today Page', () => {
       // Bills tile
       expect(screen.getByText('Bills & Invoices')).toBeInTheDocument();
       expect(screen.getByText('0')).toBeInTheDocument(); // Count badge
-      expect(screen.getByText(/All clear/i)).toBeInTheDocument();
+      expect(screen.getByText(/No bills pending/i)).toBeInTheDocument();
     });
   });
 
