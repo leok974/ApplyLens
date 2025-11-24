@@ -11,7 +11,7 @@ import * as path from 'path';
 
 async function globalSetup(config: FullConfig) {
   const baseURL = process.env.E2E_BASE_URL || 'https://applylens.app';
-  const authPath = process.env.E2E_AUTH_STATE || 'tests/auth/prod.json';
+  const authPath = process.env.E2E_AUTH_STATE || 'tests/.auth/prod.json';
   const secret = process.env.E2E_SHARED_SECRET;
 
   console.log('🔧 E2E Global Setup');

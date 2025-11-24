@@ -256,6 +256,7 @@ export function AppHeader() {
               <Tab to="/inbox-actions" label="Actions" />
               <Tab to="/search" label="Search" />
               <Tab to="/chat" label="Chat" />
+              <Tab to="/today" label="Today" data-testid="nav-today" />
               <Tab to="/tracker" label="Tracker" />
               <Tab to="/profile" label="Profile" />
               {FLAGS.COMPANION && <Tab to="/extension" label="Companion" data-testid="nav-companion" />}
