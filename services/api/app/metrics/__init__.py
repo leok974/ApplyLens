@@ -19,6 +19,7 @@ sys.path.insert(0, str(parent_dir))
 
 try:
     import metrics as metrics_module
+
     DB_UP = metrics_module.DB_UP
     ES_UP = metrics_module.ES_UP
     BACKFILL_INSERTED = metrics_module.BACKFILL_INSERTED
@@ -32,22 +33,45 @@ try:
     record_tool = metrics_module.record_tool
     parity_checks_total = metrics_module.parity_checks_total
     parity_mismatches_total = metrics_module.parity_mismatches_total
-except (ImportError, AttributeError) as e:
+    AGENT_TODAY_DURATION_SECONDS = metrics_module.AGENT_TODAY_DURATION_SECONDS
+except (ImportError, AttributeError):
     # Fallback - create empty placeholders
     from prometheus_client import Counter, Gauge, Histogram, Summary
+
     DB_UP = Gauge("applylens_db_up", "Database ping successful (1=up, 0=down)")
     ES_UP = Gauge("applylens_es_up", "Elasticsearch ping successful (1=up, 0=down)")
-    BACKFILL_INSERTED = Counter("applylens_backfill_inserted_total", "Total emails inserted during backfill")
-    BACKFILL_REQUESTS = Counter("applylens_backfill_requests_total", "Backfill requests", ["result"])
-    GMAIL_CONNECTED = Gauge("applylens_gmail_connected", "Gmail connection status", ["user_email"])
-    risk_recompute_requests = Counter("applylens_risk_recompute_requests_total", "Risk recomputation requests")
-    risk_recompute_duration = Summary("applylens_risk_recompute_duration_seconds", "Risk recomputation duration")
-    risk_emails_scored_total = Counter("applylens_risk_emails_scored_total", "Emails scored")
+    BACKFILL_INSERTED = Counter(
+        "applylens_backfill_inserted_total", "Total emails inserted during backfill"
+    )
+    BACKFILL_REQUESTS = Counter(
+        "applylens_backfill_requests_total", "Backfill requests", ["result"]
+    )
+    GMAIL_CONNECTED = Gauge(
+        "applylens_gmail_connected", "Gmail connection status", ["user_email"]
+    )
+    risk_recompute_requests = Counter(
+        "applylens_risk_recompute_requests_total", "Risk recomputation requests"
+    )
+    risk_recompute_duration = Summary(
+        "applylens_risk_recompute_duration_seconds", "Risk recomputation duration"
+    )
+    risk_emails_scored_total = Counter(
+        "applylens_risk_emails_scored_total", "Emails scored"
+    )
     risk_score_avg = Gauge("applylens_risk_score_avg", "Average risk score")
-    tool_queries_total = Counter("assistant_tool_queries_total", "Tool queries", ["tool", "has_hits", "window_bucket"])
+    tool_queries_total = Counter(
+        "assistant_tool_queries_total",
+        "Tool queries",
+        ["tool", "has_hits", "window_bucket"],
+    )
     parity_checks_total = Counter("applylens_parity_checks_total", "Parity checks")
-    parity_mismatches_total = Counter("applylens_parity_mismatches_total", "Parity mismatches")
-    
+    parity_mismatches_total = Counter(
+        "applylens_parity_mismatches_total", "Parity mismatches"
+    )
+    AGENT_TODAY_DURATION_SECONDS = Histogram(
+        "applylens_agent_today_duration_seconds", "Today endpoint duration"
+    )
+
     def record_tool(tool_name: str, hits: int, window_days: int = 30) -> None:
         """Fallback record_tool function"""
         pass
@@ -75,4 +99,5 @@ __all__ = [
     "record_tool",
     "parity_checks_total",
     "parity_mismatches_total",
+    "AGENT_TODAY_DURATION_SECONDS",
 ]

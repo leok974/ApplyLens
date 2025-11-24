@@ -11,6 +11,7 @@ For now, we verify endpoint exists and basic structure.
 """
 
 from fastapi.testclient import TestClient
+from prometheus_client import REGISTRY
 
 from app.main import app
 
@@ -71,3 +72,27 @@ class TestTodayEndpoint:
 
         # Should fail auth but validates that missing time_window_days doesn't cause 422
         assert response.status_code == 401  # Not 422 Unprocessable Entity
+
+    def test_today_endpoint_exposes_duration_metric(self):
+        """Test that Today endpoint exposes duration metric in Prometheus registry."""
+        # Call the endpoint once (will fail auth but still records duration)
+        response = client.post(
+            "/v2/agent/today",
+            json={"time_window_days": 90},
+        )
+
+        # Don't assert on status - we just care that observe() doesn't crash
+        assert response.status_code in [200, 401, 500]
+
+        # Scrape the metric from the default registry
+        metrics = [
+            s
+            for family in REGISTRY.collect()
+            if family.name == "applylens_agent_today_duration_seconds"
+            for s in family.samples
+        ]
+
+        # There should be at least one bucket / count after a single call
+        assert (
+            metrics
+        ), "today duration metric should have samples after hitting the endpoint once"

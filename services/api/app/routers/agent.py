@@ -10,6 +10,7 @@ Endpoints:
 from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import Dict, Any
 import logging
+import time
 import uuid
 from sqlalchemy.orm import Session as DBSession
 
@@ -17,6 +18,7 @@ from app.schemas_agent import AgentRunRequest, AgentRunResponse
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
 from app.models import Session as SessionModel
+from app.metrics import AGENT_TODAY_DURATION_SECONDS
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
 logger = logging.getLogger(__name__)
@@ -247,6 +249,7 @@ async def today_triage(
     }
     ```
     """
+    start = time.perf_counter()
     try:
         # 1. Resolve user_id (same pattern as /run endpoint)
         user_id = payload.get("user_id")
@@ -351,6 +354,11 @@ async def today_triage(
             status_code=500,
             detail=f"Today triage failed: {str(e)}",
         )
+    finally:
+        duration = time.perf_counter() - start
+        # Guard against negative duration (shouldn't happen with perf_counter)
+        if duration >= 0:
+            AGENT_TODAY_DURATION_SECONDS.observe(duration)
 
 
 @router.get("/health")

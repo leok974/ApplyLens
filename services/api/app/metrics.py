@@ -179,3 +179,23 @@ autofill_manual_edits = Counter(
     "applylens_autofill_manual_edits_total",
     "Fields manually edited by users",
 )
+
+# --- Agent Today Endpoint Metrics ---
+
+AGENT_TODAY_DURATION_SECONDS = Histogram(
+    "applylens_agent_today_duration_seconds",
+    "Wall-clock time spent building /v2/agent/today responses.",
+    buckets=(
+        0.1,  # super fast
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5,
+        2.0,
+        3.0,
+        5.0,
+        7.5,
+        10.0,  # very slow
+    ),
+)
