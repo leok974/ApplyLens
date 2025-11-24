@@ -179,7 +179,8 @@ services:
     # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
     # v0.6.0: Today Panel - Inbox triage with 6 scan intents, thread mini-lists, responsive grid UI
     # v0.6.1: Fix 405 error on Today page - correct API endpoint path
-    image: leoklemet/applylens-api:0.6.1
+    # v0.6.2: Add Prometheus histogram for Today endpoint duration tracking (p50/p90/p99)
+    image: leoklemet/applylens-api:0.6.2
     container_name: applylens-api-prod
     environment:
       # Database
@@ -232,9 +233,9 @@ services:
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
 
       # Build Metadata
-      APP_VERSION: '0.6.1'
-      APP_BUILD_SHA: '99bb6fd'
-      APP_BUILD_TIME: '2025-11-24T14:45:00Z'
+      APP_VERSION: '0.6.2'
+      APP_BUILD_SHA: 'ae2ac23'
+      APP_BUILD_TIME: '2025-11-24T15:30:00Z'
       APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
@@ -462,16 +463,17 @@ services:
     # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
     # v0.6.0: Today Panel - /today route with 6 scan intents, thread mini-lists, action buttons
     # v0.6.1: Fix 405 error on Today page - correct API endpoint path
-    image: leoklemet/applylens-web:0.6.1
+    # v0.6.2: Progress indicator UX - progress bar, skeleton states, custom empty messages
+    image: leoklemet/applylens-web:0.6.2
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
 
       # Build Metadata (Web)
       - VITE_BUILD_FLAVOR=prod
-      - VITE_APP_VERSION=0.6.1
-      - VITE_BUILD_GIT_SHA=99bb6fd
-      - VITE_BUILD_TIME=2025-11-24T14:45:00Z
+      - VITE_APP_VERSION=0.6.2
+      - VITE_BUILD_GIT_SHA=ae2ac23
+      - VITE_BUILD_TIME=2025-11-24T15:30:00Z
 
       # Feature Flags
       - VITE_FEATURE_COMPANION=1
