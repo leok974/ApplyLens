@@ -181,7 +181,8 @@ services:
     # v0.6.1: Thread Viewer follow-up draft feature (POST /v2/agent/followup-draft)
     # v0.6.2: Follow-up Queue - unified view merging mailbox followups + Tracker applications
     # v0.6.3: Persistent follow-up state with progress tracking and done/not-done toggles
-    image: leoklemet/applylens-api:0.6.3
+    # v0.6.4: Today panel Follow-ups summary widget with progress and quick navigation
+    image: leoklemet/applylens-api:0.6.4
     container_name: applylens-api-prod
     environment:
       # Database
@@ -466,7 +467,8 @@ services:
     # v0.6.1: Thread Viewer follow-up draft button with clipboard copy
     # v0.6.2: Follow-up Queue page - /followups route with unified thread + application list
     # v0.6.3: Follow-up Queue progress bar and persistent done state with optimistic UI updates
-    image: leoklemet/applylens-web:0.6.3
+    # v0.6.4: Today panel Follow-ups summary card showing completion progress
+    image: leoklemet/applylens-web:0.6.4
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production

@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Application
     ENV: str = "dev"
-    APP_VERSION: str = "0.6.3"  # Follow-up Queue feature
+    APP_VERSION: str = "0.6.4"  # Follow-up Queue feature
     API_PORT: int = 8003
     API_PREFIX: str = "/api"
     CORS_ORIGINS: str = "http://localhost:5175"
