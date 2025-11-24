@@ -8,7 +8,7 @@ Coordinates:
 4. LLM synthesis (generate final answer from tool results)
 """
 
-from typing import List, Dict, Any, Optional, Tuple, Literal
+from typing import List, Dict, Any, Optional, Tuple, Literal, TYPE_CHECKING
 import asyncio
 import logging
 from datetime import datetime
@@ -16,6 +16,10 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+if TYPE_CHECKING:
+    from app.schemas_agent import FollowupDraftRequest, FollowupDraftResponse
+    from sqlalchemy.orm import Session
 
 from app.schemas_agent import (
     AgentRunRequest,
@@ -1506,3 +1510,181 @@ class MailboxAgentOrchestrator:
             if result.tool_name == "email_search":
                 total += len(result.data.get("emails", []))
         return total
+
+    async def draft_followup(
+        self,
+        req: "FollowupDraftRequest",
+        db: Session,
+    ) -> "FollowupDraftResponse":
+        """Generate draft follow-up email for recruiter thread."""
+        from app.schemas_agent import FollowupDraftResponse, FollowupDraft
+        from app.models import Application
+
+        try:
+            # 1. Fetch thread details using existing tool
+            logger.info(f"Fetching thread_detail for thread_id={req.thread_id}")
+            tool_result = await self.tool_registry.execute(
+                "thread_detail",
+                {"thread_id": req.thread_id},
+                req.user_id,
+            )
+
+            if not tool_result or not tool_result.data:
+                return FollowupDraftResponse(
+                    status="error", message="Failed to retrieve thread details"
+                )
+
+            messages = tool_result.data.get("messages", [])
+            if not messages:
+                return FollowupDraftResponse(
+                    status="error", message="No messages found in thread"
+                )
+
+            # 2. Get application context if provided
+            app_context = ""
+            if req.application_id:
+                app = db.query(Application).filter_by(id=req.application_id).first()
+                if app:
+                    app_context = f"""
+Application Context:
+- Company: {app.company}
+- Role: {app.role}
+- Status: {app.status}
+- Notes: {app.notes or "None"}
+"""
+
+            # 3. Build context from thread messages
+            thread_context = "\n\n".join(
+                [
+                    f"From: {msg.get('from', 'Unknown')}\nDate: {msg.get('date', 'Unknown')}\nSubject: {msg.get('subject', 'No subject')}\n\n{msg.get('body', '')[:500]}"
+                    for msg in messages[-5:]  # Last 5 messages for context
+                ]
+            )
+
+            # 4. Build LLM prompt for draft generation
+            system_prompt = """You are a helpful assistant that drafts professional follow-up emails for job applications.
+Generate a polite, concise follow-up email based on the conversation thread.
+
+Return your response as JSON with this exact structure:
+{
+  "subject": "Email subject line",
+  "body": "Email body content"
+}
+
+Keep the tone professional and friendly. The email should:
+- Express continued interest in the role
+- Reference the last interaction appropriately
+- Ask about next steps or timeline
+- Be brief (2-3 short paragraphs maximum)
+"""
+
+            user_prompt = f"""Based on this email thread, draft a follow-up email:
+
+{thread_context}
+
+{app_context}
+
+Generate a professional follow-up email as JSON."""
+
+            # 5. Call LLM (try Ollama first, then OpenAI)
+            draft_data = await self._call_llm_for_draft(system_prompt, user_prompt)
+
+            if not draft_data:
+                return FollowupDraftResponse(
+                    status="error", message="Failed to generate draft (LLM unavailable)"
+                )
+
+            # 6. Parse and validate response
+            subject = draft_data.get("subject", "").strip()
+            body = draft_data.get("body", "").strip()
+
+            if not subject or not body:
+                return FollowupDraftResponse(
+                    status="error", message="Generated draft is incomplete"
+                )
+
+            draft = FollowupDraft(subject=subject, body=body)
+            return FollowupDraftResponse(status="ok", draft=draft)
+
+        except Exception as e:
+            logger.error(f"draft_followup failed: {e}", exc_info=True)
+            return FollowupDraftResponse(
+                status="error", message=f"Failed to generate draft: {str(e)}"
+            )
+
+    async def _call_llm_for_draft(
+        self, system_prompt: str, user_prompt: str, timeout_s: float = 20.0
+    ) -> Optional[dict]:
+        """Call LLM to generate draft, trying Ollama first then OpenAI."""
+        from app.config_env import (
+            OLLAMA_BASE,
+            OLLAMA_MODEL,
+            OPENAI_API_KEY,
+            OPENAI_MODEL,
+        )
+        import httpx
+        import json
+
+        # Try Ollama first
+        if OLLAMA_BASE:
+            try:
+                full_prompt = f"{system_prompt}\n\n{user_prompt}"
+                async with httpx.AsyncClient(timeout=timeout_s) as client:
+                    resp = await client.post(
+                        f"{OLLAMA_BASE}/api/generate",
+                        json={
+                            "model": OLLAMA_MODEL,
+                            "prompt": full_prompt,
+                            "stream": False,
+                            "format": "json",
+                            "options": {
+                                "temperature": 0.3,
+                                "num_predict": 600,
+                            },
+                        },
+                    )
+
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data.get("response", "").strip()
+
+                    # Strip code fences if present
+                    if text.startswith("```"):
+                        text = text.strip("`")
+                        if text.lower().startswith("json"):
+                            text = text[4:].strip()
+
+                    return json.loads(text)
+            except Exception as e:
+                logger.warning(f"Ollama draft generation failed: {e}")
+
+        # Try OpenAI as fallback
+        if OPENAI_API_KEY:
+            try:
+                async with httpx.AsyncClient(timeout=timeout_s) as client:
+                    resp = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {OPENAI_API_KEY}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": OPENAI_MODEL,
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": user_prompt},
+                            ],
+                            "temperature": 0.3,
+                            "max_tokens": 800,
+                            "response_format": {"type": "json_object"},
+                        },
+                    )
+
+                if resp.status_code == 200:
+                    data = resp.json()
+                    content = data["choices"][0]["message"]["content"]
+                    return json.loads(content)
+            except Exception as e:
+                logger.warning(f"OpenAI draft generation failed: {e}")
+
+        return None

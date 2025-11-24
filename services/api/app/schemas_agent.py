@@ -402,3 +402,34 @@ class KnowledgeBaseEntry(BaseModel):
     tags: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ============================================================================
+# Follow-up Draft Schemas
+# ============================================================================
+
+
+class FollowupDraft(BaseModel):
+    """Draft email for recruiter follow-up."""
+
+    subject: str = Field(..., description="Email subject line")
+    body: str = Field(..., description="Email body content")
+
+
+class FollowupDraftRequest(BaseModel):
+    """Request for follow-up draft generation."""
+
+    user_id: str = Field(..., description="Gmail account email")
+    thread_id: str = Field(..., description="Gmail thread ID")
+    application_id: Optional[int] = Field(
+        None, description="Linked application ID from Tracker"
+    )
+    mode: Literal["preview_only", "execute"] = Field(default="preview_only")
+
+
+class FollowupDraftResponse(BaseModel):
+    """Response with generated follow-up draft."""
+
+    status: Literal["ok", "error"] = "ok"
+    draft: Optional[FollowupDraft] = None
+    message: Optional[str] = None

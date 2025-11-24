@@ -199,3 +199,11 @@ AGENT_TODAY_DURATION_SECONDS = Histogram(
         10.0,  # very slow
     ),
 )
+
+# --- Follow-up Draft Metrics ---
+
+FOLLOWUP_DRAFT_REQUESTS = Counter(
+    "applylens_followup_draft_requested_total",
+    "Number of follow-up drafts requested",
+    ["source"],  # thread_viewer, etc.
+)

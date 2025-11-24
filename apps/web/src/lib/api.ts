@@ -850,6 +850,51 @@ export async function sendThreadSummaryFeedback(opts: {
   return res.json() as Promise<{ ok: boolean }>;
 }
 
+/**
+ * Generate a follow-up draft email using Agent V2.
+ * Returns a structured draft with subject and body.
+ */
+export interface FollowupDraftRequest {
+  thread_id: string;
+  application_id?: number;
+}
+
+export interface FollowupDraft {
+  subject: string;
+  body: string;
+}
+
+export interface FollowupDraftResponse {
+  status: 'ok' | 'error';
+  draft?: FollowupDraft;
+  message?: string;
+}
+
+export async function generateFollowupDraft(
+  req: FollowupDraftRequest
+): Promise<FollowupDraftResponse> {
+  const csrf = getCsrf();
+  const res = await fetch("/v2/agent/followup-draft", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "x-csrf-token": csrf,
+    },
+    body: JSON.stringify({
+      thread_id: req.thread_id,
+      application_id: req.application_id,
+      mode: "preview_only",
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to generate draft: ${res.status}`);
+  }
+
+  return res.json() as Promise<FollowupDraftResponse>;
+}
+
 
 // ===== Sender Overrides =====
 

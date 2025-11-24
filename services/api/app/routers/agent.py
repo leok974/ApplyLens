@@ -14,11 +14,16 @@ import time
 import uuid
 from sqlalchemy.orm import Session as DBSession
 
-from app.schemas_agent import AgentRunRequest, AgentRunResponse
+from app.schemas_agent import (
+    AgentRunRequest,
+    AgentRunResponse,
+    FollowupDraftRequest,
+    FollowupDraftResponse,
+)
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
 from app.models import Session as SessionModel
-from app.metrics import AGENT_TODAY_DURATION_SECONDS
+from app.metrics import AGENT_TODAY_DURATION_SECONDS, FOLLOWUP_DRAFT_REQUESTS
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
 logger = logging.getLogger(__name__)
@@ -390,3 +395,92 @@ async def agent_health() -> Dict[str, Any]:
     # TODO Phase 3: Check LLM provider
 
     return health
+
+
+@router.post("/followup-draft", response_model=FollowupDraftResponse)
+async def draft_followup(
+    payload: FollowupDraftRequest,
+    req: Request,
+    db: DBSession = Depends(get_db),
+) -> FollowupDraftResponse:
+    """
+    Generate a draft follow-up email for a recruiter thread.
+
+    Uses existing Agent V2 machinery to:
+    1. Fetch thread details from Gmail
+    2. Look up application context if available
+    3. Generate a professional follow-up email draft
+
+    Example request:
+    ```json
+    {
+      "user_id": "user@example.com",
+      "thread_id": "thread-abc123",
+      "application_id": 42,
+      "mode": "preview_only"
+    }
+    ```
+
+    Example response:
+    ```json
+    {
+      "status": "ok",
+      "draft": {
+        "subject": "Re: Software Engineer - Next Steps?",
+        "body": "Hi [Name],\\n\\nI wanted to follow up..."
+      }
+    }
+    ```
+    """
+    try:
+        # Record metric
+        FOLLOWUP_DRAFT_REQUESTS.labels(source="thread_viewer").inc()
+
+        # 1. Resolve user_id (same pattern as other endpoints)
+        user_id = payload.user_id
+
+        if not user_id:
+            sid = req.cookies.get("session_id")
+            if sid:
+                sess = db.query(SessionModel).filter(SessionModel.id == sid).first()
+                if sess and sess.user_id:
+                    from app.models import User as UserModel
+
+                    user = (
+                        db.query(UserModel).filter(UserModel.id == sess.user_id).first()
+                    )
+                    if user and user.email:
+                        user_id = user.email
+                        logger.info(
+                            f"Followup Draft: resolved user_id={user_id} from session"
+                        )
+
+        if not user_id:
+            logger.warning("Followup Draft: no user_id resolved, returning 401")
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        # 2. Validate thread_id
+        if not payload.thread_id:
+            raise HTTPException(status_code=400, detail="thread_id is required")
+
+        # 3. Call orchestrator to generate draft
+        orchestrator = get_orchestrator()
+        response = await orchestrator.draft_followup(payload, db=db)
+
+        logger.info(
+            f"Followup Draft: completed for user={user_id}, thread={payload.thread_id}, status={response.status}"
+        )
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(
+            "Followup Draft endpoint failed",
+            extra={
+                "payload": payload.dict() if hasattr(payload, "dict") else str(payload)
+            },
+        )
+        return FollowupDraftResponse(
+            status="error", message=f"Failed to generate follow-up draft: {str(e)}"
+        )
