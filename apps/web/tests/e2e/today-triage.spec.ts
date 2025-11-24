@@ -11,6 +11,35 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("@prodSafe Today triage page", () => {
+  test("today API endpoint returns 200 or 401 (not 405)", async ({ page }) => {
+    // Listen for API calls
+    const apiCalls: { url: string; status: number }[] = [];
+
+    page.on("response", (response) => {
+      if (response.url().includes("/api/v2/agent/today")) {
+        apiCalls.push({
+          url: response.url(),
+          status: response.status(),
+        });
+      }
+    });
+
+    // Navigate to Today page
+    await page.goto("/today", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle");
+
+    // Check if API was called
+    if (apiCalls.length > 0) {
+      const todayCall = apiCalls[0];
+
+      // Should NOT return 405 (Method Not Allowed)
+      expect(todayCall.status).not.toBe(405);
+
+      // Should return 200 (success), 401 (auth required), or 204 (no content)
+      expect([200, 401, 204]).toContain(todayCall.status);
+    }
+  });
+
   test("today page loads and renders intent tiles", async ({ page }) => {
     // Navigate to Today page
     await page.goto("/today", { waitUntil: "domcontentloaded" });
@@ -198,7 +227,7 @@ test.describe("@prodSafe Today triage page", () => {
 
   test("page handles API errors gracefully", async ({ page, context }) => {
     // Mock API failure
-    await context.route('**/v2/agent/today', route => route.fulfill({
+    await context.route('**/api/v2/agent/today', route => route.fulfill({
       status: 500,
       contentType: 'application/json',
       body: JSON.stringify({ detail: 'Internal Server Error' })
@@ -213,7 +242,7 @@ test.describe("@prodSafe Today triage page", () => {
 
   test("page handles empty response gracefully", async ({ page, context }) => {
     // Mock empty response
-    await context.route('**/v2/agent/today', route => route.fulfill({
+    await context.route('**/api/v2/agent/today', route => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ status: 'ok', intents: [] })

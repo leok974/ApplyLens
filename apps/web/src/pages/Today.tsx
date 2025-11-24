@@ -78,7 +78,7 @@ export default function Today() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(apiUrl('/v2/agent/today'), {
+        const response = await fetch(apiUrl('/api/v2/agent/today'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
