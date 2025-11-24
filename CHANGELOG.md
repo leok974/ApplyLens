@@ -5,6 +5,72 @@ All notable changes to ApplyLens will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2025-11-24
+
+### ✨ Features
+
+#### Persistent Follow-up State with Progress Tracking
+- **Database schema** - New `followup_queue_state` table for persistent done/not-done state
+  - Composite primary key: `(user_id, thread_id)`
+  - Columns: `application_id`, `is_done`, `done_at`, `updated_at`
+  - Migration: `09308884b950_add_followup_queue_state_table.py`
+  - Reference: `services/api/alembic/versions/09308884b950_add_followup_queue_state_table.py`, `services/api/app/models.py`
+
+- **POST /v2/agent/followups/state endpoint** - Update done state for follow-up items
+  - Request: `{thread_id: str, application_id?: int, is_done: bool}`
+  - Response: `{ok: true}`
+  - Upserts state row (creates new or updates existing)
+  - Sets `done_at` timestamp when transitioning to done
+  - Resets `done_at` when unmarking
+  - Requires authentication (uses session user_id)
+  - Reference: `services/api/app/routers/agent.py`
+
+- **Enhanced queue response** - Progress tracking in queue metadata
+  - Extended `QueueMeta` with `done_count` and `remaining_count`
+  - GET /v2/agent/followup-queue now fetches state rows and applies `is_done` to items
+  - Reference: `services/api/app/schemas_agent.py`, `services/api/app/routers/agent.py`
+
+- **Progress bar UI** - Visual completion tracking
+  - Header shows: "{done_count} / {total} done" with percentage
+  - Green progress bar with smooth transition animation
+  - Real-time updates when marking items done/not-done
+  - Reference: `apps/web/src/pages/FollowupQueue.tsx`
+
+- **Optimistic UI updates** - Instant feedback with rollback on error
+  - `markDone(item, isDone)` now async with API persistence
+  - Optimistically updates local state before API call
+  - Rolls back changes and shows error toast on API failure
+  - Success/error toast notifications using sonner
+  - Reference: `apps/web/src/hooks/useFollowupQueue.ts`
+
+- **Analytics & Metrics** - Track completion behavior
+  - Prometheus metric: `applylens_followup_queue_item_done_total`
+  - Increments when item transitions to done state
+  - Reference: `services/api/app/metrics.py`
+
+### 🧪 Testing
+
+- **Backend state tests** - CRUD operations for followup_queue_state
+  - 4 tests: create state, update to done, update to not-done, auth required
+  - Reference: `services/api/tests/test_followup_state.py`
+
+- **Backend queue tests** - State application in queue endpoint
+  - New test: `test_followup_queue_applies_done_state`
+  - Verifies done_count/remaining_count calculations
+  - Validates is_done field applied correctly to items
+  - Reference: `services/api/tests/test_agent_followup_queue.py`
+
+- **Frontend tests** - Progress rendering and done toggle
+  - Page tests verify progress bar with correct counts and percentage
+  - Component tests validate markDone called with (item, isDone) signature
+  - Reference: `apps/web/src/pages/__tests__/FollowupQueue.test.tsx`, `apps/web/src/components/followups/__tests__/FollowupQueueList.test.tsx`
+
+### 📚 Documentation
+
+- Updated schemas: `QueueMeta` now includes `done_count`, `remaining_count`
+- New schema: `FollowupStateUpdate` for state endpoint
+- Updated hook interface: `markDone` now accepts `(item, isDone)` instead of `(item)`
+
 ## [0.6.2] - 2025-11-24
 
 ### ✨ Features
