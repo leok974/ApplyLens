@@ -19,11 +19,17 @@ from app.schemas_agent import (
     AgentRunResponse,
     FollowupDraftRequest,
     FollowupDraftResponse,
+    FollowupQueueRequest,
+    FollowupQueueResponse,
 )
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
 from app.models import Session as SessionModel
-from app.metrics import AGENT_TODAY_DURATION_SECONDS, FOLLOWUP_DRAFT_REQUESTS
+from app.metrics import (
+    AGENT_TODAY_DURATION_SECONDS,
+    FOLLOWUP_DRAFT_REQUESTS,
+    FOLLOWUP_QUEUE_REQUESTS,
+)
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
 logger = logging.getLogger(__name__)
@@ -483,4 +489,143 @@ async def draft_followup(
         )
         return FollowupDraftResponse(
             status="error", message=f"Failed to generate follow-up draft: {str(e)}"
+        )
+
+
+@router.post("/followup-queue", response_model=FollowupQueueResponse)
+async def get_followup_queue(
+    payload: FollowupQueueRequest,
+    req: Request,
+    db: DBSession = Depends(get_db),
+):
+    """
+    Get merged follow-up queue from mailbox threads and tracker applications.
+
+    Returns a prioritized list of items that need follow-up action.
+    """
+    from app.schemas_agent import (
+        FollowupQueueResponse,
+        QueueMeta,
+        QueueItem,
+    )
+    from app.models import Application
+
+    FOLLOWUP_QUEUE_REQUESTS.inc()
+
+    try:
+        # Resolve user_id from session or payload
+        user_id = payload.user_id
+        if not user_id:
+            session_user_id = (
+                req.state.session_user_id
+                if hasattr(req.state, "session_user_id")
+                else None
+            )
+            if not session_user_id:
+                return FollowupQueueResponse(
+                    status="error", message="user_id required or valid session"
+                )
+            user_id = session_user_id
+
+        # Get mailbox followups from agent
+        orchestrator = get_orchestrator()
+        agent_result = await orchestrator.get_followup_queue(
+            user_id=user_id,
+            time_window_days=payload.time_window_days,
+        )
+
+        threads = agent_result.get("threads", [])
+
+        # Query applications that need followup
+        # Criteria: has thread_id AND status in (applied, hr_screen, interview)
+        # Note: We don't filter by user here because threads are already user-filtered
+        # and we match applications by thread_id
+        needs_followup_statuses = ["applied", "hr_screen", "interview"]
+        apps = (
+            db.query(Application)
+            .filter(
+                Application.thread_id.isnot(None),
+                Application.status.in_(needs_followup_statuses),
+            )
+            .all()
+        )
+
+        # Build lookup by thread_id
+        apps_by_thread = {app.thread_id: app for app in apps if app.thread_id}
+
+        # Merge threads and applications
+        queue_items = []
+        seen_threads = set()
+
+        for thread in threads:
+            thread_id = thread["thread_id"]
+            if not thread_id:
+                continue
+
+            seen_threads.add(thread_id)
+            app = apps_by_thread.get(thread_id)
+
+            # Determine priority: threads with applications get higher priority
+            priority = thread.get("priority", 50)
+            if app:
+                priority = max(priority, 70)  # Boost priority if has application
+
+            # Build reason tags
+            reason_tags = ["pending_reply"]
+            if app:
+                reason_tags.append(f"status:{app.status}")
+
+            queue_items.append(
+                QueueItem(
+                    thread_id=thread_id,
+                    application_id=app.id if app else None,
+                    priority=priority,
+                    reason_tags=reason_tags,
+                    company=app.company if app else None,
+                    role=app.role if app else None,
+                    subject=thread.get("subject"),
+                    snippet=thread.get("snippet"),
+                    last_message_at=thread.get("last_message_at"),
+                    status=app.status if app else None,
+                    gmail_url=thread.get("gmail_url"),
+                    is_done=False,
+                )
+            )
+
+        # Add applications without matching threads
+        for app in apps:
+            if app.thread_id and app.thread_id not in seen_threads:
+                queue_items.append(
+                    QueueItem(
+                        thread_id=app.thread_id,
+                        application_id=app.id,
+                        priority=60,  # Medium priority for app-only items
+                        reason_tags=[f"status:{app.status}", "no_thread_data"],
+                        company=app.company,
+                        role=app.role,
+                        subject=None,
+                        snippet=None,
+                        last_message_at=None,
+                        status=app.status,
+                        gmail_url=None,
+                        is_done=False,
+                    )
+                )
+
+        # Sort by priority descending
+        queue_items.sort(key=lambda x: x.priority, reverse=True)
+
+        return FollowupQueueResponse(
+            status="ok",
+            queue_meta=QueueMeta(
+                total=len(queue_items),
+                time_window_days=payload.time_window_days,
+            ),
+            items=queue_items,
+        )
+
+    except Exception as e:
+        logger.exception("Error generating followup queue")
+        return FollowupQueueResponse(
+            status="error", message=f"Failed to generate followup queue: {str(e)}"
         )

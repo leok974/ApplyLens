@@ -1688,3 +1688,44 @@ Generate a professional follow-up email as JSON."""
                 logger.warning(f"OpenAI draft generation failed: {e}")
 
         return None
+
+    async def get_followup_queue(
+        self,
+        user_id: str,
+        time_window_days: int = 30,
+    ) -> Dict[str, Any]:
+        """Get followups from Agent V2 in preview mode."""
+        from app.schemas_agent import AgentRunRequest
+
+        # Call the agent with followups intent in preview mode
+        req = AgentRunRequest(
+            user_id=user_id,
+            intent="followups",
+            mode="preview_only",
+            time_window_days=time_window_days,
+        )
+
+        response = await self.run(req, db=None)
+
+        # Extract thread data from cards
+        threads = []
+        for card in response.cards:
+            if card.card_type == "thread_list" and card.data:
+                thread_list = card.data.get("threads", [])
+                for thread in thread_list:
+                    threads.append(
+                        {
+                            "thread_id": thread.get("thread_id")
+                            or thread.get("threadId", ""),
+                            "subject": thread.get("subject", ""),
+                            "snippet": thread.get("snippet", ""),
+                            "from": thread.get("from", ""),
+                            "last_message_at": thread.get("lastMessageAt"),
+                            "gmail_url": thread.get("gmailUrl"),
+                            "priority": thread.get(
+                                "priority", 50
+                            ),  # Default mid priority
+                        }
+                    )
+
+        return {"threads": threads, "time_window_days": time_window_days}

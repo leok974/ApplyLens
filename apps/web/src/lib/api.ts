@@ -895,6 +895,63 @@ export async function generateFollowupDraft(
   return res.json() as Promise<FollowupDraftResponse>;
 }
 
+// ===== Follow-up Queue =====
+
+export interface QueueMeta {
+  total: number;
+  time_window_days: number;
+}
+
+export interface QueueItem {
+  thread_id: string;
+  application_id?: number;
+  priority: number;
+  reason_tags: string[];
+  company?: string;
+  role?: string;
+  subject?: string;
+  snippet?: string;
+  last_message_at?: string;
+  status?: string;
+  gmail_url?: string;
+  is_done: boolean;
+}
+
+export interface FollowupQueueRequest {
+  user_id?: string;
+  time_window_days?: number;
+}
+
+export interface FollowupQueueResponse {
+  status: 'ok' | 'error';
+  queue_meta?: QueueMeta;
+  items: QueueItem[];
+  message?: string;
+}
+
+export async function getFollowupQueue(
+  req: FollowupQueueRequest = {}
+): Promise<FollowupQueueResponse> {
+  const res = await fetch('/v2/agent/followup-queue', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-csrf-token': getCsrf(),
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      time_window_days: req.time_window_days || 30,
+      ...req,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to get followup queue: ${res.statusText}`);
+  }
+
+  return res.json() as Promise<FollowupQueueResponse>;
+}
+
 
 // ===== Sender Overrides =====
 

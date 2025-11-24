@@ -433,3 +433,48 @@ class FollowupDraftResponse(BaseModel):
     status: Literal["ok", "error"] = "ok"
     draft: Optional[FollowupDraft] = None
     message: Optional[str] = None
+
+
+# =============================================================================
+# Follow-up Queue (merged mailbox + tracker)
+# =============================================================================
+
+
+class QueueMeta(BaseModel):
+    """Metadata about the follow-up queue."""
+
+    total: int
+    time_window_days: int
+
+
+class QueueItem(BaseModel):
+    """Single item in the follow-up queue."""
+
+    thread_id: str
+    application_id: Optional[int] = None
+    priority: int  # Higher = more urgent
+    reason_tags: List[str] = []
+    company: Optional[str] = None
+    role: Optional[str] = None
+    subject: Optional[str] = None
+    snippet: Optional[str] = None
+    last_message_at: Optional[str] = None
+    status: Optional[str] = None
+    gmail_url: Optional[str] = None
+    is_done: bool = False
+
+
+class FollowupQueueRequest(BaseModel):
+    """Request to get the follow-up queue."""
+
+    user_id: str
+    time_window_days: int = 30
+
+
+class FollowupQueueResponse(BaseModel):
+    """Response with merged follow-up queue."""
+
+    status: Literal["ok", "error"] = "ok"
+    queue_meta: Optional[QueueMeta] = None
+    items: List[QueueItem] = []
+    message: Optional[str] = None

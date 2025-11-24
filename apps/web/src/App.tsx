@@ -19,6 +19,7 @@ import InboxPolishedDemo from './pages/InboxPolishedDemo'
 import ChatPage from './pages/ChatPage'
 import PolicyStudio from './pages/PolicyStudio'
 import Today from './pages/Today'
+import { FollowupQueue } from './pages/FollowupQueue'
 import { ToastProvider } from './components/ui/use-toast'
 import { Toaster } from './components/ui/sonner'
 import { ProfileSummary } from './components/profile/ProfileSummary'
@@ -51,6 +52,7 @@ export default function App() {
                   <Route path="/search" element={<Search />} />
                   <Route path="/chat" element={<ChatPage />} />
                   <Route path="/today" element={<Today />} />
+                  <Route path="/followups" element={<FollowupQueue />} />
                   <Route path="/tracker" element={<TrackerPage />} />
                   <Route path="/profile" element={<ProfileSummary />} />
                   <Route path="/applications" element={<Applications />} />

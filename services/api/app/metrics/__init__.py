@@ -35,6 +35,7 @@ try:
     parity_mismatches_total = metrics_module.parity_mismatches_total
     AGENT_TODAY_DURATION_SECONDS = metrics_module.AGENT_TODAY_DURATION_SECONDS
     FOLLOWUP_DRAFT_REQUESTS = metrics_module.FOLLOWUP_DRAFT_REQUESTS
+    FOLLOWUP_QUEUE_REQUESTS = metrics_module.FOLLOWUP_QUEUE_REQUESTS
 except (ImportError, AttributeError):
     # Fallback - create empty placeholders
     from prometheus_client import Counter, Gauge, Histogram, Summary
@@ -77,6 +78,10 @@ except (ImportError, AttributeError):
         "Follow-up drafts requested",
         ["source"],
     )
+    FOLLOWUP_QUEUE_REQUESTS = Counter(
+        "applylens_followup_queue_requested_total",
+        "Follow-up queue requests",
+    )
 
     def record_tool(tool_name: str, hits: int, window_days: int = 30) -> None:
         """Fallback record_tool function"""
@@ -107,4 +112,5 @@ __all__ = [
     "parity_mismatches_total",
     "AGENT_TODAY_DURATION_SECONDS",
     "FOLLOWUP_DRAFT_REQUESTS",
+    "FOLLOWUP_QUEUE_REQUESTS",
 ]

@@ -207,3 +207,10 @@ FOLLOWUP_DRAFT_REQUESTS = Counter(
     "Number of follow-up drafts requested",
     ["source"],  # thread_viewer, etc.
 )
+
+# --- Follow-up Queue Metrics ---
+
+FOLLOWUP_QUEUE_REQUESTS = Counter(
+    "applylens_followup_queue_requested_total",
+    "Number of follow-up queue requests",
+)
