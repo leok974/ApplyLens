@@ -312,4 +312,82 @@ describe('Today Page', () => {
       expect(screen.getByText('Suspicious')).toBeInTheDocument();
     });
   });
+
+  describe('Follow-ups Summary', () => {
+    it('renders follow-ups summary card when data is present', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            intents: [],
+            followups: {
+              total: 10,
+              done_count: 4,
+              remaining_count: 6,
+              time_window_days: 90,
+            },
+          }),
+        } as Response)
+      );
+
+      renderWithRouter();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('today-followups-card')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('4 / 10 done')).toBeInTheDocument();
+      expect(screen.getByText(/6 remaining · last 90 days/i)).toBeInTheDocument();
+      expect(screen.getByText('40%')).toBeInTheDocument();
+    });
+
+    it('navigates to /followups when Open queue button is clicked', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            intents: [],
+            followups: {
+              total: 5,
+              done_count: 2,
+              remaining_count: 3,
+              time_window_days: 90,
+            },
+          }),
+        } as Response)
+      );
+
+      const { user } = render(<Today />, { wrapper: MemoryRouter });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('today-followups-card')).toBeInTheDocument();
+      });
+
+      const openQueueButton = screen.getByTestId('today-followups-open-queue');
+      await user.click(openQueueButton);
+
+      expect(mockNavigate).toHaveBeenCalledWith('/followups');
+    });
+
+    it('does not render follow-ups card when data is not present', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            intents: [],
+            // no followups field
+          }),
+        } as Response)
+      );
+
+      renderWithRouter();
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('today-followups-card')).not.toBeInTheDocument();
+      });
+    });
+  });
 });

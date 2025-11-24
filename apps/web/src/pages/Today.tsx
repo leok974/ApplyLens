@@ -63,9 +63,17 @@ interface IntentData {
   threads: MailThreadSummary[];
 }
 
+interface FollowupSummary {
+  total: number;
+  done_count: number;
+  remaining_count: number;
+  time_window_days: number;
+}
+
 interface TodayResponse {
   status: string;
   intents: IntentData[];
+  followups?: FollowupSummary;
 }
 
 export default function Today() {
@@ -235,6 +243,61 @@ export default function Today() {
           What should you do with your inbox today?
         </p>
       </div>
+
+      {/* Follow-ups Summary Card */}
+      {data.followups && (
+        <Card
+          className="mb-6 border-blue-500/20 bg-blue-500/5"
+          data-testid="today-followups-card"
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <span className="text-2xl">🔄</span>
+                  <span>Follow-ups</span>
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {data.followups.remaining_count} remaining · last {data.followups.time_window_days} days
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => navigate('/followups')}
+                data-testid="today-followups-open-queue"
+              >
+                Open queue
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-foreground">
+                {data.followups.done_count} / {data.followups.total} done
+              </span>
+              <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                  style={{
+                    width: `${
+                      data.followups.total === 0
+                        ? 0
+                        : Math.round((data.followups.done_count / data.followups.total) * 100)
+                    }%`,
+                  }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {data.followups.total === 0
+                  ? '0%'
+                  : `${Math.round((data.followups.done_count / data.followups.total) * 100)}%`}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Intent Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

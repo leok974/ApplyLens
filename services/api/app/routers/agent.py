@@ -354,10 +354,60 @@ async def today_triage(
             f"Today: completed for user={user_id}, {len(results)}/{len(scan_intents)} intents succeeded"
         )
 
-        return {
+        # 5. Fetch follow-up queue summary for Today panel
+        followups_summary = None
+        try:
+            from app.models import FollowupQueueState
+
+            # Call get_followup_queue to get the meta
+            queue_result = await orchestrator.get_followup_queue(
+                user_id=user_id,
+                time_window_days=time_window_days,
+            )
+
+            if queue_result:
+                threads = queue_result.get("threads", [])
+                total = len(threads)
+
+                # Fetch state to calculate done_count
+                state_rows = (
+                    db.query(FollowupQueueState)
+                    .filter(FollowupQueueState.user_id == user_id)
+                    .all()
+                )
+                state_by_thread = {row.thread_id: row for row in state_rows}
+
+                done_count = sum(
+                    1
+                    for thread in threads
+                    if state_by_thread.get(thread.get("thread_id", ""), None)
+                    and state_by_thread[thread["thread_id"]].is_done
+                )
+                remaining_count = total - done_count
+
+                followups_summary = {
+                    "total": total,
+                    "done_count": done_count,
+                    "remaining_count": remaining_count,
+                    "time_window_days": queue_result.get(
+                        "time_window_days", time_window_days
+                    ),
+                }
+        except Exception as e:
+            logger.warning(
+                f"Today: failed to fetch followups summary: {e}",
+                exc_info=True,
+            )
+            # Continue without followups summary (graceful degradation)
+
+        response = {
             "status": "ok",
             "intents": results,
         }
+        if followups_summary:
+            response["followups"] = followups_summary
+
+        return response
 
     except HTTPException:
         raise

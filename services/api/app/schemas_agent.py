@@ -488,3 +488,12 @@ class FollowupStateUpdate(BaseModel):
     thread_id: str
     application_id: Optional[int] = None
     is_done: bool
+
+
+class FollowupSummary(BaseModel):
+    """Summary of follow-up queue for Today panel."""
+
+    total: int
+    done_count: int
+    remaining_count: int
+    time_window_days: int
