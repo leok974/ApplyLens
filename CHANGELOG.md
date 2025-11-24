@@ -5,6 +5,65 @@ All notable changes to ApplyLens will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2025-11-24
+
+### ✨ Features
+
+#### Follow-up Queue – Unified View of Mailbox Followups + Tracker Applications
+- **POST /v2/agent/followup-queue endpoint** - Merge mailbox followups with Tracker applications
+  - Calls Agent V2 orchestrator with "followups" intent in preview_only mode
+  - Queries applications where `needs_followup = true` (has thread_id + status in {applied, hr_screen, interview})
+  - Merges threads and applications by `thread_id` with priority boosting
+  - Priority system: Items with applications get 70+ priority, orphan apps get 60
+  - Sorts by priority descending for optimal follow-up workflow
+  - Returns: `{status, queue_meta: {total, time_window_days}, items: [{thread_id, application_id?, priority, reason_tags[], company?, role?, subject, snippet, last_message_at, status?, gmail_url, is_done}]}`
+  - Reference: `services/api/app/routers/agent.py`, `services/api/app/agent/orchestrator.py`
+
+- **Follow-up Queue page** - Unified UI for follow-up management
+  - Route: `/followups` with navigation entry in AppHeader
+  - **Split layout**: Left sidebar (queue list) + right panel (thread details)
+  - **Queue list component**: Company/role display, status badges, age chips, priority indicators
+  - **Done toggle**: Mark items complete with visual feedback (opacity/strikethrough)
+  - **Details panel**: Company/role info, status, last update, priority, reason tags
+  - **Action buttons**: Open in Gmail, Open in Tracker (when application_id present)
+  - Loading skeleton, empty state ("All caught up!"), error handling
+  - Reference: `apps/web/src/pages/FollowupQueue.tsx`, `apps/web/src/components/followups/FollowupQueueList.tsx`
+
+- **useFollowupQueue hook** - State management for queue
+  - Auto-loads queue on mount with `loadQueue()`
+  - `markDone(item)`: Toggles `is_done` locally (client-side only)
+  - Returns: items, queueMeta, isLoading, error, selectedItem, setSelectedItem, markDone, refresh
+  - Reference: `apps/web/src/hooks/useFollowupQueue.ts`
+
+- **Analytics & Metrics** - Usage tracking for follow-up queue
+  - Prometheus metric: `applylens_followup_queue_requested_total`
+  - Reference: `services/api/app/metrics.py`
+
+### 🧪 Testing
+
+- **Backend unit tests** - Comprehensive test coverage for queue endpoint
+  - 4 tests for `/v2/agent/followup-queue` endpoint: merging, orphan apps, counts, sorting
+  - Reference: `services/api/tests/test_agent_followup_queue.py`
+
+- **Frontend unit tests** - React Testing Library tests for UI
+  - Component tests for `FollowupQueueList`: badges, chips, done toggle, selection
+  - Page tests for `FollowupQueue`: loading, empty state, error handling, list rendering
+  - Reference: `apps/web/src/components/followups/__tests__/FollowupQueueList.test.tsx`, `apps/web/src/pages/__tests__/FollowupQueue.test.tsx`
+
+- **E2E tests** - Production-safe Playwright tests
+  - Navigation to `/followups`, row selection, done toggle interaction
+  - `test.skip()` when no queue items present for production safety
+  - Reference: `apps/web/tests/e2e/followup-queue.spec.ts`
+
+### 📚 Documentation
+
+- Added schemas: `QueueMeta`, `QueueItem`, `FollowupQueueRequest`, `FollowupQueueResponse`
+- Priority-based workflow: Applications boost priority for better triage
+- Badges: Status (applied/hr_screen/interview), Priority (High/Medium/Low), Age (Xd ago)
+- Dark-first Banana theme with zinc palette for consistent UI
+
+---
+
 ## [0.6.1] - 2025-11-24
 
 ### ✨ Features
