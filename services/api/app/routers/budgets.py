@@ -8,6 +8,7 @@ Provides:
 - POST /budgets/evaluate - Run gate evaluation
 - GET /budgets/violations - Get recent violations
 """
+
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,9 +17,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..eval.budgets import (
-    Budget,
     GateEvaluator,
-    BudgetViolation,
     DEFAULT_BUDGETS,
     format_gate_report,
 )
@@ -30,8 +29,10 @@ router = APIRouter(prefix="/budgets", tags=["budgets"])
 
 # ===== Request/Response Models =====
 
+
 class BudgetSchema(BaseModel):
     """Budget configuration."""
+
     agent: str
     min_quality_score: Optional[float] = Field(None, ge=0, le=100)
     min_success_rate: Optional[float] = Field(None, ge=0, le=1)
@@ -46,12 +47,14 @@ class BudgetSchema(BaseModel):
 
 class BudgetResponse(BaseModel):
     """Budget response."""
+
     budget: BudgetSchema
     is_default: bool
 
 
 class EvaluateRequest(BaseModel):
     """Gate evaluation request."""
+
     agent: Optional[str] = None
     lookback_days: int = Field(7, ge=1, le=90)
     baseline_days: int = Field(14, ge=1, le=180)
@@ -59,6 +62,7 @@ class EvaluateRequest(BaseModel):
 
 class ViolationSchema(BaseModel):
     """Budget violation."""
+
     agent: str
     budget_type: str
     threshold: float
@@ -70,6 +74,7 @@ class ViolationSchema(BaseModel):
 
 class EvaluationResponse(BaseModel):
     """Gate evaluation response."""
+
     passed: bool
     violations: List[ViolationSchema]
     current_metrics: Optional[Dict[str, Any]] = None
@@ -82,11 +87,12 @@ class EvaluationResponse(BaseModel):
 
 # ===== Endpoints =====
 
+
 @router.get("/", response_model=Dict[str, BudgetResponse])
 async def list_budgets():
     """
     List all agent budgets.
-    
+
     Returns default budgets (customization not implemented yet).
     """
     response = {}
@@ -113,16 +119,18 @@ async def list_budgets():
 async def get_budget(agent: str):
     """
     Get budget for specific agent.
-    
+
     Args:
         agent: Agent identifier
-        
+
     Returns:
         Budget configuration
     """
     if agent not in DEFAULT_BUDGETS:
-        raise HTTPException(status_code=404, detail=f"No budget found for agent: {agent}")
-    
+        raise HTTPException(
+            status_code=404, detail=f"No budget found for agent: {agent}"
+        )
+
     budget = DEFAULT_BUDGETS[agent]
     return BudgetResponse(
         budget=BudgetSchema(
@@ -148,14 +156,14 @@ async def evaluate_gates(
 ):
     """
     Run gate evaluation against budgets.
-    
+
     Evaluates agent metrics against budget thresholds and baseline.
     Used in CI to fail builds on regressions.
-    
+
     Args:
         request: Evaluation parameters
         db: Database session
-        
+
     Returns:
         Evaluation results with violations
     """
@@ -166,9 +174,9 @@ async def evaluate_gates(
             current_metrics={},
             baseline_metrics={},
         )
-    
+
     evaluator = GateEvaluator(db)
-    
+
     if request.agent:
         # Single agent
         result = evaluator.evaluate_agent(
@@ -176,7 +184,7 @@ async def evaluate_gates(
             lookback_days=request.lookback_days,
             baseline_days=request.baseline_days,
         )
-        
+
         return EvaluationResponse(
             passed=result["passed"],
             violations=[
@@ -201,12 +209,12 @@ async def evaluate_gates(
             lookback_days=request.lookback_days,
             baseline_days=request.baseline_days,
         )
-        
+
         # Flatten violations from all agents
         all_violations = []
         for agent_result in result["results"].values():
             all_violations.extend(agent_result["violations"])
-        
+
         return EvaluationResponse(
             passed=result["passed"],
             violations=[
@@ -236,18 +244,18 @@ async def get_recent_violations(
 ):
     """
     Get recent budget violations.
-    
+
     Args:
         agent: Optional agent filter
         severity: Optional severity filter (critical, error, warning)
         days: Days to look back
         db: Database session
-        
+
     Returns:
         List of recent violations
     """
     evaluator = GateEvaluator(db)
-    
+
     # Run evaluation to get violations
     if agent:
         result = evaluator.evaluate_agent(agent=agent, lookback_days=days)
@@ -257,11 +265,11 @@ async def get_recent_violations(
         violations = []
         for agent_result in result["results"].values():
             violations.extend(agent_result["violations"])
-    
+
     # Filter by severity
     if severity:
         violations = [v for v in violations if v.severity == severity]
-    
+
     return [
         ViolationSchema(
             agent=v.agent,
@@ -283,21 +291,21 @@ async def evaluate_gates_report(
 ):
     """
     Run gate evaluation and return formatted report.
-    
+
     Returns human-readable markdown report suitable for:
     - CI output
     - Slack notifications
     - Email alerts
-    
+
     Args:
         request: Evaluation parameters
         db: Database session
-        
+
     Returns:
         Markdown formatted report
     """
     evaluator = GateEvaluator(db)
-    
+
     if request.agent:
         result = evaluator.evaluate_agent(
             agent=request.agent,
@@ -309,9 +317,9 @@ async def evaluate_gates_report(
             lookback_days=request.lookback_days,
             baseline_days=request.baseline_days,
         )
-    
+
     report = format_gate_report(result)
-    
+
     return {
         "passed": result["passed"],
         "report": report,

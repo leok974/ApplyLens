@@ -3,9 +3,10 @@
 Tests the /api/metrics/divergence-24h endpoint with mocked
 data to verify correct status determination (ok/degraded/paused).
 """
+
 import pytest
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 
 @pytest.mark.asyncio
@@ -38,7 +39,9 @@ async def test_divergence_states(
     """Test divergence calculation with various ES/BQ count combinations."""
     with patch("app.routers.metrics.compute_divergence_24h") as mock_compute:
         # Mock the compute function to return test data
-        divergence_val = abs(es_count - bq_count) / max(bq_count, 1) if bq_count > 0 else 0.0
+        divergence_val = (
+            abs(es_count - bq_count) / max(bq_count, 1) if bq_count > 0 else 0.0
+        )
         divergence_pct = round(divergence_val * 100, 2)
 
         mock_compute.return_value = {
@@ -162,6 +165,7 @@ async def test_divergence_network_timeout(client: AsyncClient):
     with patch("app.routers.metrics.compute_divergence_24h") as mock_compute:
         # Simulate timeout exception
         from concurrent.futures import TimeoutError
+
         mock_compute.side_effect = TimeoutError("Query timeout")
 
         response = await client.get("/api/metrics/divergence-24h")

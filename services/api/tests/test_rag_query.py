@@ -2,7 +2,7 @@
 """
 Tests for Phase 4 AI Feature: RAG Search
 """
-import pytest
+
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
@@ -32,13 +32,11 @@ class TestRagQueryEndpoint:
                             "message_id": "msg-001",
                             "sender": "bianca@techcorp.com",
                             "subject": "Interview Scheduling",
-                            "date": "2025-01-14T09:00:00Z"
+                            "date": "2025-01-14T09:00:00Z",
                         },
                         "highlight": {
-                            "body_text": [
-                                "...initial <em>interview</em> scheduling..."
-                            ]
-                        }
+                            "body_text": ["...initial <em>interview</em> scheduling..."]
+                        },
                     },
                     {
                         "_id": "msg-002",
@@ -48,30 +46,27 @@ class TestRagQueryEndpoint:
                             "message_id": "msg-002",
                             "sender": "hiring@startup.io",
                             "subject": "Re: Interview",
-                            "date": "2025-01-14T14:30:00Z"
+                            "date": "2025-01-14T14:30:00Z",
                         },
-                        "highlight": {
-                            "subject": ["Re: <em>Interview</em>"]
-                        }
-                    }
-                ]
+                        "highlight": {"subject": ["Re: <em>Interview</em>"]},
+                    },
+                ],
             }
         }
         mock_es_client.return_value = mock_es
 
         response = client.post(
-            "/api/rag/query",
-            json={"q": "interview scheduling", "k": 5}
+            "/api/rag/query", json={"q": "interview scheduling", "k": 5}
         )
 
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "hits" in data
         assert "total" in data
         assert len(data["hits"]) == 2
         assert data["total"] == 3
-        
+
         # Check first hit structure
         hit = data["hits"][0]
         assert hit["thread_id"] == "demo-1"
@@ -86,14 +81,11 @@ class TestRagQueryEndpoint:
         """Should fall back to mock data when ES is unavailable"""
         mock_es_client.return_value = None  # ES unavailable
 
-        response = client.post(
-            "/api/rag/query",
-            json={"q": "interview", "k": 3}
-        )
+        response = client.post("/api/rag/query", json={"q": "interview", "k": 3})
 
         assert response.status_code == 200
         data = response.json()
-        
+
         # Should return mock data
         assert "hits" in data
         assert len(data["hits"]) <= 3  # Respects k parameter
@@ -101,10 +93,7 @@ class TestRagQueryEndpoint:
     @patch("app.routers.rag.FEATURE_RAG_SEARCH", False)
     def test_rag_query_feature_disabled(self):
         """Should return 503 when feature is disabled"""
-        response = client.post(
-            "/api/rag/query",
-            json={"q": "test", "k": 5}
-        )
+        response = client.post("/api/rag/query", json={"q": "test", "k": 5})
 
         assert response.status_code == 503
         assert "disabled" in response.json()["detail"].lower()
@@ -113,30 +102,18 @@ class TestRagQueryEndpoint:
     def test_rag_query_validation(self):
         """Should validate request parameters"""
         # Empty query
-        response = client.post(
-            "/api/rag/query",
-            json={"q": "", "k": 5}
-        )
+        response = client.post("/api/rag/query", json={"q": "", "k": 5})
         assert response.status_code == 422  # Validation error
 
         # Query too long
-        response = client.post(
-            "/api/rag/query",
-            json={"q": "x" * 501, "k": 5}
-        )
+        response = client.post("/api/rag/query", json={"q": "x" * 501, "k": 5})
         assert response.status_code == 422
 
         # k out of range
-        response = client.post(
-            "/api/rag/query",
-            json={"q": "test", "k": 0}
-        )
+        response = client.post("/api/rag/query", json={"q": "test", "k": 0})
         assert response.status_code == 422
 
-        response = client.post(
-            "/api/rag/query",
-            json={"q": "test", "k": 21}
-        )
+        response = client.post("/api/rag/query", json={"q": "test", "k": 21})
         assert response.status_code == 422
 
     @patch("app.routers.rag.FEATURE_RAG_SEARCH", True)
@@ -154,25 +131,22 @@ class TestRagQueryEndpoint:
                     "message_id": f"msg-{i:03d}",
                     "sender": "test@example.com",
                     "subject": f"Email {i}",
-                    "date": "2025-01-15T10:00:00Z"
+                    "date": "2025-01-15T10:00:00Z",
                 },
-                "highlight": {"body_text": [f"match {i}"]}
+                "highlight": {"body_text": [f"match {i}"]},
             }
             for i in range(10)
         ]
-        
+
         mock_es.search.return_value = {
             "hits": {
                 "total": {"value": 10},
-                "hits": mock_hits[:3]  # ES respects size parameter
+                "hits": mock_hits[:3],  # ES respects size parameter
             }
         }
         mock_es_client.return_value = mock_es
 
-        response = client.post(
-            "/api/rag/query",
-            json={"q": "test", "k": 3}
-        )
+        response = client.post("/api/rag/query", json={"q": "test", "k": 3})
 
         assert response.status_code == 200
         data = response.json()
@@ -183,17 +157,11 @@ class TestRagQueryEndpoint:
     def test_rag_query_handles_no_results(self, mock_es_client):
         """Should handle queries with no results"""
         mock_es = MagicMock()
-        mock_es.search.return_value = {
-            "hits": {
-                "total": {"value": 0},
-                "hits": []
-            }
-        }
+        mock_es.search.return_value = {"hits": {"total": {"value": 0}, "hits": []}}
         mock_es_client.return_value = mock_es
 
         response = client.post(
-            "/api/rag/query",
-            json={"q": "nonexistent query xyz", "k": 5}
+            "/api/rag/query", json={"q": "nonexistent query xyz", "k": 5}
         )
 
         assert response.status_code == 200

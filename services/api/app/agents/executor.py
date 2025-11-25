@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
 from .audit import AgentAuditor
-from .guardrails import ExecutionGuardrails, GuardrailViolation, create_guardrails
+from .guardrails import GuardrailViolation, create_guardrails
 from ..events import AgentEvent, get_event_bus
 from ..observability import record_agent_run
 from ..policy import PolicyEngine, Budget
@@ -17,7 +17,7 @@ from ..policy.defaults import get_default_policies
 
 class Executor:
     """Executes agent plans and tracks run state.
-    
+
     Manages execution lifecycle:
     - Creates run records with unique IDs
     - Tracks status (running -> succeeded/failed)
@@ -26,16 +26,16 @@ class Executor:
     - Logs to audit trail if enabled
     - Emits events to event bus for real-time updates
     """
-    
+
     def __init__(
-        self, 
-        run_store: Dict[str, dict], 
+        self,
+        run_store: Dict[str, dict],
         auditor: AgentAuditor | None = None,
         event_bus_enabled: bool = True,
-        policy_engine: Optional[PolicyEngine] = None
+        policy_engine: Optional[PolicyEngine] = None,
     ):
         """Initialize executor with a run store.
-        
+
         Args:
             run_store: Dictionary to store run records by run_id
             auditor: Optional auditor for database logging
@@ -49,29 +49,29 @@ class Executor:
             self.event_bus = get_event_bus()
         else:
             self.event_bus = None
-        
+
         # Initialize policy engine with default policies if not provided
         if policy_engine is None:
             self.policy_engine = PolicyEngine(get_default_policies())
         else:
             self.policy_engine = policy_engine
-        
+
         # Initialize guardrails with policy engine
         self.guardrails = create_guardrails(self.policy_engine)
-    
+
     def execute(
-        self, 
-        plan: Dict[str, Any], 
+        self,
+        plan: Dict[str, Any],
         handler: Callable[[Dict[str, Any]], Dict[str, Any]],
         user_email: str | None = None,
         budget_ms: int | None = None,
         budget_ops: int | None = None,
         budget_cost_cents: int | None = None,
         allow_actions: bool = False,
-        planner_meta: Dict[str, Any] | None = None
+        planner_meta: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         """Execute a plan using the provided handler.
-        
+
         Args:
             plan: Execution plan from planner
             handler: Callable that executes the plan
@@ -81,7 +81,7 @@ class Executor:
             budget_cost_cents: Optional max cost in cents
             allow_actions: Whether to allow actions (requires dry_run=false)
             planner_meta: Optional metadata from planner switchboard (canary, diff, etc.)
-            
+
         Returns:
             Run record with status, logs, and artifacts
         """
@@ -89,10 +89,10 @@ class Executor:
         t0 = time.perf_counter()
         ops_count = 0
         cost_cents_used = 0
-        
+
         # Create budget object
         budget = Budget(ms=budget_ms, ops=budget_ops, cost_cents=budget_cost_cents)
-        
+
         run = {
             "run_id": run_id,
             "status": "running",
@@ -105,32 +105,37 @@ class Executor:
             "budget_cost_cents": budget_cost_cents,
             "ops_count": 0,
             "cost_cents_used": 0,
-            "planner_meta": planner_meta or {}  # Phase 5.1: Persist canary metadata
+            "planner_meta": planner_meta or {},  # Phase 5.1: Persist canary metadata
         }
         self.run_store[run_id] = run
-        
+
         # Check if actions are allowed
         if not allow_actions and not plan.get("dry_run", True):
-            run.update({
-                "status": "failed",
-                "finished_at": datetime.utcnow(),
-                "logs": run["logs"] + ["error: Actions not allowed (allow_actions=false)"],
-            })
+            run.update(
+                {
+                    "status": "failed",
+                    "finished_at": datetime.utcnow(),
+                    "logs": run["logs"]
+                    + ["error: Actions not allowed (allow_actions=false)"],
+                }
+            )
             return run
-        
+
         # Emit run_started event
         if self.event_bus:
-            self.event_bus.publish_sync(AgentEvent(
-                event_type="run_started",
-                run_id=run_id,
-                agent=plan["agent"],
-                timestamp=time.time(),
-                data={
-                    "objective": plan["objective"],
-                    "plan": plan,
-                }
-            ))
-        
+            self.event_bus.publish_sync(
+                AgentEvent(
+                    event_type="run_started",
+                    run_id=run_id,
+                    agent=plan["agent"],
+                    timestamp=time.time(),
+                    data={
+                        "objective": plan["objective"],
+                        "plan": plan,
+                    },
+                )
+            )
+
         # Log start to audit trail
         if self.auditor:
             self.auditor.log_start(
@@ -139,23 +144,20 @@ class Executor:
                 objective=plan["objective"],
                 plan=plan,
                 user_email=user_email,
-                planner_meta=planner_meta
+                planner_meta=planner_meta,
             )
-        
+
         try:
             # PRE-EXECUTION GUARDRAILS
             # Validate action before execution (policy compliance, params, etc.)
             try:
                 action = plan.get("action", "execute")
                 context = plan.get("context", {})
-                
+
                 policy_decision = self.guardrails.validate_pre_execution(
-                    agent=plan["agent"],
-                    action=action,
-                    context=context,
-                    plan=plan
+                    agent=plan["agent"], action=action, context=context, plan=plan
                 )
-                
+
                 # If approval required, log and fail
                 if policy_decision.requires_approval:
                     run["logs"].append(
@@ -168,66 +170,71 @@ class Executor:
                             "agent": plan["agent"],
                             "action": action,
                             "rule_id": policy_decision.rule_id,
-                            "reason": policy_decision.reason
-                        }
+                            "reason": policy_decision.reason,
+                        },
                     )
-                
+
                 run["logs"].append(
                     f"info: Pre-execution guardrails passed (rule: {policy_decision.rule_id or 'default'})"
                 )
-            
+
             except GuardrailViolation as e:
                 # Guardrail violation - fail fast
                 run["logs"].append(f"error: Guardrail violation: {e.message}")
                 raise
-            
+
             # Create execution context with budget tracking
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
             budget_status = budget.is_exceeded(
                 elapsed_ms=elapsed_ms,
                 ops_used=ops_count,
-                cost_cents_used=cost_cents_used
+                cost_cents_used=cost_cents_used,
             )
-            
+
             if budget_status["exceeded"]:
-                raise RuntimeError(
-                    f"Budget exceeded before execution: {budget_status}"
-                )
-            
+                raise RuntimeError(f"Budget exceeded before execution: {budget_status}")
+
             # Execute handler with budget tracking callback
             result = handler(plan)
-            
+
             # POST-EXECUTION GUARDRAILS
             # Validate result structure and resource usage
             try:
                 self.guardrails.validate_post_execution(
-                    agent=plan["agent"],
-                    action=action,
-                    context=context,
-                    result=result
+                    agent=plan["agent"], action=action, context=context, result=result
                 )
-                
+
                 run["logs"].append("info: Post-execution guardrails passed")
-            
+
             except GuardrailViolation as e:
                 # Post-execution violation - log but don't fail (action already executed)
-                run["logs"].append(f"warning: Post-execution guardrail violation: {e.message}")
+                run["logs"].append(
+                    f"warning: Post-execution guardrail violation: {e.message}"
+                )
                 # Continue processing but mark as warning
-            
+
             # Update ops count (handler should track operations)
-            ops_count = result.get("ops_count", ops_count) if isinstance(result, dict) else ops_count
-            cost_cents_used = result.get("cost_cents_used", cost_cents_used) if isinstance(result, dict) else cost_cents_used
+            ops_count = (
+                result.get("ops_count", ops_count)
+                if isinstance(result, dict)
+                else ops_count
+            )
+            cost_cents_used = (
+                result.get("cost_cents_used", cost_cents_used)
+                if isinstance(result, dict)
+                else cost_cents_used
+            )
             run["ops_count"] = ops_count
             run["cost_cents_used"] = cost_cents_used
-            
+
             # Check budget after execution
             elapsed_ms = int((time.perf_counter() - t0) * 1000)
             budget_status = budget.is_exceeded(
                 elapsed_ms=elapsed_ms,
                 ops_used=ops_count,
-                cost_cents_used=cost_cents_used
+                cost_cents_used=cost_cents_used,
             )
-            
+
             if budget_status["exceeded"]:
                 exceeded_details = []
                 if budget_status.get("time_exceeded"):
@@ -235,87 +242,93 @@ class Executor:
                 if budget_status.get("ops_exceeded"):
                     exceeded_details.append(f"ops: {ops_count} > {budget_ops}")
                 if budget_status.get("cost_exceeded"):
-                    exceeded_details.append(f"cost: {cost_cents_used}¢ > {budget_cost_cents}¢")
-                
+                    exceeded_details.append(
+                        f"cost: {cost_cents_used}¢ > {budget_cost_cents}¢"
+                    )
+
                 run["logs"].append(
                     f"warning: Budget exceeded during execution: {', '.join(exceeded_details)}"
                 )
-            
+
             duration_ms = elapsed_ms
-            
-            run.update({
-                "status": "succeeded",
-                "finished_at": datetime.utcnow(),
-                "artifacts": result or {},
-            })
-            
+
+            run.update(
+                {
+                    "status": "succeeded",
+                    "finished_at": datetime.utcnow(),
+                    "artifacts": result or {},
+                }
+            )
+
             # Emit run_finished event
             if self.event_bus:
-                self.event_bus.publish_sync(AgentEvent(
-                    event_type="run_finished",
-                    run_id=run_id,
-                    agent=plan["agent"],
-                    timestamp=time.time(),
-                    data={
-                        "status": "succeeded",
-                        "artifacts": result or {},
-                        "duration_ms": duration_ms,
-                    }
-                ))
-            
+                self.event_bus.publish_sync(
+                    AgentEvent(
+                        event_type="run_finished",
+                        run_id=run_id,
+                        agent=plan["agent"],
+                        timestamp=time.time(),
+                        data={
+                            "status": "succeeded",
+                            "artifacts": result or {},
+                            "duration_ms": duration_ms,
+                        },
+                    )
+                )
+
             # Log success to audit trail
             if self.auditor:
                 self.auditor.log_finish(
                     run_id=run_id,
                     status="succeeded",
                     artifacts=result or {},
-                    duration_ms=duration_ms
+                    duration_ms=duration_ms,
                 )
-            
+
             # Record metrics
             record_agent_run(
-                agent=plan["agent"],
-                status="succeeded",
-                duration_ms=duration_ms
+                agent=plan["agent"], status="succeeded", duration_ms=duration_ms
             )
         except Exception as e:
             duration_ms = (time.perf_counter() - t0) * 1000
             error_msg = f"{type(e).__name__}: {e}"
-            
-            run.update({
-                "status": "failed",
-                "finished_at": datetime.utcnow(),
-                "logs": run["logs"] + [f"error: {e!r}"],
-            })
-            
+
+            run.update(
+                {
+                    "status": "failed",
+                    "finished_at": datetime.utcnow(),
+                    "logs": run["logs"] + [f"error: {e!r}"],
+                }
+            )
+
             # Emit run_failed event
             if self.event_bus:
-                self.event_bus.publish_sync(AgentEvent(
-                    event_type="run_failed",
-                    run_id=run_id,
-                    agent=plan["agent"],
-                    timestamp=time.time(),
-                    data={
-                        "status": "failed",
-                        "error": error_msg,
-                        "duration_ms": duration_ms,
-                    }
-                ))
-            
+                self.event_bus.publish_sync(
+                    AgentEvent(
+                        event_type="run_failed",
+                        run_id=run_id,
+                        agent=plan["agent"],
+                        timestamp=time.time(),
+                        data={
+                            "status": "failed",
+                            "error": error_msg,
+                            "duration_ms": duration_ms,
+                        },
+                    )
+                )
+
             # Log failure to audit trail
             if self.auditor:
                 self.auditor.log_finish(
                     run_id=run_id,
                     status="failed",
                     error=error_msg,
-                    duration_ms=duration_ms
+                    duration_ms=duration_ms,
                 )
-            
+
             # Record metrics
             record_agent_run(
-                agent=plan["agent"],
-                status="failed",
-                duration_ms=duration_ms
+                agent=plan["agent"], status="failed", duration_ms=duration_ms
             )
-        
+
         return run

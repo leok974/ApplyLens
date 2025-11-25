@@ -1,6 +1,6 @@
 """Session management for cookie-based authentication."""
+
 import secrets
-import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Response, Request
@@ -19,7 +19,7 @@ def new_session(db: DbSession, user_id: str) -> Session:
         id=sid,
         user_id=user_id,
         created_at=now,
-        expires_at=now + timedelta(hours=SESSION_TTL_HOURS)
+        expires_at=now + timedelta(hours=SESSION_TTL_HOURS),
     )
     db.add(sess)
     db.commit()
@@ -27,11 +27,7 @@ def new_session(db: DbSession, user_id: str) -> Session:
 
 
 def set_cookie(
-    response: Response,
-    sid: str,
-    domain: str,
-    secure: bool,
-    samesite: str = "lax"
+    response: Response, sid: str, domain: str, secure: bool, samesite: str = "lax"
 ):
     """Set session cookie on response."""
     response.set_cookie(
@@ -51,7 +47,7 @@ def clear_cookie(response: Response, domain: str):
     response.delete_cookie(
         SESSION_COOKIE,
         domain=domain if domain and domain != "localhost" else None,
-        path="/"
+        path="/",
     )
 
 
@@ -67,9 +63,9 @@ def verify_session(db: DbSession, request: Request) -> Optional[User]:
     sid = request.cookies.get(SESSION_COOKIE)
     if not sid:
         return None
-    
+
     sess = get_session(db, sid)
     if not sess or (sess.expires_at and sess.expires_at < datetime.now(timezone.utc)):
         return None
-    
+
     return db.query(User).filter(User.id == sess.user_id).first()
