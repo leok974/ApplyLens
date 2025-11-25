@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, AliasChoices
 from pydantic_settings import BaseSettings
 
 
@@ -13,15 +13,17 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     CORS_ORIGINS: str = "http://localhost:5175"
 
-    # Database URL - can be overridden by APPLYLENS_DEV_DB for local dev
+    # Database URL - accepts both DATABASE_URL and APPLYLENS_DEV_DB
     # NOTE: Prefer using POSTGRES_* env vars in production to avoid special char issues
     DATABASE_URL: Optional[str] = Field(
         default=None,
-        validation_alias="APPLYLENS_DEV_DB",
+        validation_alias=AliasChoices("DATABASE_URL", "APPLYLENS_DEV_DB"),
     )
 
     # PostgreSQL connection components (preferred for production)
-    POSTGRES_HOST: str = "db"
+    POSTGRES_HOST: str = (
+        "localhost"  # Changed from "db" to "localhost" for CI compatibility
+    )
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: Optional[str] = None

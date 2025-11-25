@@ -2,8 +2,8 @@
 """
 Tests for Phase 4 AI Feature: Email Summarizer
 """
-import pytest
-from unittest.mock import patch, AsyncMock
+
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -33,8 +33,7 @@ class TestSummarizeEndpoint:
         """
 
         response = client.post(
-            "/api/ai/summarize",
-            json={"thread_id": "demo-1", "max_citations": 3}
+            "/api/ai/summarize", json={"thread_id": "demo-1", "max_citations": 3}
         )
 
         assert response.status_code == 200
@@ -60,8 +59,7 @@ class TestSummarizeEndpoint:
         """
 
         response = client.post(
-            "/api/ai/summarize",
-            json={"thread_id": "demo-1", "max_citations": 2}
+            "/api/ai/summarize", json={"thread_id": "demo-1", "max_citations": 2}
         )
 
         assert response.status_code == 200
@@ -71,10 +69,7 @@ class TestSummarizeEndpoint:
     @patch("app.routers.ai.FEATURE_SUMMARIZE", False)
     def test_summarize_feature_disabled(self):
         """Should return 503 when feature is disabled"""
-        response = client.post(
-            "/api/ai/summarize",
-            json={"thread_id": "demo-1"}
-        )
+        response = client.post("/api/ai/summarize", json={"thread_id": "demo-1"})
 
         assert response.status_code == 503
         assert "disabled" in response.json()["detail"].lower()
@@ -83,8 +78,7 @@ class TestSummarizeEndpoint:
     def test_summarize_thread_not_found(self):
         """Should return 404 for non-existent thread"""
         response = client.post(
-            "/api/ai/summarize",
-            json={"thread_id": "nonexistent-thread"}
+            "/api/ai/summarize", json={"thread_id": "nonexistent-thread"}
         )
 
         assert response.status_code == 404
@@ -97,10 +91,7 @@ class TestSummarizeEndpoint:
         """Should return 503 when Ollama is unavailable"""
         mock_health.return_value = False
 
-        response = client.post(
-            "/api/ai/summarize",
-            json={"thread_id": "demo-1"}
-        )
+        response = client.post("/api/ai/summarize", json={"thread_id": "demo-1"})
 
         # Note: Actual behavior depends on implementation
         # Either 503 (service unavailable) or 500 (internal error)
@@ -120,10 +111,7 @@ class TestSummarizeEndpoint:
         ```
         """
 
-        response = client.post(
-            "/api/ai/summarize",
-            json={"thread_id": "demo-1"}
-        )
+        response = client.post("/api/ai/summarize", json={"thread_id": "demo-1"})
 
         assert response.status_code == 200
         data = response.json()

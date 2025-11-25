@@ -8,7 +8,7 @@ Includes timeout handling, error management, and token usage tracking.
 import httpx
 import os
 import logging
-from typing import Dict, Any, List
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -23,23 +23,23 @@ MAX_INPUT_CHARS = 50000  # Security limit
 
 
 async def ollama_chat(
-    messages: List[Dict[str, str]], 
+    messages: List[Dict[str, str]],
     temperature: float = 0.7,
     max_tokens: int = 2000,
-    **kwargs
+    **kwargs,
 ) -> str:
     """
     Send chat completion request to Ollama.
-    
+
     Args:
         messages: List of message dicts with 'role' and 'content'
         temperature: Sampling temperature (0.0-1.0)
         max_tokens: Maximum tokens to generate
         **kwargs: Additional parameters for Ollama
-    
+
     Returns:
         Generated text content
-    
+
     Raises:
         httpx.HTTPError: On API errors
         httpx.TimeoutException: On timeout
@@ -49,13 +49,13 @@ async def ollama_chat(
         content = msg.get("content", "")
         if len(content) > MAX_INPUT_CHARS:
             raise ValueError(f"Message content exceeds {MAX_INPUT_CHARS} chars")
-        
+
         # Basic sanitization (strip HTML tags if needed)
         # In production, use bleach or similar library
         if "<script" in content.lower() or "<iframe" in content.lower():
             logger.warning("Blocked potentially malicious HTML in message")
             raise ValueError("HTML tags not allowed in messages")
-    
+
     # Build request payload
     payload = {
         "model": OLLAMA_MODEL,
@@ -63,26 +63,27 @@ async def ollama_chat(
         "stream": False,
         "temperature": temperature,
         "max_tokens": max_tokens,
-        **kwargs
+        **kwargs,
     }
-    
+
     timeout_seconds = OLLAMA_TIMEOUT_MS / 1000
-    
+
     try:
         async with httpx.AsyncClient(timeout=timeout_seconds) as client:
-            logger.info(f"Calling Ollama: model={OLLAMA_MODEL}, messages={len(messages)}")
-            
+            logger.info(
+                f"Calling Ollama: model={OLLAMA_MODEL}, messages={len(messages)}"
+            )
+
             response = await client.post(
-                f"{OLLAMA_BASE}/v1/chat/completions",
-                json=payload
+                f"{OLLAMA_BASE}/v1/chat/completions", json=payload
             )
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             # Extract content
             content = data["choices"][0]["message"]["content"]
-            
+
             # Log usage
             usage = data.get("usage", {})
             logger.info(
@@ -91,10 +92,10 @@ async def ollama_chat(
                 f"completion_tokens={usage.get('completion_tokens', 0)}, "
                 f"chars={len(content)}"
             )
-            
+
             return content
-            
-    except httpx.TimeoutException as e:
+
+    except httpx.TimeoutException:
         logger.error(f"Ollama timeout after {timeout_seconds}s")
         raise
     except httpx.HTTPError as e:
@@ -108,7 +109,7 @@ async def ollama_chat(
 async def check_ollama_health() -> bool:
     """
     Check if Ollama service is available.
-    
+
     Returns:
         True if Ollama is reachable, False otherwise
     """
@@ -124,16 +125,16 @@ async def check_ollama_health() -> bool:
 def sanitize_user_text(text: str) -> str:
     """
     Sanitize user input for AI prompts.
-    
+
     Args:
         text: Raw user input
-    
+
     Returns:
         Sanitized text safe for AI prompts
     """
     # Remove potentially malicious content
     sanitized = text.strip()
-    
+
     # Block common injection patterns
     dangerous_patterns = [
         "ignore previous instructions",
@@ -142,16 +143,16 @@ def sanitize_user_text(text: str) -> str:
         "<script",
         "<iframe",
         "javascript:",
-        "data:text/html"
+        "data:text/html",
     ]
-    
+
     for pattern in dangerous_patterns:
         if pattern.lower() in sanitized.lower():
             logger.warning(f"Blocked dangerous pattern in user text: {pattern}")
             sanitized = sanitized.replace(pattern, "[FILTERED]")
-    
+
     # Truncate to reasonable length
     if len(sanitized) > MAX_INPUT_CHARS:
         sanitized = sanitized[:MAX_INPUT_CHARS] + "... [truncated]"
-    
+
     return sanitized

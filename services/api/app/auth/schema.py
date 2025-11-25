@@ -1,10 +1,12 @@
 """Pydantic schemas for authentication."""
-from pydantic import BaseModel, EmailStr
+
+from pydantic import BaseModel
 from typing import Optional
 
 
 class UserSchema(BaseModel):
     """User response schema."""
+
     id: str
     email: str
     name: Optional[str] = None
@@ -17,5 +19,6 @@ class UserSchema(BaseModel):
 
 class SessionResponse(BaseModel):
     """Session response schema."""
+
     ok: bool = True
     user: Optional[UserSchema] = None
