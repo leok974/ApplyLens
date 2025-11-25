@@ -3,11 +3,11 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..auth_google import get_current_user
+from ..deps.user import get_current_user_email
 from ..db import get_db
 from ..models import JobOpportunity, OpportunityMatch
 
@@ -49,6 +49,7 @@ class OpportunityResponse(BaseModel):
 
 @router.get("", response_model=list[OpportunityResponse])
 async def list_opportunities(
+    request: Request,
     source: Optional[str] = Query(
         None, description="Filter by source (indeed, linkedin, etc.)"
     ),
@@ -61,7 +62,6 @@ async def list_opportunities(
     limit: int = Query(100, ge=1, le=500, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
 ):
     """List job opportunities for the authenticated user.
 
@@ -73,7 +73,7 @@ async def list_opportunities(
 
     Returns opportunities sorted by created_at (newest first), with match data if available.
     """
-    user_email = current_user["email"]
+    user_email = get_current_user_email(request)
 
     # Build query
     query = db.query(JobOpportunity).filter(JobOpportunity.owner_email == user_email)
@@ -141,14 +141,14 @@ async def list_opportunities(
 @router.get("/{opportunity_id}", response_model=dict)
 async def get_opportunity_detail(
     opportunity_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
 ):
     """Get detailed information for a specific opportunity including match data.
 
     Returns opportunity details with full match analysis (reasons, missing_skills, resume_tweaks).
     """
-    user_email = current_user["email"]
+    user_email = get_current_user_email(request)
 
     # Load opportunity
     opportunity = (

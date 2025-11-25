@@ -7,11 +7,11 @@ No resume generation - upload only.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..auth_google import get_current_user
+from ..deps.user import get_current_user_email
 from ..db import get_db
 from ..models import ResumeProfile
 from ..services.resume_parser import extract_text_from_resume, parse_resume_text
@@ -50,9 +50,9 @@ class ResumeProfileResponse(BaseModel):
     "/upload", response_model=ResumeProfileResponse, status_code=status.HTTP_201_CREATED
 )
 async def upload_resume(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
 ):
     """Upload and parse a resume file (PDF, DOCX, or TXT).
 
@@ -60,7 +60,7 @@ async def upload_resume(
 
     Returns the parsed resume profile.
     """
-    user_email = current_user["email"]
+    user_email = get_current_user_email(request)
 
     # Validate file type
     if not file.filename:
@@ -166,14 +166,14 @@ async def upload_resume(
 
 @router.get("/current", response_model=Optional[ResumeProfileResponse])
 async def get_current_resume(
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
 ):
-    """Get the current active resume profile for the authenticated user.
+    """Get the currently active resume profile for the authenticated user.
 
-    Returns null if no active resume exists.
+    Returns null if no active resume.
     """
-    user_email = current_user["email"]
+    user_email = get_current_user_email(request)
 
     resume = (
         db.query(ResumeProfile)
@@ -205,14 +205,14 @@ async def get_current_resume(
 @router.post("/activate/{profile_id}", response_model=ResumeProfileResponse)
 async def activate_resume(
     profile_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
 ):
     """Activate a specific resume profile, deactivating others.
 
     - **profile_id**: Resume profile ID to activate
     """
-    user_email = current_user["email"]
+    user_email = get_current_user_email(request)
 
     # Verify profile belongs to user
     resume = (
@@ -260,11 +260,11 @@ async def activate_resume(
 
 @router.get("/all", response_model=list[ResumeProfileResponse])
 async def list_all_resumes(
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
 ):
     """List all resume profiles for the authenticated user."""
-    user_email = current_user["email"]
+    user_email = get_current_user_email(request)
 
     resumes = (
         db.query(ResumeProfile)
