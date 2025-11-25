@@ -1,3 +1,5 @@
+# STATUS: unclear. Mentioned in REPO_AUDIT_PHASE1.md.
+# If not used by 2025-12-31, move to scripts/legacy/.
 import os
 import requests
 

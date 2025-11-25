@@ -32,10 +32,10 @@ infra/grafana/
 
 ## 📊 Auto-Provisioned Dashboard
 
-**Dashboard Name:** "ApplyLens API Overview"  
-**Location:** Dashboards → ApplyLens folder  
-**UID:** applylens-overview  
-**Auto-refresh:** 10 seconds  
+**Dashboard Name:** "ApplyLens API Overview"
+**Location:** Dashboards → ApplyLens folder
+**UID:** applylens-overview
+**Auto-refresh:** 10 seconds
 **Time range:** Last 1 hour
 
 ### Panels (6 Total)
@@ -366,8 +366,8 @@ docker compose -f D:\ApplyLens\infra\docker-compose.yml restart grafana
 **Verify flag is set:**
 
 ```powershell
-docker inspect infra-prometheus | ConvertFrom-Json | 
-    Select-Object -ExpandProperty Args | 
+docker inspect infra-prometheus | ConvertFrom-Json |
+    Select-Object -ExpandProperty Args |
     Where-Object { $_ -match "lifecycle" }
 ```text
 
@@ -482,11 +482,11 @@ start http://localhost:9090/alerts
 
 Your monitoring stack is now **fully auto-provisioned** with:
 
-✅ **Zero manual configuration** - Everything loads automatically  
-✅ **Hot reload** - Edit alerts without restart  
-✅ **Production-ready** - 6 alerts covering all critical scenarios  
-✅ **Beautiful dashboards** - 6 panels showing key metrics  
-✅ **Comprehensive docs** - 4 guides covering all aspects  
+✅ **Zero manual configuration** - Everything loads automatically
+✅ **Hot reload** - Edit alerts without restart
+✅ **Production-ready** - 6 alerts covering all critical scenarios
+✅ **Beautiful dashboards** - 6 panels showing key metrics
+✅ **Comprehensive docs** - 4 guides covering all aspects
 
 **Access your dashboard now:** <http://localhost:3000/d/applylens-overview>
 

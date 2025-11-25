@@ -45,11 +45,11 @@ try {
         --limit $Limit `
         --limit-per-cat $PerCat `
         --out $Weak
-    
+
     if ($LASTEXITCODE -ne 0) {
         throw "Export failed with exit code $LASTEXITCODE"
     }
-    
+
     Write-Host ""
     Write-Host "✅ Export complete!" -ForegroundColor Green
     Write-Host ""
@@ -67,11 +67,11 @@ Write-Host ""
 
 try {
     python services/api/app/labeling/train_ml.py $Weak $Model
-    
+
     if ($LASTEXITCODE -ne 0) {
         throw "Training failed with exit code $LASTEXITCODE"
     }
-    
+
     Write-Host ""
     Write-Host "✅ Training complete!" -ForegroundColor Green
     Write-Host ""
@@ -94,7 +94,7 @@ try {
         -Body '{}' `
         -ContentType 'application/json' `
         -ErrorAction Stop
-    
+
     Write-Host ""
     Write-Host "✅ Labels applied!" -ForegroundColor Green
     Write-Host ""

@@ -1,18 +1,18 @@
 # Import ApplyLens Overview Dashboard to Grafana
-# Usage: 
+# Usage:
 #   .\import_grafana_dashboard.ps1 -GrafanaUrl "http://localhost:3000" -ApiKey "YOUR_API_TOKEN"
 #   .\import_grafana_dashboard.ps1 -GrafanaUrl "http://localhost:3000" -ApiKey "YOUR_API_TOKEN" -DatasourceName "My JSON API"
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$GrafanaUrl = "http://localhost:3000",
-    
+
     [Parameter(Mandatory=$true)]
     [string]$ApiKey,
-    
+
     [Parameter(Mandatory=$false)]
     [string]$DatasourceName = "ApplyLens API",
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$RemapDatasource
 )
@@ -37,7 +37,7 @@ Write-Host "📄 Reading dashboard from: $dashboardPath" -ForegroundColor White
 try {
     $dashContent = Get-Content $dashboardPath -Raw
     $dashboard = $dashContent | ConvertFrom-Json
-    
+
     Write-Host "✅ Dashboard loaded: $($dashboard.title)" -ForegroundColor Green
     Write-Host "   UID: $($dashboard.uid)" -ForegroundColor Gray
     Write-Host "   Panels: $($dashboard.panels.Count)" -ForegroundColor Gray
@@ -50,16 +50,16 @@ try {
 # Optional: Remap datasource UID
 if ($RemapDatasource -or $DatasourceName -ne "ApplyLens API") {
     Write-Host "🔧 Remapping datasource to: $DatasourceName" -ForegroundColor Yellow
-    
+
     try {
         $dsUrl = "$GrafanaUrl/api/datasources/name/$([uri]::EscapeDataString($DatasourceName))"
         $headers = @{ Authorization = "Bearer $ApiKey" }
-        
+
         $datasource = Invoke-RestMethod -Uri $dsUrl -Headers $headers -Method Get
         $dsUid = $datasource.uid
-        
+
         Write-Host "   Found datasource UID: $dsUid" -ForegroundColor Gray
-        
+
         # Update all panel datasource UIDs
         $patchedCount = 0
         foreach ($panel in $dashboard.panels) {
@@ -68,16 +68,16 @@ if ($RemapDatasource -or $DatasourceName -ne "ApplyLens API") {
                 $patchedCount++
             }
         }
-        
+
         Write-Host "   ✅ Patched $patchedCount panels" -ForegroundColor Green
         Write-Host ""
-        
+
         # Save patched version
         $patchedPath = Join-Path $PSScriptRoot "phase3_grafana_dashboard.patched.json"
         $dashboard | ConvertTo-Json -Depth 200 | Set-Content -Path $patchedPath -Encoding utf8
         Write-Host "   💾 Saved patched version to: phase3_grafana_dashboard.patched.json" -ForegroundColor Gray
         Write-Host ""
-        
+
     } catch {
         Write-Host "⚠️  Warning: Could not fetch datasource '$DatasourceName'" -ForegroundColor Yellow
         Write-Host "   Error: $_" -ForegroundColor Gray
@@ -91,19 +91,19 @@ Write-Host "📤 Importing dashboard to Grafana..." -ForegroundColor White
 
 try {
     $importUrl = "$GrafanaUrl/api/dashboards/import"
-    $headers = @{ 
+    $headers = @{
         Authorization = "Bearer $ApiKey"
         "Content-Type" = "application/json"
     }
-    
+
     $importBody = @{
         dashboard = $dashboard
         overwrite = $true
         folderId  = 0
     } | ConvertTo-Json -Depth 100
-    
+
     $result = Invoke-RestMethod -Uri $importUrl -Headers $headers -Method Post -Body $importBody
-    
+
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Green
     Write-Host "  ✅ Dashboard Imported Successfully!" -ForegroundColor Green
@@ -117,12 +117,12 @@ try {
     Write-Host ""
     Write-Host "🌐 View Dashboard: $GrafanaUrl$($result.url)" -ForegroundColor Cyan
     Write-Host ""
-    
+
 } catch {
     Write-Host ""
     Write-Host "❌ Import Failed!" -ForegroundColor Red
     Write-Host ""
-    
+
     if ($_.ErrorDetails.Message) {
         $errorObj = $_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction SilentlyContinue
         if ($errorObj) {
@@ -134,7 +134,7 @@ try {
     } else {
         Write-Host "Error: $_" -ForegroundColor Red
     }
-    
+
     Write-Host ""
     Write-Host "Troubleshooting:" -ForegroundColor Yellow
     Write-Host "  1. Verify Grafana is running at: $GrafanaUrl" -ForegroundColor Gray
@@ -142,7 +142,7 @@ try {
     Write-Host "  3. Ensure JSON API datasource plugin is installed" -ForegroundColor Gray
     Write-Host "     (grafana-cli plugins install marcusolsson-json-datasource)" -ForegroundColor Gray
     Write-Host ""
-    
+
     exit 1
 }
 
@@ -152,9 +152,9 @@ Write-Host "🔍 Verifying dashboard import..." -ForegroundColor White
 try {
     $searchUrl = "$GrafanaUrl/api/search?query=$([uri]::EscapeDataString('ApplyLens Overview'))"
     $headers = @{ Authorization = "Bearer $ApiKey" }
-    
+
     $searchResults = Invoke-RestMethod -Uri $searchUrl -Headers $headers -Method Get
-    
+
     if ($searchResults.Count -gt 0) {
         Write-Host "✅ Dashboard found in Grafana!" -ForegroundColor Green
         Write-Host ""
@@ -162,7 +162,7 @@ try {
         Write-Host "⚠️  Warning: Dashboard not found in search results" -ForegroundColor Yellow
         Write-Host ""
     }
-    
+
 } catch {
     Write-Host "⚠️  Warning: Could not verify import (search failed)" -ForegroundColor Yellow
     Write-Host ""

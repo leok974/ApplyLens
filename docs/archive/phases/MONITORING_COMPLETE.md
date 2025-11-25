@@ -113,7 +113,7 @@ sum(rate(applylens_http_requests_total[5m]))
 histogram_quantile(0.95, sum by (le) (rate(applylens_http_request_duration_seconds_bucket[5m])))
 
 # Error rate (percentage)
-sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m])) 
+sum(rate(applylens_http_requests_total{status_code=~"5.."}[5m]))
 / ignoring(status_code) sum(rate(applylens_http_requests_total[5m]))
 ```text
 
@@ -142,7 +142,7 @@ Invoke-RestMethod "http://localhost:8003/gmail/status"
 Invoke-RestMethod -Uri "http://localhost:8003/gmail/backfill?days=2" -Method POST
 
 # Check multiple times to populate metrics
-1..5 | ForEach-Object { 
+1..5 | ForEach-Object {
     Invoke-RestMethod "http://localhost:8003/healthz"
     Start-Sleep -Seconds 2
 }
@@ -160,8 +160,8 @@ Start-Sleep -Seconds 35
 # View all ApplyLens metrics
 $query = "{__name__=~`"applylens_.*`"}"
 $response = Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query"
-$response.data.result | ForEach-Object { 
-    Write-Host "$($_.metric.__name__): $($_.value[1])" 
+$response.data.result | ForEach-Object {
+    Write-Host "$($_.metric.__name__): $($_.value[1])"
 }
 ```text
 
@@ -239,8 +239,8 @@ docker exec infra-prometheus promtool check config /etc/prometheus/prometheus.ym
 docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
 
 # View targets status
-Invoke-RestMethod "http://localhost:9090/api/v1/targets" | 
-    Select-Object -ExpandProperty data | 
+Invoke-RestMethod "http://localhost:9090/api/v1/targets" |
+    Select-Object -ExpandProperty data |
     Select-Object -ExpandProperty activeTargets
 ```text
 
@@ -275,7 +275,7 @@ Add to `prometheus/alerts.yml`:
 ```yaml
 - alert: HighTrafficSpike
   expr: |
-    rate(applylens_http_requests_total[5m]) > 
+    rate(applylens_http_requests_total[5m]) >
     avg_over_time(rate(applylens_http_requests_total[5m])[1h:5m]) * 2
   for: 10m
   labels: { severity: info }
@@ -404,7 +404,7 @@ If you encounter issues:
    ```powershell
    # From Prometheus to API
    docker exec infra-prometheus wget -O- http://api:8003/metrics
-   
+
    # From Grafana to Prometheus
    docker exec infra-grafana wget -O- http://prometheus:9090/api/v1/query?query=up
    ```
@@ -414,7 +414,7 @@ If you encounter issues:
    ```powershell
    # Prometheus config
    docker exec infra-prometheus promtool check config /etc/prometheus/prometheus.yml
-   
+
    # Alert rules
    docker exec infra-prometheus promtool check rules /etc/prometheus/alerts.yml
    ```

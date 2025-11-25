@@ -4,7 +4,7 @@
 param(
     [Parameter(Mandatory=$false)]
     [string]$GrafanaPath = "",
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$SkipRestart
 )
@@ -40,7 +40,7 @@ if ($GrafanaPath -and (Test-Path $GrafanaPath)) {
         "${env:ProgramFiles(x86)}\GrafanaLabs\grafana",
         "$env:LOCALAPPDATA\Grafana"
     )
-    
+
     Write-Host "   Searching common locations..." -ForegroundColor Gray
     $GrafanaPath = $possiblePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
@@ -93,7 +93,7 @@ $pluginPath = Join-Path $pluginsDir "marcusolsson-json-datasource"
 if (Test-Path $pluginPath) {
     Write-Host "   ⚠️  Plugin already installed at: $pluginPath" -ForegroundColor Yellow
     Write-Host ""
-    
+
     $response = Read-Host "   Reinstall? (y/N)"
     if ($response -ne "y" -and $response -ne "Y") {
         Write-Host ""
@@ -103,7 +103,7 @@ if (Test-Path $pluginPath) {
         Write-Host ""
         exit 0
     }
-    
+
     Write-Host ""
     Write-Host "   Removing existing installation..." -ForegroundColor Yellow
     Remove-Item $pluginPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -119,11 +119,11 @@ Write-Host ""
 try {
     # Run grafana-cli
     $installOutput = & $cliPath plugins install marcusolsson-json-datasource 2>&1
-    
+
     Write-Host "   Installation output:" -ForegroundColor Gray
     $installOutput | ForEach-Object { Write-Host "     $_" -ForegroundColor DarkGray }
     Write-Host ""
-    
+
     # Verify installation
     if (Test-Path $pluginPath) {
         Write-Host "   ✅ Plugin installed successfully!" -ForegroundColor Green
@@ -132,7 +132,7 @@ try {
         Write-Host "   ⚠️  Installation completed but plugin directory not found" -ForegroundColor Yellow
         Write-Host "      Expected at: $pluginPath" -ForegroundColor Gray
     }
-    
+
 } catch {
     Write-Host "   ❌ Installation failed: $_" -ForegroundColor Red
     Write-Host ""
@@ -147,43 +147,43 @@ Write-Host ""
 # Restart Grafana service
 if (-not $SkipRestart) {
     Write-Host "5️⃣  Restarting Grafana service..." -ForegroundColor White
-    
+
     try {
         $service = Get-Service -Name "grafana" -ErrorAction SilentlyContinue
-        
+
         if ($service) {
             Write-Host "   Found Grafana service: $($service.Status)" -ForegroundColor Gray
-            
+
             if ($service.Status -eq "Running") {
                 Write-Host "   Stopping Grafana..." -ForegroundColor Gray
                 Stop-Service grafana -ErrorAction Stop
                 Start-Sleep -Seconds 2
             }
-            
+
             Write-Host "   Starting Grafana..." -ForegroundColor Gray
             Start-Service grafana -ErrorAction Stop
-            
+
             # Wait for service to start
             Start-Sleep -Seconds 3
-            
+
             $service = Get-Service -Name "grafana"
             if ($service.Status -eq "Running") {
                 Write-Host "   ✅ Grafana service restarted successfully" -ForegroundColor Green
             } else {
                 Write-Host "   ⚠️  Grafana service status: $($service.Status)" -ForegroundColor Yellow
             }
-            
+
         } else {
             Write-Host "   ⚠️  Grafana service not found" -ForegroundColor Yellow
             Write-Host "      If running Grafana manually, please restart it now" -ForegroundColor Yellow
             Write-Host "      Start: & '$GrafanaPath\bin\grafana-server.exe'" -ForegroundColor Gray
         }
-        
+
     } catch {
         Write-Host "   ⚠️  Could not restart service: $_" -ForegroundColor Yellow
         Write-Host "      Please restart Grafana manually" -ForegroundColor Yellow
     }
-    
+
     Write-Host ""
 } else {
     Write-Host "5️⃣  Skipping Grafana restart (use -SkipRestart to avoid this)" -ForegroundColor Yellow
@@ -201,12 +201,12 @@ Start-Sleep -Seconds 2
 try {
     $response = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -UseBasicParsing -TimeoutSec 5
     $health = $response.Content | ConvertFrom-Json
-    
+
     Write-Host "   ✅ Grafana is accessible!" -ForegroundColor Green
     Write-Host "      URL: http://localhost:3000" -ForegroundColor Gray
     Write-Host "      Version: $($health.version)" -ForegroundColor Gray
     Write-Host ""
-    
+
 } catch {
     Write-Host "   ⚠️  Grafana not accessible at http://localhost:3000" -ForegroundColor Yellow
     Write-Host "      It may still be starting up..." -ForegroundColor Yellow

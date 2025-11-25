@@ -13,9 +13,17 @@
 #   - FastAPI (backend API)
 #   - React/Vite (frontend)
 #   - Nginx (reverse proxy)
-#   - Prometheus (metrics)
-#   - Grafana (monitoring)
+#   - Prometheus (metrics) - LEGACY: Datadog is now primary observability
+#   - Grafana (monitoring) - LEGACY: Datadog is now primary observability
 #   - Cloudflared (tunnel - optional)
+#
+# NOTE: Prometheus/Grafana are marked as LEGACY (as of Nov 2025).
+# Datadog is now the primary observability provider.
+# These services are retained temporarily for:
+#   - Historical metrics data
+#   - Transition period monitoring
+#   - Safe decommissioning later (Phase 3)
+# See: hackathon/DATADOG_SETUP.md for current observability setup
 
 version: '3.8'
 
@@ -498,8 +506,11 @@ services:
       - applylens-prod
 
   # =============================================================================
-  # PROMETHEUS (Metrics Collection)
+  # PROMETHEUS (Metrics Collection) - LEGACY
   # =============================================================================
+  # NOTE: Prometheus/Grafana marked legacy (Datadog is primary observability).
+  # Retained temporarily for historical charts & safe decommissioning later.
+  # See: hackathon/DATADOG_SETUP.md for Datadog configuration.
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: applylens-prometheus-prod
@@ -527,8 +538,11 @@ services:
       - applylens-prod
 
   # =============================================================================
-  # GRAFANA (Monitoring Dashboard)
+  # GRAFANA (Monitoring Dashboard) - LEGACY
   # =============================================================================
+  # NOTE: Prometheus/Grafana marked legacy (Datadog is primary observability).
+  # Retained temporarily for historical charts & safe decommissioning later.
+  # See: hackathon/DATADOG_SETUP.md for Datadog configuration.
   grafana:
     image: grafana/grafana:11.1.0
     container_name: applylens-grafana-prod

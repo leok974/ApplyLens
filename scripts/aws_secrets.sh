@@ -1,6 +1,10 @@
 #!/bin/bash
 # AWS Secrets Manager provisioning for ApplyLens AES encryption key
 #
+# STATUS: unclear. Mentioned in REPO_AUDIT_PHASE1.md.
+# If not used by 2025-12-31, move to scripts/legacy/.
+# NOTE: ApplyLens may have migrated from AWS to GCP - verify if this is still needed.
+#
 # Usage:
 #   ./scripts/aws_secrets.sh create <region> [description]
 #   ./scripts/aws_secrets.sh retrieve <region>
@@ -36,9 +40,9 @@ function generate_key() {
 function create_secret() {
     local REGION=$1
     local DESCRIPTION=${2:-"AES-256 encryption key for ApplyLens OAuth tokens"}
-    
+
     log_info "Creating secret '$SECRET_NAME' in region '$REGION'"
-    
+
     # Check if secret already exists
     if aws secretsmanager describe-secret \
         --secret-id "$SECRET_NAME" \
@@ -46,11 +50,11 @@ function create_secret() {
         log_error "Secret '$SECRET_NAME' already exists. Use 'rotate' to update."
         exit 1
     fi
-    
+
     # Generate new AES key
     log_info "Generating AES-256 key..."
     AES_KEY=$(generate_key)
-    
+
     # Create secret
     log_info "Creating secret in AWS Secrets Manager..."
     aws secretsmanager create-secret \
@@ -58,7 +62,7 @@ function create_secret() {
         --description "$DESCRIPTION" \
         --secret-string "$AES_KEY" \
         --region "$REGION"
-    
+
     log_info "✅ Secret created successfully!"
     log_info "Key: $AES_KEY"
     log_warn "⚠️  Save this key in a secure location. It won't be shown again."
@@ -70,35 +74,35 @@ function create_secret() {
 
 function retrieve_secret() {
     local REGION=$1
-    
+
     log_info "Retrieving '$SECRET_NAME' from region '$REGION'"
-    
+
     AES_KEY=$(aws secretsmanager get-secret-value \
         --secret-id "$SECRET_NAME" \
         --query SecretString \
         --output text \
         --region "$REGION")
-    
+
     log_info "✅ Secret retrieved:"
     echo "$AES_KEY"
 }
 
 function rotate_secret() {
     local REGION=$1
-    
+
     log_info "Rotating secret '$SECRET_NAME' in region '$REGION'"
-    
+
     # Generate new key
     log_info "Generating new AES-256 key..."
     NEW_KEY=$(generate_key)
-    
+
     # Update secret value
     log_info "Updating secret value..."
     aws secretsmanager update-secret \
         --secret-id "$SECRET_NAME" \
         --secret-string "$NEW_KEY" \
         --region "$REGION"
-    
+
     log_info "✅ Secret rotated successfully!"
     log_info "New key: $NEW_KEY"
     log_warn "⚠️  Update all running services to use the new key:"
@@ -110,16 +114,16 @@ function rotate_secret() {
 function grant_access() {
     local REGION=$1
     local ROLE_ARN=$2
-    
+
     log_info "Granting read access to role '$ROLE_ARN'"
-    
+
     # Get secret ARN
     SECRET_ARN=$(aws secretsmanager describe-secret \
         --secret-id "$SECRET_NAME" \
         --query ARN \
         --output text \
         --region "$REGION")
-    
+
     # Create minimal policy document
     POLICY_DOC=$(cat <<EOF
 {
@@ -137,17 +141,17 @@ function grant_access() {
 }
 EOF
 )
-    
+
     # Extract role name from ARN
     ROLE_NAME=$(echo "$ROLE_ARN" | awk -F'/' '{print $NF}')
     POLICY_NAME="${SECRET_NAME//_/-}-access"
-    
+
     log_info "Creating inline policy '$POLICY_NAME' on role '$ROLE_NAME'..."
     aws iam put-role-policy \
         --role-name "$ROLE_NAME" \
         --policy-name "$POLICY_NAME" \
         --policy-document "$POLICY_DOC"
-    
+
     log_info "✅ Access granted successfully!"
     log_info "Role '$ROLE_NAME' can now read secret '$SECRET_NAME'"
 }
@@ -159,26 +163,26 @@ Usage: $0 <command> [arguments]
 Commands:
     create <region> [description]
         Create a new secret with a generated AES-256 key
-        
+
     retrieve <region>
         Retrieve the current value of the secret
-        
+
     rotate <region>
         Generate and update the secret with a new key
-        
+
     grant <region> <role-arn>
         Grant GetSecretValue permission to an IAM role
 
 Examples:
     # Create secret
     $0 create us-west-2
-    
+
     # Retrieve for deployment
     export APPLYLENS_AES_KEY_BASE64=\$($0 retrieve us-west-2)
-    
+
     # Rotate key
     $0 rotate us-west-2
-    
+
     # Grant access to ECS task role
     $0 grant us-west-2 arn:aws:iam::123456789012:role/applylens-api-task-role
 
