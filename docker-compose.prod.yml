@@ -182,7 +182,8 @@ services:
     # v0.6.2: Follow-up Queue - unified view merging mailbox followups + Tracker applications
     # v0.6.3: Persistent follow-up state with progress tracking and done/not-done toggles
     # v0.6.4: Today panel Follow-ups summary widget with progress and quick navigation
-    image: leoklemet/applylens-api:0.6.4
+    # v0.6.5-datadog: Datadog automation scripts for dashboard, SLOs, and monitors
+    image: leoklemet/applylens-api:0.6.5-datadog
     container_name: applylens-api-prod
     environment:
       # Database
