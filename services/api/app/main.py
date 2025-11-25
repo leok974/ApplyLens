@@ -286,6 +286,16 @@ if os.getenv("E2E_PROD") == "1":
         "🧪 E2E auth endpoint enabled at /api/auth/e2e/login"
     )
 
+# Debug LLM router - Hackathon monitoring
+from .routers import debug_llm  # noqa: E402
+
+app.include_router(debug_llm.router)
+
+# Hackathon demo router - Gemini test endpoints
+from .routers import hackathon_demo  # noqa: E402
+
+app.include_router(hackathon_demo.router)
+
 # Companion learning loop
 from .routers import extension_learning  # noqa: E402
 

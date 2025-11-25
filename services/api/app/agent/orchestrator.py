@@ -32,6 +32,9 @@ from app.schemas_agent import (
     AgentCard,
     ToolResult,
     AgentMetrics,
+    RoleMatchBatchRequest,
+    RoleMatchBatchResponse,
+    RoleMatchBatchItem,
 )
 from app.agent.tools import ToolRegistry
 from app.agent.metrics import (
@@ -477,8 +480,9 @@ class MailboxAgentOrchestrator:
     - Build response cards
     """
 
-    def __init__(self, tool_registry: Optional[ToolRegistry] = None):
+    def __init__(self, tool_registry: Optional[ToolRegistry] = None, ctx=None):
         self.tools = tool_registry or ToolRegistry()
+        self.ctx = ctx  # RequestContext with user_id and db session
 
     async def _load_prefs_for_user(
         self, db: Optional[AsyncSession], user_id: str
@@ -2186,6 +2190,94 @@ Generate match analysis following the JSON schema in the system prompt."""
                 f"- {name}\n  {desc}\n  Tech: {tech_str if tech_str else 'Not specified'}"
             )
         return "\n".join(formatted)
+
+    async def role_match_batch(
+        self, req: RoleMatchBatchRequest
+    ) -> RoleMatchBatchResponse:
+        """
+        Batch match all unmatched opportunities for the current user.
+
+        Finds opportunities with no existing match and runs role_match on each.
+        Reuses existing role_match logic for consistency.
+
+        Args:
+            req: Batch request with optional limit
+
+        Returns:
+            RoleMatchBatchResponse with processed count and match results
+        """
+        from app.models import JobOpportunity, OpportunityMatch, ResumeProfile
+        from fastapi import HTTPException
+
+        if not self.ctx or not self.ctx.db:
+            raise HTTPException(status_code=400, detail="Database context required")
+
+        # 1) Ensure user has an active resume profile (synchronous query)
+        profile = (
+            self.ctx.db.query(ResumeProfile)
+            .filter(
+                ResumeProfile.owner_email == self.ctx.user_email,
+                ResumeProfile.is_active == True,  # noqa: E712
+            )
+            .first()
+        )
+
+        if profile is None:
+            raise HTTPException(
+                status_code=400, detail="No active resume profile for matching"
+            )
+
+        # 2) Select opportunities with no existing match (synchronous query)
+        # Subquery to check if match exists
+        subquery = (
+            self.ctx.db.query(OpportunityMatch.id)
+            .filter(
+                OpportunityMatch.owner_email == self.ctx.user_email,
+                OpportunityMatch.opportunity_id == JobOpportunity.id,
+            )
+            .exists()
+        )
+
+        # Main query for unmatched opportunities
+        q = (
+            self.ctx.db.query(JobOpportunity)
+            .filter(
+                JobOpportunity.owner_email == self.ctx.user_email,
+                ~subquery,
+            )
+            .order_by(JobOpportunity.created_at.desc())
+        )
+
+        if req.limit:
+            q = q.limit(req.limit)
+
+        opportunities = q.all()
+        items: list[RoleMatchBatchItem] = []
+
+        # 3) Match each opportunity
+        for opp in opportunities:
+            try:
+                result = await self.role_match(
+                    opportunity_id=opp.id,
+                    resume_profile_id=profile.id,
+                )
+
+                items.append(
+                    RoleMatchBatchItem(
+                        opportunity_id=opp.id,
+                        match_bucket=result["match_bucket"],
+                        match_score=result["match_score"],
+                    )
+                )
+            except Exception as e:
+                logger.error(
+                    f"Batch match failed for opportunity {opp.id}: {e}",
+                    exc_info=True,
+                )
+                # Continue with other opportunities
+                continue
+
+        return RoleMatchBatchResponse(processed=len(items), items=items)
 
     async def _call_llm_for_role_match(
         self, system_prompt: str, user_prompt: str, timeout_s: float = 25.0

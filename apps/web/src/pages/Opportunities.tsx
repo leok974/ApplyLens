@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { listOpportunities, getOpportunityDetail, JobOpportunity, OpportunityDetail } from '../api/opportunities'
+import { listOpportunities, getOpportunityDetail, JobOpportunity, OpportunityDetail, runBatchRoleMatch } from '../api/opportunities'
 import { getRoleMatch } from '../api/agent'
 import { getCurrentResume, ResumeProfile } from '../api/opportunities'
 import { Briefcase, MapPin, DollarSign, ExternalLink, Sparkles, AlertCircle, TrendingUp } from 'lucide-react'
@@ -27,6 +27,7 @@ export default function Opportunities() {
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [matchLoading, setMatchLoading] = useState(false)
+  const [isBatchMatching, setIsBatchMatching] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Filters
@@ -102,6 +103,33 @@ export default function Opportunities() {
     }
   }
 
+  async function handleBatchMatch() {
+    if (!resume) {
+      alert('Please upload a resume first to use role matching.')
+      return
+    }
+
+    setIsBatchMatching(true)
+    try {
+      const res = await runBatchRoleMatch(50)
+      alert(`Successfully matched ${res.processed} opportunities`)
+
+      // Reload opportunities list to show updated matches
+      await loadOpportunities()
+
+      // If detail panel is open, reload it too
+      if (selectedOpportunity) {
+        const detail = await getOpportunityDetail(selectedOpportunity.id)
+        setSelectedOpportunity(detail)
+      }
+    } catch (err) {
+      console.error('Failed to batch match:', err)
+      alert('Failed to batch match opportunities. Please try again.')
+    } finally {
+      setIsBatchMatching(false)
+    }
+  }
+
   // Apply search filter client-side
   const filteredOpportunities = opportunities.filter((opp) => {
     if (search) {
@@ -127,6 +155,17 @@ export default function Opportunities() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {resume && (
+              <button
+                type="button"
+                onClick={handleBatchMatch}
+                disabled={isBatchMatching}
+                data-testid="opportunities-batch-match"
+                className="rounded-full border border-amber-400/60 bg-amber-500/10 px-3 py-1 text-xs hover:bg-amber-500/20 disabled:opacity-50 transition-colors"
+              >
+                {isBatchMatching ? 'Matching…' : 'Match all new'}
+              </button>
+            )}
             {!resume && (
               <a
                 href="/settings"

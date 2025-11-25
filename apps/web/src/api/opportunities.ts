@@ -206,3 +206,41 @@ export async function getOpportunityDetail(opportunityId: number): Promise<Oppor
   const response = await apiFetch(`/opportunities/${opportunityId}`);
   return response as OpportunityDetail;
 }
+
+/**
+ * Batch Role Match API
+ */
+
+export interface RoleMatchBatchItem {
+  opportunity_id: number;
+  match_bucket: string;
+  match_score: number;
+}
+
+export interface RoleMatchBatchResponse {
+  processed: number;
+  items: RoleMatchBatchItem[];
+}
+
+/**
+ * Run batch role matching on all unmatched opportunities.
+ *
+ * @example
+ * ```ts
+ * const result = await runBatchRoleMatch(50);
+ * console.log(`Matched ${result.processed} opportunities`);
+ * ```
+ */
+export async function runBatchRoleMatch(limit = 50): Promise<RoleMatchBatchResponse> {
+  const response = await apiFetch('/v2/agent/role-match/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ limit }),
+  });
+
+  if (!response) {
+    throw new Error('Failed to batch match opportunities');
+  }
+
+  return response as RoleMatchBatchResponse;
+}

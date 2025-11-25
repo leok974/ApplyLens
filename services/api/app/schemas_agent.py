@@ -24,6 +24,27 @@ class OpportunitiesSummary(BaseModel):
     skip: Optional[int] = None
 
 
+class RoleMatchBatchRequest(BaseModel):
+    """Request to batch match all unmatched opportunities."""
+
+    limit: int | None = 50  # max opportunities to process in one call
+
+
+class RoleMatchBatchItem(BaseModel):
+    """Single item in batch match response."""
+
+    opportunity_id: int
+    match_bucket: str
+    match_score: int
+
+
+class RoleMatchBatchResponse(BaseModel):
+    """Response from batch role matching."""
+
+    processed: int
+    items: list[RoleMatchBatchItem]
+
+
 # ============================================================================
 # Agent Run Contract - The Single Source of Truth
 # ============================================================================

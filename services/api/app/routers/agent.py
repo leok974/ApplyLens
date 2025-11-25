@@ -25,6 +25,8 @@ from app.schemas_agent import (
     InterviewPrepRequest,
     InterviewPrepResponse,
     OpportunitiesSummary,
+    RoleMatchBatchRequest,
+    RoleMatchBatchResponse,
 )
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
@@ -37,6 +39,7 @@ from app.metrics import (
     FOLLOWUP_QUEUE_ITEM_DONE,
     INTERVIEW_PREP_REQUESTS,
     ROLE_MATCH_REQUESTS,
+    ROLE_MATCH_BATCH_REQUESTS,
 )
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
@@ -1046,4 +1049,90 @@ async def match_role(
         )
         raise HTTPException(
             status_code=500, detail=f"Failed to generate role match: {str(e)}"
+        )
+
+
+@router.post("/role-match/batch", response_model=RoleMatchBatchResponse)
+async def agent_role_match_batch(
+    payload: RoleMatchBatchRequest,
+    req: Request = None,
+    db: DBSession = Depends(get_db),
+) -> RoleMatchBatchResponse:
+    """
+    Batch match all unmatched opportunities for the authenticated user.
+
+    Finds all opportunities that don't have a match record and runs
+    role matching on each using the active resume profile.
+
+    Example request:
+    ```json
+    {
+      "limit": 50
+    }
+    ```
+
+    Example response:
+    ```json
+    {
+      "processed": 12,
+      "items": [
+        {
+          "opportunity_id": 42,
+          "match_bucket": "strong",
+          "match_score": 82
+        },
+        ...
+      ]
+    }
+    ```
+    """
+    try:
+        # Resolve user_id from session
+        user_id = None
+        sid = req.cookies.get("session_id")
+        if sid:
+            sess = db.query(SessionModel).filter(SessionModel.id == sid).first()
+            if sess and sess.user_id:
+                from app.models import User as UserModel
+
+                user = db.query(UserModel).filter(UserModel.id == sess.user_id).first()
+                if user and user.email:
+                    user_id = user.email
+                    logger.info(
+                        f"Batch Role Match: resolved user_id={user_id} from session"
+                    )
+
+        if not user_id:
+            logger.warning("Batch Role Match: no user_id resolved, returning 401")
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        # Create request context for orchestrator
+        from app.config import RequestContext
+
+        ctx = RequestContext(user_id=user_id, db_session=db)
+
+        # Call orchestrator
+        orchestrator = MailboxAgentOrchestrator(ctx=ctx)
+        response = await orchestrator.role_match_batch(payload)
+
+        # Record metric
+        ROLE_MATCH_BATCH_REQUESTS.inc()
+
+        logger.info(
+            f"Batch Role Match: completed, processed {response.processed} opportunities for user {user_id}"
+        )
+        return response
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"Batch Role Match validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception(
+            "Batch Role Match endpoint failed",
+            extra={"user_id": user_id if "user_id" in locals() else None},
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to batch match opportunities: {str(e)}"
         )

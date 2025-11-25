@@ -43,6 +43,11 @@ dependencies = [
   "tldextract",
   # Phase 3.1: LLM generation
   "openai>=1.0.0",
+  # Hackathon: Gemini + Datadog
+  "google-cloud-aiplatform>=1.38.0",
+  "vertexai>=1.38.0",
+  "ddtrace>=2.3.0",  # Datadog APM
+  "datadog>=0.48.0",  # Datadog metrics
 ]
 
 [project.optional-dependencies]

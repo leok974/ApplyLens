@@ -231,3 +231,8 @@ ROLE_MATCH_REQUESTS = Counter(
     "Number of role match requests",
     ["match_bucket"],
 )
+
+ROLE_MATCH_BATCH_REQUESTS = Counter(
+    "applylens_role_match_batch_requests_total",
+    "Number of batch role-match requests",
+)
