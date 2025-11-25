@@ -202,6 +202,98 @@ def log_llm_operation(
         logger.error(f"LLM {task_type} failed", extra=log_data)
 
 
+# ============================================================================
+# Backfill and Gmail Health Metrics (Phase 3C)
+# ============================================================================
+
+
+def track_backfill_error(error_type: str = "unknown", user_id: str = "unknown"):
+    """
+    Track backfill job errors for Datadog monitor.
+
+    Emits: applylens.backfill.errors (counter)
+    Monitor: #16811136 "ApplyLens – Backfill failing"
+
+    Args:
+        error_type: Type of error (e.g., "gmail_api", "db_error", "validation")
+        user_id: Hashed user ID (for debugging, not exposed in alert)
+
+    Usage:
+        try:
+            gmail_backfill_with_progress(...)
+        except GoogleAPIError as e:
+            track_backfill_error(error_type="gmail_api", user_id=hash(user.id))
+            raise
+    """
+    tags = [
+        f"error_type:{error_type}",
+        f"env:{os.getenv('DD_ENV', 'dev')}",
+        f"service:{os.getenv('DD_SERVICE', 'applylens-api')}",
+    ]
+    statsd.increment("applylens.backfill.errors", tags=tags)
+    logger.warning(f"Backfill error tracked: {error_type}", extra={"user_id": user_id})
+
+
+def track_backfill_rate_limited(user_id: str = "unknown", quota_user: str = "default"):
+    """
+    Track Gmail API rate limit (429) responses during backfill.
+
+    Emits: applylens.backfill.rate_limited (counter)
+    Monitor: #16811137 "ApplyLens – Backfill rate limited spike"
+
+    Args:
+        user_id: Hashed user ID
+        quota_user: Gmail API quotaUser value (for tracking per-user quotas)
+
+    Usage:
+        except HttpError as e:
+            if e.resp.status == 429:
+                track_backfill_rate_limited(user_id=hash(user.id))
+                # Apply exponential backoff...
+    """
+    tags = [
+        f"quota_user:{quota_user}",
+        f"env:{os.getenv('DD_ENV', 'dev')}",
+        f"service:{os.getenv('DD_SERVICE', 'applylens-api')}",
+    ]
+    statsd.increment("applylens.backfill.rate_limited", tags=tags)
+    logger.warning(
+        "Gmail API rate limited during backfill",
+        extra={"user_id": user_id, "quota_user": quota_user},
+    )
+
+
+def track_gmail_connection_status(connected: bool, user_id: str = "unknown"):
+    """
+    Track Gmail OAuth connection status (gauge).
+
+    Emits: applylens.gmail.connected (gauge: 1=connected, 0=disconnected)
+    Monitor: #16811138 "ApplyLens – Gmail disconnected"
+
+    Args:
+        connected: True if Gmail is connected, False if disconnected
+        user_id: Hashed user ID
+
+    Usage:
+        # After successful OAuth flow:
+        track_gmail_connection_status(connected=True, user_id=hash(user.id))
+
+        # After detecting invalid/expired token:
+        track_gmail_connection_status(connected=False, user_id=hash(user.id))
+    """
+    value = 1 if connected else 0
+    tags = [
+        f"status:{'connected' if connected else 'disconnected'}",
+        f"env:{os.getenv('DD_ENV', 'dev')}",
+        f"service:{os.getenv('DD_SERVICE', 'applylens-api')}",
+    ]
+    statsd.gauge("applylens.gmail.connected", value, tags=tags)
+    logger.info(
+        f"Gmail connection status: {'connected' if connected else 'disconnected'}",
+        extra={"user_id": user_id, "connected": connected},
+    )
+
+
 # Initialize Datadog patches for automatic instrumentation
 if DATADOG_AVAILABLE:
     try:

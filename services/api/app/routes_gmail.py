@@ -11,6 +11,7 @@ from .db import SessionLocal
 from .gmail_service import gmail_backfill
 from .metrics import BACKFILL_INSERTED, BACKFILL_REQUESTS, GMAIL_CONNECTED
 from .models import Email, OAuthToken
+from .observability.datadog import track_gmail_connection_status
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,8 @@ def get_connection_status(user_email: str = Query(DEFAULT_USER_EMAIL_ENV)):
         if not token:
             # Set gauge: disconnected
             GMAIL_CONNECTED.labels(user_email=user_email).set(0)
+            # Track in Datadog (Phase 3C)
+            track_gmail_connection_status(connected=False, user_id=user_email)
             return ConnectionStatus(connected=False)
 
         # Count total emails for this user
@@ -89,6 +92,8 @@ def get_connection_status(user_email: str = Query(DEFAULT_USER_EMAIL_ENV)):
 
         # Set gauge: connected
         GMAIL_CONNECTED.labels(user_email=token.user_email).set(1)
+        # Track in Datadog (Phase 3C)
+        track_gmail_connection_status(connected=True, user_id=token.user_email)
 
         return ConnectionStatus(
             connected=True,
