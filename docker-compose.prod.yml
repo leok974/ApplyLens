@@ -25,8 +25,6 @@
 #   - Safe decommissioning later (Phase 3)
 # See: hackathon/DATADOG_SETUP.md for current observability setup
 
-version: '3.8'
-
 services:
   # =============================================================================
   # DATABASE
@@ -279,7 +277,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/secrets/applylens-warehouse-key.json}
 
       # Gmail Backfill API Key
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
 
       # Monitoring
       PROMETHEUS_ENABLED: "true"
@@ -324,7 +322,7 @@ services:
     environment:
       # Internal call to API (no Cloudflare)
       API_URL: http://applylens-api-prod:8003/gmail/backfill
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
       EVERY_MINUTES: ${BACKFILL_EVERY_MINUTES:-30}
       BACKFILL_DAYS: ${BACKFILL_DAYS:-2}
       TZ: America/New_York
@@ -396,7 +394,7 @@ services:
     environment:
       # Internal call to API (no Cloudflare, no /api prefix for internal calls)
       API_URL: http://applylens-api-prod:8003/v2/agent/feedback/aggregate
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
       EVERY_HOURS: ${AGENT_FEEDBACK_EVERY_HOURS:-6}
       TIMEOUT: ${AGENT_FEEDBACK_TIMEOUT:-120}
       TZ: America/New_York

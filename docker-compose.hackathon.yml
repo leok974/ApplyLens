@@ -7,8 +7,6 @@
 #
 # This is a DEMO/HACKATHON-SPECIFIC stack, not for production use.
 # See: hackathon/DATADOG_SETUP.md and hackathon/ARCHITECTURE.md
-#
-version: '3.8'
 
 services:
   # Datadog Agent - Collects metrics, traces, and logs
