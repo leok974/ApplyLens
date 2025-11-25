@@ -1,0 +1,176 @@
+name: Web E2E Tests
+
+on:
+  push:
+    branches: [main, UI-polish, demo, develop]
+    paths:
+      - 'apps/web/**'
+      - 'services/api/**'
+      - '.github/workflows/e2e-web.yml'
+  pull_request:
+    branches: [main, demo, develop]
+    paths:
+      - 'apps/web/**'
+      - 'services/api/**'
+
+jobs:
+  # Root monorepo E2E tests
+  e2e-root:
+    name: E2E Tests (Root)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter applylens-web build
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run Playwright tests
+        env:
+          CI: true
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-root
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-root
+          path: test-results/
+          retention-days: 7
+
+  # Web workspace E2E tests with sharding
+  e2e-web-sharded:
+    name: E2E Tests (Web - Shard ${{ matrix.shard }}/${{ matrix.shardsTotal }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+        shardsTotal: [3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'apps/web/package.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests (sharded)
+        env:
+          CI: 'true'
+        run: |
+          npx playwright test --shard=${{ matrix.shard }}/${{ matrix.shardsTotal }} --reporter=list,junit,html
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: apps/web/playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload junit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-shard-${{ matrix.shard }}
+          path: apps/web/reports/junit.xml
+          if-no-files-found: ignore
+
+  # Web E2E with full backend (Docker)
+  e2e-web-fullstack:
+    name: E2E Tests (Web + Backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start backend API (Docker)
+        run: |
+          docker-compose -f docker-compose.prod.yml up -d db elasticsearch redis api
+          # Wait for API to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:8003/health 2>/dev/null; do sleep 2; done' || echo "API health check timeout"
+
+      - name: Run E2E tests
+        working-directory: apps/web
+        env:
+          CI: "1"
+          E2E_BASE_URL: "http://localhost:5175"
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-fullstack
+          path: apps/web/playwright-report
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-fullstack
+          path: apps/web/test-results
+          retention-days: 7
+
+      - name: Stop backend services
+        if: always()
+        run: docker-compose -f docker-compose.prod.yml down
