@@ -4,7 +4,7 @@ on:
   # Run nightly at 4:17 AM UTC
   schedule:
     - cron: "17 4 * * *"
-  
+
   # Allow manual trigger
   workflow_dispatch:
     inputs:
@@ -20,15 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      
+
       - name: Install pre-commit
         run: pip install pre-commit
-      
+
       - name: Run pre-commit hooks
         run: |
           # Run hooks that support --all-files properly
@@ -43,11 +43,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: pre-commit  # Run after pre-commit passes
-    
+
     permissions:
       contents: read
       id-token: write  # For Workload Identity Federation
-    
+
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
       BQ_PROJECT: ${{ secrets.GCP_PROJECT }}  # Alias for legacy models
@@ -56,67 +56,66 @@ jobs:
       ES_URL: ${{ secrets.ES_URL }}
       PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL }}
       VALIDATION_THRESHOLD_PCT: 2.0
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: 'pip'
-      
+
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
           pip install "dbt-core==1.8.3" "dbt-bigquery==1.8.3"
           pip install "google-cloud-bigquery==3.*"
-          pip install "prometheus-client==0.20.*"
           pip install "requests==2.32.*"
-      
+
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_JSON }}
-      
+
       - name: Set GOOGLE_APPLICATION_CREDENTIALS
         run: |
           echo "GOOGLE_APPLICATION_CREDENTIALS=${{ steps.auth.outputs.credentials_file_path }}" >> $GITHUB_ENV
-      
+
       - name: Clean dbt deps
         working-directory: analytics/dbt
         run: |
           rm -rf dbt_packages package-lock.yml
-      
+
       - name: Install dbt packages
         working-directory: analytics/dbt
         run: dbt deps --target prod
-      
+
       - name: Run dbt models
         working-directory: analytics/dbt
         run: |
           echo "Running dbt models..."
           echo "RAW_DATASET: $RAW_DATASET"
           dbt run --target prod --vars "raw_dataset: $RAW_DATASET" --select models/staging/fivetran models/marts/warehouse
-          
+
           echo "dbt run completed successfully"
-      
+
       - name: Run dbt tests
         working-directory: analytics/dbt
         run: |
           echo "Running dbt tests..."
           dbt test --target prod --vars "raw_dataset: $RAW_DATASET" --select models/staging/fivetran models/marts/warehouse
-          
+
           echo "dbt tests passed"
-      
+
       - name: Generate dbt docs
         working-directory: analytics/dbt
         run: |
           dbt docs generate --target prod
           echo "dbt documentation generated"
-      
+
       - name: Check ES reachability
         id: ping_es
         if: ${{ inputs.validate_es == true }}
@@ -127,7 +126,7 @@ jobs:
           else
             echo "reachable=false" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Validate ES vs BQ consistency
         if: ${{ inputs.validate_es == true && steps.ping_es.outputs.reachable == 'true' }}
         continue-on-error: true
@@ -140,11 +139,11 @@ jobs:
         run: |
           echo "Running ES vs BQ validation..."
           python analytics/ops/validate_es_vs_bq.py
-      
+
       - name: Note skipped validation
         if: ${{ inputs.validate_es == true && steps.ping_es.outputs.reachable != 'true' }}
         run: echo "⚠️ ES not reachable from GitHub runner; drift check skipped."
-      
+
       - name: Upload dbt artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -155,7 +154,7 @@ jobs:
             analytics/dbt/target/run_results.json
             analytics/dbt/target/catalog.json
           retention-days: 30
-      
+
       - name: Notify on failure
         if: failure()
         run: |
