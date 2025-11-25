@@ -9,6 +9,8 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from enum import Enum
 
+from pydantic import BaseModel, Field
+
 from .slo import (
     SLOEvaluator,
     SLOStatus,

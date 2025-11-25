@@ -10,6 +10,7 @@ from app.config_env import (
     DeployEnv,
     get_env_config,
     init_config,
+    get_config,
     is_production,
     is_canary,
     get_canary_percentage,
