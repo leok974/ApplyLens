@@ -259,6 +259,7 @@ export function AppHeader() {
               <Tab to="/today" label="Today" data-testid="nav-today" />
               <Tab to="/followups" label="Follow-ups" data-testid="nav-followup-queue" />
               <Tab to="/tracker" label="Tracker" />
+              <Tab to="/opportunities" label="Opportunities" data-testid="nav-opportunities" />
               <Tab to="/profile" label="Profile" />
               {FLAGS.COMPANION && <Tab to="/extension" label="Companion" data-testid="nav-companion" />}
               <Tab to="/settings" label="Settings" />

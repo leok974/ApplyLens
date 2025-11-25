@@ -15,6 +15,7 @@ import { getCurrentUser, fetchAndCacheCurrentUser } from '@/api/auth'
 import { VersionCard } from '@/components/settings/VersionCard'
 import { HealthBadge } from '@/components/HealthBadge'
 import { MailboxThemePanel } from '@/components/settings/MailboxThemePanel'
+import { ResumeUploadPanel } from '@/components/settings/ResumeUploadPanel'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -92,6 +93,9 @@ export default function Settings() {
 
         {/* Mailbox Theme */}
         <MailboxThemePanel />
+
+        {/* Resume Upload */}
+        <ResumeUploadPanel />
 
         {/* Warehouse Metrics (feature-flagged) */}
         {features.warehouseMetrics && (

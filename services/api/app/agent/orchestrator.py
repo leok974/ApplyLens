@@ -1945,3 +1945,296 @@ Generate interview prep materials following the JSON schema in the system prompt
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse LLM JSON response: {e}")
                 raise
+
+    async def role_match(
+        self, opportunity_id: int, resume_profile_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Match a job opportunity against a resume using LLM analysis.
+
+        Args:
+            opportunity_id: Job opportunity ID to match
+            resume_profile_id: Optional specific resume ID (uses active if not provided)
+
+        Returns:
+            Dictionary with match results:
+                - match_bucket: "perfect" | "strong" | "possible" | "skip"
+                - match_score: 0-100 numeric score
+                - reasons: list[str] - why it's a good match
+                - missing_skills: list[str] - skills from JD not in resume
+                - resume_tweaks: list[str] - suggestions to improve match
+        """
+        from app.models import JobOpportunity, ResumeProfile, OpportunityMatch
+
+        if not self.ctx or not self.ctx.db:
+            raise ValueError("Database context required for role_match")
+
+        # 1. Load opportunity
+        stmt = select(JobOpportunity).where(JobOpportunity.id == opportunity_id)
+        result = await self.ctx.db.execute(stmt)
+        opportunity = result.scalar_one_or_none()
+
+        if not opportunity:
+            raise ValueError(f"Job opportunity {opportunity_id} not found")
+
+        # 2. Load resume (use active if not specified)
+        if resume_profile_id:
+            stmt = select(ResumeProfile).where(ResumeProfile.id == resume_profile_id)
+            result = await self.ctx.db.execute(stmt)
+            resume = result.scalar_one_or_none()
+        else:
+            # Get active resume for owner
+            stmt = (
+                select(ResumeProfile)
+                .where(ResumeProfile.owner_email == opportunity.owner_email)
+                .where(ResumeProfile.is_active == True)  # noqa: E712
+            )
+            result = await self.ctx.db.execute(stmt)
+            resume = result.scalar_one_or_none()
+
+        if not resume:
+            raise ValueError("No resume profile found. Please upload a resume first.")
+
+        # 3. Build LLM prompt for matching
+        system_prompt = """You are a job matching assistant for ApplyLens.
+
+Your task is to analyze how well a candidate's resume matches a job opportunity.
+
+CRITICAL RULES:
+1. Be honest about match quality - don't inflate scores
+2. Consider both technical skills AND experience level
+3. Flag missing hard requirements (not nice-to-haves)
+4. Suggest SPECIFIC resume tweaks, not generic advice
+5. Output valid JSON matching the exact schema
+
+RESPONSE FORMAT (valid JSON only):
+{
+  "match_bucket": "perfect | strong | possible | skip",
+  "match_score": 85,
+  "reasons": [
+    "5+ years Python experience matches requirement",
+    "React expertise aligns with frontend needs",
+    "Previous fintech experience relevant"
+  ],
+  "missing_skills": [
+    "Kubernetes (required)",
+    "GraphQL (preferred)"
+  ],
+  "resume_tweaks": [
+    "Highlight AWS certifications in summary",
+    "Add specific Docker project examples",
+    "Quantify team leadership experience"
+  ]
+}
+
+MATCH BUCKET DEFINITIONS:
+- "perfect": 90-100 score, meets all requirements, strong experience match
+- "strong": 75-89 score, meets most requirements, minor gaps fillable
+- "possible": 60-74 score, meets some requirements, significant gaps
+- "skip": 0-59 score, major misalignment, missing critical requirements
+
+GUIDELINES:
+- Each section should have 2-5 items
+- Be specific: cite exact skills/experiences from resume
+- Reasons should focus on strengths
+- Missing skills should prioritize hard requirements over nice-to-haves
+- Resume tweaks should be actionable and relevant to THIS specific role
+"""
+
+        # Build job description text
+        jd_text = f"""Job Title: {opportunity.title}
+Company: {opportunity.company}
+Location: {opportunity.location or 'Not specified'}
+Remote: {'Yes' if opportunity.remote_flag else 'No' if opportunity.remote_flag is False else 'Not specified'}
+Level: {opportunity.level or 'Not specified'}
+Salary: {opportunity.salary_text or 'Not specified'}
+Tech Stack: {', '.join(opportunity.tech_stack) if opportunity.tech_stack else 'Not specified'}
+"""
+
+        # Build resume text
+        resume_text = f"""Professional Summary:
+{resume.summary or 'Not provided'}
+
+Headline: {resume.headline or 'Not provided'}
+
+Skills: {', '.join(resume.skills) if resume.skills else 'Not provided'}
+
+Experience:
+{self._format_experiences(resume.experiences)}
+
+Projects:
+{self._format_projects(resume.projects)}
+"""
+
+        user_prompt = f"""Analyze this match:
+
+=== JOB OPPORTUNITY ===
+{jd_text}
+
+=== CANDIDATE RESUME ===
+{resume_text}
+
+Generate match analysis following the JSON schema in the system prompt."""
+
+        # 4. Call LLM for matching
+        try:
+            match_data = await self._call_llm_for_role_match(system_prompt, user_prompt)
+
+            # 5. Save match result to database
+            existing_match = (
+                await self.ctx.db.execute(
+                    select(OpportunityMatch)
+                    .where(OpportunityMatch.opportunity_id == opportunity_id)
+                    .where(OpportunityMatch.resume_profile_id == resume.id)
+                )
+            ).scalar_one_or_none()
+
+            if existing_match:
+                # Update existing match
+                existing_match.match_bucket = match_data["match_bucket"]
+                existing_match.match_score = match_data["match_score"]
+                existing_match.reasons = match_data.get("reasons", [])
+                existing_match.missing_skills = match_data.get("missing_skills", [])
+                existing_match.resume_tweaks = match_data.get("resume_tweaks", [])
+                match_record = existing_match
+            else:
+                # Create new match
+                match_record = OpportunityMatch(
+                    owner_email=opportunity.owner_email,
+                    opportunity_id=opportunity_id,
+                    resume_profile_id=resume.id,
+                    match_bucket=match_data["match_bucket"],
+                    match_score=match_data["match_score"],
+                    reasons=match_data.get("reasons", []),
+                    missing_skills=match_data.get("missing_skills", []),
+                    resume_tweaks=match_data.get("resume_tweaks", []),
+                )
+                self.ctx.db.add(match_record)
+
+            await self.ctx.db.commit()
+
+            logger.info(
+                f"Role match completed: opportunity {opportunity_id} x resume {resume.id} = {match_data['match_bucket']} ({match_data['match_score']})"
+            )
+
+            return {
+                "match_bucket": match_data["match_bucket"],
+                "match_score": match_data["match_score"],
+                "reasons": match_data.get("reasons", []),
+                "missing_skills": match_data.get("missing_skills", []),
+                "resume_tweaks": match_data.get("resume_tweaks", []),
+                "opportunity": {
+                    "id": opportunity.id,
+                    "title": opportunity.title,
+                    "company": opportunity.company,
+                },
+                "resume": {
+                    "id": resume.id,
+                    "headline": resume.headline,
+                },
+            }
+
+        except Exception as e:
+            logger.error(f"Role match LLM call failed: {e}")
+            # Return fallback "possible" match
+            return {
+                "match_bucket": "possible",
+                "match_score": 50,
+                "reasons": ["Automated analysis unavailable"],
+                "missing_skills": [],
+                "resume_tweaks": ["Review job description manually"],
+                "opportunity": {
+                    "id": opportunity.id,
+                    "title": opportunity.title,
+                    "company": opportunity.company,
+                },
+                "resume": {
+                    "id": resume.id if resume else None,
+                    "headline": resume.headline if resume else None,
+                },
+                "error": str(e),
+            }
+
+    def _format_experiences(self, experiences: Optional[List[Dict]]) -> str:
+        """Format experience list for LLM prompt."""
+        if not experiences:
+            return "Not provided"
+
+        formatted = []
+        for exp in experiences:
+            company = exp.get("company", "Unknown")
+            role = exp.get("role", "")
+            duration = exp.get("duration", "")
+            desc = exp.get("description", "")
+            formatted.append(
+                f"- {role} at {company} ({duration})\n  {desc if desc else 'No description'}"
+            )
+        return "\n".join(formatted)
+
+    def _format_projects(self, projects: Optional[List[Dict]]) -> str:
+        """Format project list for LLM prompt."""
+        if not projects:
+            return "Not provided"
+
+        formatted = []
+        for proj in projects:
+            name = proj.get("name", "Unnamed")
+            desc = proj.get("description", "")
+            tech = proj.get("tech_stack", [])
+            tech_str = ", ".join(tech) if tech else ""
+            formatted.append(
+                f"- {name}\n  {desc}\n  Tech: {tech_str if tech_str else 'Not specified'}"
+            )
+        return "\n".join(formatted)
+
+    async def _call_llm_for_role_match(
+        self, system_prompt: str, user_prompt: str, timeout_s: float = 25.0
+    ) -> Dict[str, Any]:
+        """Call LLM for role matching and parse JSON response."""
+        import json
+        from app.llm_provider import get_llm_client
+
+        client = get_llm_client()
+
+        if client.provider == "ollama":
+            # Ollama streaming approach
+            full_text = ""
+            async for chunk in client.stream_generate(
+                prompt=f"{system_prompt}\n\n{user_prompt}",
+                temperature=0.7,
+                max_tokens=2000,
+            ):
+                if chunk:
+                    full_text += chunk
+
+            # Parse JSON from response
+            try:
+                # Try to find JSON in response
+                start = full_text.find("{")
+                end = full_text.rfind("}") + 1
+                if start >= 0 and end > start:
+                    json_str = full_text[start:end]
+                    return json.loads(json_str)
+                else:
+                    raise ValueError("No JSON found in LLM response")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse role match JSON response: {e}")
+                raise
+
+        else:
+            # OpenAI/other providers
+            response = await client.generate(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.7,
+                max_tokens=2000,
+            )
+
+            # Parse JSON from response
+            try:
+                return json.loads(response)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse role match JSON response: {e}")
+                raise

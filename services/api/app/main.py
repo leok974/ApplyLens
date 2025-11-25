@@ -22,7 +22,15 @@ from starlette_exporter import PrometheusMiddleware
 from . import auth_google, health, oauth_google, routes_extract, routes_gmail
 from .db import Base, engine
 from .es import ensure_index
-from .routers import applications, emails, search, suggest, search_debug
+from .routers import (
+    applications,
+    emails,
+    search,
+    suggest,
+    search_debug,
+    resume,
+    opportunities,
+)
 from .routers import version as version_router
 from .routers import agent as agent_router
 from .settings import settings
@@ -234,6 +242,12 @@ app.include_router(search.router)
 app.include_router(search_debug.router)  # Debug diagnostics for search
 app.include_router(suggest.router)
 app.include_router(applications.router)
+
+# Resume router - Upload-only resume management
+app.include_router(resume.router)
+
+# Opportunities router - Job opportunities listing
+app.include_router(opportunities.router)
 
 # Agent router - Mailbox Agent v2 (AI assistant)
 app.include_router(agent_router.router)

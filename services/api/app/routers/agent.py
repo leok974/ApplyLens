@@ -34,6 +34,7 @@ from app.metrics import (
     FOLLOWUP_QUEUE_REQUESTS,
     FOLLOWUP_QUEUE_ITEM_DONE,
     INTERVIEW_PREP_REQUESTS,
+    ROLE_MATCH_REQUESTS,
 )
 
 router = APIRouter(prefix="/v2/agent", tags=["agent-v2"])
@@ -879,4 +880,115 @@ async def get_interview_prep(
         )
         raise HTTPException(
             status_code=500, detail=f"Failed to generate interview prep: {str(e)}"
+        )
+
+
+@router.post("/role-match")
+async def match_role(
+    opportunity_id: int,
+    resume_profile_id: int = None,
+    req: Request = None,
+    db: DBSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    Match a job opportunity against a resume using LLM analysis.
+
+    Analyzes how well the candidate's resume matches the job opportunity and returns:
+    - Match bucket (perfect/strong/possible/skip)
+    - Match score (0-100)
+    - Reasons why it's a good match
+    - Missing skills from the job description
+    - Resume tweaks to improve the match
+
+    Example request:
+    ```
+    POST /v2/agent/role-match?opportunity_id=42&resume_profile_id=7
+    ```
+
+    Or use active resume if resume_profile_id not provided:
+    ```
+    POST /v2/agent/role-match?opportunity_id=42
+    ```
+
+    Example response:
+    ```json
+    {
+      "match_bucket": "strong",
+      "match_score": 82,
+      "reasons": [
+        "5+ years Python experience matches requirement",
+        "React expertise aligns with frontend needs",
+        "Previous fintech experience relevant"
+      ],
+      "missing_skills": ["Kubernetes", "GraphQL"],
+      "resume_tweaks": [
+        "Highlight AWS certifications in summary",
+        "Add specific Docker project examples"
+      ],
+      "opportunity": {
+        "id": 42,
+        "title": "Senior Full Stack Engineer",
+        "company": "Acme Corp"
+      },
+      "resume": {
+        "id": 7,
+        "headline": "Senior Software Engineer"
+      }
+    }
+    ```
+    """
+    try:
+        # Resolve user_id from session
+        user_id = None
+        sid = req.cookies.get("session_id")
+        if sid:
+            sess = db.query(SessionModel).filter(SessionModel.id == sid).first()
+            if sess and sess.user_id:
+                from app.models import User as UserModel
+
+                user = db.query(UserModel).filter(UserModel.id == sess.user_id).first()
+                if user and user.email:
+                    user_id = user.email
+                    logger.info(f"Role Match: resolved user_id={user_id} from session")
+
+        if not user_id:
+            logger.warning("Role Match: no user_id resolved, returning 401")
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        # Create request context for orchestrator
+        from app.config import RequestContext
+
+        ctx = RequestContext(user_id=user_id, db_session=db)
+
+        # Call orchestrator
+        orchestrator = MailboxAgentOrchestrator(ctx=ctx)
+        response = await orchestrator.role_match(
+            opportunity_id=opportunity_id,
+            resume_profile_id=resume_profile_id,
+        )
+
+        # Record metric
+        match_bucket = response.get("match_bucket", "unknown")
+        ROLE_MATCH_REQUESTS.labels(match_bucket=match_bucket).inc()
+
+        logger.info(
+            f"Role Match: completed for opportunity_id={opportunity_id}, bucket={match_bucket}, score={response.get('match_score')}"
+        )
+        return response
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"Role Match validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception(
+            "Role Match endpoint failed",
+            extra={
+                "opportunity_id": opportunity_id,
+                "resume_profile_id": resume_profile_id,
+            },
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate role match: {str(e)}"
         )

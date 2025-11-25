@@ -151,3 +151,58 @@ export async function getInterviewPrep(params: {
 
   return response as InterviewPrepResponse;
 }
+
+/**
+ * Role Match API
+ */
+
+export interface RoleMatchResponse {
+  match_bucket: 'perfect' | 'strong' | 'possible' | 'skip';
+  match_score: number;
+  reasons: string[];
+  missing_skills: string[];
+  resume_tweaks: string[];
+  opportunity: {
+    id: number;
+    title: string;
+    company: string;
+  };
+  resume: {
+    id: number;
+    headline: string | null;
+  };
+}
+
+/**
+ * Match a job opportunity against a resume using LLM analysis.
+ *
+ * @example
+ * ```ts
+ * const match = await getRoleMatch({
+ *   opportunityId: 42,
+ *   resumeProfileId: 7  // Optional, uses active resume if not provided
+ * });
+ * ```
+ */
+export async function getRoleMatch(params: {
+  opportunityId: number;
+  resumeProfileId?: number;
+}): Promise<RoleMatchResponse> {
+  const queryParams = new URLSearchParams({
+    opportunity_id: params.opportunityId.toString(),
+  });
+
+  if (params.resumeProfileId) {
+    queryParams.set('resume_profile_id', params.resumeProfileId.toString());
+  }
+
+  const response = await apiFetch(`/v2/agent/role-match?${queryParams.toString()}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  return response as RoleMatchResponse;
+}

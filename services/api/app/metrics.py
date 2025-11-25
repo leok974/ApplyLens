@@ -225,3 +225,9 @@ INTERVIEW_PREP_REQUESTS = Counter(
     "Number of interview prep requests",
     ["source"],
 )
+
+ROLE_MATCH_REQUESTS = Counter(
+    "applylens_role_match_requested_total",
+    "Number of role match requests",
+    ["match_bucket"],
+)
