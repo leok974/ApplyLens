@@ -195,7 +195,7 @@ Some content here.
     def test_format_as_html_with_markdown_library(self):
         """Test HTML conversion with markdown library (if available)."""
         try:
-            import markdown
+            import markdown  # noqa: F401
 
             markdown_text = "# Heading\n\nParagraph with **bold**."
             html = format_report_as_html(markdown_text)

@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple
 from enum import Enum
 from pydantic import BaseModel
 
-from .skills import get_skill_registry
+from .skills import get_skill_registry, SkillRegistry
 
 
 class PlannerMode(str, Enum):
@@ -354,7 +354,6 @@ def _get_all_agents_from_registry(registry) -> List[str]:
 
 
 # Add method to SkillRegistry
-from app.agents.skills import SkillRegistry
 
 
 def get_all_agents(self) -> List[str]:
