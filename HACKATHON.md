@@ -227,9 +227,52 @@ python scripts/traffic_generator.py --mode token_bloat --rate 25 --duration 60
 - **Confidence thresholds** to avoid noisy labels
 - **Fallback to heuristics** when Gemini fails
 
+## Datadog Automation
+
+We provision SLOs and monitors programmatically using the Datadog API from inside the ApplyLens API container.
+
+### Scripts
+
+- `services/api/scripts/create_datadog_dashboard_simple.py` – Creates dashboard with 15 widgets
+- `services/api/scripts/create_datadog_slos.py` – Creates SLOs via Datadog API
+- `services/api/scripts/create_datadog_monitors.py` – Creates 3 monitors (latency, errors, tokens)
+
+### Live Dashboard
+
+**Dashboard**: https://us5.datadoghq.com/dashboard/vap-jgg-r7t
+**SLO**: https://us5.datadoghq.com/slo?slo_id=d22bff39b3365745bbe3cb7853eaa659
+
+### Re-create SLOs & Monitors
+
+```bash
+# Copy scripts to container
+docker cp services/api/scripts/create_datadog_slos.py applylens-api-prod:/tmp/create_slos.py
+docker cp services/api/scripts/create_datadog_monitors.py applylens-api-prod:/tmp/create_monitors.py
+
+# Create SLOs
+docker exec \
+  -e DD_API_KEY=*** \
+  -e DD_APP_KEY=*** \
+  -e DD_SITE=us5.datadoghq.com \
+  applylens-api-prod \
+  python /tmp/create_slos.py
+
+# Create Monitors
+docker exec \
+  -e DD_API_KEY=*** \
+  -e DD_APP_KEY=*** \
+  -e DD_SITE=us5.datadoghq.com \
+  applylens-api-prod \
+  python /tmp/create_monitors.py
+```
+
+### Devpost README Note
+
+> "We provision SLOs & monitors programmatically using the Datadog API from inside the ApplyLens API container. Scripts live in `services/api/scripts/create_datadog_slos.py` and `create_datadog_monitors.py`. This enables Infrastructure-as-Code for observability, making it easy to recreate the complete monitoring stack in any environment."
+
 ## Resources
 
-- **Datadog Dashboard**: [Link after deployment]
+- **Datadog Dashboard**: https://us5.datadoghq.com/dashboard/vap-jgg-r7t
 - **Public Demo**: [Link after deployment]
 - **GitHub Repo**: https://github.com/leok974/ApplyLens
 - **Video Demo**: [Link after recording]
