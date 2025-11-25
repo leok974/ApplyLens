@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from ..db import SessionLocal
 from ..metrics import BACKFILL_INSERTED, BACKFILL_REQUESTS
+from ..observability.datadog import track_backfill_error
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,10 @@ def _run_backfill(job_id: str, days: int, user_email: str):
             JOBS[job_id]["state"] = "error"
             JOBS[job_id]["error"] = str(e)
             BACKFILL_REQUESTS.labels(result="error").inc()
+
+            # Track error in Datadog (Phase 3C)
+            error_type = type(e).__name__
+            track_backfill_error(error_type=error_type, user_id=user_email or "unknown")
         finally:
             db.close()
 
@@ -132,6 +137,10 @@ def _run_backfill(job_id: str, days: int, user_email: str):
         if job_id in JOBS:
             JOBS[job_id]["state"] = "error"
             JOBS[job_id]["error"] = f"Fatal error: {str(e)}"
+
+            # Track fatal error in Datadog (Phase 3C)
+            error_type = f"fatal_{type(e).__name__}"
+            track_backfill_error(error_type=error_type, user_id=user_email or "unknown")
 
 
 @router.post("/start", response_model=StartResp, status_code=202)

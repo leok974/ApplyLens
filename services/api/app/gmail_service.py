@@ -12,6 +12,7 @@ from elasticsearch import Elasticsearch, helpers
 from google.auth.transport.requests import Request as GRequest
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from sqlalchemy.orm import Session
 
 from .ingest.due_dates import (
@@ -609,12 +610,24 @@ def gmail_backfill_with_progress(
     threads = []
     page_token = None
     while True:
-        resp = (
-            svc.users()
-            .threads()
-            .list(userId="me", q=q, pageToken=page_token, maxResults=500)
-            .execute()
-        )
+        try:
+            resp = (
+                svc.users()
+                .threads()
+                .list(userId="me", q=q, pageToken=page_token, maxResults=500)
+                .execute()
+            )
+        except HttpError as e:
+            if e.resp.status == 429:
+                # Track rate limiting in Datadog (Phase 3C)
+                from .observability.datadog import track_backfill_rate_limited
+
+                track_backfill_rate_limited(user_id=user_email, quota_user="me")
+                logger.warning(
+                    f"Gmail API rate limited (429) during backfill for {user_email}"
+                )
+            raise  # Re-raise to let caller handle retry logic
+
         threads.extend(resp.get("threads", []))
         page_token = resp.get("nextPageToken")
         if not page_token:
@@ -640,12 +653,24 @@ def gmail_backfill_with_progress(
         thread_id = thread_meta["id"]
 
         # Get full thread with all messages
-        thread = (
-            svc.users()
-            .threads()
-            .get(userId="me", id=thread_id, format="full")
-            .execute()
-        )
+        try:
+            thread = (
+                svc.users()
+                .threads()
+                .get(userId="me", id=thread_id, format="full")
+                .execute()
+            )
+        except HttpError as e:
+            if e.resp.status == 429:
+                # Track rate limiting in Datadog (Phase 3C)
+                from .observability.datadog import track_backfill_rate_limited
+
+                track_backfill_rate_limited(user_id=user_email, quota_user="me")
+                logger.warning(
+                    f"Gmail API rate limited (429) fetching thread {thread_id}"
+                )
+            raise  # Re-raise to let caller handle retry logic
+
         messages = thread.get("messages", [])
 
         # Update total now that we know actual message count
