@@ -47,6 +47,11 @@ When using GitHub Copilot or other assistants, instruct them to follow `AGENTS.m
 - ✅ Hardened .gitignore (coverage, debug files, certs)
 - 📋 See `docs/REPO_CLEANUP_PHASE2_SUMMARY.md` for full details
 
+
+### Phase 3 Planning (Future Work)
+See planning documents for future cleanup initiatives:
+- **[Git History Cleanup Plan](docs/REPO_HISTORY_CLEANUP_PLAN.md)** - Safe git filter-repo strategy for removing large artifacts from history
+- **[Observability Stack Migration](docs/OBSERVABILITY_STACK_PLAN.md)** - Prometheus/Grafana → Datadog decommissioning roadmap
 ## 🎯 Features
 
 ✨ **Gmail Integration** - OAuth 2.0 authentication and automated email backfill
