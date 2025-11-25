@@ -1,0 +1,42 @@
+
+=== Checking: secrets ===
+237c006 Merge pull request #1 from leok974/polish
+af0aded feat(docs): Add markdown fence-fixer automation and unit tests
+c152ff2 chore(docs): consolidate project documentation and add CI badges
+500add5 Initial commit: ApplyLens - AI-powered job application email analyzer
+
+=== Checking: letsencrypt ===
+921484b Merge thread-viewer-v1: Add application tracking integration
+3576471 feat: Cloudflare Tunnel HA deployment with QUIC protocol
+
+=== Checking: *.pem ===
+
+=== Checking: *.key ===
+
+=== Checking: *.crt ===
+
+=== Checking: *.p12 ===
+
+=== Checking: *client_secret*.json ===
+
+=== Checking: *credentials*.json ===
+
+=== Checking: *.backup ===
+c413916 chore(repo): Phase 2 cleanup - remove artifacts, organize legacy scripts and docs
+f5bdd10 chore(repo): Phase 2 cleanup ΓÇô security, artifacts, legacy organization (#14)
+d018f40 chore(repo): Phase 2 cleanup - security, artifacts, legacy organization
+921484b Merge thread-viewer-v1: Add application tracking integration
+02e135b feat(ui): apply bananaPro tokens to mailbox hero + tools
+
+=== Checking: *.bak ===
+
+=== Checking: *.log ===
+
+=== Checking: *openapi-debug.json ===
+c413916 chore(repo): Phase 2 cleanup - remove artifacts, organize legacy scripts and docs
+f5bdd10 chore(repo): Phase 2 cleanup ΓÇô security, artifacts, legacy organization (#14)
+d018f40 chore(repo): Phase 2 cleanup - security, artifacts, legacy organization
+921484b Merge thread-viewer-v1: Add application tracking integration
+aeee8b7 Add browser extension API with CSRF exemptions and dev tooling
+
+=== Checking: coverage.lcov ===

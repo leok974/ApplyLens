@@ -99,6 +99,339 @@ dd-agent:  # In hackathon compose
 
 ---
 
+## Current Datadog Coverage (November 25, 2025)
+
+### ✅ Datadog Dashboard
+**ID**: `vap-jgg-r7t`
+**Name**: ApplyLens Observability Copilot – Hackathon
+**URL**: https://app.datadoghq.com/dashboard/vap-jgg-r7t
+
+**Widgets Implemented**:
+1. **LLM Classification Latency** (p50/p95/p99) - Timeseries
+   - Metric: `applylens.llm.latency_ms{env:hackathon,task_type:classify}`
+   - Alert threshold: 2000ms
+
+2. **LLM Error Rate** - Timeseries
+   - Formula: `(sum:applylens.llm.error_total / sum:applylens.llm.request_total) * 100`
+   - Alert threshold: 5%
+
+3. **Token Usage** - Query Value
+   - Metric: `applylens.llm.tokens_used{env:hackathon}`
+   - Rollup: 5min
+
+4. **Cost Estimate** - Query Value
+   - Metric: `applylens.llm.cost_estimate_usd{env:hackathon}`
+   - Rollup: 1 hour
+
+5. **Task Type Breakdown** - Toplist
+   - Metrics: Latency & tokens by task_type
+
+6. **Email Ingest Lag** - Timeseries (optional)
+   - Metric: `applylens.ingest_lag_seconds{env:hackathon}`
+   - SLO target: < 300s (5 minutes)
+
+7. **SLO Compliance** - Query Value (optional)
+   - Formula: `% emails ingested within 5min`
+
+8. **High-Risk Detection Rate** - Timeseries (security metrics)
+   - Metric: `applylens.security_high_risk_rate{env:hackathon}`
+
+9. **Quarantine Actions** - Bar Chart
+   - Metrics: `applylens.quarantine_actions_total{action:quarantine|release}`
+
+10. **API Request Duration (p95)** - Timeseries
+    - Metric: `trace.http.request.duration.by.service{service:applylens-api-hackathon}`
+
+11. **API Error Count** - Timeseries
+    - Metric: `trace.http.request.errors{service:applylens-api-hackathon}`
+
+12. **API Uptime %** - Query Value
+    - Formula: `(2xx requests / total requests) * 100`
+
+### ✅ Datadog SLOs
+**ID**: `d22bff39b3365745bbe3cb7853eaa659`
+**Name**: Email Ingest Freshness SLO
+
+**Target**: 99% of emails ingested within 5 minutes
+**Time Window**: 30 days rolling
+**Metric**: `applylens.ingest_lag_seconds{env:hackathon} < 300`
+
+**Auto-created Monitor**:
+- Triggers incident when SLO drops below 99%
+- Notification channels: (to be configured)
+
+### ✅ Datadog Monitors
+Created via `services/api/scripts/create_datadog_monitors.py`:
+
+1. **LLM Latency SLO Breach**
+   - Condition: `p95:applylens.llm.latency_ms > 2000ms for 5 minutes`
+   - Severity: Warning
+
+2. **LLM Error Rate Too High**
+   - Condition: `Error rate > 5% for 10 minutes`
+   - Severity: Critical
+
+3. **Ingest SLO Violation** (auto-created from SLO)
+   - Condition: `< 99% emails ingested within 5min (30-day window)`
+   - Severity: Warning
+
+4. **API 5xx Error Spike**
+   - Condition: `trace.http.request.errors{status_code:5xx} > threshold`
+   - Severity: Critical
+
+5. **API Uptime Below 99.9%**
+   - Condition: `(2xx/total) < 0.999 for 1 hour`
+   - Severity: Warning
+
+### ✅ APM Integration
+**Tracer**: `dd-trace-py` (installed in `services/api/pyproject.toml`)
+**Service Name**: `applylens-api-hackathon` (from `DD_SERVICE` env var)
+**Features Enabled**:
+- Distributed tracing across API endpoints
+- Automatic HTTP request instrumentation
+- Database query tracing (SQLAlchemy)
+- LLM call spans (custom instrumentation)
+
+**Key Traces**:
+- `trace.http.request.duration` - Request latency by endpoint
+- `trace.http.request.errors` - Error tracking by status code
+- `trace.llm.classify` - LLM classification operations
+- `trace.llm.extract` - LLM extraction operations
+
+### ✅ DogStatsD Metrics
+**Implementation**: `services/api/app/observability/datadog.py`
+
+**Custom Metrics**:
+- `applylens.llm.latency_ms` - LLM operation latency (histogram)
+- `applylens.llm.request_total` - LLM requests (counter)
+- `applylens.llm.error_total` - LLM errors (counter)
+- `applylens.llm.tokens_used` - Token consumption (counter)
+- `applylens.llm.cost_estimate_usd` - Estimated cost (counter)
+- `applylens.ingest_lag_seconds` - Email ingest lag (histogram)
+- `applylens.security_high_risk_rate` - Security detection rate (gauge)
+- `applylens.quarantine_actions_total` - Quarantine/release actions (counter)
+
+**Tags Used**:
+- `env:hackathon` | `env:production`
+- `task_type:classify` | `task_type:extract` | `task_type:summarize`
+- `service:applylens-api-hackathon`
+- `status_code:200|500|etc`
+- `lag_slo_status:ok|breached`
+
+---
+
+## Grafana → Datadog Mapping (November 25, 2025)
+
+### Existing Grafana Dashboards
+
+Located in `docs/archive/grafana/`:
+1. `applylens-overview-dashboard.json` - System health overview
+2. `phase3_grafana_dashboard.json` - Phase 3 implementation metrics
+3. `phase4_grafana_dashboard.json` - Phase 4 integration metrics
+4. (Additional dashboard at `services/api/grafana/dashboards/applylens-agent-thread-tracker.json`)
+
+### Mapping Table
+
+| **Prometheus/Grafana Panel** | **Purpose** | **Datadog Equivalent** | **Status** | **Notes** |
+|------------------------------|-------------|------------------------|------------|-----------|
+| **API Latency (p95)** | Monitor API performance | `trace.http.request.duration{service:applylens-api}` (Widget 10) | ✅ Mapped | APM provides more detail than Prometheus |
+| **API Error Rate (5xx)** | Track server errors | `trace.http.request.errors{status_code:5xx}` (Widget 11) | ✅ Mapped | Monitor created |
+| **API Uptime %** | Service availability | `(2xx/total) * 100` (Widget 12) | ✅ Mapped | Formula-based widget |
+| **LLM Latency** | LLM performance | `applylens.llm.latency_ms` (Widget 1) | ✅ Mapped | Enhanced with p50/p95/p99 |
+| **LLM Error Rate** | LLM reliability | `applylens.llm.error_total / request_total` (Widget 2) | ✅ Mapped | Monitor created |
+| **Email Ingest Lag** | Ingest freshness | `applylens.ingest_lag_seconds` (Widget 6) | ✅ Mapped | SLO created (99% < 5min) |
+| **Security Risk Detection** | Threat monitoring | `applylens.security_high_risk_rate` (Widget 8) | ✅ Mapped | Anomaly detection enabled |
+| **Backfill Errors** | Data pipeline health | ❌ Gap | ⚠️ Gap | No Datadog metric yet |
+| **Gmail Connection Status** | OAuth health | ❌ Gap | ⚠️ Gap | No Datadog metric yet |
+| **Database Connections** | DB pool utilization | ❌ Gap | ⚠️ Gap | Could add via APM DB instrumentation |
+| **Elasticsearch Health** | Search availability | ❌ Gap | ⚠️ Gap | No ES metrics in Datadog |
+| **Phase 3 Metrics** (historical) | Phase 3 telemetry | N/A | 🔵 Skip | Historical data only, not needed |
+| **Phase 4 Metrics** (historical) | Phase 4 integration | N/A | 🔵 Skip | Historical data only, not needed |
+
+### Identified Gaps
+
+**Critical (Must Fix Before Decommission)**:
+1. ❌ **Backfill Errors**: Prometheus alert `BackfillFailing` has no Datadog equivalent
+   - **Action**: Add `applylens.backfill.errors` counter metric
+   - **Monitor**: Create Datadog monitor for backfill error rate
+
+2. ❌ **Gmail Connection Status**: Prometheus alert `GmailDisconnected` has no Datadog equivalent
+   - **Action**: Add `applylens.gmail.connected` gauge metric (1 = connected, 0 = disconnected)
+   - **Monitor**: Create Datadog monitor for connection status
+
+**Nice-to-Have (Optional)**:
+3. ⏳ **Database Connections**: Prometheus tracks DB pool utilization
+   - **Option**: Use Datadog APM's built-in DB metrics (already available via SQLAlchemy instrumentation)
+   - **Alternative**: Add custom gauge for active/idle connections
+
+4. ⏳ **Elasticsearch Health**: Prometheus monitors ES cluster status
+   - **Option**: Add Datadog Elasticsearch integration (if needed)
+   - **Alternative**: Monitor indirectly via API error rates (ES failures → API 500s)
+
+---
+
+## Decision Criteria (Updated November 25, 2025)
+
+### Must Be True Before Decommissioning
+
+#### 1. ✅ Alert Parity
+**Status**: ⚠️ Partially Complete - 2 Gaps Identified
+
+**Prometheus Alerts** (from `infra/prometheus/alerts.yml`):
+- [x] ✅ **ApplyLensApiDown** → Datadog Monitor: "API Uptime Below 99.9%" (covers API availability)
+- [x] ✅ **HighHttpErrorRate** → Datadog Monitor: "API 5xx Error Spike" (covers 5xx error rate)
+- [ ] ❌ **BackfillFailing** → **GAP** - Need to add Datadog monitor for backfill errors
+- [ ] ❌ **BackfillRateLimitedSpike** → **GAP** - Need to add Datadog monitor for rate limit spikes
+- [ ] ❌ **GmailDisconnected** → **GAP** - Need to add Datadog monitor for Gmail connection status
+
+**TODO - Create Missing Monitors**:
+```python
+# Add to services/api/scripts/create_datadog_monitors.py
+1. Backfill Error Monitor:
+   - Metric: applylens.backfill.errors
+   - Condition: > 0 errors in 10 minutes
+   - Severity: Warning
+
+2. Backfill Rate Limited Monitor:
+   - Metric: applylens.backfill.rate_limited
+   - Condition: > 10 rate limits in 15 minutes
+   - Severity: Info
+
+3. Gmail Disconnected Monitor:
+   - Metric: applylens.gmail.connected
+   - Condition: < 1 for 15 minutes
+   - Severity: Warning
+```
+
+**How to verify**:
+```bash
+# After creating monitors
+cd services/api
+python scripts/create_datadog_monitors.py
+
+# Test by simulating conditions
+# (trigger backfill error, disconnect Gmail, etc.)
+```
+
+**Completion Checklist**:
+- [ ] Backfill error metric added to `app/observability/datadog.py`
+- [ ] Backfill monitors created in Datadog
+- [ ] Gmail connection metric added to `app/observability/datadog.py`
+- [ ] Gmail monitor created in Datadog
+- [ ] Notification channels configured (Slack/email)
+- [ ] Monitors tested with simulated failures
+- [ ] All monitors documented in `hackathon/DATADOG_SETUP.md`
+
+#### 2. ✅ Dashboard Parity
+**Status**: ✅ Mostly Complete - Critical Dashboards Migrated
+
+**Critical Dashboards**:
+- [x] ✅ **API Performance** - Datadog Dashboard Widget 10 (p95 latency)
+- [x] ✅ **API Errors** - Datadog Dashboard Widget 11 (error count)
+- [x] ✅ **API Uptime** - Datadog Dashboard Widget 12 (uptime %)
+- [x] ✅ **LLM Metrics** - Datadog Dashboard Widgets 1-5 (latency, errors, tokens, cost, task breakdown)
+- [x] ✅ **Ingest Freshness** - Datadog Dashboard Widget 6-7 (lag, SLO compliance)
+- [x] ✅ **Security Metrics** - Datadog Dashboard Widget 8-9 (risk rate, quarantine actions)
+
+**Historical/Archived Dashboards (Intentionally NOT Migrated)**:
+- [x] 🔵 **Phase 3 Grafana Dashboard** - Historical data only, not needed in Datadog
+- [x] 🔵 **Phase 4 Grafana Dashboard** - Historical data only, not needed in Datadog
+
+**Nice-to-Have (Optional)**:
+- [ ] ⏳ **Database Metrics** - Use APM's built-in DB metrics instead of custom dashboard
+- [ ] ⏳ **Elasticsearch Metrics** - Monitor indirectly via API errors, or add ES integration if needed
+
+**Stakeholder Approval**:
+- [ ] Product team approves Datadog dashboard as replacement for Grafana
+- [ ] On-call engineers confirm Datadog dashboard has all critical info
+- [ ] No requests for additional Grafana panels to be migrated
+
+**Completion Checklist**:
+- [x] All critical Grafana panels have Datadog equivalents
+- [ ] Team walkthrough/demo of new Datadog dashboard completed
+- [ ] Datadog dashboard URL added to oncall handbook
+- [ ] Grafana dashboard URLs removed from oncall runbooks
+
+#### 3. ✅ Historical Data Strategy
+**Status**: ⏳ Decision Needed
+
+**Options**:
+- [ ] **A. Export snapshots** - Save final Grafana dashboard screenshots/PDFs before shutdown
+- [ ] **B. Keep read-only** - Stop collecting new metrics, keep Grafana accessible for 90 days, then shut down
+- [ ] **C. Export to storage** - Export Prometheus TSDB to S3/GCS for compliance/audit
+- [ ] **D. Discard** - Accept loss of pre-Datadog historical data (Datadog now has 30+ days)
+
+**Recommended**: Option A (snapshots) + Option B (read-only for 90 days)
+
+**Action Items**:
+- [ ] Export Grafana dashboards as JSON (backup)
+- [ ] Export Grafana dashboards as PDF screenshots (visual archive)
+- [ ] Save to `docs/archive/grafana/HISTORICAL_DASHBOARDS_2025-11/`
+- [ ] Document archive location in `docs/archive/grafana/HISTORICAL_DATA.md`
+- [ ] Set calendar reminder to shut down Grafana after 90 days (Mar 2026)
+
+#### 4. ✅ No Hard Dependencies
+**Status**: ⏳ Needs Verification
+
+**Search for Hardcoded References**:
+```bash
+# Find Grafana URLs
+git grep -i "grafana" --exclude-dir=docs/archive
+git grep "localhost:3000"
+git grep ":3000"
+
+# Find Prometheus URLs
+git grep -i "prometheus" --exclude-dir=docs/archive
+git grep "localhost:9090"
+git grep ":9090"
+
+# Find /metrics endpoint references (OK to keep - used by Datadog too)
+git grep "/metrics"
+```
+
+**Known Dependencies (Already Archived)**:
+- [x] ✅ Grafana setup scripts → Moved to `docs/archive/grafana/`
+- [x] ✅ Prometheus config → Still in `infra/prometheus/` (will move to `infra/archive/` after decommission)
+- [x] ✅ Docker compose Prometheus/Grafana services → Annotated as LEGACY
+
+**TODO - Verify No Active References**:
+- [ ] Search codebase for Grafana URLs (expecting only archive references)
+- [ ] Search docs for Prometheus/Grafana links (update to Datadog)
+- [ ] Check if any scripts scrape Prometheus API (migrate to Datadog API)
+- [ ] Verify no external monitoring tools depend on Grafana
+
+**Completion Checklist**:
+- [ ] All live code/docs reference Datadog only
+- [ ] Grafana/Prometheus references only in `docs/archive/`
+- [ ] README.md updated to mention Datadog as primary observability
+- [ ] PRODUCTION_DEPLOYMENT.md updated to remove Grafana setup steps
+- [ ] ONCALL_HANDBOOK.md links updated to Datadog dashboards
+
+---
+
+### Decommission Readiness Scorecard
+
+| Criteria | Status | Blockers | ETA |
+|----------|--------|----------|-----|
+| **Alert Parity** | ⚠️ 60% | Missing 3 monitors (backfill, Gmail) | +2 weeks |
+| **Dashboard Parity** | ✅ 100% | None | ✅ Ready |
+| **Historical Data** | ⏳ 0% | Need to decide & execute export | +1 week |
+| **No Dependencies** | ⏳ 0% | Need to run grep searches | +1 day |
+| **Parallel Operation** | ❌ 0% | Not started yet (needs 2-4 weeks) | +4 weeks |
+| **Team Training** | ❌ 0% | Oncall engineers need Datadog walkthrough | +1 week |
+
+**Overall Readiness**: ⚠️ **Not Ready** - Estimated **6-8 weeks** until decommission-ready
+
+**Next Actions**:
+1. Create missing Datadog monitors (backfill, Gmail) - **Week 1**
+2. Export Grafana historical data - **Week 1**
+3. Verify no hard dependencies - **Week 1**
+4. Start parallel operation period - **Week 2-5**
+5. Train oncall engineers on Datadog - **Week 3**
+6. Final approval & decommission - **Week 6+**
+
+---
+
 ## Decision Criteria
 
 ### Must Be True Before Decommissioning
