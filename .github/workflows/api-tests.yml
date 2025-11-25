@@ -28,7 +28,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: applylens
         ports:
-          - 5433:5432
+          - 5432:5432
         options: >-
           --health-cmd="pg_isready -U postgres -d applylens"
           --health-interval=3s
@@ -36,7 +36,7 @@ jobs:
           --health-retries=20
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/applylens
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens
       ENV: test
       ES_ENABLED: false
       USE_MOCK_GMAIL: true
@@ -69,14 +69,14 @@ jobs:
         run: |
           echo "Waiting for PostgreSQL to be ready..."
           for i in {1..60}; do
-            if pg_isready -h localhost -p 5433 -U postgres -d applylens; then
+            if pg_isready -h localhost -p 5432 -U postgres -d applylens; then
               echo "PostgreSQL is ready!"
               break
             fi
             echo "Attempt $i/60: PostgreSQL not ready yet..."
             sleep 1
           done
-          pg_isready -h localhost -p 5433 -U postgres -d applylens || exit 1
+          pg_isready -h localhost -p 5432 -U postgres -d applylens || exit 1
 
       - name: Run Alembic migrations
         working-directory: services/api
@@ -92,14 +92,6 @@ jobs:
           pytest -q tests/unit tests/api/test_automation_endpoints.py tests/api/test_applications_api.py tests/api/test_query_filters.py \
             tests/test_agents_core.py tests/test_agent_warehouse.py \
             -m "not integration" \
-            --ignore=tests/unit/test_api_happy.py \
-            --ignore=tests/unit/test_classifier.py \
-            --ignore=tests/unit/test_formatting.py \
-            --ignore=tests/unit/test_health_and_search.py \
-            --ignore=tests/unit/test_models_vs_migrations.py \
-            --ignore=tests/unit/test_risk_scoring.py \
-            --ignore=tests/unit/test_security_policy.py \
-            --ignore=tests/unit/test_validation.py \
             --cov=app --cov-report=term-missing --cov-report=xml --cov-report=html --cov-fail-under=30
 
       - name: Run Phase 4 AI health & route tests
@@ -124,12 +116,13 @@ jobs:
 
       - name: Upload to Codecov
         if: always()
+        continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: services/api/coverage.xml
           flags: api
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Archive test results
         if: always()
@@ -164,7 +157,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: applylens
         ports:
-          - 5433:5432
+          - 5432:5432
         options: >-
           --health-cmd="pg_isready -U postgres -d applylens"
           --health-interval=3s
@@ -186,7 +179,7 @@ jobs:
           --health-retries=20
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/applylens
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens
       ENV: test
       ES_ENABLED: true
       ES_HOST: localhost
@@ -221,13 +214,13 @@ jobs:
         run: |
           echo "Waiting for PostgreSQL..."
           for i in {1..60}; do
-            if pg_isready -h localhost -p 5433 -U postgres -d applylens; then
+            if pg_isready -h localhost -p 5432 -U postgres -d applylens; then
               echo "PostgreSQL is ready!"
               break
             fi
             sleep 1
           done
-          
+
           echo "Waiting for Elasticsearch..."
           for i in {1..60}; do
             if curl -f http://localhost:9200/_cluster/health >/dev/null 2>&1; then
