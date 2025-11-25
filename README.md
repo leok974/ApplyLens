@@ -23,6 +23,30 @@ This repo is set up for specialist "agents" (human or AI) to work safely on diff
 
 When using GitHub Copilot or other assistants, instruct them to follow `AGENTS.md` and the relevant agent file instead of acting as a generalist.
 
+
+## 📁 Repository Organization
+
+### Documentation Structure
+- **`docs/`** - Current documentation (runbooks, architecture, guides)
+- **`docs/archive/`** - Historical/legacy documentation
+  - `docs/archive/grafana/` - Grafana dashboards & setup (legacy, Datadog is primary)
+  - `docs/archive/phases/` - Phase completion milestones
+  - `docs/archive/patches/` - Historical patch notes
+
+### Scripts
+- **`scripts/`** - Active utilities and automation
+- **`scripts/legacy/`** - Archived scripts (19 total)
+  - Pipeline fixes, old deployments, AWS migration scripts
+  - Testing utilities, pre-Datadog observability scripts
+  - See `scripts/legacy/README.md` for details
+
+### Recent Cleanup (Phase 2 - Nov 2025)
+- ✅ Removed ~800KB of tracked artifacts (coverage.lcov, openapi-debug.json, backup files)
+- ✅ Organized 19 legacy scripts → `scripts/legacy/`
+- ✅ Archived 27 docs → `docs/archive/`
+- ✅ Hardened .gitignore (coverage, debug files, certs)
+- 📋 See `docs/REPO_CLEANUP_PHASE2_SUMMARY.md` for full details
+
 ## 🎯 Features
 
 ✨ **Gmail Integration** - OAuth 2.0 authentication and automated email backfill
