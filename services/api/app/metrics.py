@@ -179,3 +179,60 @@ autofill_manual_edits = Counter(
     "applylens_autofill_manual_edits_total",
     "Fields manually edited by users",
 )
+
+# --- Agent Today Endpoint Metrics ---
+
+AGENT_TODAY_DURATION_SECONDS = Histogram(
+    "applylens_agent_today_duration_seconds",
+    "Wall-clock time spent building /v2/agent/today responses.",
+    buckets=(
+        0.1,  # super fast
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        1.5,
+        2.0,
+        3.0,
+        5.0,
+        7.5,
+        10.0,  # very slow
+    ),
+)
+
+# --- Follow-up Draft Metrics ---
+
+FOLLOWUP_DRAFT_REQUESTS = Counter(
+    "applylens_followup_draft_requested_total",
+    "Number of follow-up drafts requested",
+    ["source"],  # thread_viewer, etc.
+)
+
+# --- Follow-up Queue Metrics ---
+
+FOLLOWUP_QUEUE_REQUESTS = Counter(
+    "applylens_followup_queue_requested_total",
+    "Number of follow-up queue requests",
+)
+
+FOLLOWUP_QUEUE_ITEM_DONE = Counter(
+    "applylens_followup_queue_item_done_total",
+    "Number of follow-up queue items marked as done",
+)
+
+INTERVIEW_PREP_REQUESTS = Counter(
+    "applylens_interview_prep_requested_total",
+    "Number of interview prep requests",
+    ["source"],
+)
+
+ROLE_MATCH_REQUESTS = Counter(
+    "applylens_role_match_requested_total",
+    "Number of role match requests",
+    ["match_bucket"],
+)
+
+ROLE_MATCH_BATCH_REQUESTS = Counter(
+    "applylens_role_match_batch_requests_total",
+    "Number of batch role-match requests",
+)

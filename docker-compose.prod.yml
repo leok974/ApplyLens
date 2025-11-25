@@ -13,11 +13,17 @@
 #   - FastAPI (backend API)
 #   - React/Vite (frontend)
 #   - Nginx (reverse proxy)
-#   - Prometheus (metrics)
-#   - Grafana (monitoring)
+#   - Prometheus (metrics) - LEGACY: Datadog is now primary observability
+#   - Grafana (monitoring) - LEGACY: Datadog is now primary observability
 #   - Cloudflared (tunnel - optional)
-
-version: '3.8'
+#
+# NOTE: Prometheus/Grafana are marked as LEGACY (as of Nov 2025).
+# Datadog is now the primary observability provider.
+# These services are retained temporarily for:
+#   - Historical metrics data
+#   - Transition period monitoring
+#   - Safe decommissioning later (Phase 3)
+# See: hackathon/DATADOG_SETUP.md for current observability setup
 
 services:
   # =============================================================================
@@ -177,7 +183,13 @@ services:
     # Card-aware answering - LLM references card metadata, no hallucinated company names
     # Zero-results phrasing - Don't say "card below" when count=0
     # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
-    image: leoklemet/applylens-api:0.5.1
+    # v0.6.0: Today Panel - Inbox triage with 6 scan intents, thread mini-lists, responsive grid UI
+    # v0.6.1: Thread Viewer follow-up draft feature (POST /v2/agent/followup-draft)
+    # v0.6.2: Follow-up Queue - unified view merging mailbox followups + Tracker applications
+    # v0.6.3: Persistent follow-up state with progress tracking and done/not-done toggles
+    # v0.6.4: Today panel Follow-ups summary widget with progress and quick navigation
+    # v0.6.5-datadog: Datadog automation scripts for dashboard, SLOs, and monitors
+    image: leoklemet/applylens-api:0.6.5-datadog
     container_name: applylens-api-prod
     environment:
       # Database
@@ -230,9 +242,9 @@ services:
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
 
       # Build Metadata
-      APP_VERSION: '0.5.1'
-      APP_BUILD_SHA: '921484b'
-      APP_BUILD_TIME: '2025-11-22T20:16:47Z'
+      APP_VERSION: '0.6.4'
+      APP_BUILD_SHA: '1fbff31'
+      APP_BUILD_TIME: '2025-11-24T23:11:00Z'
       APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
@@ -265,7 +277,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/secrets/applylens-warehouse-key.json}
 
       # Gmail Backfill API Key
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
 
       # Monitoring
       PROMETHEUS_ENABLED: "true"
@@ -310,7 +322,7 @@ services:
     environment:
       # Internal call to API (no Cloudflare)
       API_URL: http://applylens-api-prod:8003/gmail/backfill
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
       EVERY_MINUTES: ${BACKFILL_EVERY_MINUTES:-30}
       BACKFILL_DAYS: ${BACKFILL_DAYS:-2}
       TZ: America/New_York
@@ -382,7 +394,7 @@ services:
     environment:
       # Internal call to API (no Cloudflare, no /api prefix for internal calls)
       API_URL: http://applylens-api-prod:8003/v2/agent/feedback/aggregate
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
       EVERY_HOURS: ${AGENT_FEEDBACK_EVERY_HOURS:-6}
       TIMEOUT: ${AGENT_FEEDBACK_TIMEOUT:-120}
       TZ: America/New_York
@@ -458,16 +470,21 @@ services:
     # v0.5.8: Intent override - explicit intent for toolbar buttons Fix MailboxThemePanel to use activeGlow instead of ambientGlow (now "none")
     # v0.5.8: Intent override - explicit intent for toolbar buttons Add frame.container/glow tokens, mailbox-frame testid, E2E test for no ambient overlay
     # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
-    image: leoklemet/applylens-web:0.5.1
+    # v0.6.0: Today Panel - /today route with 6 scan intents, thread mini-lists, action buttons
+    # v0.6.1: Thread Viewer follow-up draft button with clipboard copy
+    # v0.6.2: Follow-up Queue page - /followups route with unified thread + application list
+    # v0.6.3: Follow-up Queue progress bar and persistent done state with optimistic UI updates
+    # v0.6.4: Today panel Follow-ups summary card showing completion progress
+    image: leoklemet/applylens-web:0.6.4
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
 
       # Build Metadata (Web)
       - VITE_BUILD_FLAVOR=prod
-      - VITE_APP_VERSION=0.5.1
-      - VITE_BUILD_GIT_SHA=921484b
-      - VITE_BUILD_TIME=2025-11-22T20:16:47Z
+      - VITE_APP_VERSION=0.6.4
+      - VITE_BUILD_GIT_SHA=1fbff31
+      - VITE_BUILD_TIME=2025-11-24T23:11:00Z
 
       # Feature Flags
       - VITE_FEATURE_COMPANION=1
@@ -487,8 +504,11 @@ services:
       - applylens-prod
 
   # =============================================================================
-  # PROMETHEUS (Metrics Collection)
+  # PROMETHEUS (Metrics Collection) - LEGACY
   # =============================================================================
+  # NOTE: Prometheus/Grafana marked legacy (Datadog is primary observability).
+  # Retained temporarily for historical charts & safe decommissioning later.
+  # See: hackathon/DATADOG_SETUP.md for Datadog configuration.
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: applylens-prometheus-prod
@@ -516,8 +536,11 @@ services:
       - applylens-prod
 
   # =============================================================================
-  # GRAFANA (Monitoring Dashboard)
+  # GRAFANA (Monitoring Dashboard) - LEGACY
   # =============================================================================
+  # NOTE: Prometheus/Grafana marked legacy (Datadog is primary observability).
+  # Retained temporarily for historical charts & safe decommissioning later.
+  # See: hackathon/DATADOG_SETUP.md for Datadog configuration.
   grafana:
     image: grafana/grafana:11.1.0
     container_name: applylens-grafana-prod

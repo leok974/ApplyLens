@@ -850,6 +850,136 @@ export async function sendThreadSummaryFeedback(opts: {
   return res.json() as Promise<{ ok: boolean }>;
 }
 
+/**
+ * Generate a follow-up draft email using Agent V2.
+ * Returns a structured draft with subject and body.
+ */
+export interface FollowupDraftRequest {
+  thread_id: string;
+  application_id?: number;
+}
+
+export interface FollowupDraft {
+  subject: string;
+  body: string;
+}
+
+export interface FollowupDraftResponse {
+  status: 'ok' | 'error';
+  draft?: FollowupDraft;
+  message?: string;
+}
+
+export async function generateFollowupDraft(
+  req: FollowupDraftRequest
+): Promise<FollowupDraftResponse> {
+  const csrf = getCsrf();
+  const res = await fetch("/v2/agent/followup-draft", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "x-csrf-token": csrf,
+    },
+    body: JSON.stringify({
+      thread_id: req.thread_id,
+      application_id: req.application_id,
+      mode: "preview_only",
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to generate draft: ${res.status}`);
+  }
+
+  return res.json() as Promise<FollowupDraftResponse>;
+}
+
+// ===== Follow-up Queue =====
+
+export interface QueueMeta {
+  total: number;
+  time_window_days: number;
+  done_count: number;
+  remaining_count: number;
+}
+
+export interface QueueItem {
+  thread_id: string;
+  application_id?: number;
+  priority: number;
+  reason_tags: string[];
+  company?: string;
+  role?: string;
+  subject?: string;
+  snippet?: string;
+  last_message_at?: string;
+  status?: string;
+  gmail_url?: string;
+  is_done: boolean;
+}
+
+export interface FollowupQueueRequest {
+  user_id?: string;
+  time_window_days?: number;
+}
+
+export interface FollowupQueueResponse {
+  status: 'ok' | 'error';
+  queue_meta?: QueueMeta;
+  items: QueueItem[];
+  message?: string;
+}
+
+export async function getFollowupQueue(
+  req: FollowupQueueRequest = {}
+): Promise<FollowupQueueResponse> {
+  const res = await fetch('/v2/agent/followup-queue', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-csrf-token': getCsrf(),
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      time_window_days: req.time_window_days || 30,
+      ...req,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to get followup queue: ${res.statusText}`);
+  }
+
+  return res.json() as Promise<FollowupQueueResponse>;
+}
+
+export interface UpdateFollowupStateRequest {
+  thread_id: string;
+  application_id?: number;
+  is_done: boolean;
+}
+
+export async function updateFollowupState(
+  req: UpdateFollowupStateRequest
+): Promise<{ ok: boolean }> {
+  const res = await fetch('/v2/agent/followups/state', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-csrf-token': getCsrf(),
+    },
+    credentials: 'include',
+    body: JSON.stringify(req),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to update followup state: ${res.statusText}`);
+  }
+
+  return res.json() as Promise<{ ok: boolean }>;
+}
+
 
 // ===== Sender Overrides =====
 

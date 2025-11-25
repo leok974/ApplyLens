@@ -4,13 +4,32 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { ThreadViewer } from '@/components/mail/ThreadViewer';
 import type { MailThreadSummary } from '@/lib/mailThreads';
 
-// Mock fetch
-global.fetch = vi.fn(() =>
-  Promise.resolve({
+// Mock useNavigate
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+// Mock fetch for thread details
+global.fetch = vi.fn((url) => {
+  // Handle metrics endpoint
+  if (typeof url === 'string' && url.includes('/metrics/thread-to-tracker-click')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ ok: true }),
+    } as Response);
+  }
+
+  // Handle thread details endpoint
+  return Promise.resolve({
     ok: true,
     json: () => Promise.resolve({
       threadId: 'thread-1',
@@ -18,12 +37,13 @@ global.fetch = vi.fn(() =>
       from: 'alice@example.com',
       messages: [],
     }),
-  } as Response)
-);
+  } as Response);
+});
 
 describe('ThreadViewer - Application tracking', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockClear();
   });
 
   const renderWithRouter = (props: any) => {
@@ -192,5 +212,242 @@ describe('ThreadViewer - Application tracking', () => {
 
     // Should NOT show create button
     expect(screen.queryByTestId('thread-viewer-create-app')).not.toBeInTheDocument();
+  });
+
+  it('navigates to /tracker?appId=<id> when "Open in Tracker" is clicked', () => {
+    const linkedSummary: MailThreadSummary = {
+      threadId: 'thread-6',
+      subject: 'Application Status',
+      from: 'hiring@company.com',
+      lastMessageAt: '2025-01-15T10:00:00Z',
+      labels: ['INBOX'],
+      snippet: 'Update on your application...',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-6',
+      applicationId: 456,
+    };
+
+    renderWithRouter({
+      threadId: 'thread-6',
+      summary: linkedSummary,
+    });
+
+    const button = screen.getByTestId('thread-viewer-open-tracker');
+    fireEvent.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=456');
+  });
+
+  it('navigates with correct appId for different applications', () => {
+    const linkedSummary: MailThreadSummary = {
+      threadId: 'thread-7',
+      subject: 'Interview Confirmation',
+      from: 'recruiter@tech.com',
+      lastMessageAt: '2025-01-15T10:00:00Z',
+      labels: ['INBOX'],
+      snippet: 'Confirming our interview...',
+      gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-7',
+      applicationId: 789,
+    };
+
+    renderWithRouter({
+      threadId: 'thread-7',
+      summary: linkedSummary,
+    });
+
+    const button = screen.getByTestId('thread-viewer-open-tracker');
+    fireEvent.click(button);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=789');
+  });
+
+  describe('Metrics tracking', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('calls metrics endpoint when "Open in Tracker" is clicked with intent', async () => {
+      const linkedSummary: MailThreadSummary = {
+        threadId: 'thread-metrics-1',
+        subject: 'Follow-up Email',
+        from: 'recruiter@company.com',
+        lastMessageAt: '2025-01-15T10:00:00Z',
+        labels: ['INBOX'],
+        snippet: 'Following up...',
+        gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-metrics-1',
+        applicationId: 123,
+      };
+
+      renderWithRouter({
+        threadId: 'thread-metrics-1',
+        summary: linkedSummary,
+        intent: 'followups',
+      });
+
+      const button = screen.getByTestId('thread-viewer-open-tracker');
+      fireEvent.click(button);
+
+      // Should call metrics endpoint with POST method and correct body
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/metrics/thread-to-tracker-click',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            application_id: 123,
+            intent: 'followups',
+          }),
+        }
+      );
+
+      // Should also navigate
+      expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=123');
+    });
+
+    it('calls metrics endpoint without intent when intent is not provided', async () => {
+      const linkedSummary: MailThreadSummary = {
+        threadId: 'thread-metrics-2',
+        subject: 'Application Update',
+        from: 'hr@company.com',
+        lastMessageAt: '2025-01-15T10:00:00Z',
+        labels: ['INBOX'],
+        snippet: 'Update on your application...',
+        gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-metrics-2',
+        applicationId: 456,
+      };
+
+      renderWithRouter({
+        threadId: 'thread-metrics-2',
+        summary: linkedSummary,
+        // No intent prop
+      });
+
+      const button = screen.getByTestId('thread-viewer-open-tracker');
+      fireEvent.click(button);
+
+      // Should call metrics endpoint with POST method and undefined intent
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/metrics/thread-to-tracker-click',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            application_id: 456,
+            intent: undefined,
+          }),
+        }
+      );
+
+      expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=456');
+    });
+
+    it('navigates even if metrics endpoint fails', async () => {
+      // Make fetch fail for metrics endpoint
+      const mockFetch = vi.fn((url) => {
+        if (typeof url === 'string' && url.includes('/metrics/thread-to-tracker-click')) {
+          return Promise.reject(new Error('Network error'));
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ threadId: 'thread-metrics-3', messages: [] }),
+        } as Response);
+      });
+      global.fetch = mockFetch;
+
+      const linkedSummary: MailThreadSummary = {
+        threadId: 'thread-metrics-3',
+        subject: 'Interview Schedule',
+        from: 'recruiter@tech.com',
+        lastMessageAt: '2025-01-15T10:00:00Z',
+        labels: ['INBOX'],
+        snippet: 'Interview scheduled...',
+        gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-metrics-3',
+        applicationId: 789,
+      };
+
+      renderWithRouter({
+        threadId: 'thread-metrics-3',
+        summary: linkedSummary,
+        intent: 'interviews',
+      });
+
+      const button = screen.getByTestId('thread-viewer-open-tracker');
+      fireEvent.click(button);
+
+      // Metrics endpoint was called
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/metrics/thread-to-tracker-click',
+        expect.any(Object)
+      );
+
+      // Navigation still happens despite fetch failure
+      expect(mockNavigate).toHaveBeenCalledWith('/tracker?appId=789');
+    });
+
+    it('calls metrics with correct application_id for different intents', async () => {
+      const billsSummary: MailThreadSummary = {
+        threadId: 'thread-bills',
+        subject: 'Invoice Due',
+        from: 'billing@service.com',
+        lastMessageAt: '2025-01-15T10:00:00Z',
+        labels: ['INBOX'],
+        snippet: 'Your invoice is due...',
+        gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-bills',
+        applicationId: 999,
+      };
+
+      renderWithRouter({
+        threadId: 'thread-bills',
+        summary: billsSummary,
+        intent: 'bills',
+      });
+
+      const button = screen.getByTestId('thread-viewer-open-tracker');
+      fireEvent.click(button);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/metrics/thread-to-tracker-click',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            application_id: 999,
+            intent: 'bills',
+          }),
+        }
+      );
+    });
+
+    it('does not call metrics endpoint when Create Application button is clicked', async () => {
+      const unlinkedSummary: MailThreadSummary = {
+        threadId: 'thread-no-metrics',
+        subject: 'Job Opportunity',
+        from: 'hr@startup.com',
+        lastMessageAt: '2025-01-15T10:00:00Z',
+        labels: ['INBOX'],
+        snippet: 'We have an opening...',
+        gmailUrl: 'https://mail.google.com/mail/u/0/#inbox/thread-no-metrics',
+      };
+
+      const mockHandler = vi.fn();
+
+      renderWithRouter({
+        threadId: 'thread-no-metrics',
+        summary: unlinkedSummary,
+        onCreateApplication: mockHandler,
+        intent: 'followups',
+      });
+
+      const button = screen.getByTestId('thread-viewer-create-app');
+      fireEvent.click(button);
+
+      // Metrics endpoint should NOT be called
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        '/metrics/thread-to-tracker-click',
+        expect.any(Object)
+      );
+
+      // But handler should still be called
+      expect(mockHandler).toHaveBeenCalledWith('thread-no-metrics');
+    });
   });
 });

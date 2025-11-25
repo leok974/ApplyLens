@@ -896,3 +896,135 @@ class AgentPreferences(Base):
 
     def __repr__(self):
         return f"<AgentPreferences(user={self.user_id})>"
+
+
+class FollowupQueueState(Base):
+    """Persistent state for follow-up queue items (done/not done)."""
+
+    __tablename__ = "followup_queue_state"
+
+    user_id = Column(Text, primary_key=True, nullable=False)
+    thread_id = Column(Text, primary_key=True, nullable=False)
+    application_id = Column(Integer, nullable=True)
+    is_done = Column(Boolean, nullable=False, server_default=text("false"))
+    done_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    __table_args__ = (Index("ix_followup_queue_state_user_id", "user_id"),)
+
+    def __repr__(self):
+        return f"<FollowupQueueState(user={self.user_id}, thread={self.thread_id}, done={self.is_done})>"
+
+
+# ===== Opportunities + Resume (Upload-only) =====
+
+
+class JobOpportunity(Base):
+    """Job opportunities parsed from aggregator emails."""
+
+    __tablename__ = "job_opportunities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    owner_email = Column(String(320), nullable=False, index=True)
+    source = Column(String(128), nullable=False)  # indeed, linkedin, handshake, etc.
+    source_message_id = Column(String(128), nullable=True)
+    title = Column(Text, nullable=False)
+    company = Column(String(255), nullable=False, index=True)
+    location = Column(String(255), nullable=True)
+    remote_flag = Column(Boolean, nullable=True)
+    salary_text = Column(Text, nullable=True)
+    level = Column(String(128), nullable=True)
+    tech_stack = Column(JSONType, nullable=True)  # ["Python", "React", "PostgreSQL"]
+    apply_url = Column(Text, nullable=True)
+    posted_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationship to matches
+    matches = relationship("OpportunityMatch", back_populates="opportunity")
+
+    def __repr__(self):
+        return f"<JobOpportunity(id={self.id}, company={self.company}, title={self.title})>"
+
+
+class ResumeProfile(Base):
+    """User resume profiles (upload-only, no generation)."""
+
+    __tablename__ = "resume_profiles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    owner_email = Column(String(320), nullable=False, index=True)
+    source = Column(
+        String(64), nullable=False, default="upload"
+    )  # Always "upload" (no generation)
+    is_active = Column(
+        Boolean, nullable=False, default=False
+    )  # Only one active per user
+    raw_text = Column(Text, nullable=True)
+    headline = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
+    skills = Column(JSONType, nullable=True)  # ["Python", "React", "AWS"]
+    experiences = Column(
+        JSONType, nullable=True
+    )  # [{"company": "...", "role": "...", "duration": "..."}]
+    projects = Column(
+        JSONType, nullable=True
+    )  # [{"name": "...", "description": "..."}]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationship to matches
+    matches = relationship("OpportunityMatch", back_populates="resume_profile")
+
+    def __repr__(self):
+        return f"<ResumeProfile(id={self.id}, owner={self.owner_email}, active={self.is_active})>"
+
+
+class OpportunityMatch(Base):
+    """LLM-based role matching results."""
+
+    __tablename__ = "opportunity_matches"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    owner_email = Column(String(320), nullable=False, index=True)
+    opportunity_id = Column(
+        Integer,
+        ForeignKey("job_opportunities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    resume_profile_id = Column(
+        Integer,
+        ForeignKey("resume_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    match_bucket = Column(String(64), nullable=False)  # perfect, strong, possible, skip
+    match_score = Column(Float, nullable=True)  # 0-100
+    reasons = Column(JSONType, nullable=True)  # ["5 years Python", "React expert"]
+    missing_skills = Column(
+        JSONType, nullable=True
+    )  # ["Kubernetes", "GraphQL", "TypeScript"]
+    resume_tweaks = Column(
+        JSONType, nullable=True
+    )  # ["Highlight AWS certs", "Add Docker projects"]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    opportunity = relationship("JobOpportunity", back_populates="matches")
+    resume_profile = relationship("ResumeProfile", back_populates="matches")
+
+    def __repr__(self):
+        return f"<OpportunityMatch(id={self.id}, bucket={self.match_bucket}, score={self.match_score})>"

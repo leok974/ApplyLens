@@ -84,6 +84,40 @@ Applications in later stages (`offer`, `rejected`, `on_hold`, `ghosted`) are exc
 - Component: `src/pages/Tracker.tsx`
 - Tests: `src/tests/Tracker.metricsTile.test.tsx`
 
+### 4. Deep-Link Support from Thread Viewer
+
+**Purpose**: Enables navigation from Thread Viewer to a specific application in the Tracker, creating a seamless workflow between email threads and application tracking.
+
+**Behavior**:
+- When viewing a thread in the Thread Viewer that is linked to an application, users can click "Open in Tracker"
+- This navigates to `/tracker?appId=<applicationId>`
+- The Tracker automatically selects and highlights the corresponding application row
+- The selected row is scrolled into view for visibility
+
+**Implementation**:
+- Thread Viewer includes "Open in Tracker" button when `applicationId` is present
+- Tracker reads `appId` from URL search params on mount
+- Selected row receives distinctive styling: yellow background tint and left border
+- Auto-scroll ensures the row is visible even in large lists
+- URL parameter is cleaned up after being processed
+
+**UI Elements**:
+- Thread Viewer button: `data-testid="thread-viewer-open-tracker"`
+- Selected Tracker row: `data-selected="true"` attribute
+- Visual styling: `bg-yellow-400/10 border-l-4 border-yellow-400`
+
+**Code Location**:
+- Thread Viewer: `src/components/mail/ThreadViewer.tsx`
+- Tracker: `src/pages/Tracker.tsx`
+- Tests: `src/tests/ThreadViewer.application.test.tsx`, `src/tests/Tracker.deepLink.test.tsx`
+
+**Example**:
+1. User views a thread in Chat → Thread Viewer
+2. Thread shows "Application linked" badge (if connected to tracker)
+3. User clicks "Open in Tracker"
+4. Tracker page opens with the application row highlighted
+5. Row is automatically scrolled into view
+
 ## Filter Combination Behavior
 
 Both filters work independently and can be combined:
@@ -139,10 +173,13 @@ All features are covered by comprehensive unit tests using Vitest and React Test
 - **mailboxFilter.test.tsx**: 10 tests covering filter on/off, toggling, styling, edge cases
 - **needsFollowup.test.tsx**: 10 tests covering filter behavior, status filtering, combination with other filters
 - **metricsTile.test.tsx**: 13 tests covering metrics display, edge cases, styling
+- **deepLink.test.tsx**: 8 tests covering URL parameter handling, row selection, edge cases
+- **ThreadViewer.application.test.tsx**: Includes navigation tests for "Open in Tracker" button
 
 Run tests with:
 ```bash
 pnpm vitest run src/tests/Tracker
+pnpm vitest run src/tests/ThreadViewer
 ```
 
 ## Future Enhancements

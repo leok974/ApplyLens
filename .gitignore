@@ -118,10 +118,13 @@ Desktop.ini
 # Testing
 # ===================================
 coverage/
+coverage.lcov
 .nyc_output/
 test-results/
 playwright-report/
 playwright/.cache/
+*.spec.ts-snapshots/
+.ruff_cache/
 
 # ===================================
 # Temporary Files
@@ -130,6 +133,8 @@ tmp/
 temp/
 *.tmp
 *.bak
+*-debug.json
+openapi-debug.json
 
 # ===================================
 # dbt Build Artifacts (DO NOT COMMIT)
@@ -156,8 +161,11 @@ attachments/
 .env.*
 infra/.env
 secrets/**
+letsencrypt/**
 **/credentials.json
 **/*-credentials.json
 **/service_account*.json
 *.key
 *.pem
+*.crt
+*.p12

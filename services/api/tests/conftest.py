@@ -62,8 +62,14 @@ def engine():
     # Create all tables with deferrable constraint handling for circular FKs
     # Use checkfirst to avoid errors if tables exist
     with test_engine.begin() as conn:
-        # Set constraints to deferred for circular FK handling
-        conn.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+        # Set constraints to deferred for circular FK handling (PostgreSQL only)
+        if "postgresql" in database_url:
+            conn.execute(text("SET CONSTRAINTS ALL DEFERRED"))
+
+        # Import all models to ensure they're registered with Base.metadata
+        # This is critical for SQLite tests to have all tables available
+        from app import models  # noqa: F401 - imports register models
+
         Base.metadata.create_all(conn, checkfirst=True)
 
     yield test_engine

@@ -51,6 +51,8 @@ CSRF_EXEMPT_PATHS = {
     "/api/chat/stream",  # EventSource via nginx
     "/assistant/query",  # Assistant query endpoint
     "/api/assistant/query",  # Assistant via nginx
+    "/metrics/thread-to-tracker-click",  # Thread Viewer → Tracker click tracking (lightweight observability)
+    "/api/metrics/thread-to-tracker-click",  # Direct API access
 }
 
 

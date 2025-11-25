@@ -151,3 +151,13 @@ def get_agent_settings() -> AgentSettings:
         Agent settings configuration
     """
     return agent_settings
+
+
+# Request context for orchestrator
+class RequestContext:
+    """Request context passed to orchestrators."""
+
+    def __init__(self, user_id: str, db_session):
+        self.user_id = user_id
+        self.user_email = user_id  # Alias for compatibility
+        self.db = db_session

@@ -8,7 +8,7 @@ Coordinates:
 4. LLM synthesis (generate final answer from tool results)
 """
 
-from typing import List, Dict, Any, Optional, Tuple, Literal
+from typing import List, Dict, Any, Optional, Tuple, Literal, TYPE_CHECKING
 import asyncio
 import logging
 from datetime import datetime
@@ -16,6 +16,15 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session as DBSession
+
+if TYPE_CHECKING:
+    from app.schemas_agent import (
+        FollowupDraftRequest,
+        FollowupDraftResponse,
+        InterviewPrepRequest,
+        InterviewPrepResponse,
+    )
 
 from app.schemas_agent import (
     AgentRunRequest,
@@ -23,9 +32,16 @@ from app.schemas_agent import (
     AgentCard,
     ToolResult,
     AgentMetrics,
+    RoleMatchBatchRequest,
+    RoleMatchBatchResponse,
+    RoleMatchBatchItem,
 )
 from app.agent.tools import ToolRegistry
-from app.agent.metrics import record_agent_run, record_tool_call
+from app.agent.metrics import (
+    record_agent_run,
+    record_tool_call,
+    record_threadlist_returned,
+)
 from app.agent.rag import retrieve_email_contexts, retrieve_kb_contexts
 from app.agent.answering import complete_agent_answer, merge_cards_with_llm
 from app.es import ES_URL, ES_ENABLED
@@ -464,8 +480,9 @@ class MailboxAgentOrchestrator:
     - Build response cards
     """
 
-    def __init__(self, tool_registry: Optional[ToolRegistry] = None):
+    def __init__(self, tool_registry: Optional[ToolRegistry] = None, ctx=None):
         self.tools = tool_registry or ToolRegistry()
+        self.ctx = ctx  # RequestContext with user_id and db session
 
     async def _load_prefs_for_user(
         self, db: Optional[AsyncSession], user_id: str
@@ -640,6 +657,18 @@ class MailboxAgentOrchestrator:
                 status="success",
                 duration_ms=duration_ms,
             )
+
+            # 9. Track thread_list card returns for Thread Viewer → Tracker observability
+            thread_list_cards = [c for c in cards if c.kind == "thread_list"]
+            if thread_list_cards:
+                # Sum up thread counts from all thread_list cards
+                total_threads = sum(
+                    len(c.threads)
+                    if hasattr(c, "threads") and c.threads
+                    else c.meta.get("count", 0)
+                    for c in thread_list_cards
+                )
+                record_threadlist_returned(intent=intent, thread_count=total_threads)
 
             return response
 
@@ -1490,3 +1519,814 @@ class MailboxAgentOrchestrator:
             if result.tool_name == "email_search":
                 total += len(result.data.get("emails", []))
         return total
+
+    async def draft_followup(
+        self,
+        req: "FollowupDraftRequest",
+        db: DBSession,
+    ) -> "FollowupDraftResponse":
+        """Generate draft follow-up email for recruiter thread."""
+        from app.schemas_agent import FollowupDraftResponse, FollowupDraft
+        from app.models import Application
+
+        try:
+            # 1. Fetch thread details using existing tool
+            logger.info(f"Fetching thread_detail for thread_id={req.thread_id}")
+            tool_result = await self.tool_registry.execute(
+                "thread_detail",
+                {"thread_id": req.thread_id},
+                req.user_id,
+            )
+
+            if not tool_result or not tool_result.data:
+                return FollowupDraftResponse(
+                    status="error", message="Failed to retrieve thread details"
+                )
+
+            messages = tool_result.data.get("messages", [])
+            if not messages:
+                return FollowupDraftResponse(
+                    status="error", message="No messages found in thread"
+                )
+
+            # 2. Get application context if provided
+            app_context = ""
+            if req.application_id:
+                app = db.query(Application).filter_by(id=req.application_id).first()
+                if app:
+                    app_context = f"""
+Application Context:
+- Company: {app.company}
+- Role: {app.role}
+- Status: {app.status}
+- Notes: {app.notes or "None"}
+"""
+
+            # 3. Build context from thread messages
+            thread_context = "\n\n".join(
+                [
+                    f"From: {msg.get('from', 'Unknown')}\nDate: {msg.get('date', 'Unknown')}\nSubject: {msg.get('subject', 'No subject')}\n\n{msg.get('body', '')[:500]}"
+                    for msg in messages[-5:]  # Last 5 messages for context
+                ]
+            )
+
+            # 4. Build LLM prompt for draft generation
+            system_prompt = """You are a helpful assistant that drafts professional follow-up emails for job applications.
+Generate a polite, concise follow-up email based on the conversation thread.
+
+Return your response as JSON with this exact structure:
+{
+  "subject": "Email subject line",
+  "body": "Email body content"
+}
+
+Keep the tone professional and friendly. The email should:
+- Express continued interest in the role
+- Reference the last interaction appropriately
+- Ask about next steps or timeline
+- Be brief (2-3 short paragraphs maximum)
+"""
+
+            user_prompt = f"""Based on this email thread, draft a follow-up email:
+
+{thread_context}
+
+{app_context}
+
+Generate a professional follow-up email as JSON."""
+
+            # 5. Call LLM (try Ollama first, then OpenAI)
+            draft_data = await self._call_llm_for_draft(system_prompt, user_prompt)
+
+            if not draft_data:
+                return FollowupDraftResponse(
+                    status="error", message="Failed to generate draft (LLM unavailable)"
+                )
+
+            # 6. Parse and validate response
+            subject = draft_data.get("subject", "").strip()
+            body = draft_data.get("body", "").strip()
+
+            if not subject or not body:
+                return FollowupDraftResponse(
+                    status="error", message="Generated draft is incomplete"
+                )
+
+            draft = FollowupDraft(subject=subject, body=body)
+            return FollowupDraftResponse(status="ok", draft=draft)
+
+        except Exception as e:
+            logger.error(f"draft_followup failed: {e}", exc_info=True)
+            return FollowupDraftResponse(
+                status="error", message=f"Failed to generate draft: {str(e)}"
+            )
+
+    async def _call_llm_for_draft(
+        self, system_prompt: str, user_prompt: str, timeout_s: float = 20.0
+    ) -> Optional[dict]:
+        """Call LLM to generate draft, trying Ollama first then OpenAI."""
+        from app.config_env import (
+            OLLAMA_BASE,
+            OLLAMA_MODEL,
+            OPENAI_API_KEY,
+            OPENAI_MODEL,
+        )
+        import httpx
+        import json
+
+        # Try Ollama first
+        if OLLAMA_BASE:
+            try:
+                full_prompt = f"{system_prompt}\n\n{user_prompt}"
+                async with httpx.AsyncClient(timeout=timeout_s) as client:
+                    resp = await client.post(
+                        f"{OLLAMA_BASE}/api/generate",
+                        json={
+                            "model": OLLAMA_MODEL,
+                            "prompt": full_prompt,
+                            "stream": False,
+                            "format": "json",
+                            "options": {
+                                "temperature": 0.3,
+                                "num_predict": 600,
+                            },
+                        },
+                    )
+
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data.get("response", "").strip()
+
+                    # Strip code fences if present
+                    if text.startswith("```"):
+                        text = text.strip("`")
+                        if text.lower().startswith("json"):
+                            text = text[4:].strip()
+
+                    return json.loads(text)
+            except Exception as e:
+                logger.warning(f"Ollama draft generation failed: {e}")
+
+        # Try OpenAI as fallback
+        if OPENAI_API_KEY:
+            try:
+                async with httpx.AsyncClient(timeout=timeout_s) as client:
+                    resp = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {OPENAI_API_KEY}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": OPENAI_MODEL,
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": user_prompt},
+                            ],
+                            "temperature": 0.3,
+                            "max_tokens": 800,
+                            "response_format": {"type": "json_object"},
+                        },
+                    )
+
+                if resp.status_code == 200:
+                    data = resp.json()
+                    content = data["choices"][0]["message"]["content"]
+                    return json.loads(content)
+            except Exception as e:
+                logger.warning(f"OpenAI draft generation failed: {e}")
+
+        return None
+
+    async def get_followup_queue(
+        self,
+        user_id: str,
+        time_window_days: int = 30,
+    ) -> Dict[str, Any]:
+        """Get followups from Agent V2 in preview mode."""
+        from app.schemas_agent import AgentRunRequest
+
+        # Call the agent with followups intent in preview mode
+        req = AgentRunRequest(
+            user_id=user_id,
+            intent="followups",
+            mode="preview_only",
+            time_window_days=time_window_days,
+        )
+
+        response = await self.run(req, db=None)
+
+        # Extract thread data from cards
+        threads = []
+        for card in response.cards:
+            if card.card_type == "thread_list" and card.data:
+                thread_list = card.data.get("threads", [])
+                for thread in thread_list:
+                    threads.append(
+                        {
+                            "thread_id": thread.get("thread_id")
+                            or thread.get("threadId", ""),
+                            "subject": thread.get("subject", ""),
+                            "snippet": thread.get("snippet", ""),
+                            "from": thread.get("from", ""),
+                            "last_message_at": thread.get("lastMessageAt"),
+                            "gmail_url": thread.get("gmailUrl"),
+                            "priority": thread.get(
+                                "priority", 50
+                            ),  # Default mid priority
+                        }
+                    )
+
+        return {"threads": threads, "time_window_days": time_window_days}
+
+    async def interview_prep(
+        self, req: "InterviewPrepRequest"
+    ) -> "InterviewPrepResponse":
+        """
+        Build an interview prep kit from application + threads.
+
+        Loads application metadata and related email threads, then uses LLM to generate
+        structured interview preparation content including timeline, key details, and
+        preparation sections.
+        """
+        from app.schemas_agent import (
+            InterviewPrepResponse,
+            InterviewPrepSection,
+        )
+        from app.models import Application
+        from app.gmail_service import GmailService
+
+        if not self.ctx or not self.ctx.db:
+            raise ValueError("Database context required for interview_prep")
+
+        # 1. Load application
+        stmt = select(Application).where(Application.id == req.application_id)
+        result = await self.ctx.db.execute(stmt)
+        app = result.scalar_one_or_none()
+
+        if not app:
+            raise ValueError(f"Application {req.application_id} not found")
+
+        # 2. Load related email threads
+        gmail = GmailService(self.ctx)
+        threads = []
+
+        if req.thread_id:
+            # Load specific thread
+            thread_data = await gmail.get_thread(req.thread_id)
+            if thread_data:
+                threads.append(thread_data)
+        else:
+            # Load all threads for this application
+            # Search by company name in subject/body
+            query = (
+                f"from:*{app.company}* OR to:*{app.company}* OR subject:*{app.company}*"
+            )
+            search_results = await gmail.search_emails(query, max_results=10)
+
+            for thread_id in search_results:
+                thread_data = await gmail.get_thread(thread_id)
+                if thread_data:
+                    threads.append(thread_data)
+
+        # 3. Build structured payload for LLM
+        messages_text = []
+        for thread in threads:
+            for msg in thread.get("messages", []):
+                date = msg.get("date", "")
+                sender = msg.get("from", "")
+                subject = msg.get("subject", "")
+                body = msg.get("body", "")[:500]  # Truncate long emails
+                messages_text.append(
+                    f"Date: {date}\nFrom: {sender}\nSubject: {subject}\n{body}\n"
+                )
+
+        # 4. Call LLM with interview_prep prompt
+        system_prompt = """You are an interview preparation assistant for ApplyLens.
+
+Your task is to generate structured interview prep materials based on a job application and related email thread(s).
+
+CRITICAL RULES:
+1. Do NOT invent extra interviews or details not present in the emails
+2. Use company name and role EXACTLY as provided in the application
+3. Extract interview date/time/format ONLY if explicitly mentioned in emails
+4. Keep each section concise: max 180 words and 3-7 bullets per section
+5. Output valid JSON matching the exact schema provided
+
+RESPONSE FORMAT (valid JSON only):
+{
+  "company": "exact company name from application",
+  "role": "exact role from application",
+  "interview_status": "current status (e.g., 'Scheduled', 'Completed', 'Pending') or null",
+  "interview_date": "ISO datetime if mentioned in emails, else null",
+  "interview_format": "format if mentioned (e.g., 'Zoom', 'Onsite', 'Phone') or null",
+  "timeline": ["step 1", "step 2", "step 3"],
+  "sections": [
+    {
+      "title": "What to Review",
+      "bullets": ["point 1", "point 2", "point 3"]
+    },
+    {
+      "title": "Questions to Ask",
+      "bullets": ["question 1", "question 2", "question 3"]
+    }
+  ]
+}
+
+TIMELINE RULES:
+- Extract 3-6 chronological steps from application dates and emails
+- Examples: "Applied on Jan 5", "HR screen on Jan 12", "Interview scheduled for Jan 20"
+- Keep each step under 15 words
+
+SECTION RULES:
+- Generate 2-3 sections total
+- Common section titles: "What to Review", "Questions to Ask", "Key Points to Mention"
+- Each section should have 3-7 concise bullet points
+- Focus on actionable, specific guidance
+"""
+
+        # Build user prompt with application and email data
+        user_prompt = f"""Application Details:
+Company: {app.company}
+Role: {app.role}
+Status: {app.status}
+Applied Date: {app.applied_at if hasattr(app, 'applied_at') else 'Unknown'}
+
+Email Threads ({len(threads)} total):
+{chr(10).join(messages_text) if messages_text else 'No email threads found'}
+
+Generate interview prep materials following the JSON schema in the system prompt."""
+
+        # Call LLM
+        try:
+            prep_data = await self._call_llm_for_interview_prep(
+                system_prompt, user_prompt
+            )
+
+            # Validate and construct response
+            return InterviewPrepResponse(
+                company=prep_data.get("company", app.company),
+                role=prep_data.get("role", app.role),
+                interview_status=prep_data.get("interview_status"),
+                interview_date=prep_data.get("interview_date"),
+                interview_format=prep_data.get("interview_format"),
+                timeline=prep_data.get("timeline", []),
+                sections=[
+                    InterviewPrepSection(**section)
+                    for section in prep_data.get("sections", [])
+                ],
+            )
+
+        except Exception as e:
+            logger.error(f"Interview prep LLM call failed: {e}")
+            # Return minimal fallback response
+            return InterviewPrepResponse(
+                company=app.company,
+                role=app.role,
+                timeline=[
+                    f"Applied: {app.applied_at if hasattr(app, 'applied_at') else 'Unknown'}"
+                ],
+                sections=[
+                    InterviewPrepSection(
+                        title="Preparation Notes",
+                        bullets=[
+                            "Review the job description and requirements",
+                            "Research the company's recent news and products",
+                            "Prepare examples from your experience",
+                        ],
+                    )
+                ],
+            )
+
+    async def _call_llm_for_interview_prep(
+        self, system_prompt: str, user_prompt: str, timeout_s: float = 20.0
+    ) -> Dict[str, Any]:
+        """Call LLM for interview prep and parse JSON response."""
+        import json
+        from app.llm_provider import get_llm_client
+
+        client = get_llm_client()
+
+        if client.provider == "ollama":
+            # Ollama streaming approach
+            full_text = ""
+            async for chunk in client.stream_generate(
+                prompt=f"{system_prompt}\n\n{user_prompt}",
+                temperature=0.7,
+                max_tokens=2000,
+            ):
+                if chunk:
+                    full_text += chunk
+
+            # Parse JSON from response
+            try:
+                # Try to find JSON in response
+                start = full_text.find("{")
+                end = full_text.rfind("}") + 1
+                if start >= 0 and end > start:
+                    json_str = full_text[start:end]
+                    return json.loads(json_str)
+                else:
+                    raise ValueError("No JSON found in LLM response")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse LLM JSON response: {e}")
+                raise
+
+        else:
+            # OpenAI/other providers
+            response = await client.generate(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.7,
+                max_tokens=2000,
+            )
+
+            # Parse JSON from response
+            try:
+                return json.loads(response)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse LLM JSON response: {e}")
+                raise
+
+    async def role_match(
+        self, opportunity_id: int, resume_profile_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Match a job opportunity against a resume using LLM analysis.
+
+        Args:
+            opportunity_id: Job opportunity ID to match
+            resume_profile_id: Optional specific resume ID (uses active if not provided)
+
+        Returns:
+            Dictionary with match results:
+                - match_bucket: "perfect" | "strong" | "possible" | "skip"
+                - match_score: 0-100 numeric score
+                - reasons: list[str] - why it's a good match
+                - missing_skills: list[str] - skills from JD not in resume
+                - resume_tweaks: list[str] - suggestions to improve match
+        """
+        from app.models import JobOpportunity, ResumeProfile, OpportunityMatch
+
+        if not self.ctx or not self.ctx.db:
+            raise ValueError("Database context required for role_match")
+
+        # 1. Load opportunity
+        stmt = select(JobOpportunity).where(JobOpportunity.id == opportunity_id)
+        result = await self.ctx.db.execute(stmt)
+        opportunity = result.scalar_one_or_none()
+
+        if not opportunity:
+            raise ValueError(f"Job opportunity {opportunity_id} not found")
+
+        # 2. Load resume (use active if not specified)
+        if resume_profile_id:
+            stmt = select(ResumeProfile).where(ResumeProfile.id == resume_profile_id)
+            result = await self.ctx.db.execute(stmt)
+            resume = result.scalar_one_or_none()
+        else:
+            # Get active resume for owner
+            stmt = (
+                select(ResumeProfile)
+                .where(ResumeProfile.owner_email == opportunity.owner_email)
+                .where(ResumeProfile.is_active == True)  # noqa: E712
+            )
+            result = await self.ctx.db.execute(stmt)
+            resume = result.scalar_one_or_none()
+
+        if not resume:
+            raise ValueError("No resume profile found. Please upload a resume first.")
+
+        # 3. Build LLM prompt for matching
+        system_prompt = """You are a job matching assistant for ApplyLens.
+
+Your task is to analyze how well a candidate's resume matches a job opportunity.
+
+CRITICAL RULES:
+1. Be honest about match quality - don't inflate scores
+2. Consider both technical skills AND experience level
+3. Flag missing hard requirements (not nice-to-haves)
+4. Suggest SPECIFIC resume tweaks, not generic advice
+5. Output valid JSON matching the exact schema
+
+RESPONSE FORMAT (valid JSON only):
+{
+  "match_bucket": "perfect | strong | possible | skip",
+  "match_score": 85,
+  "reasons": [
+    "5+ years Python experience matches requirement",
+    "React expertise aligns with frontend needs",
+    "Previous fintech experience relevant"
+  ],
+  "missing_skills": [
+    "Kubernetes (required)",
+    "GraphQL (preferred)"
+  ],
+  "resume_tweaks": [
+    "Highlight AWS certifications in summary",
+    "Add specific Docker project examples",
+    "Quantify team leadership experience"
+  ]
+}
+
+MATCH BUCKET DEFINITIONS:
+- "perfect": 90-100 score, meets all requirements, strong experience match
+- "strong": 75-89 score, meets most requirements, minor gaps fillable
+- "possible": 60-74 score, meets some requirements, significant gaps
+- "skip": 0-59 score, major misalignment, missing critical requirements
+
+GUIDELINES:
+- Each section should have 2-5 items
+- Be specific: cite exact skills/experiences from resume
+- Reasons should focus on strengths
+- Missing skills should prioritize hard requirements over nice-to-haves
+- Resume tweaks should be actionable and relevant to THIS specific role
+"""
+
+        # Build job description text
+        jd_text = f"""Job Title: {opportunity.title}
+Company: {opportunity.company}
+Location: {opportunity.location or 'Not specified'}
+Remote: {'Yes' if opportunity.remote_flag else 'No' if opportunity.remote_flag is False else 'Not specified'}
+Level: {opportunity.level or 'Not specified'}
+Salary: {opportunity.salary_text or 'Not specified'}
+Tech Stack: {', '.join(opportunity.tech_stack) if opportunity.tech_stack else 'Not specified'}
+"""
+
+        # Build resume text
+        resume_text = f"""Professional Summary:
+{resume.summary or 'Not provided'}
+
+Headline: {resume.headline or 'Not provided'}
+
+Skills: {', '.join(resume.skills) if resume.skills else 'Not provided'}
+
+Experience:
+{self._format_experiences(resume.experiences)}
+
+Projects:
+{self._format_projects(resume.projects)}
+"""
+
+        user_prompt = f"""Analyze this match:
+
+=== JOB OPPORTUNITY ===
+{jd_text}
+
+=== CANDIDATE RESUME ===
+{resume_text}
+
+Generate match analysis following the JSON schema in the system prompt."""
+
+        # 4. Call LLM for matching
+        try:
+            match_data = await self._call_llm_for_role_match(system_prompt, user_prompt)
+
+            # 5. Save match result to database
+            existing_match = (
+                await self.ctx.db.execute(
+                    select(OpportunityMatch)
+                    .where(OpportunityMatch.opportunity_id == opportunity_id)
+                    .where(OpportunityMatch.resume_profile_id == resume.id)
+                )
+            ).scalar_one_or_none()
+
+            if existing_match:
+                # Update existing match
+                existing_match.match_bucket = match_data["match_bucket"]
+                existing_match.match_score = match_data["match_score"]
+                existing_match.reasons = match_data.get("reasons", [])
+                existing_match.missing_skills = match_data.get("missing_skills", [])
+                existing_match.resume_tweaks = match_data.get("resume_tweaks", [])
+                match_record = existing_match
+            else:
+                # Create new match
+                match_record = OpportunityMatch(
+                    owner_email=opportunity.owner_email,
+                    opportunity_id=opportunity_id,
+                    resume_profile_id=resume.id,
+                    match_bucket=match_data["match_bucket"],
+                    match_score=match_data["match_score"],
+                    reasons=match_data.get("reasons", []),
+                    missing_skills=match_data.get("missing_skills", []),
+                    resume_tweaks=match_data.get("resume_tweaks", []),
+                )
+                self.ctx.db.add(match_record)
+
+            await self.ctx.db.commit()
+
+            logger.info(
+                f"Role match completed: opportunity {opportunity_id} x resume {resume.id} = {match_data['match_bucket']} ({match_data['match_score']})"
+            )
+
+            return {
+                "match_bucket": match_data["match_bucket"],
+                "match_score": match_data["match_score"],
+                "reasons": match_data.get("reasons", []),
+                "missing_skills": match_data.get("missing_skills", []),
+                "resume_tweaks": match_data.get("resume_tweaks", []),
+                "opportunity": {
+                    "id": opportunity.id,
+                    "title": opportunity.title,
+                    "company": opportunity.company,
+                },
+                "resume": {
+                    "id": resume.id,
+                    "headline": resume.headline,
+                },
+            }
+
+        except Exception as e:
+            logger.error(f"Role match LLM call failed: {e}")
+            # Return fallback "possible" match
+            return {
+                "match_bucket": "possible",
+                "match_score": 50,
+                "reasons": ["Automated analysis unavailable"],
+                "missing_skills": [],
+                "resume_tweaks": ["Review job description manually"],
+                "opportunity": {
+                    "id": opportunity.id,
+                    "title": opportunity.title,
+                    "company": opportunity.company,
+                },
+                "resume": {
+                    "id": resume.id if resume else None,
+                    "headline": resume.headline if resume else None,
+                },
+                "error": str(e),
+            }
+
+    def _format_experiences(self, experiences: Optional[List[Dict]]) -> str:
+        """Format experience list for LLM prompt."""
+        if not experiences:
+            return "Not provided"
+
+        formatted = []
+        for exp in experiences:
+            company = exp.get("company", "Unknown")
+            role = exp.get("role", "")
+            duration = exp.get("duration", "")
+            desc = exp.get("description", "")
+            formatted.append(
+                f"- {role} at {company} ({duration})\n  {desc if desc else 'No description'}"
+            )
+        return "\n".join(formatted)
+
+    def _format_projects(self, projects: Optional[List[Dict]]) -> str:
+        """Format project list for LLM prompt."""
+        if not projects:
+            return "Not provided"
+
+        formatted = []
+        for proj in projects:
+            name = proj.get("name", "Unnamed")
+            desc = proj.get("description", "")
+            tech = proj.get("tech_stack", [])
+            tech_str = ", ".join(tech) if tech else ""
+            formatted.append(
+                f"- {name}\n  {desc}\n  Tech: {tech_str if tech_str else 'Not specified'}"
+            )
+        return "\n".join(formatted)
+
+    async def role_match_batch(
+        self, req: RoleMatchBatchRequest
+    ) -> RoleMatchBatchResponse:
+        """
+        Batch match all unmatched opportunities for the current user.
+
+        Finds opportunities with no existing match and runs role_match on each.
+        Reuses existing role_match logic for consistency.
+
+        Args:
+            req: Batch request with optional limit
+
+        Returns:
+            RoleMatchBatchResponse with processed count and match results
+        """
+        from app.models import JobOpportunity, OpportunityMatch, ResumeProfile
+        from fastapi import HTTPException
+
+        if not self.ctx or not self.ctx.db:
+            raise HTTPException(status_code=400, detail="Database context required")
+
+        # 1) Ensure user has an active resume profile (synchronous query)
+        profile = (
+            self.ctx.db.query(ResumeProfile)
+            .filter(
+                ResumeProfile.owner_email == self.ctx.user_email,
+                ResumeProfile.is_active == True,  # noqa: E712
+            )
+            .first()
+        )
+
+        if profile is None:
+            raise HTTPException(
+                status_code=400, detail="No active resume profile for matching"
+            )
+
+        # 2) Select opportunities with no existing match (synchronous query)
+        # Subquery to check if match exists
+        subquery = (
+            self.ctx.db.query(OpportunityMatch.id)
+            .filter(
+                OpportunityMatch.owner_email == self.ctx.user_email,
+                OpportunityMatch.opportunity_id == JobOpportunity.id,
+            )
+            .exists()
+        )
+
+        # Main query for unmatched opportunities
+        q = (
+            self.ctx.db.query(JobOpportunity)
+            .filter(
+                JobOpportunity.owner_email == self.ctx.user_email,
+                ~subquery,
+            )
+            .order_by(JobOpportunity.created_at.desc())
+        )
+
+        if req.limit:
+            q = q.limit(req.limit)
+
+        opportunities = q.all()
+        items: list[RoleMatchBatchItem] = []
+
+        # 3) Match each opportunity
+        for opp in opportunities:
+            try:
+                result = await self.role_match(
+                    opportunity_id=opp.id,
+                    resume_profile_id=profile.id,
+                )
+
+                items.append(
+                    RoleMatchBatchItem(
+                        opportunity_id=opp.id,
+                        match_bucket=result["match_bucket"],
+                        match_score=result["match_score"],
+                    )
+                )
+            except Exception as e:
+                logger.error(
+                    f"Batch match failed for opportunity {opp.id}: {e}",
+                    exc_info=True,
+                )
+                # Continue with other opportunities
+                continue
+
+        return RoleMatchBatchResponse(processed=len(items), items=items)
+
+    async def _call_llm_for_role_match(
+        self, system_prompt: str, user_prompt: str, timeout_s: float = 25.0
+    ) -> Dict[str, Any]:
+        """Call LLM for role matching and parse JSON response."""
+        import json
+        from app.llm_provider import get_llm_client
+
+        client = get_llm_client()
+
+        if client.provider == "ollama":
+            # Ollama streaming approach
+            full_text = ""
+            async for chunk in client.stream_generate(
+                prompt=f"{system_prompt}\n\n{user_prompt}",
+                temperature=0.7,
+                max_tokens=2000,
+            ):
+                if chunk:
+                    full_text += chunk
+
+            # Parse JSON from response
+            try:
+                # Try to find JSON in response
+                start = full_text.find("{")
+                end = full_text.rfind("}") + 1
+                if start >= 0 and end > start:
+                    json_str = full_text[start:end]
+                    return json.loads(json_str)
+                else:
+                    raise ValueError("No JSON found in LLM response")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse role match JSON response: {e}")
+                raise
+
+        else:
+            # OpenAI/other providers
+            response = await client.generate(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.7,
+                max_tokens=2000,
+            )
+
+            # Parse JSON from response
+            try:
+                return json.loads(response)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse role match JSON response: {e}")
+                raise

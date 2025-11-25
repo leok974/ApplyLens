@@ -16,7 +16,11 @@ type AnalyticsEvent =
   | { name: 'bulk_action_undo', action: 'archive' | 'mark_safe' | 'quarantine', count: number }
   | { name: 'auto_advance_toggle', enabled: boolean }
   | { name: 'thread_viewer_navigation', direction: 'next' | 'prev' }
-  | { name: 'summary_feedback', messageId: string, helpful: boolean };
+  | { name: 'summary_feedback', messageId: string, helpful: boolean }
+  | { name: 'followup_draft_generated', thread_id: string, has_application: boolean }
+  | { name: 'followup_draft_error', thread_id: string, error?: string }
+  | { name: 'followup_draft_copied' }
+  | { name: 'followup_draft_body_copied' };
 
 /**
  * Track an analytics event.

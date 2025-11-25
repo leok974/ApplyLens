@@ -2,6 +2,16 @@
 Agent v2 - Prometheus Metrics
 
 Metrics for agent runs, tool calls, and performance.
+
+Thread Viewer → Tracker Loop Metrics:
+- applylens_agent_runs_total: Tracks all agent runs by intent
+- applylens_agent_threadlist_returned_total: Tracks when thread_list cards are returned
+- applylens_agent_thread_to_tracker_click_total: Tracks "Open in Tracker" clicks from Thread Viewer
+
+These metrics enable observability for the Chat → Thread Viewer → Tracker user flow:
+1. User runs a scan intent (followups/bills/interviews/etc) → agent_runs_total increments
+2. Agent returns thread_list card → agent_threadlist_returned_total increments
+3. User clicks "Open in Tracker" in Thread Viewer → thread_to_tracker_click_total increments
 """
 
 from prometheus_client import Counter, Histogram
@@ -18,6 +28,24 @@ mailbox_agent_runs_total = Counter(
     "mailbox_agent_runs_total",
     "Mailbox agent runs",
     labelnames=("intent", "mode", "status"),
+)
+
+# ApplyLens-specific observability for Thread Viewer → Tracker loop
+applylens_agent_runs_total = Counter(
+    "applylens_agent_runs_total",
+    "Total agent runs by intent (for Thread Viewer → Tracker observability)",
+    labelnames=("intent",),
+)
+
+applylens_agent_threadlist_returned_total = Counter(
+    "applylens_agent_threadlist_returned_total",
+    "Count of agent runs that returned at least one thread_list card with threads",
+    labelnames=("intent",),
+)
+
+applylens_agent_thread_to_tracker_click_total = Counter(
+    "applylens_agent_thread_to_tracker_click_total",
+    "Count of 'Open in Tracker' clicks from Thread Viewer (frontend-tracked)",
 )
 
 mailbox_agent_run_duration_seconds = Histogram(
@@ -81,8 +109,44 @@ def record_agent_run(intent: str, mode: str, status: str, duration_ms: int):
         mailbox_agent_run_duration_seconds.labels(intent=intent, mode=mode).observe(
             duration_ms / 1000.0
         )
+
+        # Track successful runs for Thread Viewer → Tracker observability
+        if status == "success":
+            applylens_agent_runs_total.labels(intent=intent).inc()
+            logger.debug(f"Recorded agent run: intent={intent}")
     except Exception as e:
         logger.error(f"Failed to record agent run metric: {e}")
+
+
+def record_threadlist_returned(intent: str, thread_count: int):
+    """
+    Record when an agent run returns a thread_list card with threads.
+
+    Only increments when thread_count > 0 (actual threads returned).
+    This tracks the entry point to Thread Viewer from chat.
+    """
+    try:
+        if thread_count > 0:
+            applylens_agent_threadlist_returned_total.labels(intent=intent).inc()
+            logger.debug(
+                f"Recorded thread_list return: intent={intent}, count={thread_count}"
+            )
+    except Exception as e:
+        logger.error(f"Failed to record threadlist metric: {e}")
+
+
+def record_thread_to_tracker_click():
+    """
+    Record a user clicking "Open in Tracker" from Thread Viewer.
+
+    This is called by the frontend via POST /metrics/thread-to-tracker-click.
+    Tracks the final step in the Chat → Thread Viewer → Tracker loop.
+    """
+    try:
+        applylens_agent_thread_to_tracker_click_total.inc()
+        logger.debug("Recorded thread-to-tracker click")
+    except Exception as e:
+        logger.error(f"Failed to record thread-to-tracker click: {e}")
 
 
 def record_tool_call(tool: str, status: str, duration_ms: int):

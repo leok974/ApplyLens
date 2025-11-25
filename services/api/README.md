@@ -2,8 +2,43 @@
 
 > **Note:** Backend changes should follow the agent guidelines in [AGENTS.md](../../AGENTS.md) and .github/agents/api-agent.md / .github/agents/security-agent.md.
 
-
 FastAPI backend for ApplyLens job inbox application.
+
+## 🚀 Hackathon Quick Start
+
+**For Google Cloud AI Partner Catalyst hackathon with Datadog + Gemini:**
+
+```bash
+# 1. Configure environment
+cp .env.hackathon.example .env.hackathon
+# Edit .env.hackathon with your credentials:
+#   - GOOGLE_CLOUD_PROJECT
+#   - DD_API_KEY
+#   - GOOGLE_APPLICATION_CREDENTIALS path
+
+# 2. Start hackathon environment
+cd ../..  # Back to repo root
+pwsh scripts/hackathon-start.ps1
+
+# 3. Test Gemini classification
+Invoke-RestMethod -Uri "http://localhost:8000/hackathon/classify" `
+  -Method POST `
+  -Body '{"subject":"Interview invitation","snippet":"Let us schedule a call","sender":"hr@example.com"}' `
+  -ContentType "application/json"
+
+# 4. Generate demo traffic
+python scripts/traffic_generator.py --mode normal_traffic --rate 10 --duration 60
+
+# 5. View Datadog dashboard
+# Open your Datadog account and navigate to APM > Services > applylens-api-hackathon
+```
+
+**Documentation**:
+- **Architecture**: See [hackathon/ARCHITECTURE.md](../../hackathon/ARCHITECTURE.md)
+- **Traffic Generator**: See [hackathon/TRAFFIC_GENERATOR.md](../../hackathon/TRAFFIC_GENERATOR.md)
+- **Setup Guide**: See [HACKATHON.md](../../HACKATHON.md)
+
+---
 
 ## Development
 

@@ -14,6 +14,37 @@ from datetime import datetime
 import uuid
 
 
+class OpportunitiesSummary(BaseModel):
+    """Summary of job opportunities for Today view."""
+
+    total: int
+    perfect: int
+    strong: int
+    possible: int
+    skip: Optional[int] = None
+
+
+class RoleMatchBatchRequest(BaseModel):
+    """Request to batch match all unmatched opportunities."""
+
+    limit: int | None = 50  # max opportunities to process in one call
+
+
+class RoleMatchBatchItem(BaseModel):
+    """Single item in batch match response."""
+
+    opportunity_id: int
+    match_bucket: str
+    match_score: int
+
+
+class RoleMatchBatchResponse(BaseModel):
+    """Response from batch role matching."""
+
+    processed: int
+    items: list[RoleMatchBatchItem]
+
+
 # ============================================================================
 # Agent Run Contract - The Single Source of Truth
 # ============================================================================
@@ -402,3 +433,130 @@ class KnowledgeBaseEntry(BaseModel):
     tags: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ============================================================================
+# Follow-up Draft Schemas
+# ============================================================================
+
+
+class FollowupDraft(BaseModel):
+    """Draft email for recruiter follow-up."""
+
+    subject: str = Field(..., description="Email subject line")
+    body: str = Field(..., description="Email body content")
+
+
+class FollowupDraftRequest(BaseModel):
+    """Request for follow-up draft generation."""
+
+    user_id: str = Field(..., description="Gmail account email")
+    thread_id: str = Field(..., description="Gmail thread ID")
+    application_id: Optional[int] = Field(
+        None, description="Linked application ID from Tracker"
+    )
+    mode: Literal["preview_only", "execute"] = Field(default="preview_only")
+
+
+class FollowupDraftResponse(BaseModel):
+    """Response with generated follow-up draft."""
+
+    status: Literal["ok", "error"] = "ok"
+    draft: Optional[FollowupDraft] = None
+    message: Optional[str] = None
+
+
+# =============================================================================
+# Follow-up Queue (merged mailbox + tracker)
+# =============================================================================
+
+
+class QueueMeta(BaseModel):
+    """Metadata about the follow-up queue."""
+
+    total: int
+    time_window_days: int
+    done_count: int = 0
+    remaining_count: int = 0
+
+
+class QueueItem(BaseModel):
+    """Single item in the follow-up queue."""
+
+    thread_id: str
+    application_id: Optional[int] = None
+    priority: int  # Higher = more urgent
+    reason_tags: List[str] = []
+    company: Optional[str] = None
+    role: Optional[str] = None
+    subject: Optional[str] = None
+    snippet: Optional[str] = None
+    last_message_at: Optional[str] = None
+    status: Optional[str] = None
+    gmail_url: Optional[str] = None
+    is_done: bool = False
+
+
+class FollowupQueueRequest(BaseModel):
+    """Request to get the follow-up queue."""
+
+    user_id: str
+    time_window_days: int = 30
+
+
+class FollowupQueueResponse(BaseModel):
+    """Response with merged follow-up queue."""
+
+    status: Literal["ok", "error"] = "ok"
+    queue_meta: Optional[QueueMeta] = None
+    items: List[QueueItem] = []
+    message: Optional[str] = None
+
+
+class FollowupStateUpdate(BaseModel):
+    """Update the done state of a follow-up item."""
+
+    thread_id: str
+    application_id: Optional[int] = None
+    is_done: bool
+
+
+class FollowupSummary(BaseModel):
+    """Summary of follow-up queue for Today panel."""
+
+    total: int
+    done_count: int
+    remaining_count: int
+    time_window_days: int
+
+
+# =============================================================================
+# Interview Prep
+# =============================================================================
+
+
+class InterviewPrepRequest(BaseModel):
+    """Request to generate interview preparation materials."""
+
+    application_id: int
+    thread_id: Optional[str] = None
+    preview_only: bool = True
+
+
+class InterviewPrepSection(BaseModel):
+    """A section of interview prep content with bullets."""
+
+    title: str
+    bullets: List[str]
+
+
+class InterviewPrepResponse(BaseModel):
+    """Interview preparation kit with timeline and structured sections."""
+
+    company: str
+    role: str
+    interview_status: Optional[str] = None
+    interview_date: Optional[datetime] = None
+    interview_format: Optional[str] = None  # e.g. "Zoom", "Onsite", "Phone"
+    timeline: List[str]  # human-readable steps
+    sections: List[InterviewPrepSection]  # e.g. "What to review", "Questions to ask"

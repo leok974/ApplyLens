@@ -99,3 +99,110 @@ export async function getAgentHealth(): Promise<AgentHealthResponse> {
   const response = await apiFetch('/agent/health');
   return response as AgentHealthResponse;
 }
+
+/**
+ * Interview Prep API
+ */
+
+export interface InterviewPrepSection {
+  title: string;
+  bullets: string[];
+}
+
+export interface InterviewPrepResponse {
+  company: string;
+  role: string;
+  interview_status?: string | null;
+  interview_date?: string | null;
+  interview_format?: string | null;
+  timeline: string[];
+  sections: InterviewPrepSection[];
+}
+
+/**
+ * Get interview preparation materials for an application.
+ *
+ * @example
+ * ```ts
+ * const prep = await getInterviewPrep({
+ *   applicationId: 42,
+ *   threadId: 'thread-abc123'
+ * });
+ * ```
+ */
+export async function getInterviewPrep(params: {
+  applicationId: number;
+  threadId?: string;
+}): Promise<InterviewPrepResponse> {
+  const body = {
+    application_id: params.applicationId,
+    thread_id: params.threadId ?? null,
+    preview_only: true,
+  };
+
+  const response = await apiFetch('/v2/agent/interview-prep', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify(body),
+  });
+
+  return response as InterviewPrepResponse;
+}
+
+/**
+ * Role Match API
+ */
+
+export interface RoleMatchResponse {
+  match_bucket: 'perfect' | 'strong' | 'possible' | 'skip';
+  match_score: number;
+  reasons: string[];
+  missing_skills: string[];
+  resume_tweaks: string[];
+  opportunity: {
+    id: number;
+    title: string;
+    company: string;
+  };
+  resume: {
+    id: number;
+    headline: string | null;
+  };
+}
+
+/**
+ * Match a job opportunity against a resume using LLM analysis.
+ *
+ * @example
+ * ```ts
+ * const match = await getRoleMatch({
+ *   opportunityId: 42,
+ *   resumeProfileId: 7  // Optional, uses active resume if not provided
+ * });
+ * ```
+ */
+export async function getRoleMatch(params: {
+  opportunityId: number;
+  resumeProfileId?: number;
+}): Promise<RoleMatchResponse> {
+  const queryParams = new URLSearchParams({
+    opportunity_id: params.opportunityId.toString(),
+  });
+
+  if (params.resumeProfileId) {
+    queryParams.set('resume_profile_id', params.resumeProfileId.toString());
+  }
+
+  const response = await apiFetch(`/v2/agent/role-match?${queryParams.toString()}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  });
+
+  return response as RoleMatchResponse;
+}

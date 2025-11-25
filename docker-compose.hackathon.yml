@@ -1,0 +1,138 @@
+# Hackathon Demo Stack - Datadog + Gemini Integration
+#
+# PURPOSE: Hackathon demonstration stack featuring:
+#   - Datadog Agent for observability
+#   - Gemini AI integration via Ollama
+#   - Minimal production services for demo
+#
+# This is a DEMO/HACKATHON-SPECIFIC stack, not for production use.
+# See: hackathon/DATADOG_SETUP.md and hackathon/ARCHITECTURE.md
+
+services:
+  # Datadog Agent - Collects metrics, traces, and logs
+  datadog-agent:
+    image: datadog/agent:latest
+    container_name: applylens-datadog-agent
+    env_file:
+      - ./services/api/.env.hackathon
+    environment:
+      - DD_AC_EXCLUDE=name:datadog-agent  # Don't monitor self
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE_LOGS="name:datadog-agent"
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    ports:
+      - "8126:8126/tcp"  # APM traces
+      - "8125:8125/udp"  # DogStatsD metrics
+    networks:
+      - applylens-hackathon
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: applylens-db-hackathon
+    environment:
+      POSTGRES_USER: applylens
+      POSTGRES_PASSWORD: applylens
+      POSTGRES_DB: applylens
+    volumes:
+      - postgres_data_hackathon:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - applylens-hackathon
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "postgresql", "service": "applylens-db"}]'
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: applylens-redis-hackathon
+    ports:
+      - "6379:6379"
+    networks:
+      - applylens-hackathon
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "redis", "service": "applylens-redis"}]'
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: applylens-es-hackathon
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - es_data_hackathon:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - applylens-hackathon
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "elasticsearch", "service": "applylens-es"}]'
+
+  # ApplyLens API with Gemini + Datadog instrumentation
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: applylens-api-hackathon
+    env_file:
+      - ./services/api/.env.hackathon
+    environment:
+      - DD_AGENT_HOST=datadog-agent
+      - DD_TRACE_AGENT_URL=http://datadog-agent:8126
+      - DD_DOGSTATSD_URL=udp://datadog-agent:8125
+    volumes:
+      - ./services/api:/app
+      # Mount service account JSON (update path)
+      # - /path/to/your/service-account.json:/app/service-account.json:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+      - elasticsearch
+      - datadog-agent
+    networks:
+      - applylens-hackathon
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "python", "service": "applylens-api-hackathon"}]'
+      com.datadoghq.tags: "env:hackathon,version:hackathon-0.1.0"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ApplyLens Web (React/Vite)
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: applylens-web-hackathon
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    ports:
+      - "5175:5173"
+    depends_on:
+      - api
+    networks:
+      - applylens-hackathon
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "nginx", "service": "applylens-web"}]'
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  postgres_data_hackathon:
+  es_data_hackathon:
+
+networks:
+  applylens-hackathon:
+    driver: bridge

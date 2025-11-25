@@ -4,15 +4,13 @@
     "rootDir": "D:/ApplyLens/apps/web/tests",
     "forbidOnly": false,
     "fullyParallel": false,
-    "globalSetup": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup-auth.ts",
+    "globalSetup": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts",
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
-    "grepInvert": {},
+    "grepInvert": null,
     "maxFailures": 0,
-    "metadata": {
-      "actualWorkers": 1
-    },
+    "metadata": {},
     "preserveOutput": "always",
     "reporter": [
       [
@@ -42,9 +40,7 @@
         "outputDir": "D:/ApplyLens/apps/web/test-results",
         "repeatEach": 1,
         "retries": 2,
-        "metadata": {
-          "actualWorkers": 1
-        },
+        "metadata": {},
         "id": "chromium",
         "name": "chromium",
         "testDir": "D:/ApplyLens/apps/web/tests",
@@ -74,6 +70,8 @@
           "e2e/search-derived-and-tooltip.spec.ts",
           "e2e/prod-search-smoke.spec.ts",
           "e2e/chat-thread-viewer.spec.ts",
+          "e2e/chat-thread-tracker-flow.spec.ts",
+          "e2e/today-triage.spec.ts",
           "chat-mailbox-ambient-glow.spec.ts",
           "ui/header-logo.spec.ts",
           "search.interactions.spec.ts",
@@ -87,224 +85,33 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.56.0",
-    "workers": 1,
-    "webServer": null
+    "workers": 4,
+    "webServer": {
+      "command": "pnpm dev",
+      "url": "http://localhost:5175",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
   },
-  "suites": [
+  "suites": [],
+  "errors": [
     {
-      "title": "e2e\\chat-thread-viewer.spec.ts",
-      "file": "e2e/chat-thread-viewer.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "@prodSafe @chat @threads Thread Viewer v1",
-          "file": "e2e/chat-thread-viewer.spec.ts",
-          "line": 15,
-          "column": 6,
-          "specs": [
-            {
-              "title": "smoke: Follow-ups toolbar button shows thread list UI",
-              "ok": false,
-              "tags": [
-                "prodSafe",
-                "chat",
-                "threads"
-              ],
-              "tests": [
-                {
-                  "timeout": 45000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 18945,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30",
-                        "location": {
-                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                          "column": 30,
-                          "line": 36
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                            "column": 30,
-                            "line": 36
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n\n\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-11-22T18:25:39.943Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                        "column": 30,
-                        "line": 36
-                      }
-                    },
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 25013,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30",
-                        "location": {
-                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                          "column": 30,
-                          "line": 36
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                            "column": 30,
-                            "line": 36
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n\n\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 1,
-                      "startTime": "2025-11-22T18:26:00.329Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry1\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                        "column": 30,
-                        "line": 36
-                      }
-                    },
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 23078,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30",
-                        "location": {
-                          "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                          "column": 30,
-                          "line": 36
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                            "column": 30,
-                            "line": 36
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('thread-card')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('thread-card')\u001b[22m\n\n\n\u001b[0m \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for thread card to appear\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mconst\u001b[39m threadCard \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-card'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m expect(threadCard)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m10000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                              \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 37 |\u001b[39m\n \u001b[90m 38 |\u001b[39m     \u001b[90m// Verify thread list is present\u001b[39m\n \u001b[90m 39 |\u001b[39m     \u001b[36mconst\u001b[39m threadList \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'thread-list'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts:36:30\u001b[22m"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 2,
-                      "startTime": "2025-11-22T18:26:26.434Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry2\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry2\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "D:\\ApplyLens\\apps\\web\\test-results\\e2e-chat-thread-viewer--pr-ac098-button-shows-thread-list-UI-chromium-retry2\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "D:\\ApplyLens\\apps\\web\\tests\\e2e\\chat-thread-viewer.spec.ts",
-                        "column": 30,
-                        "line": 36
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "aae99bbee1a8d8a3813c-f6a4b65df4d67124bd8c",
-              "file": "e2e/chat-thread-viewer.spec.ts",
-              "line": 17,
-              "column": 3
-            }
-          ]
-        }
-      ]
+      "message": "Error: CSRF endpoint failed: 502",
+      "stack": "Error: CSRF endpoint failed: 502\n    at globalSetup (D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts:32:11)",
+      "location": {
+        "file": "D:\\ApplyLens\\apps\\web\\tests\\setup\\global-setup.ts",
+        "column": 11,
+        "line": 32
+      },
+      "snippet": "\u001b[90m   at \u001b[39msetup\\global-setup.ts:32\n\n\u001b[0m \u001b[90m 30 |\u001b[39m   \u001b[36mconst\u001b[39m csrfResp \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m ctx\u001b[33m.\u001b[39m\u001b[36mget\u001b[39m(\u001b[32m'/auth/csrf'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 31 |\u001b[39m   \u001b[36mif\u001b[39m (\u001b[33m!\u001b[39mcsrfResp\u001b[33m.\u001b[39mok()) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 32 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m`CSRF endpoint failed: ${csrfResp.status()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 33 |\u001b[39m   }\n \u001b[90m 34 |\u001b[39m\n \u001b[90m 35 |\u001b[39m   \u001b[90m// Get the storage state to extract CSRF cookie\u001b[39m\u001b[0m"
     }
   ],
-  "errors": [],
   "stats": {
-    "startTime": "2025-11-22T18:25:37.121Z",
-    "duration": 72606.455,
+    "startTime": "2025-11-24T20:19:32.212Z",
+    "duration": 57.519000000000005,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

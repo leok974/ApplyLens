@@ -5,20 +5,32 @@ import type { MailThreadSummary, MailThreadDetail, MailMessage } from '@/lib/mai
 import { formatDistanceToNow, format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Check, AlertTriangle, Copy, Clock, Plus, Briefcase } from 'lucide-react';
+import { ExternalLink, Check, AlertTriangle, Copy, Clock, Plus, Briefcase, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFollowupDraft } from '@/hooks/useFollowupDraft';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useInterviewPrep } from '@/hooks/useInterviewPrep';
+import { InterviewPrepPanel } from '@/components/interviews/InterviewPrepPanel';
 
 interface ThreadViewerProps {
   threadId: string | null;
   summary: MailThreadSummary | null;
   onCreateApplication?: (threadId: string) => void;
+  intent?: string; // Current intent (e.g., 'followups', 'bills') for observability
 }
 
-export function ThreadViewer({ threadId, summary, onCreateApplication }: ThreadViewerProps) {
+export function ThreadViewer({ threadId, summary, onCreateApplication, intent }: ThreadViewerProps) {
   const navigate = useNavigate();
   const [detail, setDetail] = useState<MailThreadDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Follow-up draft generation
+  const { draft, isGenerating, generateDraft, clearDraft, copyDraftToClipboard, copyBodyToClipboard } = useFollowupDraft();
+
+  // Interview prep
+  const [showInterviewPrep, setShowInterviewPrep] = useState(false);
+  const { data: prepData, isLoading: prepLoading, error: prepError, loadPrep, reset: resetPrep } = useInterviewPrep();
 
   useEffect(() => {
     if (!threadId) {
@@ -143,16 +155,50 @@ export function ThreadViewer({ threadId, summary, onCreateApplication }: ThreadV
 
         {/* Application action */}
         {summary.applicationId ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
-            onClick={() => navigate(`/applications?highlight=${summary.applicationId}`)}
-            data-testid="thread-viewer-open-tracker"
-          >
-            <Briefcase className="mr-1.5 h-3.5 w-3.5" />
-            Open in Tracker
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
+              onClick={() => {
+                // Track thread-to-tracker click for observability (fire-and-forget)
+                fetch('/metrics/thread-to-tracker-click', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    application_id: summary.applicationId,
+                    intent: intent ?? undefined,
+                  }),
+                }).catch(() => {
+                  // Swallow errors – don't block navigation
+                });
+
+                // Navigate to tracker
+                navigate(`/tracker?appId=${summary.applicationId}`);
+              }}
+              data-testid="thread-viewer-open-tracker"
+            >
+              <Briefcase className="mr-1.5 h-3.5 w-3.5" />
+              Open in Tracker
+            </Button>
+
+            {/* Interview prep button for interview-related statuses */}
+            {(summary.applicationStatus === 'hr_screen' || summary.applicationStatus === 'interview') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-blue-400/30 text-blue-400 hover:bg-blue-400/10"
+                onClick={async () => {
+                  setShowInterviewPrep(true);
+                  await loadPrep(summary.applicationId!, threadId || undefined);
+                }}
+                data-testid="threadviewer-interview-prep"
+              >
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                Interview Prep
+              </Button>
+            )}
+          </>
         ) : onCreateApplication && (
           <Button
             variant="outline"
@@ -189,7 +235,91 @@ export function ThreadViewer({ threadId, summary, onCreateApplication }: ThreadV
           <Copy className="mr-1.5 h-3.5 w-3.5" />
           Copy Summary
         </Button>
+
+        {/* Follow-up Draft */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+          onClick={() => {
+            if (threadId) {
+              generateDraft({
+                threadId,
+                applicationId: summary.applicationId ?? undefined,
+              });
+            }
+          }}
+          disabled={isGenerating}
+          data-testid="thread-viewer-draft-followup"
+        >
+          <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+          {isGenerating ? 'Generating...' : 'Draft follow-up'}
+        </Button>
       </div>
+
+      {/* Follow-up Draft Display */}
+      {draft && (
+        <div className="mb-4">
+          <Card className="border-purple-500/30 bg-purple-950/20">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-base text-purple-100">Follow-up Draft</CardTitle>
+                  <CardDescription className="text-purple-300/70">
+                    AI-generated follow-up email
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearDraft}
+                  className="text-purple-400 hover:text-purple-300 -mt-1 -mr-2"
+                >
+                  ✕
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Subject */}
+              <div>
+                <div className="text-xs font-medium text-purple-300/70 mb-1">Subject:</div>
+                <div className="text-sm text-purple-100 font-medium bg-purple-900/20 rounded px-3 py-2">
+                  {draft.subject}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div>
+                <div className="text-xs font-medium text-purple-300/70 mb-1">Body:</div>
+                <div className="text-sm text-purple-100 whitespace-pre-wrap bg-purple-900/20 rounded px-3 py-2.5 max-h-64 overflow-y-auto">
+                  {draft.body}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  className="bg-purple-500/90 hover:bg-purple-500 text-white"
+                  onClick={copyDraftToClipboard}
+                >
+                  <Copy className="mr-1.5 h-3 w-3" />
+                  Copy Full Draft
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                  onClick={copyBodyToClipboard}
+                >
+                  <Copy className="mr-1.5 h-3 w-3" />
+                  Copy Body Only
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Message Timeline */}
       <div>
@@ -280,6 +410,44 @@ function MessageCard({ message, isFirst }: { message: MailMessage; isFirst: bool
           ) : (
             <p className="text-sm text-slate-500 italic">No message body available</p>
           )}
+        </div>
+      )}
+
+      {/* Interview Prep Modal */}
+      {showInterviewPrep && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {prepLoading && (
+              <div className="p-8 text-center">
+                <div className="text-sm text-muted-foreground">Loading interview prep...</div>
+              </div>
+            )}
+            {prepError && (
+              <div className="p-8 text-center">
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  Failed to load interview prep: {prepError.message}
+                </div>
+                <button
+                  className="mt-4 px-3 py-2 text-sm border rounded hover:bg-muted"
+                  onClick={() => {
+                    setShowInterviewPrep(false);
+                    resetPrep();
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+            {prepData && (
+              <InterviewPrepPanel
+                prep={prepData}
+                onClose={() => {
+                  setShowInterviewPrep(false);
+                  resetPrep();
+                }}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>

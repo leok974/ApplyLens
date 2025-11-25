@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { listApplications, updateApplication, createApplication, AppOut, AppStatus, fetchTrackerApplications, TrackerRow } from '../lib/api'
 import { needsFollowup } from '../lib/trackerFilters'
@@ -7,6 +7,8 @@ import InlineNote from '../components/InlineNote'
 import CreateFromEmailButton from '../components/CreateFromEmailButton'
 import { NOTE_SNIPPETS } from '../config/tracker'
 import { Mail } from 'lucide-react'
+import { useInterviewPrep } from '../hooks/useInterviewPrep'
+import { InterviewPrepPanel } from '../components/interviews/InterviewPrepPanel'
 
 // Toast variants for different status transitions
 type ToastVariant = 'default' | 'success' | 'warning' | 'error' | 'info'
@@ -51,6 +53,12 @@ export default function Tracker() {
   const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null)
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ company: '', role: '', source: '' })
+  const [selectedAppId, setSelectedAppId] = useState<number | null>(null)
+  const selectedRowRef = useRef<HTMLDivElement | null>(null)
+
+  // Interview prep state
+  const [showInterviewPrep, setShowInterviewPrep] = useState(false)
+  const { data: prepData, isLoading: prepLoading, error: prepError, loadPrep, reset: resetPrep } = useInterviewPrep()
 
   // Show toast helper
   const showToast = (message: string, variant: ToastVariant = 'default') => {
@@ -71,6 +79,31 @@ export default function Tracker() {
       setSearchParams(newParams, { replace: true })
     }
   }, [searchParams, setSearchParams])
+
+  // Handle deep-link from Thread Viewer via ?appId=<id>
+  useEffect(() => {
+    const appIdParam = searchParams.get('appId')
+    if (appIdParam) {
+      const appId = parseInt(appIdParam, 10)
+      if (!isNaN(appId)) {
+        setSelectedAppId(appId)
+        // Clear the param after reading it
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete('appId')
+        setSearchParams(newParams, { replace: true })
+      }
+    }
+  }, [searchParams, setSearchParams])
+
+  // Scroll to selected row when data loads
+  useEffect(() => {
+    if (selectedAppId && !loading && selectedRowRef.current) {
+      // scrollIntoView may not be available in test environment
+      if (typeof selectedRowRef.current.scrollIntoView === 'function') {
+        selectedRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }, [selectedAppId, loading])
 
   const fetchRows = async () => {
     setLoading(true)
@@ -342,12 +375,20 @@ export default function Tracker() {
             {applications
               .filter(a => !fromMailboxFilter || a.thread_id)
               .filter(a => !needsFollowupFilter || needsFollowup(a))
-              .map((r) => (
+              .map((r) => {
+                const isSelected = selectedAppId === r.id
+                return (
               <div
                 key={`app-${r.id}`}
-                className="grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition"
+                ref={isSelected ? selectedRowRef : null}
+                className={`grid grid-cols-12 gap-2 items-center px-3 py-2 text-sm transition ${
+                  isSelected
+                    ? 'bg-yellow-400/10 border-l-4 border-yellow-400 dark:bg-yellow-400/5'
+                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                }`}
                 data-testid="tracker-row"
                 data-id={r.id}
+                data-selected={isSelected ? 'true' : undefined}
               >
                 <div className="col-span-3 font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                   {r.company}
@@ -384,6 +425,20 @@ export default function Tracker() {
                   </div>
                 </div>
                 <div className="col-span-2 flex flex-col items-end gap-2">
+                  {/* Interview Prep button for hr_screen and interview statuses */}
+                  {(r.status === 'hr_screen' || r.status === 'interview') && (
+                    <button
+                      className="px-2 py-1 text-xs border rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 transition self-end"
+                      onClick={async () => {
+                        setShowInterviewPrep(true)
+                        await loadPrep(r.id, r.thread_id || undefined)
+                      }}
+                      data-testid="tracker-prep-button"
+                      title="Generate interview preparation materials"
+                    >
+                      Prep
+                    </button>
+                  )}
                   {r.thread_id && (
                     <CreateFromEmailButton
                       threadId={r.thread_id}
@@ -423,7 +478,8 @@ export default function Tracker() {
                   </div>
                 </div>
               </div>
-            ))}
+                )
+              })}
             {applications.length === 0 && trackerRows.length > 0 && (
               <>
                 {trackerRows.map((row, idx) => (
@@ -523,6 +579,44 @@ export default function Tracker() {
           </div>
         </div>
       </dialog>
+
+      {/* Interview Prep Panel */}
+      {showInterviewPrep && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {prepLoading && (
+              <div className="p-8 text-center">
+                <div className="text-sm text-muted-foreground">Loading interview prep...</div>
+              </div>
+            )}
+            {prepError && (
+              <div className="p-8 text-center">
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  Failed to load interview prep: {prepError.message}
+                </div>
+                <button
+                  className="mt-4 px-3 py-2 text-sm border rounded hover:bg-muted"
+                  onClick={() => {
+                    setShowInterviewPrep(false)
+                    resetPrep()
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            )}
+            {prepData && (
+              <InterviewPrepPanel
+                prep={prepData}
+                onClose={() => {
+                  setShowInterviewPrep(false)
+                  resetPrep()
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

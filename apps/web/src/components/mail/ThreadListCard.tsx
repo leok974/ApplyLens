@@ -147,6 +147,7 @@ export function ThreadListCard({ card }: ThreadListCardProps) {
             threadId={selectedId}
             summary={selectedSummary}
             onCreateApplication={handleCreateApplication}
+            intent={intent}
           />
         </div>
       </div>
