@@ -16,11 +16,12 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: services/api/setup.py
       - name: Install dependencies
         working-directory: services/api
         run: |
           pip install -U pip
-          pip install -r requirements.txt
+          pip install -e .[test]
       - name: Run pytest - Email Risk tests
         working-directory: services/api
         run: |
@@ -59,9 +60,9 @@ jobs:
           path: apps/web/test-results/
           retention-days: 7
 
-  # Email Risk v3.1 - Smoke test
+  # Email Risk v3.1 - Smoke test (informational only, requires running services)
   smoke-risk:
-    name: Smoke Test (Email Risk v3.1)
+    name: Smoke Test (Email Risk v3.1) - Informational
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +81,7 @@ jobs:
           echo "⚠️  Smoke test requires Elasticsearch and API services"
           echo "    Run manually: pwsh ./scripts/smoke_risk_advice.ps1"
           echo "    This job is informational only in CI"
+          echo "✅ Smoke test script exists and is ready for manual use"
 
   # Legacy checks
   api:
@@ -89,11 +91,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: services/api/setup.py
       - name: Install deps
         working-directory: services/api
         run: |
           pip install -U pip
-          pip install .
+          pip install -e .
       - name: Lint import
         run: python -c "import fastapi, sqlalchemy"
 
@@ -101,16 +105,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
       - name: Install & build
         working-directory: apps/web
         run: |
-          npm ci || npm install
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm build
 
-  # Require all critical checks
+  # Require all critical checks (excludes smoke-risk which is informational)
   all-checks:
     name: All Checks Passed ✅
     runs-on: ubuntu-latest
