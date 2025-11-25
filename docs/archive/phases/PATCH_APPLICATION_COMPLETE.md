@@ -24,7 +24,7 @@ Running application tests...
 ### Test Coverage
 
 - **test_upsert_application_from_email**: Tests creating applications from emails with metadata
-- **test_upsert_application_by_thread_id**: Tests email threading and application linking  
+- **test_upsert_application_by_thread_id**: Tests email threading and application linking
 - **test_no_application_without_metadata**: Tests filtering out non-application emails
 - **test_from_email_endpoint_autofill**: Tests `/from-email` endpoint with auto-extraction
 

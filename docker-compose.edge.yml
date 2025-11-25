@@ -1,3 +1,14 @@
+# Edge Nginx + Certbot Configuration
+#
+# STATUS: Unclear usage. Needs review.
+# This appears to be a standalone edge nginx setup with Let's Encrypt SSL renewal.
+# May be superseded by Cloudflare Tunnel or docker-compose.prod.yml nginx.
+#
+# TODO: Clarify if this is:
+#   - Still in use for edge deployments
+#   - Legacy and can be removed
+#   - Part of a specific deployment pattern
+#
 services:
   edge-nginx:
     image: nginx:1.27-alpine

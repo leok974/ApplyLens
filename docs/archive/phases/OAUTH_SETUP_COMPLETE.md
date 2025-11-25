@@ -195,7 +195,7 @@ curl -Method DELETE http://localhost:9200/gmail_emails
 - **~20-50 emails** imported (varies by inbox activity)
 - **~5-15 applications** created (based on job-related emails)
 - **Companies detected**: ~70% accuracy
-- **Roles detected**: ~60% accuracy  
+- **Roles detected**: ~60% accuracy
 - **ATS sources**: ~90% for Lever/Greenhouse/Workday
 
 ### Application Status Auto-Detection

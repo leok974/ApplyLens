@@ -22,7 +22,7 @@ Successfully integrated **Phase 4: Agentic Actions & Approval Loop** into the ru
 3. ✅ **Seeded Default Policies**
    - Created 5 default policies:
      - High-risk quarantine (Priority 10) ✅ Enabled
-     - Job application auto-label (Priority 30) ✅ Enabled  
+     - Job application auto-label (Priority 30) ✅ Enabled
      - Create event from invitation (Priority 40) ❌ Disabled
      - Promo auto-archive (Priority 50) ✅ Enabled
      - Auto-unsubscribe inactive (Priority 60) ❌ Disabled
@@ -76,12 +76,12 @@ curl -X POST http://localhost:8003/api/actions/propose -H "Content-Type: applica
 ```sql
 -- Create a test proposed action
 INSERT INTO proposed_actions (
-    email_id, action, confidence, rationale, 
+    email_id, action, confidence, rationale,
     policy_id, status, params
 ) VALUES (
-    1, 'archive_email', 0.85, 
+    1, 'archive_email', 0.85,
     '{"confidence": 0.85, "narrative": "Test action for demo", "reasons": ["Test reason 1", "Test reason 2"]}',
-    1, 'pending', 
+    1, 'pending',
     '{}'
 );
 ```text

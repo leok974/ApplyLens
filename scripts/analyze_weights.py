@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# STATUS: unclear. Mentioned in REPO_AUDIT_PHASE1.md.
+# If not used by 2025-12-31, move to scripts/legacy/.
 """
 Weight Tuning Analysis for Email Risk Detection v3.1
 

@@ -167,8 +167,8 @@ If panels show "Datasource not found":
 1. **Find your datasource UID:**
    ```powershell
    $headers = @{ Authorization = "Bearer YOUR_API_TOKEN" }
-   Invoke-RestMethod -Uri "http://localhost:3000/api/datasources" -Headers $headers | 
-     Where-Object { $_.type -eq "marcusolsson-json-datasource" } | 
+   Invoke-RestMethod -Uri "http://localhost:3000/api/datasources" -Headers $headers |
+     Where-Object { $_.type -eq "marcusolsson-json-datasource" } |
      Select-Object name, uid
    ```
 

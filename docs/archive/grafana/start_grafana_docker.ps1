@@ -4,7 +4,7 @@
 param(
     [Parameter(Mandatory=$false)]
     [switch]$Rebuild,
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$StopFirst
 )
@@ -99,7 +99,7 @@ $ready = $false
 while ($attempt -lt $maxAttempts -and -not $ready) {
     Start-Sleep -Seconds 2
     $attempt++
-    
+
     try {
         $response = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -UseBasicParsing -TimeoutSec 2
         if ($response.StatusCode -eq 200) {
@@ -139,7 +139,7 @@ Start-Sleep -Seconds 3
 
 try {
     $pluginCheck = docker exec infra-grafana grafana-cli plugins ls 2>&1
-    
+
     if ($pluginCheck -match "marcusolsson-json-datasource") {
         Write-Host "   ✅ JSON API plugin is installed" -ForegroundColor Green
     } else {

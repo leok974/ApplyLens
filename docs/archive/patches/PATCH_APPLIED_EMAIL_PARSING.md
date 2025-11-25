@@ -1,7 +1,7 @@
 # Email Parsing Heuristics Patch - Applied ✅
 
-**Date Applied:** October 9, 2025  
-**Status:** Complete (100%)  
+**Date Applied:** October 9, 2025
+**Status:** Complete (100%)
 **Patch Version:** applications_email_parsing_heuristics (5).py
 
 ## Summary
@@ -17,7 +17,7 @@ Successfully applied the email parsing heuristics patch to enable auto-fill func
 **File:** `services/api/app/services/email_parse.py` (NEW)
 
 - `extract_company(sender, body_text, subject)` - 20 lines
-- `extract_role(subject, body_text)` - 18 lines  
+- `extract_role(subject, body_text)` - 18 lines
 - `extract_source(headers, sender, subject, body_text)` - 13 lines
 - Regex-based extraction with intelligent heuristics
 - No external dependencies (uses Python stdlib only)
@@ -264,7 +264,7 @@ If you want to add Gmail inbox pages later (for browsing emails in the UI):
 
 1. Create Gmail API integration (if not exists)
 2. Add inbox list page with CreateFromEmailButton
-3. Add thread detail page  
+3. Add thread detail page
 4. Update routing configuration
 5. Consider using React Router loaders for data fetching
 
@@ -317,7 +317,7 @@ The `/applications/from-email` endpoint follows this logic:
 
 ---
 
-**Patch Applied By:** GitHub Copilot  
-**Application:** ApplyLens Job Tracker  
-**Version:** Phase 51.3 (Email Parsing Enhancement)  
+**Patch Applied By:** GitHub Copilot
+**Application:** ApplyLens Job Tracker
+**Version:** Phase 51.3 (Email Parsing Enhancement)
 **Architecture:** FastAPI + SQLAlchemy (backend) | React + Vite + React Router (frontend)

@@ -13,11 +13,17 @@
 #   - FastAPI (backend API)
 #   - React/Vite (frontend)
 #   - Nginx (reverse proxy)
-#   - Prometheus (metrics)
-#   - Grafana (monitoring)
+#   - Prometheus (metrics) - LEGACY: Datadog is now primary observability
+#   - Grafana (monitoring) - LEGACY: Datadog is now primary observability
 #   - Cloudflared (tunnel - optional)
-
-version: '3.8'
+#
+# NOTE: Prometheus/Grafana are marked as LEGACY (as of Nov 2025).
+# Datadog is now the primary observability provider.
+# These services are retained temporarily for:
+#   - Historical metrics data
+#   - Transition period monitoring
+#   - Safe decommissioning later (Phase 3)
+# See: hackathon/DATADOG_SETUP.md for current observability setup
 
 services:
   # =============================================================================
@@ -271,7 +277,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/secrets/applylens-warehouse-key.json}
 
       # Gmail Backfill API Key
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
 
       # Monitoring
       PROMETHEUS_ENABLED: "true"
@@ -316,7 +322,7 @@ services:
     environment:
       # Internal call to API (no Cloudflare)
       API_URL: http://applylens-api-prod:8003/gmail/backfill
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
       EVERY_MINUTES: ${BACKFILL_EVERY_MINUTES:-30}
       BACKFILL_DAYS: ${BACKFILL_DAYS:-2}
       TZ: America/New_York
@@ -388,7 +394,7 @@ services:
     environment:
       # Internal call to API (no Cloudflare, no /api prefix for internal calls)
       API_URL: http://applylens-api-prod:8003/v2/agent/feedback/aggregate
-      BACKFILL_API_KEY: ${BACKFILL_API_KEY}
+      BACKFILL_API_KEY: ${BACKFILL_API_KEY:-}
       EVERY_HOURS: ${AGENT_FEEDBACK_EVERY_HOURS:-6}
       TIMEOUT: ${AGENT_FEEDBACK_TIMEOUT:-120}
       TZ: America/New_York
@@ -498,8 +504,11 @@ services:
       - applylens-prod
 
   # =============================================================================
-  # PROMETHEUS (Metrics Collection)
+  # PROMETHEUS (Metrics Collection) - LEGACY
   # =============================================================================
+  # NOTE: Prometheus/Grafana marked legacy (Datadog is primary observability).
+  # Retained temporarily for historical charts & safe decommissioning later.
+  # See: hackathon/DATADOG_SETUP.md for Datadog configuration.
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: applylens-prometheus-prod
@@ -527,8 +536,11 @@ services:
       - applylens-prod
 
   # =============================================================================
-  # GRAFANA (Monitoring Dashboard)
+  # GRAFANA (Monitoring Dashboard) - LEGACY
   # =============================================================================
+  # NOTE: Prometheus/Grafana marked legacy (Datadog is primary observability).
+  # Retained temporarily for historical charts & safe decommissioning later.
+  # See: hackathon/DATADOG_SETUP.md for Datadog configuration.
   grafana:
     image: grafana/grafana:11.1.0
     container_name: applylens-grafana-prod

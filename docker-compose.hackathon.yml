@@ -1,4 +1,12 @@
-version: '3.8'
+# Hackathon Demo Stack - Datadog + Gemini Integration
+#
+# PURPOSE: Hackathon demonstration stack featuring:
+#   - Datadog Agent for observability
+#   - Gemini AI integration via Ollama
+#   - Minimal production services for demo
+#
+# This is a DEMO/HACKATHON-SPECIFIC stack, not for production use.
+# See: hackathon/DATADOG_SETUP.md and hackathon/ARCHITECTURE.md
 
 services:
   # Datadog Agent - Collects metrics, traces, and logs

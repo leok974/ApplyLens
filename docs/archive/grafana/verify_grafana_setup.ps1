@@ -4,7 +4,7 @@
 param(
     [Parameter(Mandatory=$false)]
     [string]$GrafanaUrl = "http://localhost:3000",
-    
+
     [Parameter(Mandatory=$false)]
     [string]$ApiKey
 )
@@ -57,13 +57,13 @@ if ($ApiKey) {
         exit 1
     }
     Write-Host ""
-    
+
     # Check 3: JSON API datasource plugin
     Write-Host "3️⃣  Checking for JSON API datasource plugin..." -ForegroundColor White
     try {
         $plugins = Invoke-RestMethod -Uri "$GrafanaUrl/api/plugins" -Headers $headers
         $jsonPlugin = $plugins | Where-Object { $_.id -eq "marcusolsson-json-datasource" }
-        
+
         if ($jsonPlugin) {
             Write-Host "   ✅ JSON API datasource plugin is installed" -ForegroundColor Green
             Write-Host "      Version: $($jsonPlugin.info.version)" -ForegroundColor Gray
@@ -80,19 +80,19 @@ if ($ApiKey) {
         Write-Host "   ⚠️  Could not check plugins (requires Admin access)" -ForegroundColor Yellow
     }
     Write-Host ""
-    
+
     # Check 4: Datasources
     Write-Host "4️⃣  Checking datasources..." -ForegroundColor White
     try {
         $datasources = Invoke-RestMethod -Uri "$GrafanaUrl/api/datasources" -Headers $headers
         $jsonDatasources = $datasources | Where-Object { $_.type -eq "marcusolsson-json-datasource" }
-        
+
         if ($jsonDatasources.Count -gt 0) {
             Write-Host "   ✅ Found $($jsonDatasources.Count) JSON API datasource(s):" -ForegroundColor Green
             foreach ($ds in $jsonDatasources) {
                 Write-Host "      • $($ds.name) (UID: $($ds.uid))" -ForegroundColor Gray
             }
-            
+
             $applyLensDS = $jsonDatasources | Where-Object { $_.name -eq "ApplyLens API" }
             if ($applyLensDS) {
                 Write-Host ""
@@ -120,7 +120,7 @@ if ($ApiKey) {
         Write-Host "   ⚠️  Could not list datasources" -ForegroundColor Yellow
     }
     Write-Host ""
-    
+
     # Check 5: API endpoints
     Write-Host "5️⃣  Checking API endpoints..." -ForegroundColor White
     $apiBase = "http://127.0.0.1:8000"
@@ -130,7 +130,7 @@ if ($ApiKey) {
         "/api/metrics/top-senders-30d",
         "/api/metrics/categories-30d"
     )
-    
+
     $allGood = $true
     foreach ($endpoint in $endpoints) {
         $url = "$apiBase$endpoint"
@@ -147,14 +147,14 @@ if ($ApiKey) {
             $allGood = $false
         }
     }
-    
+
     if (-not $allGood) {
         Write-Host ""
         Write-Host "   ⚠️  Some API endpoints are not responding" -ForegroundColor Yellow
         Write-Host "      Make sure the API server is running on port 8000" -ForegroundColor Yellow
     }
     Write-Host ""
-    
+
 } else {
     Write-Host "2️⃣  API Key not provided - skipping authentication checks" -ForegroundColor Yellow
     Write-Host ""

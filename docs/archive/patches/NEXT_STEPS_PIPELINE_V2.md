@@ -1,7 +1,7 @@
 # Next Steps: Pipeline v2 Deployment — October 20, 2025
 
-**Status:** ✅ Infrastructure validated and ready  
-**Current State:** Existing emails need migration to populate v2 flags  
+**Status:** ✅ Infrastructure validated and ready
+**Current State:** Existing emails need migration to populate v2 flags
 **Goal:** Get pipeline v2 smart flags working with your existing data
 
 ---
@@ -248,30 +248,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: pip install requests
-      
+
       - name: Start Elasticsearch (if testing)
         run: |
           docker-compose up -d elasticsearch
           sleep 30
-      
+
       - name: Apply templates
         run: |
           curl -X PUT "http://localhost:9200/_component_template/applylens_emails_mapping" \
             -H 'Content-Type: application/json' \
             --data-binary @infra/elasticsearch/templates/emails_component_template_mapping.json
-          
+
           curl -X PUT "http://localhost:9200/_index_template/applylens_emails" \
             -H 'Content-Type: application/json' \
             --data-binary @infra/elasticsearch/templates/emails_index_template.json
-      
+
       - name: Run CI Guard
         run: python scripts/test_es_template.py
 ```
