@@ -6,6 +6,13 @@ Creates monitors for the hackathon demo:
 1. LLM Latency Spike (p95 > 3000ms) → Create incident
 2. LLM Error Burst (error rate > 5%) → Create incident
 3. Token/Cost Anomaly (usage > 3x baseline) → Create incident
+
+Phase 3C - Additional monitors (replaces Prometheus alerts):
+4. Backfill Failing → Replaces Prometheus alert "BackfillFailing"
+5. Backfill Rate Limited Spike → Replaces Prometheus alert "BackfillRateLimitedSpike"
+6. Gmail Disconnected → Replaces Prometheus alert "GmailDisconnected"
+
+Reference: docs/OBSERVABILITY_STACK_PLAN.md (Gap Analysis section)
 """
 
 import os
@@ -294,6 +301,292 @@ Usage returned to baseline levels.
         return None
 
 
+def create_backfill_failing_monitor():
+    """Monitor 4: Backfill Failing - Replaces Prometheus alert 'BackfillFailing'."""
+
+    dd_site = os.getenv("DD_SITE")
+    dd_api_key = os.getenv("DD_API_KEY")
+    dd_app_key = os.getenv("DD_APP_KEY")
+
+    url = f"https://api.{dd_site}/api/v1/monitor"
+    headers = {
+        "DD-API-KEY": dd_api_key,
+        "DD-APPLICATION-KEY": dd_app_key,
+        "Content-Type": "application/json",
+    }
+
+    message = """{{#is_alert}}
+🚨 **Backfill Job Failures Detected**
+
+**Impact**: {{value}} backfill errors in last 10 minutes
+**Threshold**: > 0 errors
+
+🔍 **Investigation Steps**:
+1. Check logs for backfill error details: Filter by `service:applylens-api error backfill`
+2. Verify Gmail API status: https://www.google.com/appsstatus/dashboard/
+3. Check OAuth token expiration: Review user authentication status
+4. Inspect rate limiting: Check for 429 responses
+
+🛠️ **Common Causes & Fixes**:
+- **Gmail API errors**: Check credentials and OAuth scopes
+- **Rate limiting**: Reduce backfill batch size or increase delay between requests
+- **Token expiration**: Re-authenticate user accounts
+- **Network issues**: Verify connectivity to Gmail API endpoints
+- **Invalid email IDs**: Check for corrupted data in backfill queue
+
+📊 **Runbook**:
+- Backfill documentation: See `services/api/README.md` for backfill procedures
+- Manual backfill trigger: `POST /api/backfill` with appropriate parameters
+
+{{/is_alert}}
+
+{{#is_recovery}}
+✅ **Backfill Errors Resolved**
+No backfill errors detected in last 10 minutes.
+{{/is_recovery}}"""
+
+    payload = {
+        "name": "ApplyLens – Backfill failing",
+        "type": "metric alert",
+        "query": "sum(last_10m):sum:applylens.backfill.errors{*}.as_count() > 0",
+        "message": message,
+        "tags": [
+            "component:backfill",
+            "priority:warning",
+            "replaces:prometheus-BackfillFailing",
+        ],
+        "options": {
+            "thresholds": {"critical": 0},
+            "notify_no_data": False,
+            "notify_audit": False,
+            "include_tags": True,
+            "require_full_window": True,
+        },
+        "priority": 2,
+    }
+
+    print("\n📊 Creating Monitor: Backfill Failing")
+    print("   Threshold: > 0 errors in 10min")
+    print("   Replaces: Prometheus alert 'BackfillFailing'")
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+
+        result = response.json()
+        monitor_id = result["id"]
+        monitor_url = f"https://{dd_site}/monitors/{monitor_id}"
+
+        print("   ✅ Created successfully")
+        print(f"   ID: {monitor_id}")
+        print(f"   URL: {monitor_url}")
+
+        return {"id": monitor_id, "url": monitor_url, "name": payload["name"]}
+
+    except requests.exceptions.HTTPError as e:
+        print(f"   ❌ HTTP Error: {e}")
+        print(f"   Response: {e.response.text}")
+        return None
+    except Exception as e:
+        print(f"   ❌ Error: {e}")
+        return None
+
+
+def create_backfill_rate_limited_monitor():
+    """Monitor 5: Backfill Rate Limited Spike - Replaces Prometheus alert 'BackfillRateLimitedSpike'."""
+
+    dd_site = os.getenv("DD_SITE")
+    dd_api_key = os.getenv("DD_API_KEY")
+    dd_app_key = os.getenv("DD_APP_KEY")
+
+    url = f"https://api.{dd_site}/api/v1/monitor"
+    headers = {
+        "DD-API-KEY": dd_api_key,
+        "DD-APPLICATION-KEY": dd_app_key,
+        "Content-Type": "application/json",
+    }
+
+    message = """{{#is_alert}}
+⚠️ **Backfill Rate Limiting Spike**
+
+**Impact**: {{value}} rate-limited requests in last 15 minutes
+**Threshold**: > 10 rate limits in 15 minutes
+
+🔍 **Investigation**:
+1. Check Gmail API quota usage: https://console.cloud.google.com/apis/api/gmail.googleapis.com/quotas
+2. Review backfill job frequency and batch sizes
+3. Verify if multiple users triggering backfills simultaneously
+4. Check for retry loops causing quota exhaustion
+
+🛠️ **Mitigation Options**:
+- **Reduce backfill rate**: Increase delay between API calls
+- **Implement exponential backoff**: Add retry delays for 429 responses
+- **Batch optimization**: Reduce number of emails per batch
+- **Quota increase**: Request higher Gmail API quota from Google Cloud Console
+- **Temporary pause**: Stop backfill jobs until quota resets (typically hourly/daily)
+
+💡 **Gmail API Quotas**:
+- Standard quota: 250 quota units per user per second
+- Batch requests: 1,000 quota units per request
+- Quota resets: Per-user quotas reset every 100 seconds
+
+📊 **Monitoring**:
+- Check rate limit trend: `applylens.backfill.rate_limited` metric
+- Compare with successful requests: `applylens.backfill.success`
+
+{{/is_alert}}
+
+{{#is_recovery}}
+✅ **Rate Limiting Normalized**
+Backfill rate limits back to normal levels.
+{{/is_recovery}}"""
+
+    payload = {
+        "name": "ApplyLens – Backfill rate limited spike",
+        "type": "metric alert",
+        "query": "sum(last_15m):sum:applylens.backfill.rate_limited{*}.as_count() > 10",
+        "message": message,
+        "tags": [
+            "component:backfill",
+            "priority:info",
+            "replaces:prometheus-BackfillRateLimitedSpike",
+        ],
+        "options": {
+            "thresholds": {"critical": 10, "warning": 5},
+            "notify_no_data": False,
+            "notify_audit": False,
+            "include_tags": True,
+            "require_full_window": False,
+        },
+        "priority": 3,
+    }
+
+    print("\n📊 Creating Monitor: Backfill Rate Limited Spike")
+    print("   Threshold: > 10 rate limits in 15min (warning: 5)")
+    print("   Replaces: Prometheus alert 'BackfillRateLimitedSpike'")
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+
+        result = response.json()
+        monitor_id = result["id"]
+        monitor_url = f"https://{dd_site}/monitors/{monitor_id}"
+
+        print("   ✅ Created successfully")
+        print(f"   ID: {monitor_id}")
+        print(f"   URL: {monitor_url}")
+
+        return {"id": monitor_id, "url": monitor_url, "name": payload["name"]}
+
+    except requests.exceptions.HTTPError as e:
+        print(f"   ❌ HTTP Error: {e}")
+        print(f"   Response: {e.response.text}")
+        return None
+    except Exception as e:
+        print(f"   ❌ Error: {e}")
+        return None
+
+
+def create_gmail_disconnected_monitor():
+    """Monitor 6: Gmail Disconnected - Replaces Prometheus alert 'GmailDisconnected'."""
+
+    dd_site = os.getenv("DD_SITE")
+    dd_api_key = os.getenv("DD_API_KEY")
+    dd_app_key = os.getenv("DD_APP_KEY")
+
+    url = f"https://api.{dd_site}/api/v1/monitor"
+    headers = {
+        "DD-API-KEY": dd_api_key,
+        "DD-APPLICATION-KEY": dd_app_key,
+        "Content-Type": "application/json",
+    }
+
+    message = """{{#is_alert}}
+🔴 **Gmail Connection Lost**
+
+**Impact**: ApplyLens is not ingesting new emails
+**Duration**: Gmail connection down for > 15 minutes
+
+🔍 **Investigation Steps**:
+1. Check user authentication status: Review OAuth token validity
+2. Verify Gmail API status: https://www.google.com/appsstatus/dashboard/
+3. Check application logs for auth errors: Filter by `gmail auth error`
+4. Inspect `/api/gmail/status` endpoint response
+
+🛠️ **Recovery Steps**:
+- **OAuth token expired**: Trigger re-authentication flow for affected users
+- **Credentials revoked**: User needs to re-authorize ApplyLens
+- **API outage**: Wait for Gmail service recovery (monitor status page)
+- **Network issues**: Check connectivity and firewall rules
+- **Scope changes**: Verify OAuth scopes haven't changed
+
+📊 **Verification**:
+- Check `applylens.gmail.connected` gauge metric (should be 1 when connected)
+- Verify email ingest is resuming: Monitor `applylens.ingest_lag_seconds`
+- Test connection: Call `/api/gmail/status` endpoint
+
+⚡ **Manual Reconnect**:
+```bash
+# Trigger OAuth re-auth for user
+POST /api/auth/gmail/reconnect
+```
+
+{{/is_alert}}
+
+{{#is_recovery}}
+✅ **Gmail Connection Restored**
+Gmail connection is back online. Email ingestion should resume automatically.
+{{/is_recovery}}"""
+
+    payload = {
+        "name": "ApplyLens – Gmail disconnected",
+        "type": "metric alert",
+        "query": "max(last_15m):max:applylens.gmail.connected{*} < 1",
+        "message": message,
+        "tags": [
+            "component:gmail",
+            "priority:warning",
+            "replaces:prometheus-GmailDisconnected",
+        ],
+        "options": {
+            "thresholds": {"critical": 1},
+            "notify_no_data": True,
+            "no_data_timeframe": 20,
+            "notify_audit": False,
+            "include_tags": True,
+            "require_full_window": True,
+        },
+        "priority": 2,
+    }
+
+    print("\n📊 Creating Monitor: Gmail Disconnected")
+    print("   Threshold: connected gauge < 1 for 15min")
+    print("   Replaces: Prometheus alert 'GmailDisconnected'")
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+
+        result = response.json()
+        monitor_id = result["id"]
+        monitor_url = f"https://{dd_site}/monitors/{monitor_id}"
+
+        print("   ✅ Created successfully")
+        print(f"   ID: {monitor_id}")
+        print(f"   URL: {monitor_url}")
+
+        return {"id": monitor_id, "url": monitor_url, "name": payload["name"]}
+
+    except requests.exceptions.HTTPError as e:
+        print(f"   ❌ HTTP Error: {e}")
+        print(f"   Response: {e.response.text}")
+        return None
+    except Exception as e:
+        print(f"   ❌ Error: {e}")
+        return None
+
+
 def main():
     """Create all monitors."""
 
@@ -333,6 +626,33 @@ def main():
     if token_monitor:
         monitors_created.append(token_monitor)
 
+    # Monitor 4: Backfill Failing (Phase 3C)
+    print("\n" + "=" * 70)
+    print("Creating Monitor #4: Backfill Failing (Phase 3C)")
+    print("=" * 70)
+
+    backfill_monitor = create_backfill_failing_monitor()
+    if backfill_monitor:
+        monitors_created.append(backfill_monitor)
+
+    # Monitor 5: Backfill Rate Limited (Phase 3C)
+    print("\n" + "=" * 70)
+    print("Creating Monitor #5: Backfill Rate Limited Spike (Phase 3C)")
+    print("=" * 70)
+
+    rate_limit_monitor = create_backfill_rate_limited_monitor()
+    if rate_limit_monitor:
+        monitors_created.append(rate_limit_monitor)
+
+    # Monitor 6: Gmail Disconnected (Phase 3C)
+    print("\n" + "=" * 70)
+    print("Creating Monitor #6: Gmail Disconnected (Phase 3C)")
+    print("=" * 70)
+
+    gmail_monitor = create_gmail_disconnected_monitor()
+    if gmail_monitor:
+        monitors_created.append(gmail_monitor)
+
     # Summary
     print("\n" + "=" * 70)
     print("✅ Monitor Creation Complete!")
@@ -353,11 +673,13 @@ def main():
             "slo_id": "d22bff39b3365745bbe3cb7853eaa659",
         }
 
-        output_file = "/tmp/datadog_monitors_info.json"
-        with open(output_file, "w") as f:
-            json.dump(output, f, indent=2)
-
-        print(f"\n💾 Monitor info saved to: {output_file}")
+        output_file = "datadog_monitors_info.json"
+        try:
+            with open(output_file, "w") as f:
+                json.dump(output, f, indent=2)
+            print(f"\n💾 Monitor info saved to: {output_file}")
+        except Exception as e:
+            print(f"\n⚠️  Could not save monitor info: {e}")
 
         print("\n📈 Next Steps:")
         print("   1. View monitors: https://us5.datadoghq.com/monitors/manage")
