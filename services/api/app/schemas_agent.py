@@ -14,6 +14,16 @@ from datetime import datetime
 import uuid
 
 
+class OpportunitiesSummary(BaseModel):
+    """Summary of job opportunities for Today view."""
+
+    total: int
+    perfect: int
+    strong: int
+    possible: int
+    skip: Optional[int] = None
+
+
 # ============================================================================
 # Agent Run Contract - The Single Source of Truth
 # ============================================================================

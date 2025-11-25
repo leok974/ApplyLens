@@ -8,7 +8,7 @@ Endpoints:
 """
 
 from fastapi import APIRouter, HTTPException, Request, Depends
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import logging
 import time
 import uuid
@@ -24,10 +24,12 @@ from app.schemas_agent import (
     FollowupStateUpdate,
     InterviewPrepRequest,
     InterviewPrepResponse,
+    OpportunitiesSummary,
 )
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
-from app.models import Session as SessionModel
+from app.models import Session as SessionModel, JobOpportunity, OpportunityMatch
+from sqlalchemy import func
 from app.metrics import (
     AGENT_TODAY_DURATION_SECONDS,
     FOLLOWUP_DRAFT_REQUESTS,
@@ -224,6 +226,46 @@ async def list_tools() -> Dict[str, Any]:
     }
 
 
+def _build_opportunities_summary(
+    db: DBSession, owner_email: str
+) -> Optional[OpportunitiesSummary]:
+    """
+    Build opportunities summary for Today view.
+
+    Returns None if no opportunities exist for this user.
+    Otherwise returns bucket counts based on existing matches.
+    """
+    # 1) Check if there are any opportunities for this user
+    total_opp = (
+        db.query(func.count(JobOpportunity.id))
+        .filter(JobOpportunity.owner_email == owner_email)
+        .scalar()
+    )
+    if not total_opp:
+        return None
+
+    # 2) Get bucket counts from existing matches
+    bucket_counts = (
+        db.query(
+            OpportunityMatch.match_bucket,
+            func.count(OpportunityMatch.id),
+        )
+        .filter(OpportunityMatch.owner_email == owner_email)
+        .group_by(OpportunityMatch.match_bucket)
+        .all()
+    )
+
+    bucket_map: Dict[str, int] = {b: c for b, c in bucket_counts}
+
+    return OpportunitiesSummary(
+        total=total_opp,
+        perfect=bucket_map.get("perfect", 0),
+        strong=bucket_map.get("strong", 0),
+        possible=bucket_map.get("possible", 0),
+        skip=bucket_map.get("skip", 0),
+    )
+
+
 @router.post("/today")
 async def today_triage(
     payload: Dict[str, Any],
@@ -404,12 +446,25 @@ async def today_triage(
             )
             # Continue without followups summary (graceful degradation)
 
+        # 6. Fetch opportunities summary for Today panel
+        opportunities_summary = None
+        try:
+            opportunities_summary = _build_opportunities_summary(db, user_id)
+        except Exception as e:
+            logger.warning(
+                f"Today: failed to fetch opportunities summary: {e}",
+                exc_info=True,
+            )
+            # Continue without opportunities summary (graceful degradation)
+
         response = {
             "status": "ok",
             "intents": results,
         }
         if followups_summary:
             response["followups"] = followups_summary
+        if opportunities_summary:
+            response["opportunities"] = opportunities_summary.dict()
 
         return response
 

@@ -70,10 +70,19 @@ interface FollowupSummary {
   time_window_days: number;
 }
 
+interface OpportunitiesSummary {
+  total: number;
+  perfect: number;
+  strong: number;
+  possible: number;
+  skip?: number | null;
+}
+
 interface TodayResponse {
   status: string;
   intents: IntentData[];
   followups?: FollowupSummary;
+  opportunities?: OpportunitiesSummary | null;
 }
 
 export default function Today() {
@@ -299,9 +308,40 @@ export default function Today() {
         </Card>
       )}
 
+      {/* Opportunities Summary Card */}
+      {data.opportunities && (
+        <Card
+          className="mb-6 border-amber-500/20 bg-amber-500/5"
+          data-testid="today-opportunities-card"
+        >
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <span className="text-2xl">💼</span>
+                  <span>Opportunities</span>
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {data.opportunities.total} found · {data.opportunities.perfect} perfect ·{' '}
+                  {data.opportunities.strong} strong · {data.opportunities.possible} possible
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs border-amber-400/60 bg-amber-500/10 hover:bg-amber-500/20"
+                onClick={() => navigate('/opportunities')}
+                data-testid="today-opportunities-cta"
+              >
+                Review
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
+
       {/* Intent Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.intents.map((intentData) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">\n        {data.intents.map((intentData) => {
           const meta = INTENT_META[intentData.intent];
           const hasThreads = intentData.threads.length > 0;
 
