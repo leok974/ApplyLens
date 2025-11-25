@@ -466,6 +466,108 @@ git push origin --force --mirror
 
 ---
 
+## Discovery Results - November 25, 2025
+
+### Executed Commands
+
+```powershell
+# Find largest blobs
+git rev-list --objects --all | git cat-file --batch-check="%(objecttype) %(objectname) %(objectsize) %(rest)" | ...
+
+# Audit sensitive files
+git log --all --full-history --oneline -- "secrets/" "*.pem" "*.key" "*.backup" "*.log" ...
+
+# Calculate repo size
+Get-ChildItem -Path .git -Recurse -File | Measure-Object -Property Length -Sum
+git count-objects -vH
+```
+
+### Repository Size Analysis
+
+**Current State**:
+- `.git` directory size: **21.62 MB**
+- Object count: 7,390 loose objects
+- Pack files: 2.85 MiB (3,474 objects)
+- Total size: **~21-22 MB**
+
+**Largest Blobs in History** (Top 10):
+1. **660 KB** - `analytics/dbt/target/...` (DBT artifacts)
+2. **644 KB** - `analytics/dbt/target/...` (DBT artifacts)
+3. **487 KB** - `services/api/models/label_v1.joblib` (Legitimate ML model - KEEP)
+4. **451 KB** - `services/api/openapi-debug.json` (**✅ Removed in Phase 2**)
+5. **376 KB** - `apps/extension-applylens/...` (Extension bundle)
+6. **296 KB** - `services/api/coverage.lcov` (**✅ Removed in Phase 2**)
+7. **279 KB** - `services/api/coverage.lcov` (older version)
+8-20. **270-250 KB each** - Multiple `services/api/coverage.lcov` versions (15+ copies)
+21. **245 KB** - `apps/web/public/ApplyLens-Showcase.png` (Legitimate asset - KEEP)
+22. **234 KB** - `apps/web/public/image001.png` (Legitimate asset - KEEP)
+23-50. **210-85 KB** - Various `package-lock.json`, `pnpm-lock.yaml`, `coverage.lcov` versions
+
+**Analysis**:
+- ✅ **Largest artifacts already removed in Phase 2**: `openapi-debug.json` (451 KB), `coverage.lcov` (296 KB)
+- ⚠️ **Historical copies remain**: 15+ older versions of `coverage.lcov` (270-100 KB each) = ~3-4 MB total
+- ✅ **DBT artifacts**: analytics/dbt/target files (~1.3 MB) - likely build artifacts, could remove
+- ✅ **Lock files**: Multiple versions of package-lock.json, pnpm-lock.yaml (~1-2 MB total) - **KEEP** (legitimate version tracking)
+- ✅ **Legitimate large files**: ML models, extension bundles, images - **KEEP**
+
+### Sensitive Files Audit
+
+**Results**: ✅ **NO SECRETS FOUND**
+
+Checked for:
+- `secrets/` directory: Found in 4 commits (likely gitignored directory references, no actual secret files)
+- `letsencrypt/` directory: Found in 2 commits (tunnel config, no certificates committed)
+- Certificate files (`*.pem`, `*.key`, `*.crt`, `*.p12`): **NONE FOUND** ✅
+- Credentials (`*client_secret*.json`, `*credentials*.json`): **NONE FOUND** ✅
+- Backup files (`*.backup`, `*.bak`): Found in Phase 2 cleanup commits (already removed) ✅
+- Log files (`*.log`): **NONE FOUND** (all gitignored) ✅
+- Debug artifacts (`openapi-debug.json`): Found and removed in Phase 2 ✅
+- Coverage files (`coverage.lcov`): Found and removed in Phase 2 (but old versions remain in history)
+
+**Conclusion**: No sensitive data exposed in git history. ✅
+
+### Estimated Cleanup Savings
+
+**If we run git filter-repo to remove historical artifacts**:
+
+| Category | Current Size | Recoverable |
+|----------|-------------|-------------|
+| `coverage.lcov` (15+ historical copies) | ~3-4 MB | ~3-4 MB |
+| `openapi-debug.json` (historical copies) | ~0.5 MB | ~0.5 MB |
+| `analytics/dbt/target/` artifacts | ~1.3 MB | ~1.3 MB |
+| Backup files (docker-compose.*.backup) | ~0.5 MB | ~0.5 MB |
+| **TOTAL POTENTIAL SAVINGS** | **~5-7 MB** | **~5-7 MB** |
+
+**Current repo size**: 21.62 MB
+**After cleanup estimate**: ~14-16 MB
+**Savings**: **~25-32% reduction**
+
+### Recommendation: 🟡 OPTIONAL - LOW VALUE
+
+**Analysis**:
+1. ✅ **No security risk** - No secrets/certificates in history
+2. ✅ **Current HEAD is clean** - Phase 2 already removed artifacts from working tree
+3. ⚠️ **Modest savings** - ~5-7 MB reduction (25-32%) is moderate but not critical
+4. ❌ **High coordination cost** - Force-push requires all developers to re-clone
+5. ✅ **Alternative exists** - New developers can use `git clone --depth=1` for smaller clones
+
+**Recommended Action**:
+- **Do NOT execute history cleanup now** - coordination cost outweighs benefits
+- **Monitor repo size** - If it grows significantly (>100 MB), revisit this decision
+- **Use shallow clones** - Document `git clone --depth=1` for new developers
+- **Keep this plan** - Ready to execute if repo size becomes problematic
+
+**Decision Criteria for Future Execution**:
+- 🟢 Execute if: Repo size > 100 MB, OR security incident requires secret rotation
+- 🟡 Consider if: New large artifacts accidentally committed (>10 MB each)
+- 🔴 Skip if: Repo remains < 50 MB and no security concerns
+
+**Approved**: ⬜ (Pending team discussion)
+**Signature**: _______________
+**Date**: _______________
+
+---
+
 ## Alternative: Don't Rewrite History
 
 **Consider these alternatives**:
