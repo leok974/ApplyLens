@@ -37,6 +37,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/applylens
       ENV: test
       ES_ENABLED: false
       USE_MOCK_GMAIL: true
@@ -180,6 +181,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/applylens
       ENV: test
       ES_ENABLED: true
       ES_HOST: localhost

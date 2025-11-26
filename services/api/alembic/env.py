@@ -1,4 +1,5 @@
 from logging.config import fileConfig
+import os
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -11,11 +12,18 @@ from app.db import Base
 # this is the Alembic Config object
 config = context.config
 
-# Override with database URL from settings (supports both DATABASE_URL and POSTGRES_* env vars)
-# Phase 5.0: Use settings.sql_database_url which constructs URL from POSTGRES_* if needed
-from app.settings import settings
+# Override with database URL from environment or settings
+# Priority:
+# 1. DATABASE_URL_TEST (CI / explicit test DB)
+# 2. DATABASE_URL (normal env)
+# 3. settings.sql_database_url (fallback, constructs from POSTGRES_* vars)
+database_url = os.getenv("DATABASE_URL_TEST") or os.getenv("DATABASE_URL")
 
-database_url = settings.sql_database_url
+if not database_url:
+    # Fallback to settings (supports both DATABASE_URL and POSTGRES_* env vars)
+    from app.settings import settings
+
+    database_url = settings.sql_database_url
 
 if database_url:
     # Escape % characters for configparser (replace % with %%)
