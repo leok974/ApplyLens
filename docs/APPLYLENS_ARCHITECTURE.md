@@ -327,7 +327,21 @@ docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-### 4. Verify Deployment
+### 4. Validate nginx Configuration (if changed)
+
+If nginx config was modified, validate before deploying:
+
+```powershell
+# Test nginx config
+.\scripts\nginx-validate.ps1
+
+# Test and reload if valid
+.\scripts\nginx-validate.ps1 -Reload
+```
+
+See [LedgerMind Routing Guide](infra/LEDGERMIND_ROUTING.md) for nginx configuration best practices.
+
+### 5. Verify Deployment
 
 ```bash
 # Check services
@@ -336,6 +350,10 @@ docker ps --filter "name=applylens"
 # Test endpoints
 curl https://applylens.app/
 curl https://api.applylens.app/ready
+
+# Verify nginx is only serving ApplyLens domains
+docker exec applylens-nginx nginx -T | grep server_name
+# Should only show: applylens.app, www.applylens.app, api.applylens.app
 
 # Check logs
 docker logs applylens-web-prod --tail 50
