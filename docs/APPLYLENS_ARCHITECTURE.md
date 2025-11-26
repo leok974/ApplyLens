@@ -391,6 +391,101 @@ OAUTH_REDIRECT_URI=https://applylens.app/api/auth/google/callback
 CORS_ALLOW_ORIGINS=https://applylens.app,https://www.applylens.app
 ```
 
+## Routing & Domain Health Checks
+
+ApplyLens shares infrastructure with LedgerMind (AI finance agent) but **must maintain strict domain separation** to prevent cross-contamination.
+
+### Critical Routing Rules
+
+⚠️ **Do NOT point `app.ledger-mind.org` at `applylens-nginx`**
+
+LedgerMind domains must **always** route to LedgerMind's nginx:
+- **Container**: `ai-finance.int:80` (Docker network alias)
+- **Local**: `localhost:8083` (host port binding)
+- **Cloudflare Tunnel**: Configured in `infra/cloudflared/config.yml`
+
+### Canonical Health Check Endpoints
+
+| Domain | Service | Endpoint | Expected Response |
+|--------|---------|----------|-------------------|
+| `applylens.app` | ApplyLens Web | `/health` | `"healthy"` |
+| `api.applylens.app` | ApplyLens API | `/healthz` | `{"status":"ok"}` |
+| `app.ledger-mind.org` | LedgerMind (via CF) | `/api/ready` | `{"ok":true,"db":{...}}` |
+| `localhost:8083` | LedgerMind (local) | `/api/ready` | `{"ok":true,"db":{...}}` |
+
+### Automated Routing Verification
+
+Use the routing health check script to verify all endpoints at once:
+
+```powershell
+pwsh infra/scripts/check-routing.ps1
+```
+
+**What it checks:**
+- All 4 endpoints return 2xx status codes
+- LedgerMind responses don't contain "ApplyLens" (no contamination)
+- Colorized output: Green = OK, Red = Failed/Misconfigured
+- Exit code 1 if any check fails
+
+**Example output:**
+```
+===============================================
+  ApplyLens & LedgerMind Routing Health Check
+===============================================
+
+[APPLYLENS_WEB] Testing: https://applylens.app/health
+  Status: 200
+  Body: healthy
+  ✓ OK
+
+[LEDGERMIND_CF] Testing: https://app.ledger-mind.org/api/ready
+  Status: 200
+  Body: {"ok":true,"db":{"ok":true...
+  ✓ OK
+
+✓ SUCCESS: All 4 endpoints healthy and routing correctly
+```
+
+### Manual Verification
+
+If the script fails, manually test each endpoint:
+
+```bash
+# ApplyLens Web
+curl -s https://applylens.app/health
+# Expected: "healthy"
+
+# ApplyLens API
+curl -s https://api.applylens.app/healthz
+# Expected: {"status":"ok"}
+
+# LedgerMind via Cloudflare Tunnel
+curl -s https://app.ledger-mind.org/api/ready
+# Expected: {"ok":true,"db":{...},"migrations":{...}}
+
+# LedgerMind local (on host)
+curl -s http://localhost:8083/api/ready
+# Expected: {"ok":true,"db":{...},"migrations":{...}}
+```
+
+**Warning Signs:**
+- ❌ `app.ledger-mind.org` returns `"healthy"` → Routing to wrong nginx!
+- ❌ `applylens.app` returns database status → Routing to wrong nginx!
+- ❌ Any endpoint returns 404/502 → Service down or misconfigured
+
+### Related Documentation
+
+- **nginx Configuration**: See [`docs/infra/LEDGERMIND_ROUTING.md`](infra/LEDGERMIND_ROUTING.md) for detailed routing architecture
+- **nginx Validation**: Use [`scripts/nginx-validate.ps1`](../scripts/nginx-validate.ps1) to test nginx config
+- **Cloudflare Config**: See `infra/cloudflared/config.yml` for tunnel ingress rules
+
+### Future Work
+
+The routing check script can be integrated into CI/CD for:
+- Periodic health monitoring in production
+- Pre-deployment verification in staging
+- Automated alerting on routing misconfiguration
+
 ## Security Considerations
 
 ### Network Isolation
