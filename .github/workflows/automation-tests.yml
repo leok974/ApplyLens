@@ -28,7 +28,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -43,32 +43,32 @@ jobs:
           --health-interval=3s
           --health-timeout=3s
           --health-retries=20
-    
+
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5433/applylens
       ENV: test
       CREATE_TABLES_ON_STARTUP: "0"
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         working-directory: services/api
         run: |
           pip install -e .[test]
-      
+
       - name: Run Alembic migrations
         working-directory: services/api
         run: |
           alembic upgrade head
-      
+
       - name: Run unit tests
         working-directory: services/api
         run: |
@@ -79,14 +79,14 @@ jobs:
             --cov-report=lcov \
             --junit-xml=pytest-report.xml \
             -v
-      
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: services/api/coverage.lcov
           flags: unit-tests
           fail_ci_if_error: false
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -95,7 +95,7 @@ jobs:
           path: |
             services/api/pytest-report.xml
             services/api/htmlcov/
-      
+
       - name: Check coverage threshold
         working-directory: services/api
         run: |
@@ -109,7 +109,7 @@ jobs:
   api-tests:
     name: API Contract Tests
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -124,7 +124,7 @@ jobs:
           --health-interval=3s
           --health-timeout=3s
           --health-retries=20
-      
+
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
         env:
@@ -138,45 +138,45 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-    
+
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5433/applylens
       ELASTICSEARCH_URL: http://localhost:9200
       ES_INDEX: test_emails
       ENV: test
       CREATE_TABLES_ON_STARTUP: "0"
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         working-directory: services/api
         run: |
           pip install -e .[test]
-      
+
       - name: Run database migrations
         working-directory: services/api
         run: |
           alembic upgrade head
-      
+
       - name: Start API server
         working-directory: services/api
         run: |
           uvicorn app.main:app --host 0.0.0.0 --port 8003 &
           echo $! > api.pid
           sleep 10
-      
+
       - name: Wait for API to be ready
         run: |
           timeout 60 bash -c 'until curl -f http://localhost:8003/metrics; do sleep 2; done'
-      
+
       - name: Run API tests
         working-directory: services/api
         env:
@@ -186,14 +186,14 @@ jobs:
           pytest -q -k "contract or api" \
             --junit-xml=api-test-results.xml \
             -v
-      
+
       - name: Upload API test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: api-test-results
           path: services/api/api-test-results.xml
-      
+
       - name: Stop API server
         if: always()
         working-directory: services/api
@@ -209,7 +209,7 @@ jobs:
     name: DB-ES Parity Check
     runs-on: ubuntu-latest
     needs: [unit-tests]  # Only run if unit tests pass
-    
+
     services:
       postgres:
         image: postgres:15
@@ -224,7 +224,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
         env:
@@ -238,29 +238,29 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         working-directory: services/api
         run: |
           pip install -e .
-      
+
       - name: Run database migrations
         working-directory: services/api
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens_test
         run: |
           alembic upgrade head
-      
+
       - name: Seed test data
         working-directory: services/api
         env:
@@ -270,7 +270,7 @@ jobs:
         run: |
           # Run risk scoring to populate data
           python scripts/analyze_risk.py || true
-      
+
       - name: Run parity check
         id: parity
         continue-on-error: true
@@ -288,7 +288,7 @@ jobs:
             --output parity.json \
             --csv parity.csv \
             --allow $ALLOW
-      
+
       - name: Upload parity results
         if: always()
         uses: actions/upload-artifact@v4
@@ -297,7 +297,7 @@ jobs:
           path: |
             services/api/parity.json
             services/api/parity.csv
-      
+
       - name: Parse parity report
         if: always()
         id: parse_report
@@ -307,11 +307,11 @@ jobs:
             total=$(jq '.summary.total_checked' parity.json)
             mismatches=$(jq '.summary.total_mismatches' parity.json)
             percentage=$(jq '.summary.mismatch_percentage' parity.json)
-            
+
             echo "total=$total" >> $GITHUB_OUTPUT
             echo "mismatches=$mismatches" >> $GITHUB_OUTPUT
             echo "percentage=$percentage" >> $GITHUB_OUTPUT
-            
+
             # Create summary
             echo "### Parity Check Results" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -320,30 +320,30 @@ jobs:
             echo "| Total Checked | $total |" >> $GITHUB_STEP_SUMMARY
             echo "| Mismatches | $mismatches |" >> $GITHUB_STEP_SUMMARY
             echo "| Mismatch % | $percentage% |" >> $GITHUB_STEP_SUMMARY
-            
+
             # Field breakdown
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "#### By Field:" >> $GITHUB_STEP_SUMMARY
             jq -r '.summary.by_field | to_entries[] | "- \(.key): \(.value)"' parity.json >> $GITHUB_STEP_SUMMARY
           fi
-      
+
       - name: Comment on PR
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            
+
             let body = '## 🔍 Parity Check Results\n\n';
-            
+
             try {
               const report = JSON.parse(fs.readFileSync('services/api/parity.json', 'utf8'));
               const summary = report.summary;
-              
+
               body += `- **Total Checked**: ${summary.total_checked}\n`;
               body += `- **Mismatches**: ${summary.total_mismatches}\n`;
               body += `- **Mismatch Rate**: ${summary.mismatch_percentage}%\n\n`;
-              
+
               if (summary.total_mismatches > 0) {
                 body += '### ⚠️ Mismatches by Field:\n';
                 for (const [field, count] of Object.entries(summary.by_field)) {
@@ -359,14 +359,14 @@ jobs:
               body += '⚠️ Could not parse parity report.\n';
               body += `Error: ${error.message}`;
             }
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: body
             });
-      
+
       - name: Fail if parity check failed
         if: steps.parity.outcome == 'failure' && github.ref == 'refs/heads/main'
         run: |
@@ -380,7 +380,7 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [unit-tests]
-    
+
     services:
       postgres:
         image: postgres:15
@@ -395,7 +395,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
         env:
@@ -409,29 +409,29 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         working-directory: services/api
         run: |
           pip install -e .[test]
-      
+
       - name: Run database migrations
         working-directory: services/api
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/applylens_test
         run: |
           alembic upgrade head
-      
+
       - name: Run integration tests
         working-directory: services/api
         env:
@@ -442,10 +442,87 @@ jobs:
           pytest -m integration \
             --junit-xml=integration-test-results.xml \
             -v
-      
+
       - name: Upload integration test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integration-test-results
           path: services/api/integration-test-results.xml
+
+  # ==================================================================
+  # NIGHTLY RISK SCORING
+  # ==================================================================
+  nightly-risk-scoring:
+    name: Compute Email Risk Scores
+    runs-on: ubuntu-latest
+    # Only run on schedule or manual trigger (not on PRs)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    defaults:
+      run:
+        working-directory: services/api
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Check database schema version
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Checking database schema version..."
+          python -c "
+          from app.utils.schema_guard import require_min_migration, get_current_migration
+          current = get_current_migration()
+          print(f'Current migration: {current}')
+          try:
+              require_min_migration('0012_add_emails_features_json', 'email automation system fields')
+              print('✓ Schema version check passed')
+          except RuntimeError as e:
+              print(f'✗ Schema check failed: {e}')
+              exit(1)
+          "
+
+      - name: Run risk scoring analysis
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '500' }}
+        run: |
+          echo "Starting risk scoring analysis..."
+          echo "Mode: $([ "$DRY_RUN" = "1" ] && echo "DRY RUN" || echo "LIVE UPDATE")"
+          echo "Batch size: $BATCH_SIZE"
+          python scripts/analyze_risk.py
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-scoring-results
+          path: services/api/risk_scoring_*.log
+          retention-days: 7
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Nightly Risk Scoring Job Failed',
+              body: `Risk scoring job failed on ${new Date().toISOString()}. Check the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`,
+              labels: ['automation', 'ci-failure']
+            })
