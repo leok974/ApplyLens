@@ -53,6 +53,8 @@ CSRF_EXEMPT_PATHS = {
     "/api/assistant/query",  # Assistant via nginx
     "/metrics/thread-to-tracker-click",  # Thread Viewer → Tracker click tracking (lightweight observability)
     "/api/metrics/thread-to-tracker-click",  # Direct API access
+    "/auth/logout",  # Logout endpoint (low risk - just clears session)
+    "/api/auth/logout",  # Logout via nginx
 }
 
 
