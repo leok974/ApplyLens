@@ -86,17 +86,14 @@ else:
         allow_headers=["*"],
     )
 
-# Rate limiting middleware (after CORS, before CSRF)
+# Rate limiting middleware (after CORS)
 app.add_middleware(
     RateLimitMiddleware,
     capacity=agent_settings.RATE_LIMIT_MAX_REQ,
     window=agent_settings.RATE_LIMIT_WINDOW_SEC,
 )
 
-# CSRF protection middleware (after CORS, before session)
-app.add_middleware(CSRFMiddleware)
-
-# Add session middleware for OAuth state management
+# Add session middleware for OAuth state management (must be before CSRF)
 app.add_middleware(
     SessionMiddleware,
     secret_key=agent_settings.SESSION_SECRET,
@@ -104,6 +101,9 @@ app.add_middleware(
     same_site="lax",
     https_only=agent_settings.COOKIE_SECURE == "1",
 )
+
+# CSRF protection middleware (after session so it can access request.session)
+app.add_middleware(CSRFMiddleware)
 
 
 @app.on_event("startup")
