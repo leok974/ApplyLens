@@ -22,9 +22,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # OAuth state signing (for cross-domain cookie compatibility)
-_state_signer = URLSafeTimedSerializer(
-    agent_settings.OAUTH_STATE_SECRET or agent_settings.SESSION_SECRET
-)
+_state_signer = URLSafeTimedSerializer(agent_settings.SESSION_SECRET)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
