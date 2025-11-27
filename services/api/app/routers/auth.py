@@ -2,9 +2,11 @@
 
 import secrets
 import uuid
+import time
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session as DBSession
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from app.db import get_db
 from app.models import User, OAuthToken, Session as SessionModel
 from app.config import agent_settings
@@ -18,6 +20,11 @@ from app.core.captcha import verify_captcha
 import logging
 
 logger = logging.getLogger(__name__)
+
+# OAuth state signing (for cross-domain cookie compatibility)
+_state_signer = URLSafeTimedSerializer(
+    agent_settings.OAUTH_STATE_SECRET or agent_settings.SESSION_SECRET
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -42,13 +49,14 @@ async def google_login(request: Request):
         client_id[-6:] if client_id else "NONE",
     )
 
-    state = secrets.token_urlsafe(16)
-    # Store state in session for CSRF protection
-    # Note: For production, use Starlette SessionMiddleware or signed cookies
-    request.session["oauth_state"] = state
+    # Generate random state and sign it (avoids session cookie domain issues)
+    random_state = secrets.token_urlsafe(16)
+    signed_state = _state_signer.dumps(
+        {"random": random_state, "timestamp": time.time()}
+    )
 
     url = build_auth_url(
-        agent_settings.GOOGLE_CLIENT_ID, agent_settings.OAUTH_REDIRECT_URI, state
+        agent_settings.GOOGLE_CLIENT_ID, agent_settings.OAUTH_REDIRECT_URI, signed_state
     )
     return RedirectResponse(url)
 
@@ -59,10 +67,12 @@ async def google_callback(
 ):
     """Handle Google OAuth callback."""
     try:
-        # Verify state for CSRF protection
-        stored_state = request.session.get("oauth_state")
-        if state != stored_state:
-            logger.error(f"State mismatch: expected {stored_state}, got {state}")
+        # Verify signed state for CSRF protection (no session required)
+        try:
+            state_data = _state_signer.loads(state, max_age=3600)  # 1 hour expiry
+            logger.info(f"OAuth state verified: {state_data['random'][:8]}...")
+        except (BadSignature, SignatureExpired) as e:
+            logger.error(f"Invalid or expired state signature: {e}")
             raise HTTPException(400, "Invalid state parameter")
 
         # Exchange code for tokens
