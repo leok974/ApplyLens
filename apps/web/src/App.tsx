@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import Inbox from './pages/Inbox'
+import InboxPageLegacy from './pages/Inbox'
 import TrackerPage from './pages/TrackerPage'
 import Applications from './pages/Applications'
 import Settings from './pages/Settings'
@@ -46,11 +46,19 @@ export default function App() {
             <LoginGuard>
               <AppShell>
                 <Routes>
-                  <Route path="/" element={<Inbox />} />
-                  <Route path="/inbox" element={<Inbox />} />
+                  {/* New default inbox */}
+                  <Route path="/" element={<InboxPageRefactored />} />
+                  <Route path="/inbox" element={<InboxPageRefactored />} />
+
+                  {/* Redirect old refactored route to canonical /inbox */}
+                  <Route path="/inbox-refactored" element={<Navigate to="/inbox" replace />} />
+
+                  {/* Legacy inbox for rollback if needed */}
+                  <Route path="/inbox-legacy" element={<InboxPageLegacy />} />
+
+                  {/* Other inbox variations */}
                   <Route path="/inbox-polished" element={<InboxPolished />} />
                   <Route path="/inbox-polished-demo" element={<InboxPolishedDemo />} />
-                  <Route path="/inbox-refactored" element={<InboxPageRefactored />} />
                   <Route path="/inbox-actions" element={<InboxWithActions />} />
                   <Route path="/search" element={<Search />} />
                   <Route path="/chat" element={<ChatPage />} />
