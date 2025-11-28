@@ -183,20 +183,46 @@ export function EmailDetailsPanel({
     return () => window.removeEventListener("keydown", h);
   }, [open, onClose, onPrev, onNext]);
 
-  const body = (e?: {body_html?:string; body_text?:string}) => {
+  const body = (e?: {body_html?:string; body_text?:string; snippet?:string}) => {
     if (!e) return null;
-    if (e.body_html)
+
+    // Tolerant field resolution - check both camelCase and snake_case
+    const bodyHtml = (e as any).bodyHtml ?? (e as any).body_html ?? null;
+    const bodyText = (e as any).bodyText ?? (e as any).body_text ?? (e as any).body ?? null;
+    const snippet = (e as any).snippet ?? null;
+
+    if (bodyHtml) {
       return (
         <article
           className="prose prose-slate max-w-none dark:prose-invert
                      prose-a:text-[hsl(var(--accent))] dark:prose-a:text-[hsl(var(--accent))]"
-          dangerouslySetInnerHTML={{ __html: e.body_html }}
+          dangerouslySetInnerHTML={{ __html: bodyHtml }}
         />
       );
+    }
+
+    if (bodyText) {
+      return (
+        <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          {bodyText}
+        </pre>
+      );
+    }
+
+    // Fallback to snippet if body is missing
+    if (snippet) {
+      return (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          <div className="mb-2 text-xs font-medium text-slate-500">Preview (full content not available)</div>
+          <p className="italic">{snippet}</p>
+        </div>
+      );
+    }
+
     return (
-      <pre className="whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-200">
-        {e.body_text || "(No body content)"}
-      </pre>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        No email content available for this message.
+      </div>
     );
   };
 

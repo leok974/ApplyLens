@@ -16,6 +16,7 @@ import Search from './pages/Search'
 import InboxWithActions from './components/InboxWithActions'
 import InboxPolished from './pages/InboxPolished'
 import InboxPolishedDemo from './pages/InboxPolishedDemo'
+import InboxPageRefactored from './pages/InboxPageRefactored'
 import ChatPage from './pages/ChatPage'
 import PolicyStudio from './pages/PolicyStudio'
 import Today from './pages/Today'
@@ -49,6 +50,7 @@ export default function App() {
                   <Route path="/inbox" element={<Inbox />} />
                   <Route path="/inbox-polished" element={<InboxPolished />} />
                   <Route path="/inbox-polished-demo" element={<InboxPolishedDemo />} />
+                  <Route path="/inbox-refactored" element={<InboxPageRefactored />} />
                   <Route path="/inbox-actions" element={<InboxWithActions />} />
                   <Route path="/search" element={<Search />} />
                   <Route path="/chat" element={<ChatPage />} />
