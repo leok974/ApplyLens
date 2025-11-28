@@ -30,7 +30,8 @@ from app.schemas_agent import (
 )
 from app.agent.orchestrator import MailboxAgentOrchestrator
 from app.db import get_db
-from app.models import Session as SessionModel, JobOpportunity, OpportunityMatch
+from app.models import Session as SessionModel, JobOpportunity, OpportunityMatch, User
+from app.auth.deps import current_user
 from sqlalchemy import func
 from app.metrics import (
     AGENT_TODAY_DURATION_SECONDS,
@@ -615,6 +616,7 @@ async def get_followup_queue(
     req: Request,
     db: DBSession = Depends(get_db),
     payload: FollowupQueueRequest | None = None,
+    user: User = Depends(current_user),
 ):
     """
     Get merged follow-up queue from mailbox threads and tracker applications.
@@ -632,21 +634,9 @@ async def get_followup_queue(
     FOLLOWUP_QUEUE_REQUESTS.inc()
 
     try:
-        # Resolve user_id from session or payload
-        user_id = payload.user_id if payload else None
+        # Resolve user_id from authenticated user or payload
+        user_id = payload.user_id if payload and payload.user_id else user.id
         time_window_days = payload.time_window_days if payload else 30
-
-        if not user_id:
-            session_user_id = (
-                req.state.session_user_id
-                if hasattr(req.state, "session_user_id")
-                else None
-            )
-            if not session_user_id:
-                return FollowupQueueResponse(
-                    status="error", message="user_id required or valid session"
-                )
-            user_id = session_user_id
 
         # Get mailbox followups from agent
         orchestrator = get_orchestrator()

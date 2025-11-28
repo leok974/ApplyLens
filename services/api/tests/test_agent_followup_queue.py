@@ -292,10 +292,15 @@ class TestFollowupQueueEndpoint:
     async def test_followup_queue_supports_get_method(self):
         """Test that GET /v2/agent/followup-queue works without request body."""
         from app.routers.agent import get_followup_queue
+        from app.models import User
 
-        # Mock request with user_id in session
+        # Mock request
         mock_request = MagicMock(spec=Request)
-        mock_request.state.session_user_id = "test-user"
+
+        # Mock authenticated user - use 'id' not 'user_id'
+        mock_user = MagicMock(spec=User)
+        mock_user.id = "test-user"
+        mock_user.email = "test@example.com"
 
         # Mock orchestrator response
         mock_orchestrator = AsyncMock()
@@ -312,8 +317,10 @@ class TestFollowupQueueEndpoint:
         with patch(
             "app.routers.agent.get_orchestrator", return_value=mock_orchestrator
         ):
-            # Call without payload (GET request)
-            response = await get_followup_queue(mock_request, mock_db, payload=None)
+            # Call without payload (GET request) but with authenticated user
+            response = await get_followup_queue(
+                mock_request, mock_db, payload=None, user=mock_user
+            )
 
         assert response.status == "ok"
         assert response.queue_meta.total == 0
