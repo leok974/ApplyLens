@@ -189,8 +189,9 @@ services:
     # v0.6.3: Persistent follow-up state with progress tracking and done/not-done toggles
     # v0.6.4: Today panel Follow-ups summary widget with progress and quick navigation
     # v0.6.5-datadog: Datadog automation scripts for dashboard, SLOs, and monitors
+    # v0.7.4: Fix followup-queue authentication with current_user dependency
     # v0.7.2: Follow-up queue GET support + deep-link warning cleanup
-    image: leoklemet/applylens-api:0.7.2
+    image: leoklemet/applylens-api:0.7.4
     container_name: applylens-api-prod
     environment:
       # Database
@@ -243,9 +244,9 @@ services:
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
 
       # Build Metadata
-      APP_VERSION: '0.7.2'
-      APP_BUILD_SHA: 'd5e0038'
-      APP_BUILD_TIME: '2025-11-28T16:00:00Z'
+      APP_VERSION: '0.7.4'
+      APP_BUILD_SHA: 'd5d0263'
+      APP_BUILD_TIME: '2025-11-28T22:15:00Z'
       APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
