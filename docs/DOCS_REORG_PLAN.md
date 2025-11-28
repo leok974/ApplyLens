@@ -1,7 +1,7 @@
 # Docs Reorg Plan – ApplyLens
 
-**Created**: 2025-11-27  
-**Status**: Phase 1 - Classification Complete  
+**Created**: 2025-11-27
+**Status**: Phase 1 - Classification Complete
 **Goal**: Streamline documentation to keep only core, future implementation, and agent instruction docs.
 
 ## Classification Categories
