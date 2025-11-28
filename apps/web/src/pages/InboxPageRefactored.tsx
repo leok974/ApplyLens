@@ -33,7 +33,7 @@ import {
   getGmailStatus,
   getGmailInbox,
   initiateGmailAuth,
-  syncGmailEmails,
+  backfillGmail,
   createApplicationFromEmail,
   Email,
   GmailConnectionStatus,
@@ -167,7 +167,7 @@ export default function InboxPageRefactored() {
     setSyncing(true);
     try {
       const days = window === "7d" ? 7 : 60;
-      await syncGmailEmails(status.user_email, days);
+      await backfillGmail(days, status.user_email);
       setErr(`✅ Synced last ${days} days of emails`);
       setTimeout(() => setErr(null), 3000);
       // Refresh inbox
