@@ -7,7 +7,7 @@ Endpoints:
 - GET /agent/tools - List available tools
 """
 
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, Query
 from typing import Dict, Any, Optional
 import logging
 import time
@@ -19,7 +19,6 @@ from app.schemas_agent import (
     AgentRunResponse,
     FollowupDraftRequest,
     FollowupDraftResponse,
-    FollowupQueueRequest,
     FollowupQueueResponse,
     FollowupStateUpdate,
     InterviewPrepRequest,
@@ -607,22 +606,22 @@ async def draft_followup(
         )
 
 
-@router.api_route(
+@router.get(
     "/followup-queue",
-    methods=["GET", "POST"],
     response_model=FollowupQueueResponse,
 )
 async def get_followup_queue(
-    req: Request,
     db: DBSession = Depends(get_db),
-    payload: FollowupQueueRequest | None = None,
     user: User = Depends(current_user),
+    time_window_days: int = Query(
+        30, ge=1, le=90, description="Number of days to look back for follow-ups"
+    ),
 ):
     """
     Get merged follow-up queue from mailbox threads and tracker applications.
 
     Returns a prioritized list of items that need follow-up action.
-    Supports both GET (for simple queries) and POST (for custom parameters).
+    Uses GET method with simple query parameters - no request body needed.
     """
     from app.schemas_agent import (
         FollowupQueueResponse,
@@ -634,9 +633,8 @@ async def get_followup_queue(
     FOLLOWUP_QUEUE_REQUESTS.inc()
 
     try:
-        # Resolve user_id from authenticated user or payload
-        user_id = payload.user_id if payload and payload.user_id else user.id
-        time_window_days = payload.time_window_days if payload else 30
+        # Use authenticated user's ID
+        user_id = user.id
 
         # Get mailbox followups from agent
         orchestrator = get_orchestrator()

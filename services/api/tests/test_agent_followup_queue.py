@@ -290,12 +290,9 @@ class TestFollowupQueueEndpoint:
 
     @pytest.mark.asyncio
     async def test_followup_queue_supports_get_method(self):
-        """Test that GET /v2/agent/followup-queue works without request body."""
+        """Test that GET /v2/agent/followup-queue works with query parameters."""
         from app.routers.agent import get_followup_queue
         from app.models import User
-
-        # Mock request
-        mock_request = MagicMock(spec=Request)
 
         # Mock authenticated user - use 'id' not 'user_id'
         mock_user = MagicMock(spec=User)
@@ -317,9 +314,11 @@ class TestFollowupQueueEndpoint:
         with patch(
             "app.routers.agent.get_orchestrator", return_value=mock_orchestrator
         ):
-            # Call without payload (GET request) but with authenticated user
+            # Call with authenticated user and default time_window_days
             response = await get_followup_queue(
-                mock_request, mock_db, payload=None, user=mock_user
+                db=mock_db,
+                user=mock_user,
+                time_window_days=30,
             )
 
         assert response.status == "ok"
