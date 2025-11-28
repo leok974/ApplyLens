@@ -1,7 +1,0 @@
-{
-  "properties": {
-    "owner_email": {
-      "type": "keyword"
-    }
-  }
-}

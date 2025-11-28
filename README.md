@@ -26,27 +26,73 @@ When using GitHub Copilot or other assistants, instruct them to follow `AGENTS.m
 
 ## 📁 Repository Organization
 
+### Top-Level Structure
+```
+ApplyLens/
+├── apps/                   # Frontend applications
+├── services/               # Backend services (API, workers)
+├── infra/                  # Infrastructure & deployment
+├── docs/                   # Documentation
+├── scripts/                # Development & operational scripts
+├── hackathon/              # Hackathon-specific assets
+└── tests/                  # Integration tests
+```
+
 ### Documentation Structure
-- **`docs/`** - Current documentation (runbooks, architecture, guides)
+- **`docs/architecture/`** - System design & architecture
+  - `docs/architecture/testing/` - Test architecture & E2E guides
+  - `docs/architecture/agents/` - Agent/LLM architecture
+- **`docs/runbooks/`** - Operational runbooks & deployment guides
+- **`docs/audits/`** - Repository audits & cleanup plans
+- **`docs/hackathon/`** - Hackathon documentation
+- **`docs/api/`** - API documentation
+- **`docs/releases/`** - Release notes
 - **`docs/archive/`** - Historical/legacy documentation
-  - `docs/archive/grafana/` - Grafana dashboards & setup (legacy, Datadog is primary)
+  - `docs/archive/agents/` - Legacy agent implementations
+  - `docs/archive/companion/` - Companion feature archives
+  - `docs/archive/e2e/` - E2E test completion reports
   - `docs/archive/phases/` - Phase completion milestones
-  - `docs/archive/patches/` - Historical patch notes
+  - `docs/archive/audits/` - Historical audits
 
-### Scripts
-- **`scripts/`** - Active utilities and automation
-- **`scripts/legacy/`** - Archived scripts (19 total)
-  - Pipeline fixes, old deployments, AWS migration scripts
-  - Testing utilities, pre-Datadog observability scripts
-  - See `scripts/legacy/README.md` for details
+### Scripts Organization
+- **`scripts/cli/`** - Developer command-line tools
+- **`scripts/ci/`** - CI/CD workflow scripts
+- **`scripts/ops/`** - Operations & deployment scripts
+- **`scripts/legacy/`** - Archived scripts (historical reference)
+  - `scripts/legacy/test/` - Legacy test scripts
 
-### Recent Cleanup (Phase 2 - Nov 2025)
-- ✅ Removed ~800KB of tracked artifacts (coverage.lcov, openapi-debug.json, backup files)
+See `scripts/README.md` for detailed script documentation.
+
+### Services & Apps
+- **`services/api/`** - FastAPI backend
+  - `services/api/docs/` - OpenAPI specs & API documentation
+  - `services/api/tests/` - Unit & integration tests
+  - `services/api/tests/fixtures/` - Test data & fixtures
+- **`apps/extension-applylens/`** - Browser extension
+
+### Infrastructure
+- **`infra/docker/`** - Docker compose files
+- **`infra/nginx/`** - Nginx configurations
+- **`infra/cloudflare/`** - Cloudflare tunnel configs
+- **`infra/monitoring/`** - Observability stack (Datadog, Grafana)
+
+### Recent Cleanup (Phase 4 - Nov 2025)
+- ✅ **Reorganized 82 files** into structured folders
+  - Architecture docs → `docs/architecture/`
+  - Runbooks → `docs/runbooks/`
+  - Scripts → `scripts/{cli,ci,ops,legacy}/`
+  - Tests → `services/api/tests/`
+  - API docs → `services/api/docs/`
+- ✅ **Cleaned root directory** - removed 15+ temporary/obsolete files
+- ✅ **Consolidated infrastructure** - docker-compose → `infra/docker/`, nginx → `infra/nginx/`
+- ✅ **Updated tooling** - Fixed pre-commit hooks for new paths
+- 📋 See `docs/REPO_ARCHITECTURE_REORG_PLAN.md` for full details
+
+### Previous Cleanup (Phase 2 - Nov 2025)
+- ✅ Removed ~800KB of tracked artifacts
 - ✅ Organized 19 legacy scripts → `scripts/legacy/`
 - ✅ Archived 27 docs → `docs/archive/`
-- ✅ Hardened .gitignore (coverage, debug files, certs)
-- 📋 See `docs/REPO_CLEANUP_PHASE2_SUMMARY.md` for full details
-
+- 📋 See `docs/REPO_CLEANUP_PHASE2_SUMMARY.md` for details
 
 ### Phase 3 Planning (Future Work)
 See planning documents for future cleanup initiatives:
@@ -1313,3 +1359,4 @@ gitleaks detect --source . --no-git -v
 - [Phase 6 Personalization](docs/PHASE_6_PERSONALIZATION.md) - Latest features (learning, metrics, money mode)
 - [Quick Start Guide](docs/QUICK_START_E2E.md) - End-to-end setup
 - [Run Full Stack](docs/RUN_FULL_STACK.md) - Local development
+

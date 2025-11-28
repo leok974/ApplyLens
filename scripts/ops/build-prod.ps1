@@ -95,7 +95,7 @@ if ($MissingSecrets.Count -gt 0) {
         Write-Host "   - $secret" -ForegroundColor Yellow
     }
     Write-Host "`n   Edit $EnvFile before deploying to production!" -ForegroundColor Yellow
-    
+
     if ($Deploy) {
         Write-Host "`n   Continue anyway? (y/N): " -NoNewline -ForegroundColor Yellow
         $response = Read-Host
@@ -133,21 +133,21 @@ try {
 # =============================================================================
 if ($Deploy) {
     Write-Host "`n[3/5] Deploying production stack..." -ForegroundColor Yellow
-    
+
     if ($Restart) {
         Write-Host "   Stopping existing containers..." -ForegroundColor Gray
         docker compose -f $ComposeFile --env-file $EnvFile down
     }
-    
+
     Write-Host "   Starting services..." -ForegroundColor Gray
     docker compose -f $ComposeFile --env-file $EnvFile up -d
-    
+
     Write-Host "   ✓ Services started" -ForegroundColor Green
-    
+
     # Wait for services to be ready
     Write-Host "`n   Waiting for services to be healthy..." -ForegroundColor Gray
     Start-Sleep -Seconds 10
-    
+
 } else {
     Write-Host "`n[3/5] Skipping deployment (build only)" -ForegroundColor Gray
 }
@@ -157,7 +157,7 @@ if ($Deploy) {
 # =============================================================================
 if ($Deploy -and $Migrate) {
     Write-Host "`n[4/5] Running database migrations..." -ForegroundColor Yellow
-    
+
     try {
         docker compose -f $ComposeFile --env-file $EnvFile exec -T api alembic upgrade head
         Write-Host "   ✓ Migrations completed" -ForegroundColor Green
@@ -178,14 +178,14 @@ Write-Host "`n[5/5] Status check..." -ForegroundColor Yellow
 if ($Deploy) {
     Write-Host "`n   Service Status:" -ForegroundColor Gray
     docker compose -f $ComposeFile ps
-    
+
     Write-Host "`n   Testing endpoints..." -ForegroundColor Gray
-    
+
     $Tests = @(
         @{Name="Health Check"; Url="http://localhost/health"},
         @{Name="API Health"; Url="http://localhost/api/healthz"}
     )
-    
+
     foreach ($test in $Tests) {
         try {
             $response = Invoke-WebRequest -Uri $test.Url -Method GET -UseBasicParsing -TimeoutSec 5
@@ -216,12 +216,12 @@ if ($Deploy) {
     Write-Host "  • Prometheus: http://localhost/prometheus/" -ForegroundColor White
     Write-Host "  • Grafana:    http://localhost/grafana/" -ForegroundColor White
     Write-Host "  • Kibana:     http://localhost/kibana/" -ForegroundColor White
-    
+
     Write-Host "`nUseful Commands:" -ForegroundColor Cyan
     Write-Host "  • View logs:    docker compose -f $ComposeFile logs -f" -ForegroundColor Gray
     Write-Host "  • Stop stack:   docker compose -f $ComposeFile down" -ForegroundColor Gray
     Write-Host "  • Migrations:   docker compose -f $ComposeFile exec api alembic upgrade head" -ForegroundColor Gray
-    
+
     if (-not $Migrate) {
         Write-Host "`n⚠️  Don't forget to run migrations!" -ForegroundColor Yellow
         Write-Host "   docker compose -f $ComposeFile --env-file $EnvFile exec api alembic upgrade head" -ForegroundColor Gray

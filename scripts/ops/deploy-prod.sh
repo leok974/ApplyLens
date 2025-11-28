@@ -95,41 +95,41 @@ case $choice in
             print_error "Deployment cancelled"
             exit 0
         fi
-        
+
         print_status "Stopping existing services..."
         docker-compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
         print_success "Stopped and removed volumes"
-        
+
         print_status "Building images..."
         docker-compose -f "$COMPOSE_FILE" build --no-cache
         print_success "Built images"
-        
+
         print_status "Starting services..."
         docker-compose -f "$COMPOSE_FILE" up -d
         print_success "Services started"
-        
+
         FRESH_DEPLOY=true
         ;;
     2)
         print_status "Stopping services..."
         docker-compose -f "$COMPOSE_FILE" down
         print_success "Stopped services"
-        
+
         print_status "Rebuilding images..."
         docker-compose -f "$COMPOSE_FILE" build
         print_success "Rebuilt images"
-        
+
         print_status "Starting services..."
         docker-compose -f "$COMPOSE_FILE" up -d
         print_success "Services started"
-        
+
         FRESH_DEPLOY=false
         ;;
     3)
         print_status "Restarting services..."
         docker-compose -f "$COMPOSE_FILE" restart
         print_success "Services restarted"
-        
+
         FRESH_DEPLOY=false
         ;;
     *)
@@ -152,7 +152,7 @@ check_service() {
     local url=$2
     local max_attempts=30
     local attempt=0
-    
+
     while [ $attempt -lt $max_attempts ]; do
         if curl -sf "$url" > /dev/null 2>&1; then
             print_success "$service is healthy"
@@ -161,7 +161,7 @@ check_service() {
         attempt=$((attempt + 1))
         sleep 2
     done
-    
+
     print_error "$service failed to become healthy"
     HEALTHY=false
     return 1

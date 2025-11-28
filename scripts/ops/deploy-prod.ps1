@@ -102,30 +102,30 @@ switch ($choice) {
             Write-Error "Deployment cancelled"
             exit 0
         }
-        
+
         Write-Status "Stopping existing services..."
         docker-compose -f $ComposeFile down -v 2>$null
         Write-Success "Stopped and removed volumes"
-        
+
         Write-Status "Building images..."
         docker-compose -f $ComposeFile build --no-cache
         Write-Success "Built images"
-        
+
         Write-Status "Starting services..."
         docker-compose -f $ComposeFile up -d
         Write-Success "Services started"
-        
+
         $FreshDeploy = $true
     }
     "2" {
         Write-Status "Stopping services..."
         docker-compose -f $ComposeFile down
         Write-Success "Stopped services"
-        
+
         Write-Status "Rebuilding images..."
         docker-compose -f $ComposeFile build
         Write-Success "Rebuilt images"
-        
+
         Write-Status "Starting services..."
         docker-compose -f $ComposeFile up -d
         Write-Success "Services started"
@@ -153,7 +153,7 @@ $Healthy = $true
 function Test-ServiceHealth($serviceName, $url) {
     $maxAttempts = 30
     $attempt = 0
-    
+
     while ($attempt -lt $maxAttempts) {
         try {
             $response = Invoke-WebRequest -Uri $url -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
@@ -167,7 +167,7 @@ function Test-ServiceHealth($serviceName, $url) {
         $attempt++
         Start-Sleep -Seconds 2
     }
-    
+
     Write-Error "$serviceName failed to become healthy"
     return $false
 }

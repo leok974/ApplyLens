@@ -31,16 +31,16 @@ function Build-API {
     Write-Host "`n=== BUILDING API ===" -ForegroundColor Cyan
     Write-Host "Stopping existing containers..." -ForegroundColor Gray
     docker compose -f docker-compose.prod.yml --env-file infra/.env.prod down api 2>$null
-    
+
     Write-Host "Building fresh image..." -ForegroundColor Gray
     docker compose -f docker-compose.prod.yml --env-file infra/.env.prod build api
-    
+
     Write-Host "Starting API..." -ForegroundColor Gray
     docker compose -f docker-compose.prod.yml --env-file infra/.env.prod up -d api
-    
+
     Write-Host "Waiting for API to be ready..." -ForegroundColor Gray
     Start-Sleep -Seconds 5
-    
+
     try {
         $health = Invoke-RestMethod 'http://localhost:8003/health' -ErrorAction Stop
         Write-Host "✅ API is running!" -ForegroundColor Green
@@ -61,7 +61,7 @@ function Run-Verification {
 
 function Show-Status {
     Write-Host "`n=== SYSTEM STATUS ===" -ForegroundColor Cyan
-    
+
     # API Status
     try {
         $freshness = Invoke-RestMethod 'http://localhost:8003/api/metrics/profile/freshness' -ErrorAction Stop -TimeoutSec 3
@@ -71,7 +71,7 @@ function Show-Status {
         $apiStatus = "🔴"
         $lag = "N/A"
     }
-    
+
     # Docker Services
     $dockerServices = @("applylens-api-prod", "applylens-elasticsearch-prod", "applylens-redis-prod")
     $dockerUp = 0
@@ -80,7 +80,7 @@ function Show-Status {
         if ($status -match "Up") { $dockerUp++ }
     }
     $dockerStatus = if ($dockerUp -eq 3) { "🟢" } elseif ($dockerUp -gt 0) { "🟡" } else { "🔴" }
-    
+
     # GitHub Actions
     try {
         $runs = gh run list --workflow "Warehouse Nightly" --limit 1 --json conclusion 2>$null | ConvertFrom-Json
@@ -88,7 +88,7 @@ function Show-Status {
     } catch {
         $ghStatus = "⚪"
     }
-    
+
     # Print one-line status
     Write-Host "`nAPI: $apiStatus ($lag min) | Docker: $dockerStatus ($dockerUp/3) | GitHub: $ghStatus | Warehouse: Ready`n" -ForegroundColor White
 }
