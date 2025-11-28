@@ -1704,14 +1704,15 @@ Generate a professional follow-up email as JSON."""
         time_window_days: int = 30,
     ) -> Dict[str, Any]:
         """Get followups from Agent V2 in preview mode."""
-        from app.schemas_agent import AgentRunRequest
+        from app.schemas_agent import AgentRunRequest, AgentContext
 
         # Call the agent with followups intent in preview mode
         req = AgentRunRequest(
+            query="Get my follow-up queue",  # Required field
             user_id=user_id,
             intent="followups",
             mode="preview_only",
-            time_window_days=time_window_days,
+            context=AgentContext(time_window_days=time_window_days),
         )
 
         response = await self.run(req, db=None)
