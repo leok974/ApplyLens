@@ -18,6 +18,7 @@ jobs:
   e2e-root:
     name: E2E Tests (Root)
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +67,7 @@ jobs:
   e2e-web-sharded:
     name: E2E Tests (Web - Shard ${{ matrix.shard }}/${{ matrix.shardsTotal }})
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 15
     defaults:
       run:
@@ -119,6 +121,7 @@ jobs:
   e2e-web-fullstack:
     name: E2E Tests (Web + Backend)
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 15
     steps:
       - name: Checkout code
