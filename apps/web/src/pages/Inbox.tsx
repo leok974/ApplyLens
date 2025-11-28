@@ -53,7 +53,9 @@ export default function Inbox() {
       thread.showThread(String(targetEmail.id))
     } else {
       // Email not in current page - could fetch it or show warning
-      console.warn(`Deep-link target email ${openId} not found in current inbox view`)
+      if (import.meta.env.DEV) {
+        console.warn(`Deep-link target email ${openId} not found in current inbox view`)
+      }
     }
   }, [searchParams, emails, thread])
 

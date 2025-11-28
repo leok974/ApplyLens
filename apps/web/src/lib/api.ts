@@ -931,20 +931,13 @@ export interface FollowupQueueResponse {
   message?: string;
 }
 
-export async function getFollowupQueue(
-  req: FollowupQueueRequest = {}
-): Promise<FollowupQueueResponse> {
+export async function getFollowupQueue(): Promise<FollowupQueueResponse> {
   const res = await fetch('/v2/agent/followup-queue', {
-    method: 'POST',
+    method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       'x-csrf-token': getCsrf(),
     },
     credentials: 'include',
-    body: JSON.stringify({
-      time_window_days: req.time_window_days || 30,
-      ...req,
-    }),
   });
 
   if (!res.ok) {

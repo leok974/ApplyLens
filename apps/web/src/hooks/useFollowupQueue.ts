@@ -25,7 +25,7 @@ export function useFollowupQueue(): UseFollowupQueueReturn {
     setError(null);
 
     try {
-      const response = await getFollowupQueue({ time_window_days: 30 });
+      const response = await getFollowupQueue();
 
       if (response.status === 'error') {
         setError(response.message || 'Failed to load follow-up queue');

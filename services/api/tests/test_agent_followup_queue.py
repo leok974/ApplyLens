@@ -288,6 +288,38 @@ class TestFollowupQueueEndpoint:
         assert thread_1_item.is_done is False
         assert thread_3_item.is_done is False
 
+    @pytest.mark.asyncio
+    async def test_followup_queue_supports_get_method(self):
+        """Test that GET /v2/agent/followup-queue works without request body."""
+        from app.routers.agent import get_followup_queue
+
+        # Mock request with user_id in session
+        mock_request = MagicMock(spec=Request)
+        mock_request.state.session_user_id = "test-user"
+
+        # Mock orchestrator response
+        mock_orchestrator = AsyncMock()
+        mock_orchestrator.get_followup_queue.return_value = {
+            "threads": [],
+            "time_window_days": 30,
+        }
+
+        # Mock empty database
+        mock_db = MagicMock()
+        mock_query = mock_db.query.return_value
+        mock_query.filter.return_value.all.return_value = []
+
+        with patch(
+            "app.routers.agent.get_orchestrator", return_value=mock_orchestrator
+        ):
+            # Call without payload (GET request)
+            response = await get_followup_queue(mock_request, mock_db, payload=None)
+
+        assert response.status == "ok"
+        assert response.queue_meta.total == 0
+        assert response.queue_meta.time_window_days == 30
+        assert len(response.items) == 0
+
 
 class TestOrchestratorGetFollowupQueue:
     """Tests for orchestrator.get_followup_queue method."""

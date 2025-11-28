@@ -606,16 +606,21 @@ async def draft_followup(
         )
 
 
-@router.post("/followup-queue", response_model=FollowupQueueResponse)
+@router.api_route(
+    "/followup-queue",
+    methods=["GET", "POST"],
+    response_model=FollowupQueueResponse,
+)
 async def get_followup_queue(
-    payload: FollowupQueueRequest,
     req: Request,
     db: DBSession = Depends(get_db),
+    payload: FollowupQueueRequest | None = None,
 ):
     """
     Get merged follow-up queue from mailbox threads and tracker applications.
 
     Returns a prioritized list of items that need follow-up action.
+    Supports both GET (for simple queries) and POST (for custom parameters).
     """
     from app.schemas_agent import (
         FollowupQueueResponse,
@@ -628,7 +633,9 @@ async def get_followup_queue(
 
     try:
         # Resolve user_id from session or payload
-        user_id = payload.user_id
+        user_id = payload.user_id if payload else None
+        time_window_days = payload.time_window_days if payload else 30
+
         if not user_id:
             session_user_id = (
                 req.state.session_user_id
@@ -645,7 +652,7 @@ async def get_followup_queue(
         orchestrator = get_orchestrator()
         agent_result = await orchestrator.get_followup_queue(
             user_id=user_id,
-            time_window_days=payload.time_window_days,
+            time_window_days=time_window_days,
         )
 
         threads = agent_result.get("threads", [])
@@ -754,7 +761,7 @@ async def get_followup_queue(
             status="ok",
             queue_meta=QueueMeta(
                 total=len(queue_items),
-                time_window_days=payload.time_window_days,
+                time_window_days=time_window_days,
                 done_count=done_count,
                 remaining_count=remaining_count,
             ),

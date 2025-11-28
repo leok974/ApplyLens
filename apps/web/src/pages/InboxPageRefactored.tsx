@@ -123,7 +123,12 @@ export default function InboxPageRefactored() {
       searchParams.delete("open");
       setSearchParams(searchParams, { replace: true });
     } else {
-      console.warn(`Deep-link target email ${openId} not found in current inbox view`);
+      if (import.meta.env.DEV) {
+        console.warn(`Deep-link target email ${openId} not found in current inbox view`);
+      }
+      // Optional: clear the query param so it doesn't keep trying
+      searchParams.delete("open");
+      setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, emails]);
 
