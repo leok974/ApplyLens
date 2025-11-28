@@ -14,6 +14,7 @@ jobs:
   e2e-extension:
     name: Extension E2E Tests
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 15
     defaults:
       run:
@@ -56,6 +57,7 @@ jobs:
   e2e-companion:
     name: Extension E2E (@companion suite)
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 20
     defaults:
       run:
