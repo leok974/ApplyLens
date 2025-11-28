@@ -419,72 +419,26 @@ services:
   # WEB (Frontend)
   # =============================================================================
   web:
-    # Versioned tag for rollback capability (v0.4.18 = Progress %, ETA, cancel, auto-refresh)
-    # Previous: v0.4.17 (Async job pattern for Gmail backfill)
-    # v0.4.16 (Handle 524 Gateway Timeout gracefully)
-    # v0.4.15 (Empty query fallback to "*", no more 422)
-    # v0.4.14 (Clear filters + strict URL parsing)
-    # v0.4.13 (LoginGuard + nginx safety + E2E tests)
-    # v0.4.12 (Selective trailing slash fix)
-    # v0.4.11 (Auto-trailing slash - broke /auth/me)
-    # v0.4.10 (Cache headers + version banner + apiUrl)
-    # v0.4.47d: Fixed small talk with assistantResponse stub + more variations
-    # v0.4.47c: Conversational mode - Small talk handling + "You could ask:" prompts
-    # v0.4.47b: Conversational suggestions UI - Improved empty state with AssistantFollowupBlock component
-    # v0.4.47: Conversational suggestions UI - Display next_steps and followup_prompt in assistant responses
-    # v0.4.46: Outreach tracking - Subject in confirmations + "Sent follow-up" logs + styled sent messages
-    # v0.4.45: UX polish - Auto-prefix "Re:" in subject line + timestamp confirmation messages
-    # v0.4.44: Phase 1.5 Enhancements - Regenerate button with tone options, Gmail pre-fill, in-chat confirmations
-    # v0.4.48: 🧠 PHASE 3 INTELLIGENCE - Hybrid LLM (Ollama→OpenAI→fallback) + typing indicator + short-term memory
-    # v0.4.49: 🎨 UI CLEANUP - Simplified MailChat interface (removed PolicyAccuracyPanel, cleaner controls, dev mode guards)
-    # v0.4.47e: 🎉 CONVERSATIONAL UX STABLE - Small talk detection + standardized assistant rendering + E2E tests
-    # v0.4.43: Auto-draft follow-up replies UI - ReplyDraftModal + draft_reply action buttons in MailChat
-    # v0.4.38: Mailbox Assistant integration - chip clicks use /api/assistant/query
-    # v0.4.37: Added NavTabs component for Inbox/Tracker navigation
-    # v0.4.36: TrackerPage visual polish - consistent badge variants + improved timestamp display
-    # v0.4.33: SettingsSendersPage + TrackerPage + runtime config integration
-    # v0.4.32: Settings page for sender overrides + adaptive classification + insights panel
-    # v0.4.30: Status chips + Restore to Review (undo actions)
-    # v0.4.29: Inbox Actions lifecycle with Needs Review / Quarantined / Archived views
-    # v0.4.28: Polished interactive triage console with optimistic UI updates
-    # v0.4.27: Enhanced Actions page with drawer, inline explanations, optimistic updates
-    # v0.4.26: Actions page with real backend functionality
-    # v0.4.25: Tracker page shows real Gmail data + OAuth fix
-    # v0.4.53: Logout UX polish - Clear cached user data to prevent stale UI flash after logout
-    # v0.4.54: Settings Account card with user icon avatar and improved email display
-    # v0.4.55: Settings Account card styling polish for better contrast (zinc colors)
-    # v0.4.56: Fix Settings "Unknown user" + Actions tray rendering outside header
-    # v0.4.57: Actions tray backdrop click-to-close + inline badge pill for pending count
-    # v0.4.58: Keyboard accessibility (Esc to close tray) + real light/dark theme toggle
-    # v0.4.59: Theme-aware pages and components (header, Settings, Tracker, Chat, Search)
-    # v0.4.60: AppShell wrapper + surface utility classes + softer status pills
-    # v0.4.61: Theme System v1.0 - complete light/dark refinement with semantic surfaces
-    # v0.4.62: Filter pill styles + working category filters (fix param mismatch)
-    # v0.4.63: Hardened filter pills for dark panels (stronger contrast, semantic colors)
-    # v0.4.64: Theme-aware select fields - global styling for light/dark modes
-    # v0.5.8: Intent override - explicit intent for toolbar buttons Mailbox theme classes wired to UI (chat shell, tool pills, agent cards)
-    # v0.5.8: Intent override - explicit intent for toolbar buttons Banana Pro theme visual polish - hero header, tool pills, chat bubbles, input bar with gradients and glows
-    # v0.5.8: Intent override - explicit intent for toolbar buttons Banana Pro polish - clean, localized glows (no muddy overlays, 3 glow sources only)
-    # v0.5.8: Intent override - explicit intent for toolbar buttons Remove gradient overlays from hero card (use clean container classes)
-    # v0.5.8: Intent override - explicit intent for toolbar buttons Remove ambientGlow and frame backdrop gradient (fully clean, no vignettes)
-    # v0.5.8: Intent override - explicit intent for toolbar buttons Fix MailboxThemePanel to use activeGlow instead of ambientGlow (now "none")
-    # v0.5.8: Intent override - explicit intent for toolbar buttons Add frame.container/glow tokens, mailbox-frame testid, E2E test for no ambient overlay
-    # v0.5.1: Application tracking integration - Thread Viewer with tracker linkage
-    # v0.6.0: Today Panel - /today route with 6 scan intents, thread mini-lists, action buttons
-    # v0.6.1: Thread Viewer follow-up draft button with clipboard copy
-    # v0.6.2: Follow-up Queue page - /followups route with unified thread + application list
-    # v0.6.3: Follow-up Queue progress bar and persistent done state with optimistic UI updates
+    # v0.6.5: Polished inbox refactor - shadcn/ui components with card-based layout
+    #   - InboxPageRefactored with color-coded category badges
+    #   - Clean detail panel with metadata display
+    #   - Fixed EmailDetailsPanel blank panel bug
+    #   - Category filtering, pagination, deep-linking
     # v0.6.4: Today panel Follow-ups summary card showing completion progress
-    image: leoklemet/applylens-web:0.6.4
+    # v0.6.3: Follow-up Queue progress bar and persistent done state with optimistic UI updates
+    # v0.6.2: Follow-up Queue page - /followups route with unified thread + application list
+    # v0.6.1: Thread Viewer follow-up draft button with clipboard copy
+    # v0.6.0: Today Panel - /today route with 6 scan intents, thread mini-lists, action buttons
+    image: leoklemet/applylens-web:0.6.5-inbox-refactor
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
 
       # Build Metadata (Web)
       - VITE_BUILD_FLAVOR=prod
-      - VITE_APP_VERSION=0.6.4
-      - VITE_BUILD_GIT_SHA=1fbff31
-      - VITE_BUILD_TIME=2025-11-24T23:11:00Z
+      - VITE_APP_VERSION=0.6.5
+      - VITE_BUILD_GIT_SHA=e37e2a1
+      - VITE_BUILD_TIME=2025-11-28T00:09:38Z
 
       # Feature Flags
       - VITE_FEATURE_COMPANION=1
