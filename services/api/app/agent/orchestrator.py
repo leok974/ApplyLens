@@ -1720,9 +1720,8 @@ Generate a professional follow-up email as JSON."""
         # Extract thread data from cards
         threads = []
         for card in response.cards:
-            if card.card_type == "thread_list" and card.data:
-                thread_list = card.data.get("threads", [])
-                for thread in thread_list:
+            if card.kind == "thread_list" and card.threads:
+                for thread in card.threads:
                     threads.append(
                         {
                             "thread_id": thread.get("thread_id")
