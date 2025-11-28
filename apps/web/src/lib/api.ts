@@ -932,7 +932,7 @@ export interface FollowupQueueResponse {
 }
 
 export async function getFollowupQueue(): Promise<FollowupQueueResponse> {
-  const res = await fetch('/v2/agent/followup-queue', {
+  const res = await fetch('/api/v2/agent/followup-queue', {
     method: 'GET',
     headers: {
       'x-csrf-token': getCsrf(),
