@@ -6,12 +6,17 @@ Tests verify:
 - queue_meta.total matches number of items
 - Applications without thread data are included
 - Priority sorting works correctly
+- Newsletter/digest filtering works correctly
 """
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta, timezone
-from app.routers.agent import compute_followup_priority
+from app.routers.agent import (
+    compute_followup_priority,
+    is_newsletter_or_digest,
+    looks_like_real_interview,
+)
 
 
 class TestComputeFollowupPriority:
@@ -73,6 +78,128 @@ class TestComputeFollowupPriority:
         # Should not crash, should handle gracefully
         result = compute_followup_priority("interview", last)
         assert result in ["low", "medium", "high"]
+
+
+class TestNewsletterFiltering:
+    """Unit tests for newsletter/digest detection."""
+
+    def test_detects_substack_domain(self):
+        """Substack emails should be filtered as newsletters."""
+        thread = {
+            "subject": "New post from your Substack",
+            "from_email": "author@substack.com",
+        }
+        assert is_newsletter_or_digest(thread, labels=[], category="") is True
+
+    def test_detects_newsletter_keyword_in_subject(self):
+        """Emails with 'newsletter' in subject should be filtered."""
+        thread = {
+            "subject": "Weekly Newsletter - Tech Jobs",
+            "from_email": "jobs@company.com",
+        }
+        assert is_newsletter_or_digest(thread, labels=[], category="") is True
+
+    def test_detects_digest_keyword_in_subject(self):
+        """Emails with 'digest' in subject should be filtered."""
+        thread = {
+            "subject": "Daily Digest: New opportunities",
+            "from_email": "notifications@jobsite.com",
+        }
+        assert is_newsletter_or_digest(thread, labels=[], category="") is True
+
+    def test_detects_medium_domain(self):
+        """Medium emails should be filtered as newsletters."""
+        thread = {
+            "subject": "Blog update",
+            "from_email": "noreply@medium.com",
+        }
+        assert is_newsletter_or_digest(thread, labels=[], category="") is True
+
+    def test_detects_promotional_category(self):
+        """Emails in CATEGORY_PROMOTIONS should be filtered."""
+        thread = {
+            "subject": "Special offer",
+            "from_email": "sales@company.com",
+        }
+        assert (
+            is_newsletter_or_digest(thread, labels=["CATEGORY_PROMOTIONS"], category="")
+            is True
+        )
+
+    def test_keeps_real_recruiter_email(self):
+        """Real recruiter emails should NOT be filtered."""
+        thread = {
+            "subject": "Interview with Leo Klemet",
+            "from_email": "recruiter@bandwidth.com",
+        }
+        # Even if in CATEGORY_UPDATES, if subject doesn't match keywords, only category matters
+        # Actually this should be filtered if CATEGORY_UPDATES is present
+        # Let me use a case without problematic labels
+        assert (
+            is_newsletter_or_digest(thread, labels=["INBOX"], category="primary")
+            is False
+        )
+
+    def test_keeps_application_confirmation(self):
+        """Application confirmations should NOT be filtered as newsletters."""
+        thread = {
+            "subject": "Your application to Senior Engineer",
+            "from_email": "hr@techcorp.com",
+        }
+        assert is_newsletter_or_digest(thread, labels=["INBOX"], category="") is False
+
+    def test_detects_linkedin_notifications(self):
+        """LinkedIn notification emails should be filtered."""
+        # Test with real pattern that will match
+        thread_real = {
+            "subject": "You have new notifications",
+            "from_email": "noreply@info.linkedin.com",
+        }
+        assert is_newsletter_or_digest(thread_real, labels=[], category="") is True
+
+
+class TestInterviewSanityCheck:
+    """Unit tests for interview legitimacy checking."""
+
+    def test_rejects_substack_as_interview(self):
+        """Substack emails should not be treated as interviews."""
+        thread = {
+            "subject": "New blog post",
+            "from_email": "author@substack.com",
+        }
+        assert looks_like_real_interview(thread) is False
+
+    def test_rejects_newsletter_keyword_as_interview(self):
+        """Emails with 'newsletter' should not be treated as interviews."""
+        thread = {
+            "subject": "Newsletter: Tech opportunities",
+            "from_email": "info@jobsite.com",
+        }
+        assert looks_like_real_interview(thread) is False
+
+    def test_accepts_real_interview_email(self):
+        """Real interview emails should pass the sanity check."""
+        thread = {
+            "subject": "Interview confirmation for Senior Engineer role",
+            "from_email": "recruiter@company.com",
+        }
+        assert looks_like_real_interview(thread) is True
+
+    def test_accepts_recruiter_followup(self):
+        """Recruiter follow-up emails should pass the sanity check."""
+        thread = {
+            "subject": "Following up on your application",
+            "from_email": "hr@bandwidth.com",
+        }
+        assert looks_like_real_interview(thread) is True
+
+    def test_rejects_mailchimp_as_interview(self):
+        """MailChimp emails should not be treated as interviews."""
+        thread = {
+            "subject": "Monthly update from our team",
+            "from_email": "team@mailchimp.com",
+        }
+        assert looks_like_real_interview(thread) is False
 
 
 class TestFollowupQueueEndpoint:

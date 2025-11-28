@@ -7,8 +7,8 @@ import type { QueueItem } from '@/lib/api';
 const mockItems: QueueItem[] = [
   {
     thread_id: 'thread-1',
-    application_id: 'app-1',
-    priority: 75,
+    application_id: 1,
+    priority: 'medium',
     reason_tags: ['no_response'],
     company: 'Acme Corp',
     role: 'Senior Engineer',
@@ -21,7 +21,7 @@ const mockItems: QueueItem[] = [
   },
   {
     thread_id: 'thread-2',
-    priority: 55,
+    priority: 'low',
     reason_tags: ['upcoming_deadline'],
     subject: 'Follow-up needed',
     snippet: 'This is a test snippet',
@@ -31,8 +31,8 @@ const mockItems: QueueItem[] = [
   },
   {
     thread_id: 'thread-3',
-    application_id: 'app-3',
-    priority: 80,
+    application_id: 3,
+    priority: 'high',
     reason_tags: ['interview_scheduled'],
     company: 'Beta Inc',
     role: 'Product Manager',
@@ -124,8 +124,9 @@ describe('FollowupQueueList', () => {
       />
     );
 
-    expect(screen.getAllByText('High')).toHaveLength(2); // priority 75 and 80
-    expect(screen.getByText('Medium')).toBeInTheDocument(); // priority 55
+    expect(screen.getByText('High')).toBeInTheDocument(); // priority 'high'
+    expect(screen.getByText('Medium')).toBeInTheDocument(); // priority 'medium'
+    expect(screen.getByText('Low')).toBeInTheDocument(); // priority 'low'
   });
 
   it('shows age chips', () => {
@@ -219,7 +220,7 @@ describe('FollowupQueueList', () => {
       />
     );
 
-    const selectedRow = screen.getByTestId('followup-row');
+    const selectedRow = screen.getByTestId('followup-queue-list').querySelector('[data-thread-id="thread-1"]');
     expect(selectedRow).toHaveClass('bg-zinc-800');
   });
 });

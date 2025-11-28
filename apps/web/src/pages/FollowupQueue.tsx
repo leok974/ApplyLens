@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Inbox, ExternalLink } from 'lucide-react';
+import { PriorityBadge } from '@/components/priority-badge';
 
 export function FollowupQueue() {
   const {
@@ -184,9 +185,11 @@ export function FollowupQueue() {
                         </dd>
                       </div>
                     )}
-                    <div className="flex">
+                    <div className="flex items-center">
                       <dt className="w-24 text-zinc-500">Priority:</dt>
-                      <dd className="text-zinc-200">{selectedItem.priority}</dd>
+                      <dd>
+                        <PriorityBadge priority={selectedItem.priority} />
+                      </dd>
                     </div>
                   </dl>
                 </div>

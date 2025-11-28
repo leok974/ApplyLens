@@ -606,6 +606,40 @@ async def draft_followup(
         )
 
 
+# Newsletter domains to filter out
+NEWSLETTER_DOMAINS = {
+    "substack.com",
+    "newsletter.substack.com",
+    "medium.com",
+    "mailchimp.com",
+    "sendgrid.net",
+    "hubspotemail.net",
+    "info.linkedin.com",
+    "notifications.linkedin.com",
+}
+
+# Newsletter/digest subject keywords
+NEWSLETTER_SUBJECT_KEYWORDS = [
+    "newsletter",
+    "digest",
+    "roundup",
+    "weekly update",
+    "blog update",
+    "new post",
+    "substack",
+    "jobs you might like",
+    "new jobs for you",
+    "job alerts",
+    "jobs based on your profile",
+    "applied to",
+    "daily roundup",
+    "weekly roundup",
+    "job digest",
+    "recommended for you",
+    "similar jobs",
+]
+
+
 def is_newsletter_or_digest(
     thread: dict, labels: list = None, category: str = None
 ) -> bool:
@@ -615,22 +649,14 @@ def is_newsletter_or_digest(
     Returns True if the thread should be excluded from follow-up queue.
     """
     subj = (thread.get("subject") or "").lower()
+    from_email = (thread.get("from_email") or "").lower()
     labels = labels or []
     category = (category or "").lower()
 
-    # Digest/newsletter keywords
-    digest_keywords = [
-        "jobs you might like",
-        "new jobs for you",
-        "job alerts",
-        "jobs based on your profile",
-        "applied to",
-        "daily roundup",
-        "weekly roundup",
-        "job digest",
-        "recommended for you",
-        "similar jobs",
-    ]
+    # Check sender domain
+    domain = from_email.split("@")[-1] if "@" in from_email else ""
+    if domain in NEWSLETTER_DOMAINS:
+        return True
 
     # Exclude known newsletter categories
     if category in {"newsletter_ads", "newsletter", "promo", "promotions"}:
@@ -640,11 +666,34 @@ def is_newsletter_or_digest(
     if "CATEGORY_PROMOTIONS" in labels or "CATEGORY_UPDATES" in labels:
         return True
 
-    # Exclude digest subjects
-    if any(k in subj for k in digest_keywords):
+    # Exclude newsletter/digest subjects
+    if any(keyword in subj for keyword in NEWSLETTER_SUBJECT_KEYWORDS):
         return True
 
     return False
+
+
+def looks_like_real_interview(thread: dict) -> bool:
+    """
+    Sanity check to avoid treating obvious newsletters as interviews.
+
+    Returns True if the thread looks like a legitimate interview communication.
+    """
+    from_email = (thread.get("from_email") or "").lower()
+    subj = (thread.get("subject") or "").lower()
+
+    # Clearly non-recruiting patterns
+    bad_keywords = ["newsletter", "digest", "substack", "blog update", "new post"]
+    bad_domains = {"substack.com", "mailchimp.com", "medium.com", "sendgrid.net"}
+
+    domain = from_email.split("@")[-1] if "@" in from_email else ""
+    if domain in bad_domains:
+        return False
+
+    if any(k in subj for k in bad_keywords):
+        return False
+
+    return True
 
 
 def compute_followup_priority(stage: str, last_contact_at) -> str:
@@ -802,6 +851,11 @@ async def get_followup_queue(
 
             # Compute priority based on stage and age
             stage = app.status if app else None
+
+            # Interview sanity check: if marked as interview but looks like newsletter, skip
+            if stage == "interview" and not looks_like_real_interview(thread):
+                continue  # Don't include obvious newsletters marked as interview
+
             last_message_at = thread.get("last_message_at")
             priority = compute_followup_priority(stage, last_message_at)
 

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PriorityBadge } from '@/components/priority-badge';
 
 interface FollowupQueueListProps {
   items: QueueItem[];
@@ -38,21 +39,6 @@ function getStatusLabel(status?: string): string {
       return 'Offer';
     default:
       return status || 'Pending';
-  }
-}
-
-function getPriorityLabel(priority: 'low' | 'medium' | 'high'): string {
-  return priority.charAt(0).toUpperCase() + priority.slice(1);
-}
-
-function getPriorityColor(priority: 'low' | 'medium' | 'high'): string {
-  switch (priority) {
-    case 'high':
-      return 'border-rose-500/70 text-rose-300';
-    case 'medium':
-      return 'border-amber-500/70 text-amber-300';
-    case 'low':
-      return 'border-slate-500/60 text-slate-300';
   }
 }
 
@@ -143,12 +129,7 @@ export function FollowupQueueList({
                   )}
 
                   {/* Priority badge */}
-                  <Badge
-                    variant="outline"
-                    className={cn('text-xs px-1.5 py-0', getPriorityColor(item.priority))}
-                  >
-                    {getPriorityLabel(item.priority)}
-                  </Badge>
+                  <PriorityBadge priority={item.priority} />
 
                   {/* Age chip */}
                   {ageStr && (

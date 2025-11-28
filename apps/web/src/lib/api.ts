@@ -904,10 +904,12 @@ export interface QueueMeta {
   remaining_count: number;
 }
 
+export type FollowupPriority = 'low' | 'medium' | 'high';
+
 export interface QueueItem {
   thread_id: string;
   application_id?: number;
-  priority: 'low' | 'medium' | 'high';
+  priority: FollowupPriority;
   reason_tags: string[];
   company?: string;
   role?: string;

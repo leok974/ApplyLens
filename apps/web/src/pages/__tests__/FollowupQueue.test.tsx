@@ -8,16 +8,6 @@ import type { QueueItem, QueueMeta } from '@/lib/api';
 // Mock the hook
 vi.mock('@/hooks/useFollowupQueue');
 
-// Mock ThreadViewer component
-vi.mock('@/components/ThreadViewer', () => ({
-  ThreadViewer: ({ threadId, applicationId }: { threadId: string; applicationId?: string }) => (
-    <div data-testid="thread-viewer">
-      Thread: {threadId}
-      {applicationId && `, App: ${applicationId}`}
-    </div>
-  ),
-}));
-
 const mockQueueMeta: QueueMeta = {
   total: 2,
   time_window_days: 30,
@@ -29,7 +19,7 @@ const mockItems: QueueItem[] = [
   {
     thread_id: 'thread-1',
     application_id: 'app-1',
-    priority: 75,
+    priority: 'medium',
     reason_tags: ['no_response'],
     company: 'Acme Corp',
     role: 'Senior Engineer',
@@ -42,7 +32,7 @@ const mockItems: QueueItem[] = [
   },
   {
     thread_id: 'thread-2',
-    priority: 55,
+    priority: 'low',
     reason_tags: ['upcoming_deadline'],
     subject: 'Follow-up needed',
     snippet: 'This is a test snippet',
@@ -196,7 +186,7 @@ describe('FollowupQueue', () => {
     expect(screen.getByText('Select a follow-up to view details')).toBeInTheDocument();
   });
 
-  it('shows ThreadViewer when item is selected', () => {
+  it('shows details panel when item is selected', () => {
     vi.mocked(useFollowupQueueModule.useFollowupQueue).mockReturnValue({
       items: mockItems,
       queueMeta: mockQueueMeta,
@@ -210,9 +200,10 @@ describe('FollowupQueue', () => {
 
     render(<FollowupQueue />);
 
-    expect(screen.getByTestId('thread-viewer')).toBeInTheDocument();
-    expect(screen.getByText(/Thread: thread-1/)).toBeInTheDocument();
-    expect(screen.getByText(/App: app-1/)).toBeInTheDocument();
+    // Check that details are shown for the selected item
+    expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+    expect(screen.getByText('Senior Engineer')).toBeInTheDocument();
+    expect(screen.getAllByText('Medium')).toHaveLength(2); // Priority badge appears in both list and details
   });
 
   it('passes correct props to FollowupQueueList', () => {

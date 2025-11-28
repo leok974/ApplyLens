@@ -63,7 +63,10 @@ export default function Opportunities() {
       const data = await getCurrentResume()
       setResume(data)
     } catch (err) {
+      // Only log real errors (5xx, network issues)
+      // 404 is handled by getCurrentResume returning null
       console.error('Failed to load resume:', err)
+      setError('Failed to load resume. Please try again.')
     }
   }
 
