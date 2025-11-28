@@ -231,26 +231,28 @@ export function AppHeader() {
       <header className="sticky top-0 z-40 w-full border-b backdrop-blur bg-white/80 text-zinc-900 border-zinc-300 dark:bg-[#0f172a]/80 dark:text-zinc-100 dark:border-zinc-800">
         <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
           <div className="flex h-14 items-center gap-4">
-            {/* BRAND — never shrink */}
-            <Link
-              to="/"
-              className="group flex items-center gap-2 shrink-0 select-none"
-              data-testid="header-brand"
-              aria-label="ApplyLens Home"
-            >
-              <img
-                src="/brand/applylens.png"
-                alt=""
-                className="logo-hover brand-enter h-9 w-9 object-contain"
-                draggable={false}
-              />
-              <span className="brand-tight text-lg font-semibold leading-none whitespace-nowrap transition-colors duration-150 group-hover:text-primary">
-                ApplyLens
-              </span>
-            </Link>
+            {/* LEFT: logo — never shrink */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                to="/"
+                className="group flex items-center gap-2 select-none"
+                data-testid="header-brand"
+                aria-label="ApplyLens Home"
+              >
+                <img
+                  src="/brand/applylens.png"
+                  alt=""
+                  className="logo-hover brand-enter h-9 w-9 object-contain"
+                  draggable={false}
+                />
+                <span className="brand-tight text-lg font-semibold leading-none whitespace-nowrap transition-colors duration-150 group-hover:text-primary">
+                  ApplyLens
+                </span>
+              </Link>
+            </div>
 
-            {/* NAV — scrollable middle section */}
-            <nav className="flex min-w-0 flex-1 items-center overflow-x-auto gap-1 scrollbar-none">
+            {/* MIDDLE: nav — takes free space with centering on larger screens */}
+            <nav className="flex-1 min-w-0 flex items-center gap-1 justify-center lg:justify-start overflow-x-auto scrollbar-none text-xs sm:text-sm">
               <Tab to="/" label="Inbox" />
               <Tab to="/inbox-actions" label="Actions" />
               <Tab to="/search" label="Search" />
@@ -264,7 +266,7 @@ export function AppHeader() {
               <Tab to="/settings" label="Settings" />
             </nav>
 
-            {/* RIGHT ACTIONS — never shrink, always visible */}
+            {/* RIGHT: actions — never shrink, always visible */}
             <div className="flex items-center gap-2 shrink-0">
             {/* Job Progress Indicator */}
             {jobStatus && jobStatus.state !== 'done' && (
@@ -457,9 +459,9 @@ function Tab({ to, label, "data-testid": dataTestId }: { to: string; label: stri
       data-testid={dataTestId}
       className={({ isActive }) =>
         cn(
-          "shrink-0 px-3 h-8 inline-flex items-center rounded-md text-xs sm:text-sm whitespace-nowrap",
-          "hover:bg-muted/70 transition-colors",
-          isActive ? "bg-muted font-medium" : "text-muted-foreground"
+          "shrink-0 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap",
+          "hover:bg-muted/60 hover:text-foreground transition-colors",
+          isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
         )
       }
     >
