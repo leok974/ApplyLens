@@ -228,4 +228,60 @@ if (r.status === 401 || r.status === 403) {
 
 ## Status
 
+✅ **ROOT CAUSE IDENTIFIED** - Session cookie missing
+
+## Investigation Results (2025-11-28 04:01 UTC)
+
+### Network Analysis from DevTools
+
+**Request Headers:**
+```
+Cookie: csrf_token=vkhVnFNkQPojHb7LQCIoFPrMnD5hicJSJ7-HFLPbk3w
+```
+
+**Response Headers:**
+```
+Status: 401 Unauthorized
+Set-Cookie: csrf_token=vkhVnFNkQPojHb7LQCIoFPrMnD5hicJSJ7-HFLPbk3w; SameSite=Lax; Path=/
+access-control-allow-credentials: true
+access-control-allow-origin: https://applylens.app
+```
+
+### Root Cause
+
+**The `applylens_session` cookie is completely missing!**
+
+The user is NOT actually logged in. Only the CSRF token exists, but no session cookie. This means:
+1. User never completed login flow, OR
+2. Session cookie was cleared/expired, OR
+3. Session cookie has wrong domain/path and isn't being stored
+
+### Why UI Shows "Signed in as Loading..."
+
+The UI bug is in `Settings.tsx`:
+- `getCurrentUser()` returns `null` (no cached user)
+- `fetchAndCacheCurrentUser()` makes API call to `/auth/me`
+- API returns 401 (no session)
+- `fetchAndCacheCurrentUser()` likely returns `null` silently
+- UI stays stuck at "Loading..." because `accountEmail` remains `null`
+
+The UI should detect the 401 and redirect to login, but it's not.
+
+## Immediate Fix Required
+
+### Fix 1: Detect Missing Session and Redirect to Login
+
+The `Settings.tsx` page should redirect unauthenticated users to login instead of showing "Loading..." forever.
+
+### Fix 2: Check Why Session Cookie Missing
+
+Possible reasons:
+1. User logged out but frontend state not cleared
+2. Session cookie expired (check max_age setting)
+3. Session cookie domain mismatch (should be `.applylens.app` not `api.applylens.app`)
+4. Logout endpoint cleared session but UI didn't refresh
+5. User manually cleared cookies
+
+### Status
+
 🔴 **OPEN** - Awaiting investigation data from production environment
