@@ -229,7 +229,7 @@ export function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b backdrop-blur bg-white/80 text-zinc-900 border-zinc-300 dark:bg-[#0f172a]/80 dark:text-zinc-100 dark:border-zinc-800">
-        <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8">
           <div className="flex h-14 items-center gap-4">
             {/* LEFT: logo — never shrink */}
             <div className="flex items-center gap-2 shrink-0">
@@ -251,8 +251,8 @@ export function AppHeader() {
               </Link>
             </div>
 
-            {/* MIDDLE: nav — takes free space with centering on larger screens */}
-            <nav className="flex-1 min-w-0 flex items-center gap-1 justify-center lg:justify-start overflow-x-auto scrollbar-none text-xs sm:text-sm">
+            {/* MIDDLE: nav — distributed across available space */}
+            <nav className="flex-1 min-w-0 flex items-center justify-between gap-4 text-xs sm:text-sm">
               <Tab to="/" label="Inbox" />
               <Tab to="/inbox-actions" label="Actions" />
               <Tab to="/search" label="Search" />
