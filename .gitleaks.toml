@@ -32,8 +32,17 @@ paths = [
   '''^\.venv/''',
   '''^node_modules/''',
   '''^apps/.*/tests?/''',
-  '''^docs/.*\.png$''',
+  '''^docs/''',
   '''^infra/export/''',
   '''^backups/''',
+  '''^\.github/workflows/''',
+]
+regexes = [
+  '''REDACTED''',
+  '''<GENERATE_STRONG_PASSWORD>''',
+  '''example\.com''',
+  '''localhost:\d+''',
+  '''\$\{[A-Z_]+\}''',
+  '''leoklemet/applylens-api:(REDACTED|v\d+\.\d+\.\d+)''',
 ]
 regexTarget = "match"
