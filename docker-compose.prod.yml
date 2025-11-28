@@ -189,7 +189,8 @@ services:
     # v0.6.3: Persistent follow-up state with progress tracking and done/not-done toggles
     # v0.6.4: Today panel Follow-ups summary widget with progress and quick navigation
     # v0.6.5-datadog: Datadog automation scripts for dashboard, SLOs, and monitors
-    image: leoklemet/applylens-api:0.6.5-datadog
+    # v0.7.2: Follow-up queue GET support + deep-link warning cleanup
+    image: leoklemet/applylens-api:0.7.2
     container_name: applylens-api-prod
     environment:
       # Database
@@ -242,9 +243,9 @@ services:
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
 
       # Build Metadata
-      APP_VERSION: '0.6.4'
-      APP_BUILD_SHA: '1fbff31'
-      APP_BUILD_TIME: '2025-11-24T23:11:00Z'
+      APP_VERSION: '0.7.2'
+      APP_BUILD_SHA: 'd5e0038'
+      APP_BUILD_TIME: '2025-11-28T16:00:00Z'
       APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
@@ -419,6 +420,7 @@ services:
   # WEB (Frontend)
   # =============================================================================
   web:
+    # v0.7.2: Follow-up queue GET support + deep-link warning cleanup
     # v0.7.1: Fixed literal \n text showing on Today page
     # v0.7.0: Simplified header with theme in user dropdown
     #   - Removed sync buttons from header (now in Settings page)
@@ -432,16 +434,16 @@ services:
     #   - Nav uses justify-between to distribute links across space
     #   - gap-4 for airier spacing between nav items
     #   - First link hugs logo, last link hugs profile, rest evenly distributed
-    image: leoklemet/applylens-web:0.7.1
+    image: leoklemet/applylens-web:0.7.2
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
 
       # Build Metadata (Web)
       - VITE_BUILD_FLAVOR=prod
-      - VITE_APP_VERSION=0.7.1
-      - VITE_BUILD_GIT_SHA=f18e9af
-      - VITE_BUILD_TIME=2025-01-28T08:30:00Z
+      - VITE_APP_VERSION=0.7.2
+      - VITE_BUILD_GIT_SHA=d5e0038
+      - VITE_BUILD_TIME=2025-11-28T16:00:00Z
 
       # Feature Flags
       - VITE_FEATURE_COMPANION=1
