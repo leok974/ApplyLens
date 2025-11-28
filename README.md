@@ -7,21 +7,33 @@
 Agentic job-inbox MVP: classify job/search emails, extract key facts, and populate a tracker.
 
 
-## Agent-aware development
+## 📖 Documentation
+
+**Start here**: [docs/README.md](docs/README.md) - Complete documentation index
+
+### Quick Links
+- **[Overview](docs/core/OVERVIEW.md)** - What is ApplyLens
+- **[Getting Started](docs/core/GETTING_STARTED.md)** - Quick start guide
+- **[Architecture](docs/core/ARCHITECTURE.md)** - System architecture
+- **[Deployment](docs/core/DEPLOYMENT.md)** - Production deployment
+- **[Testing](docs/core/TESTING_OVERVIEW.md)** - Testing & E2E guide
+
+### Agent-Aware Development
 
 This repo is set up for specialist "agents" (human or AI) to work safely on different parts of ApplyLens.
 
-- Start with [`AGENTS.md`](./AGENTS.md) for an overview.
-- See `.github/agents/` for role-specific guides:
-  - `api-agent.md` – FastAPI, Alembic, Gmail ingest/backfill, risk scoring, tracker APIs
-  - `ui-agent.md` – React/Vite, Tailwind + shadcn/ui, dark theme & layout polish
-  - `test-agent.md` – Vitest, Playwright, Pytest, contract tests & mocks
-  - `search-agent.md` – Elasticsearch mappings/analyzers, boosts, suggest/typeahead
-  - `docs-agent.md` – runbooks, architecture/security/deploy docs
-  - `dev-deploy-agent.md` – Docker dev flows, smoke tests, safe deploy proposals
-  - `security-agent.md` – auth, SSRF/risk policy, secrets hygiene
+- **[Agent Quickstart](docs/agents/QUICKSTART.md)** - Agent overview and protocols
+- **[Agent Architecture](docs/agents/ARCHITECTURE.md)** - Agent system design
+- **GitHub Agent Guides** ([docs/agents/github/](docs/agents/github/)):
+  - [api-agent.md](docs/agents/github/api-agent.md) – FastAPI, Gmail ingest, risk scoring, tracker APIs
+  - [ui-agent.md](docs/agents/github/ui-agent.md) – React/Vite, Tailwind + shadcn/ui, dark theme
+  - [test-agent.md](docs/agents/github/test-agent.md) – Vitest, Playwright, Pytest, contract tests
+  - [search-agent.md](docs/agents/github/search-agent.md) – Elasticsearch mappings, boosts, suggest
+  - [docs-agent.md](docs/agents/github/docs-agent.md) – Runbooks, architecture, deploy docs
+  - [dev-deploy-agent.md](docs/agents/github/dev-deploy-agent.md) – Docker dev, smoke tests, deploys
+  - [security-agent.md](docs/agents/github/security-agent.md) – Auth, SSRF/risk policy, secrets
 
-When using GitHub Copilot or other assistants, instruct them to follow `AGENTS.md` and the relevant agent file instead of acting as a generalist.
+When using GitHub Copilot or other assistants, instruct them to follow the agent guides and protocols.
 
 
 ## 📁 Repository Organization
@@ -39,20 +51,30 @@ ApplyLens/
 ```
 
 ### Documentation Structure
-- **`docs/architecture/`** - System design & architecture
-  - `docs/architecture/testing/` - Test architecture & E2E guides
-  - `docs/architecture/agents/` - Agent/LLM architecture
-- **`docs/runbooks/`** - Operational runbooks & deployment guides
-- **`docs/audits/`** - Repository audits & cleanup plans
-- **`docs/hackathon/`** - Hackathon documentation
-- **`docs/api/`** - API documentation
-- **`docs/releases/`** - Release notes
-- **`docs/archive/`** - Historical/legacy documentation
+All documentation is now organized under `docs/` with clear categorization:
+
+- **`docs/core/`** - Essential current documentation
+  - `docs/core/runbooks/` - Operational procedures
+  - `docs/core/playbooks/` - Incident response playbooks
+  - `docs/core/incidents/` - Incident history & resolutions
+  - `docs/core/api/` - API documentation & runbooks
+  - `docs/core/testing/` - Test architecture & guides
+  - `docs/core/analytics/` - Analytics & ML documentation
+- **`docs/agents/`** - AI agent instructions & protocols
+  - `docs/agents/github/` - GitHub-specific agent configs
+  - `docs/agents/case-studies/` - Agent implementation case studies
+- **`docs/future/`** - Future plans, RFCs, audits
+- **`docs/archive/`** - Historical & legacy documentation
+  - `docs/archive/audits/` - Historical audits & cleanup records
+  - `docs/archive/incidents/` - Resolved incidents
+  - `docs/archive/migrations/` - Database migration records
+  - `docs/archive/phases/` - Phase completion docs
   - `docs/archive/agents/` - Legacy agent implementations
   - `docs/archive/companion/` - Companion feature archives
-  - `docs/archive/e2e/` - E2E test completion reports
-  - `docs/archive/phases/` - Phase completion milestones
-  - `docs/archive/audits/` - Historical audits
+  - `docs/archive/e2e/` - E2E test archives
+  - `docs/archive/patches/` - Historical patches
+
+See [docs/README.md](docs/README.md) for complete documentation index.
 
 ### Scripts Organization
 - **`scripts/cli/`** - Developer command-line tools
@@ -76,8 +98,9 @@ See `scripts/README.md` for detailed script documentation.
 - **`infra/cloudflare/`** - Cloudflare tunnel configs
 - **`infra/monitoring/`** - Observability stack (Datadog, Grafana)
 
-### Recent Cleanup (Phase 4 - Nov 2025)
-- ✅ **Reorganized 82 files** into structured folders
+### Recent Cleanup
+- ✅ **Phase 4 (Nov 2025)**: Reorganized 82 files into structured folders (scripts/, infra/, docs/)
+- ✅ **Phase 5 (Nov 2025)**: Streamlined documentation - organized 157 docs into core/, agents/, future/, archive/
   - Architecture docs → `docs/architecture/`
   - Runbooks → `docs/runbooks/`
   - Scripts → `scripts/{cli,ci,ops,legacy}/`
