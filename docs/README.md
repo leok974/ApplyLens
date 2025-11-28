@@ -1,11 +1,15 @@
 # ApplyLens Documentation
 
-**Last Updated**: 2025-11-27  
+**Last Updated**: 2025-11-27
 **Audience**: Contributors, maintainers, operators, and AI agents
 
 This documentation has been reorganized for clarity and ease of navigation. All docs are categorized into **core** (essential current docs), **agents** (AI agent instructions), **future** (plans and RFCs), and **archive** (historical records).
 
 ---
+
+> **🤖 For AI Agents & Automation Tools**
+> See [agents/AGENT_READING_GUIDE.md](agents/AGENT_READING_GUIDE.md) for the recommended reading order and task-specific documentation paths.
+
 
 ## 📚 Quick Navigation
 

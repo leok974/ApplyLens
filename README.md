@@ -53,6 +53,8 @@ ApplyLens/
 ### Documentation Structure
 All documentation is now organized under `docs/` with clear categorization:
 
+> **🤖 For AI assistants and tools**, see [`docs/agents/AGENT_READING_GUIDE.md`](docs/agents/AGENT_READING_GUIDE.md) for the recommended reading order.
+
 - **`docs/core/`** - Essential current documentation
   - `docs/core/runbooks/` - Operational procedures
   - `docs/core/playbooks/` - Incident response playbooks
@@ -1382,4 +1384,3 @@ gitleaks detect --source . --no-git -v
 - [Phase 6 Personalization](docs/PHASE_6_PERSONALIZATION.md) - Latest features (learning, metrics, money mode)
 - [Quick Start Guide](docs/QUICK_START_E2E.md) - End-to-end setup
 - [Run Full Stack](docs/RUN_FULL_STACK.md) - Local development
-
