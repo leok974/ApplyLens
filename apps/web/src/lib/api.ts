@@ -907,7 +907,7 @@ export interface QueueMeta {
 export interface QueueItem {
   thread_id: string;
   application_id?: number;
-  priority: number;
+  priority: 'low' | 'medium' | 'high';
   reason_tags: string[];
   company?: string;
   role?: string;

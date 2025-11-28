@@ -606,6 +606,106 @@ async def draft_followup(
         )
 
 
+def is_newsletter_or_digest(
+    thread: dict, labels: list = None, category: str = None
+) -> bool:
+    """
+    Filter out newsletters, digests, and marketing emails.
+
+    Returns True if the thread should be excluded from follow-up queue.
+    """
+    subj = (thread.get("subject") or "").lower()
+    labels = labels or []
+    category = (category or "").lower()
+
+    # Digest/newsletter keywords
+    digest_keywords = [
+        "jobs you might like",
+        "new jobs for you",
+        "job alerts",
+        "jobs based on your profile",
+        "applied to",
+        "daily roundup",
+        "weekly roundup",
+        "job digest",
+        "recommended for you",
+        "similar jobs",
+    ]
+
+    # Exclude known newsletter categories
+    if category in {"newsletter_ads", "newsletter", "promo", "promotions"}:
+        return True
+
+    # Exclude Gmail promotional/update categories
+    if "CATEGORY_PROMOTIONS" in labels or "CATEGORY_UPDATES" in labels:
+        return True
+
+    # Exclude digest subjects
+    if any(k in subj for k in digest_keywords):
+        return True
+
+    return False
+
+
+def compute_followup_priority(stage: str, last_contact_at) -> str:
+    """
+    Compute a simple priority score for follow-up items.
+    - Stage drives the base score
+    - Age in days adds an "urgency" bonus
+
+    Returns: "low" | "medium" | "high"
+    """
+    from datetime import datetime, timezone, timedelta
+
+    # Handle string input for backwards compatibility
+    if isinstance(last_contact_at, str):
+        try:
+            last_contact_at = datetime.fromisoformat(
+                last_contact_at.replace("Z", "+00:00")
+            )
+        except (ValueError, TypeError):
+            # If parsing fails, treat as very old
+            last_contact_at = datetime.now(timezone.utc) - timedelta(days=30)
+
+    if last_contact_at is None:
+        # Treat None as very old
+        last_contact_at = datetime.now(timezone.utc) - timedelta(days=30)
+
+    # Normalize to aware UTC to avoid weird age calculations in tests
+    if last_contact_at.tzinfo is None:
+        last_contact_at = last_contact_at.replace(tzinfo=timezone.utc)
+
+    stage_norm = (stage or "").lower()
+    now = datetime.now(timezone.utc)
+    age_days = max(0, (now - last_contact_at).days)
+
+    # Base score by stage
+    if stage_norm in {"offer", "onsite"}:
+        base = 3
+    elif stage_norm in {"interview", "screen", "phone_screen", "hr_screen"}:
+        base = 2
+    elif stage_norm in {"applied", "in_process"}:
+        base = 1
+    else:
+        base = 0
+
+    # Age bonus
+    if age_days >= 14:
+        age_bonus = 2
+    elif age_days >= 7:
+        age_bonus = 1
+    else:
+        age_bonus = 0
+
+    score = base + age_bonus
+
+    if score >= 4:
+        return "high"
+    if score >= 2:
+        return "medium"
+    return "low"
+
+
 @router.get(
     "/followup-queue",
     response_model=FollowupQueueResponse,
@@ -662,6 +762,25 @@ async def get_followup_queue(
         # Build lookup by thread_id
         apps_by_thread = {app.thread_id: app for app in apps if app.thread_id}
 
+        # Get email metadata for filtering newsletters/digests
+        from app.models import Email
+
+        thread_ids = [t["thread_id"] for t in threads if t.get("thread_id")]
+        emails_in_threads = (
+            (db.query(Email).filter(Email.thread_id.in_(thread_ids)).all())
+            if thread_ids
+            else []
+        )
+
+        # Build lookup for email metadata by thread_id
+        email_meta_by_thread = {}
+        for email in emails_in_threads:
+            if email.thread_id not in email_meta_by_thread:
+                email_meta_by_thread[email.thread_id] = {
+                    "labels": email.labels or [],
+                    "category": email.category,
+                }
+
         # Merge threads and applications
         queue_items = []
         seen_threads = set()
@@ -671,13 +790,20 @@ async def get_followup_queue(
             if not thread_id:
                 continue
 
+            # Filter out newsletters and digests
+            meta = email_meta_by_thread.get(thread_id, {})
+            if is_newsletter_or_digest(
+                thread, meta.get("labels"), meta.get("category")
+            ):
+                continue  # Skip junk
+
             seen_threads.add(thread_id)
             app = apps_by_thread.get(thread_id)
 
-            # Determine priority: threads with applications get higher priority
-            priority = thread.get("priority", 50)
-            if app:
-                priority = max(priority, 70)  # Boost priority if has application
+            # Compute priority based on stage and age
+            stage = app.status if app else None
+            last_message_at = thread.get("last_message_at")
+            priority = compute_followup_priority(stage, last_message_at)
 
             # Build reason tags
             reason_tags = ["pending_reply"]
@@ -694,7 +820,7 @@ async def get_followup_queue(
                     role=app.role if app else None,
                     subject=thread.get("subject"),
                     snippet=thread.get("snippet"),
-                    last_message_at=thread.get("last_message_at"),
+                    last_message_at=last_message_at,
                     status=app.status if app else None,
                     gmail_url=thread.get("gmail_url"),
                     is_done=False,
@@ -704,11 +830,14 @@ async def get_followup_queue(
         # Add applications without matching threads
         for app in apps:
             if app.thread_id and app.thread_id not in seen_threads:
+                # Use medium priority for app-only items
+                priority = compute_followup_priority(app.status, None)
+
                 queue_items.append(
                     QueueItem(
                         thread_id=app.thread_id,
                         application_id=app.id,
-                        priority=60,  # Medium priority for app-only items
+                        priority=priority,
                         reason_tags=[f"status:{app.status}", "no_thread_data"],
                         company=app.company,
                         role=app.role,
@@ -721,8 +850,12 @@ async def get_followup_queue(
                     )
                 )
 
-        # Sort by priority descending
-        queue_items.sort(key=lambda x: x.priority, reverse=True)
+        # Sort by priority (high > medium > low) then by last_message_at
+        priority_order = {"high": 3, "medium": 2, "low": 1}
+        queue_items.sort(
+            key=lambda x: (priority_order.get(x.priority, 0), x.last_message_at or ""),
+            reverse=True,
+        )
 
         # Fetch followup state for this user
         from app.models import FollowupQueueState

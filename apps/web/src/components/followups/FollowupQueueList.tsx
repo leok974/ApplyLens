@@ -41,16 +41,19 @@ function getStatusLabel(status?: string): string {
   }
 }
 
-function getPriorityLabel(priority: number): string {
-  if (priority >= 70) return 'High';
-  if (priority >= 50) return 'Medium';
-  return 'Low';
+function getPriorityLabel(priority: 'low' | 'medium' | 'high'): string {
+  return priority.charAt(0).toUpperCase() + priority.slice(1);
 }
 
-function getPriorityColor(priority: number): string {
-  if (priority >= 70) return 'bg-red-500/20 text-red-200 border-red-500/30';
-  if (priority >= 50) return 'bg-yellow-500/20 text-yellow-200 border-yellow-500/30';
-  return 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30';
+function getPriorityColor(priority: 'low' | 'medium' | 'high'): string {
+  switch (priority) {
+    case 'high':
+      return 'border-rose-500/70 text-rose-300';
+    case 'medium':
+      return 'border-amber-500/70 text-amber-300';
+    case 'low':
+      return 'border-slate-500/60 text-slate-300';
+  }
 }
 
 function getAgeString(lastMessageAt?: string): string {

@@ -485,7 +485,7 @@ class QueueItem(BaseModel):
 
     thread_id: str
     application_id: Optional[int] = None
-    priority: int  # Higher = more urgent
+    priority: Literal["low", "medium", "high"] = "medium"  # Priority level
     reason_tags: List[str] = []
     company: Optional[str] = None
     role: Optional[str] = None
