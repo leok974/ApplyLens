@@ -189,11 +189,12 @@ services:
     # v0.6.3: Persistent follow-up state with progress tracking and done/not-done toggles
     # v0.6.4: Today panel Follow-ups summary widget with progress and quick navigation
     # v0.6.5-datadog: Datadog automation scripts for dashboard, SLOs, and monitors
+    # v0.7.7: Fix AgentCard attribute names (kind instead of card_type, threads directly)
     # v0.7.6: Fix orchestrator AgentRunRequest with required query field
     # v0.7.5: Remove FollowupQueueRequest dependency to fix 422 validation error
     # v0.7.4: Fix followup-queue authentication with current_user dependency
     # v0.7.2: Follow-up queue GET support + deep-link warning cleanup
-    image: leoklemet/applylens-api:0.7.6
+    image: leoklemet/applylens-api:0.7.7
     container_name: applylens-api-prod
     environment:
       # Database
@@ -246,9 +247,9 @@ services:
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
 
       # Build Metadata
-      APP_VERSION: '0.7.6'
-      APP_BUILD_SHA: 'ee969bf'
-      APP_BUILD_TIME: '2025-01-29T01:15:00Z'
+      APP_VERSION: '0.7.7'
+      APP_BUILD_SHA: '59ab388'
+      APP_BUILD_TIME: '2025-01-29T01:30:00Z'
       APP_ENV: 'production'
       CREATE_TABLES_ON_STARTUP: "0"
 
