@@ -229,29 +229,28 @@ export function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b backdrop-blur bg-white/80 text-zinc-900 border-zinc-300 dark:bg-[#0f172a]/80 dark:text-zinc-100 dark:border-zinc-800">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 w-full">
-          <div className="flex h-16 items-center gap-4">
-            {/* BRAND — never shrink, bigger logo, tight tracking */}
+        <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
+          <div className="flex h-14 items-center gap-4">
+            {/* BRAND — never shrink */}
             <Link
               to="/"
-              className="group flex items-center gap-3 shrink-0 select-none"
+              className="group flex items-center gap-2 shrink-0 select-none"
               data-testid="header-brand"
-            aria-label="ApplyLens Home"
-          >
-            <img
-              src="/brand/applylens.png"
-              alt=""
-              className="logo-hover brand-enter h-12 w-12 md:h-14 md:w-14 object-contain"
-              draggable={false}
-            />
-            <span className="brand-tight text-xl md:text-2xl font-semibold leading-none whitespace-nowrap transition-colors duration-150 group-hover:text-primary">
-              ApplyLens
-            </span>
-          </Link>
+              aria-label="ApplyLens Home"
+            >
+              <img
+                src="/brand/applylens.png"
+                alt=""
+                className="logo-hover brand-enter h-9 w-9 object-contain"
+                draggable={false}
+              />
+              <span className="brand-tight text-lg font-semibold leading-none whitespace-nowrap transition-colors duration-150 group-hover:text-primary">
+                ApplyLens
+              </span>
+            </Link>
 
-          {/* TABS — flex-1 with horizontal scroll; never overlap */}
-          <nav className="min-w-0 flex-1">
-            <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap scrollbar-none">
+            {/* NAV — scrollable middle section */}
+            <nav className="flex min-w-0 flex-1 items-center overflow-x-auto gap-1 scrollbar-none">
               <Tab to="/" label="Inbox" />
               <Tab to="/inbox-actions" label="Actions" />
               <Tab to="/search" label="Search" />
@@ -263,11 +262,10 @@ export function AppHeader() {
               <Tab to="/profile" label="Profile" />
               {FLAGS.COMPANION && <Tab to="/extension" label="Companion" data-testid="nav-companion" />}
               <Tab to="/settings" label="Settings" />
-            </div>
-          </nav>
+            </nav>
 
-          {/* ACTIONS — keep to the right; never shrink smaller than content */}
-          <div className="flex items-center gap-2 shrink-0">
+            {/* RIGHT ACTIONS — never shrink, always visible */}
+            <div className="flex items-center gap-2 shrink-0">
             {/* Job Progress Indicator */}
             {jobStatus && jobStatus.state !== 'done' && (
               <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-md bg-muted border">
@@ -344,11 +342,13 @@ export function AppHeader() {
               </div>
             )}
 
+            {/* Sync buttons - only show on larger screens since inbox page has them */}
             <Button
               size="sm"
               variant="secondary"
               onClick={() => runPipeline(7)}
               disabled={syncing}
+              className="hidden lg:inline-flex"
               data-testid="sync-7d"
             >
               {syncing ? "⏳" : "Sync 7d"}
@@ -358,6 +358,7 @@ export function AppHeader() {
               variant="secondary"
               onClick={() => runPipeline(60)}
               disabled={syncing}
+              className="hidden lg:inline-flex"
               data-testid="sync-60d"
             >
               {syncing ? "⏳" : "Sync 60d"}
@@ -372,7 +373,7 @@ export function AppHeader() {
               data-testid="quick-actions"
             >
               <Sparkles className="h-4 w-4 mr-1" />
-              Actions
+              <span className="hidden sm:inline">Actions</span>
               {pendingCount > 0 && (
                 <span className="ml-2 rounded-full bg-red-600 text-white text-[10px] px-1.5 py-[2px] leading-none">
                   {pendingCount}
@@ -456,7 +457,7 @@ function Tab({ to, label, "data-testid": dataTestId }: { to: string; label: stri
       data-testid={dataTestId}
       className={({ isActive }) =>
         cn(
-          "px-3 h-9 inline-flex items-center rounded-md text-sm",
+          "shrink-0 px-3 h-8 inline-flex items-center rounded-md text-xs sm:text-sm whitespace-nowrap",
           "hover:bg-muted/70 transition-colors",
           isActive ? "bg-muted font-medium" : "text-muted-foreground"
         )
