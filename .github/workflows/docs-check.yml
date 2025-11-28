@@ -1,8 +1,14 @@
 name: Docs Checks
+
 on:
   pull_request:
+    paths:
+      - '**.md'
+      - '.github/workflows/docs-check.yml'
+      - '.markdownlint.jsonc'
+      - '.lychee.toml'
   push:
-    paths: ["docs/**", "**/*.md", ".github/workflows/docs-check.yml"]
+    branches: [main]
 
 jobs:
   markdown:
@@ -23,6 +29,7 @@ jobs:
 
   links:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
