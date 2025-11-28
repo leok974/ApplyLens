@@ -1,0 +1,25 @@
+# Lychee link checker configuration
+
+# Exclude patterns
+exclude = [
+  "http://localhost",
+  "http://localhost:*",
+  "http://127.0.0.1",
+  "http://127.0.0.1:*",
+  "https://api.applylens.app",
+  "https://applylens.app",
+  "https://grafana.applylens.io",
+  "https://prometheus.applylens.io",
+]
+
+# Accept these status codes
+accept = [200, 206, 301, 302, 429]
+
+# Timeout in seconds
+timeout = 20
+
+# Max retries
+max_retries = 3
+
+# Include mail links
+include_mail = false

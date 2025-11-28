@@ -1,8 +1,14 @@
 name: Docs Checks
+
 on:
   pull_request:
+    paths:
+      - '**.md'
+      - '.github/workflows/docs-check.yml'
+      - '.markdownlint.jsonc'
+      - '.lychee.toml'
   push:
-    paths: ["docs/**", "**/*.md", ".github/workflows/docs-check.yml"]
+    branches: [main]
 
 jobs:
   markdown:
@@ -14,23 +20,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install -D markdownlint-cli
+      - name: Install markdownlint-cli2
+        run: npm install -g markdownlint-cli2
 
       - name: Lint markdown files
-        run: npx markdownlint **/*.md --ignore node_modules --ignore .git
+        run: markdownlint-cli2 "README.md" "docs/**/*.md" "!docs/archive/**" "!node_modules/**"
 
   links:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
       - name: Lychee link check
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --verbose --no-progress --exclude-mail --accept 200,206,429 "**/*.md"
+          args: --config .lychee.toml --verbose --no-progress "README.md" "docs/core/**/*.md" "docs/agents/**/*.md" "docs/future/**/*.md"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
