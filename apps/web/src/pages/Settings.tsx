@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getRecencyScale, setRecencyScale, RecencyScale } from '../state/searchPrefs'
-import { Card } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
-import { Info, User as UserIcon } from 'lucide-react'
+import { Info, User as UserIcon, Sun, Moon, Laptop } from 'lucide-react'
 import { features } from '../config/features'
 import { FLAGS } from '@/lib/flags'
 import { ProfileMetrics } from '../components/ProfileMetrics'
@@ -16,6 +16,9 @@ import { VersionCard } from '@/components/settings/VersionCard'
 import { HealthBadge } from '@/components/HealthBadge'
 import { MailboxThemePanel } from '@/components/settings/MailboxThemePanel'
 import { ResumeUploadPanel } from '@/components/settings/ResumeUploadPanel'
+import { useTheme } from '@/hooks/useTheme'
+import { startBackfillJob } from '@/lib/api'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -23,6 +26,9 @@ export default function Settings() {
   const [accountEmail, setAccountEmail] = useState<string | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
+  const { theme, setTheme } = useTheme()
+  const { toast } = useToast()
+  const [syncing, setSyncing] = useState(false)
 
   // Load user email with proper auth failure handling
   useEffect(() => {
@@ -96,6 +102,32 @@ export default function Settings() {
     }
   }
 
+  async function handleSync(window: "7d" | "60d") {
+    if (!accountEmail) return;
+    setSyncing(true);
+    try {
+      const days = window === "7d" ? 7 : 60;
+      toast({
+        title: `🔄 Starting ${days}-day sync...`,
+        description: "This will run in the background.",
+      });
+      const result = await startBackfillJob(days, accountEmail);
+      toast({
+        title: "✅ Sync started!",
+        description: `Job ID: ${result.job_id}. Check the header for progress.`,
+      });
+    } catch (error: any) {
+      console.error("Sync error:", error);
+      toast({
+        title: "❌ Failed to start sync",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   // Show loading state while fetching user
   if (isLoadingUser) {
     return (
@@ -161,6 +193,73 @@ export default function Settings() {
               Log out
             </Button>
           </div>
+      </Card>
+
+      {/* Gmail Sync */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Gmail Sync</CardTitle>
+          <CardDescription className="text-xs">
+            Manually trigger ApplyLens to pull the latest emails from your connected inbox.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleSync("7d")}
+            disabled={syncing}
+          >
+            {syncing ? "⏳ Syncing..." : "Sync last 7 days"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleSync("60d")}
+            disabled={syncing}
+          >
+            {syncing ? "⏳ Syncing..." : "Sync last 60 days"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Appearance / Theme */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Appearance</CardTitle>
+          <CardDescription className="text-xs">
+            Choose how ApplyLens looks on this device.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={theme === "light" ? "default" : "outline"}
+            onClick={() => setTheme("light")}
+            className="gap-1"
+          >
+            <Sun className="h-4 w-4" />
+            Light
+          </Button>
+          <Button
+            size="sm"
+            variant={theme === "dark" ? "default" : "outline"}
+            onClick={() => setTheme("dark")}
+            className="gap-1"
+          >
+            <Moon className="h-4 w-4" />
+            Dark
+          </Button>
+          <Button
+            size="sm"
+            variant={theme === "system" ? "default" : "outline"}
+            onClick={() => setTheme("system")}
+            className="gap-1"
+          >
+            <Laptop className="h-4 w-4" />
+            System
+          </Button>
+        </CardContent>
       </Card>
 
       {/* Resume Upload */}

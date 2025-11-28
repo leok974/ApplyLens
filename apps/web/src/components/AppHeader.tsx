@@ -7,25 +7,29 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import ThemeToggle from "@/components/ThemeToggle"
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
-import { relabel, rebuildProfile, startBackfillJob, cancelJob } from "@/lib/api"
+import { relabel, rebuildProfile, cancelJob } from "@/lib/api"
 import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { ActionsTray } from "@/components/ActionsTray"
 import { fetchTray } from "@/lib/actionsClient"
-import { Sparkles, LogOut, User, ShieldCheck, X } from "lucide-react"
+import { Sparkles, LogOut, User, X, Sun, Moon, Laptop, Settings as SettingsIcon } from "lucide-react"
 import { logout, getCurrentUser, fetchAndCacheCurrentUser, type User as UserType } from "@/api/auth"
 import { cn } from "@/lib/utils"
 import { useJobPoller } from "@/hooks/useJobPoller"
 import { FLAGS } from "@/lib/flags"
+import { useTheme } from "@/hooks/useTheme"
 
 const USER_EMAIL = "leoklemet.pa@gmail.com" // TODO: Read from auth context
 
 export function AppHeader() {
-  const [syncing, setSyncing] = useState(false)
   const [trayOpen, setTrayOpen] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
   const [user, setUser] = useState<UserType | null>(null)
@@ -33,6 +37,7 @@ export function AppHeader() {
   const { toast } = useToast()
   const location = useLocation()
   const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
 
   // Poll job status with exponential backoff
   const jobStatus = useJobPoller(jobId)
@@ -101,14 +106,12 @@ export function AppHeader() {
         description: jobStatus.error || "Unknown error",
         variant: "destructive",
       })
-      setSyncing(false)
       setJobId(undefined)
     } else if (jobStatus.state === 'canceled') {
       toast({
         title: "⏹️ Sync canceled",
         description: "Backfill was canceled",
       })
-      setSyncing(false)
       setJobId(undefined)
     }
   }, [jobStatus])
@@ -142,38 +145,7 @@ export function AppHeader() {
         variant: "destructive",
       })
     } finally {
-      setSyncing(false)
       setJobId(undefined)
-    }
-  }
-
-  async function runPipeline(days: 7 | 60) {
-    setSyncing(true)
-
-    try {
-      // Start async backfill job
-      toast({
-        title: `🔄 Starting ${days}-day sync...`,
-        description: "This will run in the background. You'll be notified when ready.",
-      })
-
-      const result = await startBackfillJob(days, USER_EMAIL)
-
-      // Store job ID to start polling
-      setJobId(result.job_id)
-
-      console.log(`[AppHeader] Started backfill job: ${result.job_id}`)
-
-    } catch (error: any) {
-      console.error("Pipeline error:", error)
-
-
-      toast({
-        title: "❌ Failed to start sync",
-        description: error?.message || "Please try again",
-        variant: "destructive",
-      })
-      setSyncing(false)
     }
   }
 
@@ -186,7 +158,6 @@ export function AppHeader() {
         title: "⏹️ Job canceled",
         description: "The sync has been stopped",
       })
-      setSyncing(false)
       setJobId(undefined)
     } catch (error: any) {
       console.error("Cancel error:", error)
@@ -344,28 +315,6 @@ export function AppHeader() {
               </div>
             )}
 
-            {/* Sync buttons - only show on larger screens since inbox page has them */}
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => runPipeline(7)}
-              disabled={syncing}
-              className="hidden lg:inline-flex"
-              data-testid="sync-7d"
-            >
-              {syncing ? "⏳" : "Sync 7d"}
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => runPipeline(60)}
-              disabled={syncing}
-              className="hidden lg:inline-flex"
-              data-testid="sync-60d"
-            >
-              {syncing ? "⏳" : "Sync 60d"}
-            </Button>
-
             {/* Actions Tray Button */}
             <Button
               size="sm"
@@ -382,8 +331,6 @@ export function AppHeader() {
                 </span>
               )}
             </Button>
-
-            <ThemeToggle data-testid="theme-toggle" />
 
             {/* User menu */}
             {user && (
@@ -414,29 +361,50 @@ export function AppHeader() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
-                  {/* Settings Section */}
+                  {/* Profile */}
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+
+                  {/* Settings */}
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
+                      <SettingsIcon className="mr-2 h-4 w-4" />
                       Settings
                     </Link>
                   </DropdownMenuItem>
 
-                  {/* Sender Controls */}
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings/senders" className="cursor-pointer" data-testid="settings-senders-link">
-                      <ShieldCheck className="mr-2 h-4 w-4 text-green-400" />
-                      <div className="flex flex-col">
-                        <span className="font-medium">Sender Controls</span>
-                        <span className="text-xs text-muted-foreground">Trusted / muted senders</span>
-                      </div>
-                    </Link>
-                  </DropdownMenuItem>
+                  {/* Theme Submenu */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="cursor-pointer">
+                      <Sun className="mr-2 h-4 w-4" />
+                      <span>Theme</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as "light" | "dark" | "system")}>
+                        <DropdownMenuRadioItem value="light">
+                          <Sun className="mr-2 h-4 w-4" />
+                          Light
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="dark">
+                          <Moon className="mr-2 h-4 w-4" />
+                          Dark
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="system">
+                          <Laptop className="mr-2 h-4 w-4" />
+                          System
+                        </DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
