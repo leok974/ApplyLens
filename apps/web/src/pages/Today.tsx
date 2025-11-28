@@ -341,7 +341,8 @@ export default function Today() {
       )}
 
       {/* Intent Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">\n        {data.intents.map((intentData) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {data.intents.map((intentData) => {
           const meta = INTENT_META[intentData.intent];
           const hasThreads = intentData.threads.length > 0;
 
