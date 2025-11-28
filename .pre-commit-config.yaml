@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: gitleaks-docker
         name: gitleaks (docker)
-        entry: pwsh ./gitleaks.ps1
+        entry: pwsh ./scripts/ci/gitleaks.ps1
         language: system
         pass_filenames: false
         args: ["--no-git", "--config=.gitleaks.toml"]

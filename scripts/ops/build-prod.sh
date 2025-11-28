@@ -125,7 +125,7 @@ if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
     echo ""
     echo "   Edit $ENV_FILE before deploying to production!"
     echo -e "${NC}"
-    
+
     if [ "$DEPLOY" = true ]; then
         echo -e "${YELLOW}   Continue anyway? (y/N): ${NC}"
         read -r response
@@ -155,17 +155,17 @@ fi
 # =============================================================================
 if [ "$DEPLOY" = true ]; then
     echo -e "${YELLOW}[3/5] Deploying production stack...${NC}"
-    
+
     if [ "$RESTART" = true ]; then
         echo -e "${GRAY}   Stopping existing containers...${NC}"
         docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
     fi
-    
+
     echo -e "${GRAY}   Starting services...${NC}"
     docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
-    
+
     echo -e "${GREEN}   ✓ Services started${NC}"
-    
+
     # Wait for services to be ready
     echo -e "${GRAY}   Waiting for services to be healthy...${NC}"
     sleep 10
@@ -178,7 +178,7 @@ fi
 # =============================================================================
 if [ "$DEPLOY" = true ] && [ "$MIGRATE" = true ]; then
     echo -e "${YELLOW}[4/5] Running database migrations...${NC}"
-    
+
     if docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T api alembic upgrade head; then
         echo -e "${GREEN}   ✓ Migrations completed${NC}"
     else
@@ -200,16 +200,16 @@ if [ "$DEPLOY" = true ]; then
     echo "   Service Status:"
     docker compose -f "$COMPOSE_FILE" ps
     echo -e "${NC}"
-    
+
     echo -e "${GRAY}   Testing endpoints...${NC}"
-    
+
     # Test health endpoint
     if curl -f -s -o /dev/null -w "" http://localhost/health 2>/dev/null; then
         echo -e "${GREEN}   ✓ Health Check: OK${NC}"
     else
         echo -e "${RED}   ❌ Health Check: Failed${NC}"
     fi
-    
+
     # Test API health
     if curl -f -s -o /dev/null -w "" http://localhost/api/healthz 2>/dev/null; then
         echo -e "${GREEN}   ✓ API Health: OK${NC}"
@@ -238,14 +238,14 @@ if [ "$DEPLOY" = true ]; then
     echo "  • Prometheus: http://localhost/prometheus/"
     echo "  • Grafana:    http://localhost/grafana/"
     echo "  • Kibana:     http://localhost/kibana/"
-    
+
     echo -e "${CYAN}"
     echo "Useful Commands:"
     echo -e "${NC}"
     echo -e "${GRAY}  • View logs:    docker compose -f $COMPOSE_FILE logs -f${NC}"
     echo -e "${GRAY}  • Stop stack:   docker compose -f $COMPOSE_FILE down${NC}"
     echo -e "${GRAY}  • Migrations:   docker compose -f $COMPOSE_FILE exec api alembic upgrade head${NC}"
-    
+
     if [ "$MIGRATE" = false ]; then
         echo -e "${YELLOW}"
         echo "⚠️  Don't forget to run migrations!"
