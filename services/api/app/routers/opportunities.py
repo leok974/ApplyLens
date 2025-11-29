@@ -1,17 +1,143 @@
 """Job opportunities listing and management endpoints."""
 
 import logging
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..deps.user import get_current_user_email
 from ..db import get_db
-from ..models import JobOpportunity, OpportunityMatch
+from ..models import Application, Email, JobOpportunity, OpportunityMatch
+from .agent import is_newsletter_or_digest
 
 logger = logging.getLogger(__name__)
+
+
+# ===== Filter Helpers =====
+
+
+JOB_BOARD_DOMAINS = {
+    "indeed.com",
+    "ziprecruiter.com",
+    "glassdoor.com",
+    "monster.com",
+    "simplyhired.com",
+    "jobcase.com",
+    "careerbuilder.com",
+    "noreply.linkedin.com",
+    "linkedin.com",
+}
+
+JOB_ALERT_SUBJECT_PATTERNS = [
+    r"new jobs for you",
+    r"jobs you might like",
+    r"job alerts?",
+    r"top jobs",
+    r"daily (job )?digest",
+    r"recommended jobs",
+    r"because you searched",
+    r"job recommendations",
+]
+
+
+def is_job_alert_or_blast(email: Email) -> bool:
+    """
+    Detect job board alerts and mass mailings.
+
+    Returns True if the email is a generic job alert/blast that should be excluded
+    from the opportunities list (not a real recruiter outreach).
+    """
+    subject = (email.subject or "").lower()
+    from_addr = (email.sender or "").lower()
+
+    # Check sender domain against known job boards
+    if any(domain in from_addr for domain in JOB_BOARD_DOMAINS):
+        return True
+
+    # Check subject for job alert patterns
+    for pattern in JOB_ALERT_SUBJECT_PATTERNS:
+        if re.search(pattern, subject, re.IGNORECASE):
+            return True
+
+    # Check body for bulk email markers
+    # Use body_text field from Email model
+    body = (email.body_text or "").lower()
+    # Require both markers to avoid false positives
+    has_unsubscribe = "unsubscribe" in body
+    has_browser_view = (
+        "view this email in your browser" in body or "view in browser" in body
+    )
+    if has_unsubscribe and has_browser_view:
+        return True
+
+    return False
+
+
+NEEDS_ATTENTION_STATUSES = {"applied", "hr_screen", "interview", "onsite", "offer"}
+CLOSED_STATUSES = {"rejected", "withdrawn", "ghosted", "closed"}
+
+
+def is_real_opportunity(email: Email, application: Optional[Application]) -> bool:
+    """
+    Determine if an Email+Application pair represents a real opportunity.
+
+    Returns True if this is a legitimate recruiter outreach / application thread
+    that should be shown in the opportunities list.
+
+    Filters out:
+    - Newsletters and digests
+    - Job board alerts and mass mailings
+    - Applications with terminal/closed statuses
+    - Emails with non-recruiting categories
+    """
+    # 1) Filter out newsletters/digests using existing helper
+    # Convert Email model to dict format expected by is_newsletter_or_digest
+    thread_dict = {
+        "subject": email.subject,
+        "from_email": email.sender,
+    }
+    labels = email.labels or []
+    category = email.category
+
+    if is_newsletter_or_digest(thread_dict, labels=labels, category=category):
+        return False
+
+    # 2) Filter out job board alerts and blasts
+    if is_job_alert_or_blast(email):
+        return False
+
+    # 3) If we have an application, require a "live" status
+    if application:
+        status = (application.status.value if application.status else "").lower()
+        if status in CLOSED_STATUSES:
+            return False
+        if status not in NEEDS_ATTENTION_STATUSES:
+            # Don't treat purely informational states as "opportunities"
+            return False
+
+    # 4) Optionally use email category if available
+    category_str = (category or "").lower()
+    if category_str:
+        # Only allow categories that look like real recruiting leads
+        allowed_categories = {
+            "recruiter_outreach",
+            "interview_invite",
+            "phone_screen",
+            "onsite",
+            "offer",
+            "application_update",
+            "applications",  # general application category
+        }
+        # If there's a category but it's not in allowed list, exclude it
+        if category_str not in allowed_categories:
+            return False
+
+    return True
+
 
 router = APIRouter(prefix="/api/opportunities", tags=["opportunities"])
 
@@ -65,74 +191,122 @@ async def list_opportunities(
 ):
     """List job opportunities for the authenticated user.
 
+    Returns filtered opportunities from real recruiter emails and applications,
+    excluding newsletters, job alerts, and closed applications.
+
+    Filters applied:
+    - Removes newsletters and marketing digests
+    - Removes job board alerts and mass mailings
+    - Removes applications with terminal statuses (rejected, withdrawn, etc.)
+    - Only includes emails with recruiting categories or active application statuses
+
     - **source**: Optional filter by aggregator source (indeed, linkedin, etc.)
     - **company**: Optional filter by company name (case-insensitive partial match)
     - **match_bucket**: Optional filter by match quality (perfect, strong, possible, skip)
     - **limit**: Maximum number of results (default: 100, max: 500)
     - **offset**: Number of results to skip for pagination (default: 0)
 
-    Returns opportunities sorted by created_at (newest first), with match data if available.
+    Returns opportunities sorted by recency (most recent email first).
     """
     user_email = get_current_user_email(request)
 
-    # Build query
-    query = db.query(JobOpportunity).filter(JobOpportunity.owner_email == user_email)
+    # Query emails with potential applications
+    # Start with emails that have application category or are linked to applications
+    email_query = (
+        db.query(Email, Application)
+        .outerjoin(Application, Email.application_id == Application.id)
+        .filter(Email.owner_email == user_email)
+        # Focus on recent emails (last 6 months) to avoid processing entire history
+        .filter(
+            Email.received_at
+            >= db.query(func.now()).scalar() - func.make_interval(0, 6)
+        )
+    )
 
-    # Apply filters
-    if source:
-        query = query.filter(JobOpportunity.source == source)
-
+    # Apply company filter if provided
     if company:
-        query = query.filter(JobOpportunity.company.ilike(f"%{company}%"))
-
-    # Apply match bucket filter via join
-    if match_bucket:
-        query = query.join(
-            OpportunityMatch,
-            OpportunityMatch.opportunity_id == JobOpportunity.id,
-        ).filter(OpportunityMatch.match_bucket == match_bucket)
-
-    # Order by newest first
-    query = query.order_by(JobOpportunity.created_at.desc())
-
-    # Apply pagination
-    query = query.limit(limit).offset(offset)
-
-    # Execute query
-    opportunities = query.all()
-
-    # Load match data for each opportunity
-    results = []
-    for opp in opportunities:
-        # Get match data if exists
-        match = (
-            db.query(OpportunityMatch)
-            .filter(OpportunityMatch.opportunity_id == opp.id)
-            .first()
+        email_query = email_query.filter(
+            (Email.company.ilike(f"%{company}%"))
+            | (Application.company.ilike(f"%{company}%"))
         )
 
+    # Apply source filter if provided (email source or application source)
+    if source:
+        email_query = email_query.filter(
+            (Email.source == source) | (Application.source == source)
+        )
+
+    # Order by recency
+    email_query = email_query.order_by(Email.received_at.desc())
+
+    # Execute query (we'll filter in Python due to complex logic)
+    email_app_pairs = email_query.all()
+
+    # Filter using our opportunity detection logic
+    filtered_items = []
+    for email, application in email_app_pairs:
+        if not is_real_opportunity(email, application):
+            continue
+
+        # Build response item
+        filtered_items.append(
+            {
+                "email": email,
+                "application": application,
+                "company": application.company if application else email.company,
+                "role": application.role if application else email.role,
+                "status": application.status.value
+                if application and application.status
+                else None,
+                "last_message_at": email.received_at,
+                "email_id": email.id,
+                "thread_id": email.thread_id,
+            }
+        )
+
+    # Apply match_bucket filter if specified (for JobOpportunity integration)
+    # Note: This filter applies to the old JobOpportunity model, not Email/Application
+    # We keep it for backward compatibility but it won't filter Email-based opportunities
+    if match_bucket:
+        logger.warning(
+            f"match_bucket filter ({match_bucket}) not applicable to Email-based opportunities"
+        )
+
+    # Apply pagination
+    total_count = len(filtered_items)
+    paginated_items = filtered_items[offset : offset + limit]
+
+    # Convert to response format
+    results = []
+    for item in paginated_items:
+        email = item["email"]
+        application = item["application"]
+
+        # For backward compatibility, map to OpportunityResponse schema
+        # Note: Some fields like tech_stack, apply_url won't be populated from Email
         results.append(
             OpportunityResponse(
-                id=opp.id,
-                owner_email=opp.owner_email,
-                source=opp.source,
-                title=opp.title,
-                company=opp.company,
-                location=opp.location,
-                remote_flag=opp.remote_flag,
-                salary_text=opp.salary_text,
-                level=opp.level,
-                tech_stack=opp.tech_stack,
-                apply_url=opp.apply_url,
-                posted_at=opp.posted_at.isoformat() if opp.posted_at else None,
-                created_at=opp.created_at.isoformat(),
-                match_bucket=match.match_bucket if match else None,
-                match_score=match.match_score if match else None,
+                id=email.id,  # Use email ID as opportunity ID
+                owner_email=email.owner_email or user_email,
+                source=email.source or (application.source if application else "email"),
+                title=item["role"] or email.subject or "",
+                company=item["company"] or "Unknown",
+                location=None,  # Not available in Email model
+                remote_flag=None,  # Not available in Email model
+                salary_text=None,  # Not available in Email model
+                level=None,  # Not available in Email model
+                tech_stack=None,  # Not available in Email model
+                apply_url=None,  # Not available in Email model
+                posted_at=None,
+                created_at=email.received_at.isoformat() if email.received_at else "",
+                match_bucket=None,  # Not applicable for Email-based opportunities
+                match_score=None,  # Not applicable for Email-based opportunities
             )
         )
 
     logger.info(
-        f"Listed {len(results)} opportunities for user {user_email} (source={source}, company={company}, match_bucket={match_bucket})"
+        f"Listed {len(results)}/{total_count} opportunities for user {user_email} "
+        f"(source={source}, company={company}, after filtering noise)"
     )
 
     return results
