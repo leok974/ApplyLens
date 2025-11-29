@@ -58,9 +58,9 @@ export async function uploadResume(file: File): Promise<ResumeProfile> {
 }
 
 /**
- * Get the current active resume profile.
+ * Get the currently active resume profile.
  *
- * Returns null if no active resume exists.
+ * Returns `null` if no resume is currently marked active or if the endpoint returns 404.
  *
  * @example
  * ```ts
@@ -71,8 +71,17 @@ export async function uploadResume(file: File): Promise<ResumeProfile> {
  * ```
  */
 export async function getCurrentResume(): Promise<ResumeProfile | null> {
-  const response = await apiFetch('/resume/current');
-  return response as ResumeProfile | null;
+  try {
+    const response = await apiFetch('/resume/current');
+    return response as ResumeProfile | null;
+  } catch (err: any) {
+    // If no resume is active yet, API returns 404 - this is expected, return null silently
+    if (err?.status === 404) {
+      return null;
+    }
+    // Re-throw other errors
+    throw err;
+  }
 }
 
 /**
