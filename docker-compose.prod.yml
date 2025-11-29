@@ -195,7 +195,7 @@ services:
     # v0.7.5: Remove FollowupQueueRequest dependency to fix 422 validation error
     # v0.7.4: Fix followup-queue authentication with current_user dependency
     # v0.7.2: Follow-up queue GET support + deep-link warning cleanup
-    image: leoklemet/applylens-api:0.7.8
+    image: leoklemet/applylens-api:0.7.9
     container_name: applylens-api-prod
     environment:
       # Database
@@ -440,7 +440,7 @@ services:
     #   - Nav uses justify-between to distribute links across space
     #   - gap-4 for airier spacing between nav items
     #   - First link hugs logo, last link hugs profile, rest evenly distributed
-    image: leoklemet/applylens-web:0.7.3
+    image: leoklemet/applylens-web:0.7.9
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production
