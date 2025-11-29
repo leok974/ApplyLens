@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { listOpportunities, getOpportunityDetail, JobOpportunity, OpportunityDetail, runBatchRoleMatch } from '../api/opportunities'
+import { listOpportunities, getOpportunityDetail, JobOpportunity, OpportunityDetail, runBatchRoleMatch, OpportunityPriority } from '../api/opportunities'
 import { getRoleMatch } from '../api/agent'
 import { getCurrentResume, ResumeProfile } from '../api/opportunities'
-import { Briefcase, MapPin, DollarSign, ExternalLink, Sparkles, AlertCircle, TrendingUp } from 'lucide-react'
+import { Briefcase, MapPin, DollarSign, ExternalLink, Sparkles, AlertCircle, TrendingUp, CalendarClock } from 'lucide-react'
+import { PriorityBadge } from '@/components/priority-badge'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 
 type MatchBucket = 'perfect' | 'strong' | 'possible' | 'skip'
 
@@ -18,6 +20,119 @@ const MATCH_BUCKET_COLORS: Record<MatchBucket, string> = {
   strong: 'bg-blue-100 text-blue-800 border-blue-200',
   possible: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   skip: 'bg-gray-100 text-gray-600 border-gray-200',
+}
+
+// Priority grouping
+const PRIORITY_WEIGHT: Record<OpportunityPriority, number> = {
+  high: 3,
+  medium: 2,
+  low: 1,
+}
+
+const PRIORITY_SECTION_LABELS: Record<OpportunityPriority, string> = {
+  high: '🔥 Hot',
+  medium: '🌤 Warm',
+  low: '❄️ Cool',
+}
+
+/**
+ * Sort opportunities by priority (high→medium→low), then by recency.
+ */
+function sortOpportunities(opps: JobOpportunity[]): JobOpportunity[] {
+  return [...opps].sort((a, b) => {
+    // 1. Priority (high→medium→low)
+    const priorityDiff = PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority]
+    if (priorityDiff !== 0) return priorityDiff
+
+    // 2. Recency (newest first)
+    const dateA = new Date(a.created_at).getTime()
+    const dateB = new Date(b.created_at).getTime()
+    return dateB - dateA
+  })
+}
+
+/**
+ * Group sorted opportunities by priority.
+ */
+function groupByPriority(opps: JobOpportunity[]): Record<OpportunityPriority, JobOpportunity[]> {
+  return {
+    high: opps.filter((o) => o.priority === 'high'),
+    medium: opps.filter((o) => o.priority === 'medium'),
+    low: opps.filter((o) => o.priority === 'low'),
+  }
+}
+
+/**
+ * Single opportunity item component
+ */
+interface OpportunityItemProps {
+  opp: JobOpportunity
+  isSelected: boolean
+  onClick: () => void
+}
+
+function OpportunityItem({ opp, isSelected, onClick }: OpportunityItemProps) {
+  return (
+    <div
+      onClick={onClick}
+      className={`p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors ${
+        isSelected ? 'bg-blue-50 border-blue-600' : 'border-gray-200'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 truncate text-sm">{opp.title}</h3>
+          <p className="text-xs text-gray-600 mt-0.5">{opp.company}</p>
+        </div>
+        <PriorityBadge priority={opp.priority} />
+      </div>
+
+      <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+        {opp.location && (
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {opp.location}
+          </span>
+        )}
+        {opp.remote_flag && (
+          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">Remote</span>
+        )}
+        {opp.salary_text && (
+          <span className="flex items-center gap-1">
+            <DollarSign className="w-3 h-3" />
+            {opp.salary_text}
+          </span>
+        )}
+        <span className="flex items-center gap-1 ml-auto">
+          <CalendarClock className="w-3 h-3" />
+          {new Date(opp.created_at).toLocaleDateString()}
+        </span>
+      </div>
+
+      {opp.match_bucket && (
+        <div className="mt-2">
+          <div className={`inline-block px-2 py-0.5 rounded border text-xs font-medium ${MATCH_BUCKET_COLORS[opp.match_bucket]}`}>
+            {MATCH_BUCKET_LABELS[opp.match_bucket]}
+          </div>
+        </div>
+      )}
+
+      {opp.tech_stack && opp.tech_stack.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {opp.tech_stack.slice(0, 3).map((tech, idx) => (
+            <span key={idx} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+              {tech}
+            </span>
+          ))}
+          {opp.tech_stack.length > 3 && (
+            <span className="px-1.5 py-0.5 text-gray-400 text-xs">
+              +{opp.tech_stack.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Opportunities() {
@@ -133,7 +248,7 @@ export default function Opportunities() {
     }
   }
 
-  // Apply search filter client-side
+  // Apply search filter client-side, then sort and group
   const filteredOpportunities = opportunities.filter((opp) => {
     if (search) {
       const searchLower = search.toLowerCase()
@@ -145,6 +260,9 @@ export default function Opportunities() {
     }
     return true
   })
+
+  const sortedOpportunities = sortOpportunities(filteredOpportunities)
+  const groupedOpportunities = groupByPriority(sortedOpportunities)
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -243,7 +361,7 @@ export default function Opportunities() {
             </div>
           )}
 
-          {!loading && !error && filteredOpportunities.length === 0 && (
+          {!loading && !error && sortedOpportunities.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 text-gray-500">
               <Briefcase className="w-12 h-12 mb-3 text-gray-400" />
               <p className="text-lg font-medium">No opportunities yet</p>
@@ -251,63 +369,88 @@ export default function Opportunities() {
             </div>
           )}
 
-          {!loading && !error && filteredOpportunities.length > 0 && (
-            <div className="divide-y divide-gray-100">
-              {filteredOpportunities.map((opp) => (
-                <div
-                  key={opp.id}
-                  onClick={() => selectOpportunity(opp)}
-                  className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedOpportunity?.id === opp.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">{opp.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{opp.company}</p>
+          {!loading && !error && sortedOpportunities.length > 0 && (
+            <div className="p-4 space-y-6">
+              {/* Hot opportunities */}
+              {groupedOpportunities.high.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {PRIORITY_SECTION_LABELS.high}
+                      <span className="text-sm font-normal text-gray-500">
+                        ({groupedOpportunities.high.length})
+                      </span>
+                    </CardTitle>
+                    <CardDescription>
+                      High-priority roles with strong signals
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {groupedOpportunities.high.map((opp) => (
+                      <OpportunityItem
+                        key={opp.id}
+                        opp={opp}
+                        isSelected={selectedOpportunity?.id === opp.id}
+                        onClick={() => selectOpportunity(opp)}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
 
-                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                        {opp.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {opp.location}
-                          </span>
-                        )}
-                        {opp.remote_flag && (
-                          <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded">Remote</span>
-                        )}
-                        {opp.salary_text && (
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="w-3 h-3" />
-                            {opp.salary_text}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+              {/* Warm opportunities */}
+              {groupedOpportunities.medium.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {PRIORITY_SECTION_LABELS.medium}
+                      <span className="text-sm font-normal text-gray-500">
+                        ({groupedOpportunities.medium.length})
+                      </span>
+                    </CardTitle>
+                    <CardDescription>
+                      Moderate-priority roles worth exploring
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {groupedOpportunities.medium.map((opp) => (
+                      <OpportunityItem
+                        key={opp.id}
+                        opp={opp}
+                        isSelected={selectedOpportunity?.id === opp.id}
+                        onClick={() => selectOpportunity(opp)}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
 
-                    {opp.match_bucket && (
-                      <div className={`px-2 py-1 rounded border text-xs font-medium ${MATCH_BUCKET_COLORS[opp.match_bucket]}`}>
-                        {MATCH_BUCKET_LABELS[opp.match_bucket]}
-                      </div>
-                    )}
-                  </div>
-
-                  {opp.tech_stack && opp.tech_stack.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {opp.tech_stack.slice(0, 5).map((tech, idx) => (
-                        <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-                          {tech}
-                        </span>
-                      ))}
-                      {opp.tech_stack.length > 5 && (
-                        <span className="px-2 py-0.5 text-gray-400 text-xs">
-                          +{opp.tech_stack.length - 5} more
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {/* Cool opportunities */}
+              {groupedOpportunities.low.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {PRIORITY_SECTION_LABELS.low}
+                      <span className="text-sm font-normal text-gray-500">
+                        ({groupedOpportunities.low.length})
+                      </span>
+                    </CardTitle>
+                    <CardDescription>
+                      Lower-priority or earlier-stage roles
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {groupedOpportunities.low.map((opp) => (
+                      <OpportunityItem
+                        key={opp.id}
+                        opp={opp}
+                        isSelected={selectedOpportunity?.id === opp.id}
+                        onClick={() => selectOpportunity(opp)}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </div>

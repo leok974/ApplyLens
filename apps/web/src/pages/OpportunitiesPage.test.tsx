@@ -34,8 +34,9 @@ const mockOpportunities = [
     apply_url: 'https://linkedin.com/jobs/123',
     posted_at: '2025-11-20T10:00:00Z',
     created_at: '2025-11-24T12:00:00Z',
-    match_bucket: 'strong',
+    match_bucket: 'strong' as const,
     match_score: 0.85,
+    priority: 'high' as const,
   },
   {
     id: 2,
@@ -51,8 +52,9 @@ const mockOpportunities = [
     apply_url: 'https://indeed.com/jobs/456',
     posted_at: '2025-11-22T14:30:00Z',
     created_at: '2025-11-24T13:00:00Z',
-    match_bucket: 'possible',
+    match_bucket: 'possible' as const,
     match_score: 0.65,
+    priority: 'medium' as const,
   },
 ];
 
@@ -95,8 +97,7 @@ describe('OpportunitiesPage', () => {
     vi.mocked(opportunitiesApi.listOpportunities).mockResolvedValue(mockOpportunities);
     vi.mocked(opportunitiesApi.getOpportunityDetail).mockResolvedValue({
       ...mockOpportunities[0],
-      description: 'Full job description here',
-      requirements: ['5+ years Python', 'React experience'],
+      match: null,
     });
 
     render(
@@ -125,7 +126,29 @@ describe('OpportunitiesPage', () => {
 
   it('shows role match analysis when clicked', async () => {
     vi.mocked(opportunitiesApi.listOpportunities).mockResolvedValue(mockOpportunities);
-    vi.mocked(agentApi.getRoleMatch).mockResolvedValue(mockRoleMatchResponse);
+    vi.mocked(opportunitiesApi.getOpportunityDetail).mockResolvedValue({
+      ...mockOpportunities[0],
+      match: null,
+    });
+    vi.mocked(agentApi.getRoleMatch).mockResolvedValue({
+      match_bucket: 'strong' as const,
+      match_score: 0.85,
+      reasons: ['Strong Python experience', 'React skills match'],
+      missing_skills: ['Kubernetes'],
+      resume_tweaks: ['Highlight distributed systems experience'],
+      opportunity: mockOpportunities[0],
+      resume: {
+        id: 1,
+        owner_email: 'test@applylens.com',
+        headline: 'Senior Engineer',
+        summary: '',
+        skills: [],
+        experience: [],
+        education: [],
+        created_at: '2025-11-20T10:00:00Z',
+        is_active: true,
+      },
+    });
 
     render(
       <BrowserRouter>
@@ -151,7 +174,7 @@ describe('OpportunitiesPage', () => {
 
     // Verify role match was called
     await waitFor(() => {
-      expect(opportunitiesApi.runRoleMatch).toHaveBeenCalled();
+      expect(agentApi.getRoleMatch).toHaveBeenCalled();
     });
   });
 

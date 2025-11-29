@@ -121,6 +121,8 @@ export async function listResumes(): Promise<ResumeProfile[]> {
  * Opportunities API
  */
 
+export type OpportunityPriority = 'low' | 'medium' | 'high';
+
 export interface JobOpportunity {
   id: number;
   owner_email: string;
@@ -138,6 +140,8 @@ export interface JobOpportunity {
   // Match data (if available)
   match_bucket: 'perfect' | 'strong' | 'possible' | 'skip' | null;
   match_score: number | null;
+  // Priority scoring (hot/warm/cold)
+  priority: OpportunityPriority;
 }
 
 export interface OpportunityDetail extends JobOpportunity {
@@ -197,7 +201,13 @@ export async function listOpportunities(params?: {
     : '/opportunities';
 
   const response = await apiFetch(url);
-  return response as JobOpportunity[];
+  const items = response as JobOpportunity[];
+
+  // Ensure priority field is always present with sane fallback
+  return items.map((item) => ({
+    ...item,
+    priority: (item.priority ?? 'low') as OpportunityPriority,
+  }));
 }
 
 /**

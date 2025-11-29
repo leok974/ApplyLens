@@ -2,7 +2,8 @@
 
 import logging
 import re
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -15,6 +16,8 @@ from ..models import Application, Email, JobOpportunity, OpportunityMatch
 from .agent import is_newsletter_or_digest
 
 logger = logging.getLogger(__name__)
+
+OpportunityPriority = Literal["low", "medium", "high"]
 
 
 # ===== Filter Helpers =====
@@ -42,6 +45,103 @@ JOB_ALERT_SUBJECT_PATTERNS = [
     r"because you searched",
     r"job recommendations",
 ]
+
+# Priority scoring constants
+STAGE_WEIGHTS = {
+    "offer": 4,
+    "negotiation": 4,
+    "onsite": 3,
+    "final_round": 3,
+    "onsite_interview": 3,
+    "interview": 2,
+    "hr_screen": 2,
+    "phone_screen": 2,
+    "applied": 1,
+    "recruiter_outreach": 1,
+}
+
+CATEGORY_STAGE_HINTS = {
+    "offer": 4,
+    "interview_invite": 3,
+    "onsite": 3,
+    "phone_screen": 2,
+    "recruiter_outreach": 1,
+}
+
+GOOD_CATEGORIES = {
+    "offer",
+    "interview_invite",
+    "onsite",
+    "phone_screen",
+    "hr_screen",
+    "recruiter_outreach",
+}
+
+
+def _age_bonus(last_message_at: Optional[datetime]) -> int:
+    """
+    Calculate recency bonus based on how old the opportunity is.
+
+    More recent = higher bonus:
+    - ≤ 3 days: +2
+    - ≤ 7 days: +1
+    - ≤ 21 days: 0
+    - > 21 days: -1
+    """
+    if last_message_at is None:
+        return 0
+
+    if last_message_at.tzinfo is None:
+        last_message_at = last_message_at.replace(tzinfo=timezone.utc)
+
+    now = datetime.now(timezone.utc)
+    age_days = (now - last_message_at).total_seconds() / 86400.0
+
+    if age_days <= 3:
+        return 2
+    if age_days <= 7:
+        return 1
+    if age_days <= 21:
+        return 0
+    return -1
+
+
+def compute_opportunity_priority(
+    *,
+    application_status: Optional[str],
+    email_category: Optional[str],
+    last_message_at: Optional[datetime],
+) -> OpportunityPriority:
+    """
+    Compute priority score for an opportunity based on:
+    - Stage (from application status or email category)
+    - Recency (age of last message)
+    - Category quality
+
+    Returns:
+    - "high": score >= 5 (hot opportunities)
+    - "medium": score >= 3 (warm opportunities)
+    - "low": score < 3 (backlog/cold)
+    """
+    status = (application_status or "").lower()
+    category = (email_category or "").lower()
+
+    # Stage weight from app status, fallback to category hints
+    stage_weight = STAGE_WEIGHTS.get(status)
+    if stage_weight is None:
+        stage_weight = CATEGORY_STAGE_HINTS.get(category, 0)
+
+    age = _age_bonus(last_message_at)
+
+    category_bonus = 1 if category in GOOD_CATEGORIES else 0
+
+    score = stage_weight + age + category_bonus
+
+    if score >= 4:
+        return "high"
+    if score >= 2:
+        return "medium"
+    return "low"
 
 
 def is_job_alert_or_blast(email: Email) -> bool:
@@ -166,6 +266,9 @@ class OpportunityResponse(BaseModel):
     match_bucket: Optional[str] = None
     match_score: Optional[float] = None
 
+    # Priority scoring (hot/warm/cold)
+    priority: OpportunityPriority = "low"
+
     class Config:
         from_attributes = True
 
@@ -248,6 +351,17 @@ async def list_opportunities(
         if not is_real_opportunity(email, application):
             continue
 
+        last_message_at = email.received_at
+
+        # Compute priority score
+        priority = compute_opportunity_priority(
+            application_status=application.status.value
+            if application and application.status
+            else None,
+            email_category=email.category,
+            last_message_at=last_message_at,
+        )
+
         # Build response item
         filtered_items.append(
             {
@@ -258,9 +372,10 @@ async def list_opportunities(
                 "status": application.status.value
                 if application and application.status
                 else None,
-                "last_message_at": email.received_at,
+                "last_message_at": last_message_at,
                 "email_id": email.id,
                 "thread_id": email.thread_id,
+                "priority": priority,
             }
         )
 
@@ -271,6 +386,16 @@ async def list_opportunities(
         logger.warning(
             f"match_bucket filter ({match_bucket}) not applicable to Email-based opportunities"
         )
+
+    # Sort by priority (high > medium > low), then by recency
+    priority_rank = {"high": 2, "medium": 1, "low": 0}
+    filtered_items.sort(
+        key=lambda it: (
+            priority_rank[it["priority"]],
+            it["last_message_at"] or datetime.min.replace(tzinfo=timezone.utc),
+        ),
+        reverse=True,
+    )
 
     # Apply pagination
     total_count = len(filtered_items)
@@ -301,6 +426,7 @@ async def list_opportunities(
                 created_at=email.received_at.isoformat() if email.received_at else "",
                 match_bucket=None,  # Not applicable for Email-based opportunities
                 match_score=None,  # Not applicable for Email-based opportunities
+                priority=item["priority"],
             )
         )
 
