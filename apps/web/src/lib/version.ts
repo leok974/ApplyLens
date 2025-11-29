@@ -10,7 +10,7 @@ export async function fetchVersionInfo(
   signal?: AbortSignal
 ): Promise<VersionInfo | null> {
   try {
-    const res = await fetch("/api/version", {
+    const res = await fetch("/version", {
       method: "GET",
       headers: { "Accept": "application/json" },
       signal,
