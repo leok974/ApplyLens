@@ -265,7 +265,7 @@ export default function MailChat() {
   useEffect(() => {
     const sendHeartbeat = async () => {
       try {
-        await fetch('/api/ux/heartbeat', {
+        await fetch('/ux/heartbeat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -281,7 +281,7 @@ export default function MailChat() {
 
     // Send initial heartbeat when chat opens
     sendHeartbeat()
-    fetch('/api/ux/chat/opened', { method: 'POST' }).catch(() => {})
+    fetch('/ux/chat/opened', { method: 'POST' }).catch(() => {})
 
     // Send heartbeat every 30s while component is mounted
     const interval = setInterval(sendHeartbeat, 30000)

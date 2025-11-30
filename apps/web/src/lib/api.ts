@@ -113,7 +113,7 @@ export async function searchEmails(
   risk_max?: number,
   quarantined?: boolean
 ): Promise<SearchHit[]> {
-  let url = `/api/search/?q=${encodeURIComponent(query)}&limit=${limit}`
+  let url = `/search/?q=${encodeURIComponent(query)}&limit=${limit}`
   if (labelFilter) {
     url += `&label_filter=${encodeURIComponent(labelFilter)}`
   }
@@ -188,7 +188,7 @@ export async function searchEmailsWithParams(params: SearchParams): Promise<Sear
   if (typeof risk_max === 'number') sp.set('risk_max', String(risk_max))
   if (typeof quarantined === 'boolean') sp.set('quarantined', String(quarantined))
 
-  const r = await fetch(`/api/search/?${sp.toString()}`, { credentials: 'include' })
+  const r = await fetch(`/search/?${sp.toString()}`, { credentials: 'include' })
   if (!r.ok) throw new Error(`Search failed (${r.status})`)
   const data = await r.json()
   return data.hits as SearchHit[]
@@ -584,7 +584,7 @@ export type ExplainResponse = {
 }
 
 export async function explainEmail(id: string): Promise<ExplainResponse> {
-  const r = await fetch(`/api/search/explain/${id}`)
+  const r = await fetch(`/search/explain/${id}`)
   if (!r.ok) throw new Error(`Explain failed: ${r.status}`)
   return r.json()
 }
@@ -934,7 +934,7 @@ export interface FollowupQueueResponse {
 }
 
 export async function getFollowupQueue(): Promise<FollowupQueueResponse> {
-  const res = await fetch('/api/v2/agent/followup-queue', {
+  const res = await fetch('/v2/agent/followup-queue', {
     method: 'GET',
     headers: {
       'x-csrf-token': getCsrf(),
@@ -1020,14 +1020,30 @@ export type TrackerResponse = {
 
 // Runtime config (read-only mode, version banner, etc.)
 export async function fetchRuntimeConfig(): Promise<RuntimeConfig> {
-  const res = await fetch("/api/config", {
-    method: "GET",
-    credentials: "include",
-  })
-  if (!res.ok) {
-    throw new Error("Failed to load runtime config")
+  try {
+    const res = await fetch("/config", {
+      method: "GET",
+      credentials: "include",
+    })
+    if (!res.ok) {
+      if (res.status === 404) {
+        if (import.meta.env.DEV) {
+          console.warn('[config] Runtime config endpoint not available, using defaults')
+        }
+        return { readOnly: false, version: 'unknown' }
+      }
+      throw new Error("Failed to load runtime config")
+    }
+    return res.json()
+  } catch (err: any) {
+    if (err.message?.includes('Failed to fetch')) {
+      if (import.meta.env.DEV) {
+        console.warn('[config] Network error, using defaults')
+      }
+      return { readOnly: false, version: 'unknown' }
+    }
+    throw err
   }
-  return res.json()
 }
 
 // Inbox insights metrics summary card
@@ -1044,7 +1060,7 @@ export async function fetchInboxMetrics(): Promise<InboxMetricsSummary> {
 
 // Tracker data (pipeline / applications list)
 export async function fetchTracker(): Promise<TrackerResponse> {
-  const res = await fetch("/api/tracker", {
+  const res = await fetch("/tracker", {
     method: "GET",
     credentials: "include",
   })
@@ -1170,7 +1186,7 @@ export type EmailDetailResponse = {
 }
 
 export async function getEmailById(id: string): Promise<EmailDetailResponse> {
-  const r = await fetch(`/api/search/by_id/${encodeURIComponent(id)}`)
+  const r = await fetch(`/search/by_id/${encodeURIComponent(id)}`)
   if (!r.ok) throw new Error(`Failed to fetch email: ${r.status}`)
   return r.json()
 }
@@ -1268,7 +1284,7 @@ export type ActionResponse = {
 }
 
 async function postAction(path: string, doc_id: string, note?: string): Promise<ActionResponse> {
-  const r = await fetch(`/api/search/actions/${path}`, {
+  const r = await fetch(`/search/actions/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ doc_id, note })
@@ -1414,7 +1430,7 @@ export interface TrackerRow {
  */
 export async function fetchTrackerApplications(): Promise<TrackerRow[]> {
   try {
-    const response = await fetch('/api/tracker', {
+    const response = await fetch('/tracker', {
       credentials: 'include',
     })
 

@@ -112,7 +112,7 @@ export default function Today() {
       }, 300);
 
       try {
-        const response = await fetch(apiUrl('/api/v2/agent/today'), {
+        const response = await fetch(apiUrl('/v2/agent/today'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -120,6 +120,15 @@ export default function Today() {
         });
 
         if (!response.ok) {
+          if (response.status === 404) {
+            setError('Today triage feature is not enabled in this environment');
+            setStatus('error');
+            setProgress(100);
+            if (import.meta.env.DEV) {
+              console.warn('[today] v2/agent/today endpoint not available');
+            }
+            return;
+          }
           if (response.status === 401) {
             throw new Error('Not authenticated. Please log in.');
           }
