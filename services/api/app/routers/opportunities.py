@@ -17,6 +17,8 @@ from .agent import is_newsletter_or_digest
 
 logger = logging.getLogger(__name__)
 
+router = APIRouter(prefix="/api/opportunities", tags=["opportunities"])
+
 OpportunityPriority = Literal["low", "medium", "high"]
 
 
@@ -237,9 +239,6 @@ def is_real_opportunity(email: Email, application: Optional[Application]) -> boo
             return False
 
     return True
-
-
-router = APIRouter(prefix="/api/opportunities", tags=["opportunities"])
 
 
 # ===== Schemas =====
