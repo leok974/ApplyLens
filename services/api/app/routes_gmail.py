@@ -3,15 +3,16 @@ import os
 import time
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from pydantic import BaseModel
 from sqlalchemy import desc
 
 from .db import SessionLocal
 from .gmail_service import gmail_backfill
 from .metrics import BACKFILL_INSERTED, BACKFILL_REQUESTS, GMAIL_CONNECTED
-from .models import Email, OAuthToken
+from .models import Email, OAuthToken, User
 from .observability.datadog import track_gmail_connection_status
+from .auth.deps import optional_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -71,20 +72,27 @@ DEFAULT_USER_EMAIL_ENV = os.getenv("DEFAULT_USER_EMAIL", "user@example.com")
 
 
 @router.get("/status", response_model=ConnectionStatus)
-def get_connection_status(user_email: str = Query(DEFAULT_USER_EMAIL_ENV)):
+def get_connection_status(user: User = Depends(optional_current_user)):
     """Check if user has connected their Gmail account"""
     db = SessionLocal()
     try:
+        # If no authenticated user, return disconnected
+        if not user:
+            GMAIL_CONNECTED.labels(user_email="anonymous").set(0)
+            track_gmail_connection_status(connected=False, user_id="anonymous")
+            return ConnectionStatus(connected=False)
+
+        # Look up OAuth token for authenticated user
         token = (
             db.query(OAuthToken)
-            .filter_by(provider="google", user_email=user_email)
+            .filter_by(provider="google", user_email=user.email)
             .first()
         )
         if not token:
             # Set gauge: disconnected
-            GMAIL_CONNECTED.labels(user_email=user_email).set(0)
+            GMAIL_CONNECTED.labels(user_email=user.email).set(0)
             # Track in Datadog (Phase 3C)
-            track_gmail_connection_status(connected=False, user_id=user_email)
+            track_gmail_connection_status(connected=False, user_id=user.email)
             return ConnectionStatus(connected=False)
 
         # Count total emails for this user
