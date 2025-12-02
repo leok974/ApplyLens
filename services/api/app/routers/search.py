@@ -27,7 +27,7 @@ RECENCY = {
 SEARCH_FIELDS = ["subject^3", "body_text", "sender^1.5", "to"]
 INDEX_ALIAS = INDEX  # Use configured index/alias
 
-router = APIRouter(prefix="/search", tags=["search"])
+router = APIRouter(prefix="/api/search", tags=["search"])
 
 
 class SearchHit(BaseModel):
