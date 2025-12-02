@@ -3,7 +3,7 @@
 import os
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 
 from ..auth.deps import current_user, optional_current_user
 from ..models import User
@@ -11,7 +11,7 @@ from ..models import User
 DEFAULT_USER_EMAIL = os.getenv("DEFAULT_USER_EMAIL")
 
 
-def get_current_user_email(request: Request, user: User = Depends(current_user)) -> str:
+def get_current_user_email(user: User = Depends(current_user)) -> str:
     """
     Get the current authenticated user's email.
 
@@ -34,11 +34,9 @@ def get_current_user_email(request: Request, user: User = Depends(current_user))
         detail="User email not available. Please log in or set DEFAULT_USER_EMAIL.",
     )
 
-    return email
-
 
 def get_optional_user_email(
-    request: Request, user: User = Depends(optional_current_user)
+    user: User = Depends(optional_current_user),
 ) -> Optional[str]:
     """
     Optional version that returns None instead of raising 401.
