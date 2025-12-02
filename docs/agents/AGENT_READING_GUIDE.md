@@ -1,6 +1,6 @@
 # Agent Reading Guide
 
-**Last Updated**: 2025-11-27
+**Last Updated**: 2025-12-02
 **Audience**: AI agents, automation tools, MCP servers, and other programmatic assistants
 
 ---
@@ -8,6 +8,70 @@
 ## Overview
 
 This guide helps **AI agents and automated tools** navigate the ApplyLens documentation efficiently. The docs are organized into four main categories, each serving a specific purpose for agents performing different tasks.
+
+---
+
+## ⚠️ CRITICAL: Deployment & Infrastructure Rules
+
+**BEFORE deploying, testing, or changing infrastructure, read these MANDATORY rules:**
+
+### Deployment Golden Rules
+
+1. ✅ **ALWAYS use `scripts/deploy-prod.ps1`** for production deployments
+2. ✅ **ALWAYS read [`docs/core/DEPLOYMENT_CHEATSHEET.md`](../core/DEPLOYMENT_CHEATSHEET.md)** FIRST when dealing with deployments
+3. ✅ **NEVER invent new deployment commands** – prefer existing scripts
+4. ✅ **NEVER manually restart containers** without documenting why in logs/incidents
+5. ✅ **DO NOT touch Cloudflare tunnel config** unless explicitly requested by user
+6. ✅ **DO NOT change nginx routing** without reviewing `infra/nginx/conf.d/` and getting approval
+7. ✅ **ALWAYS check `docker-compose.prod.yml`** for canonical service definitions before making changes
+
+### Deployment Quick Reference (Read This First)
+
+When asked to deploy, troubleshoot, or modify infrastructure, **read these in exact order**:
+
+1. **[`docs/core/DEPLOYMENT_CHEATSHEET.md`](../core/DEPLOYMENT_CHEATSHEET.md)** ← START HERE (2 min read)
+   - Quick commands & mental model
+   - Common fixes for 502/500/401 errors
+   - Where to look when confused
+
+2. **[`docs/core/DEPLOYMENT.md`](../core/DEPLOYMENT.md)** ← Full guide (10 min read)
+   - Complete dev/prod deployment workflows
+   - Environment variables reference
+   - Troubleshooting procedures
+
+3. **`docker-compose.prod.yml`** ← Canonical truth
+   - Service definitions
+   - Environment variables
+   - Network topology
+
+4. **`scripts/deploy-prod.ps1`** ← Actual commands
+   - What really happens during deploy
+   - Build metadata flow
+   - Verification steps
+
+**Example Bad Behavior** (DO NOT DO THIS):
+```powershell
+# ❌ BAD: Inventing new docker run commands
+docker run -d --name applylens-api-prod ...
+
+# ❌ BAD: Manually restarting without checking docs
+docker restart applylens-api-prod
+
+# ❌ BAD: Guessing environment variables
+-e GOOGLE_CLIENT_ID=... # Wrong! Should be APPLYLENS_GOOGLE_CLIENT_ID
+```
+
+**Example Good Behavior** (DO THIS):
+```powershell
+# ✅ GOOD: Read cheatsheet first
+cat docs/core/DEPLOYMENT_CHEATSHEET.md
+
+# ✅ GOOD: Use existing script
+.\scripts\deploy-prod.ps1 -Version "0.7.12" -Build
+
+# ✅ GOOD: Check docker-compose for env vars
+cat docker-compose.prod.yml | Select-String "APPLYLENS_"
+```
 
 ---
 
@@ -74,6 +138,42 @@ This guide helps **AI agents and automated tools** navigate the ApplyLens docume
 
 ## Task-Specific Reading Guides
 
+### For Deployment & Infrastructure Agents
+
+**Goal**: Deploy services, fix production issues, modify infrastructure, troubleshoot container problems.
+
+**MANDATORY FIRST READS** (in exact order):
+1. **[`docs/core/DEPLOYMENT_CHEATSHEET.md`](../core/DEPLOYMENT_CHEATSHEET.md)** ← **READ THIS FIRST** (2 min)
+2. **[`docs/core/DEPLOYMENT.md`](../core/DEPLOYMENT.md)** ← Full deployment guide (10 min)
+3. **`docker-compose.prod.yml`** ← Canonical service definitions
+4. **`scripts/deploy-prod.ps1`** ← Actual deploy script (source of truth)
+
+**Then read**:
+5. [`docs/core/INFRASTRUCTURE.md`](../core/INFRASTRUCTURE.md) – Infrastructure overview
+6. [`docs/core/CLOUDFLARE.md`](../core/CLOUDFLARE.md) – Tunnel & DNS setup
+7. [`docs/core/ONCALL_HANDBOOK.md`](../core/ONCALL_HANDBOOK.md) – Incident response
+
+**Common deployment tasks → where to look**:
+
+| Task | Read |
+|------|------|
+| Deploy new version | `DEPLOYMENT_CHEATSHEET.md` → `scripts/deploy-prod.ps1` |
+| Fix 502 Bad Gateway | `DEPLOYMENT.md` Section 4 (Common Issues table) |
+| Fix 500 Server Error | `DEPLOYMENT.md` Section 8 (Troubleshooting) |
+| Fix 401 Unauthorized | `DEPLOYMENT.md` Section 5 (Environment Variables) |
+| Add environment variable | `docker-compose.prod.yml` + `DEPLOYMENT.md` Section 5 |
+| Change container config | `docker-compose.prod.yml` + `scripts/deploy-prod.ps1` |
+
+**CRITICAL deployment restrictions**:
+- ❌ **DO NOT** manually `docker run` containers – use `scripts/deploy-prod.ps1`
+- ❌ **DO NOT** edit nginx config without reviewing `infra/nginx/conf.d/`
+- ❌ **DO NOT** restart Cloudflare tunnel – it runs as separate service
+- ❌ **DO NOT** change service ports without updating nginx + Cloudflare config
+- ✅ **DO** use `docker-compose.prod.yml` as single source of truth
+- ✅ **DO** document any manual container restarts in incidents/
+
+---
+
 ### For Debugging/Triage Agents
 
 **Goal**: Diagnose issues, understand system behavior, troubleshoot failures.
@@ -114,12 +214,12 @@ This guide helps **AI agents and automated tools** navigate the ApplyLens docume
 
 ### For Observability/Ops Agents
 
-**Goal**: Deploy, monitor, maintain, and scale the production system.
+**Goal**: Monitor, maintain, and scale the production system.
 
 **Read first** (in order):
-1. [`docs/core/DEPLOYMENT.md`](../core/DEPLOYMENT.md) – Production deployment procedures
-2. [`docs/core/INFRASTRUCTURE.md`](../core/INFRASTRUCTURE.md) – Infrastructure overview (Cloudflare, Docker, etc.)
-3. [`docs/core/MONITORING.md`](../core/MONITORING.md) – Metrics, Grafana, alerts
+1. [`docs/core/DEPLOYMENT_CHEATSHEET.md`](../core/DEPLOYMENT_CHEATSHEET.md) – Quick reference
+2. [`docs/core/DEPLOYMENT.md`](../core/DEPLOYMENT.md) – Full deployment guide
+3. [`docs/core/MONITORING.md`](../core/MONITORING.md) – Metrics, Datadog, alerts
 4. [`docs/core/PRODUCTION_HANDBOOK.md`](../core/PRODUCTION_HANDBOOK.md) – Production operations guide
 5. [`docs/core/ONCALL_HANDBOOK.md`](../core/ONCALL_HANDBOOK.md) – Incident response procedures
 
@@ -137,9 +237,11 @@ This guide helps **AI agents and automated tools** navigate the ApplyLens docume
 
 | What you need | Where to look |
 |---------------|---------------|
+| **"How do I deploy?"** | **[`docs/core/DEPLOYMENT_CHEATSHEET.md`](../core/DEPLOYMENT_CHEATSHEET.md)** ← START HERE |
+| **"Container won't start / 502 / 500 error"** | **[`docs/core/DEPLOYMENT.md`](../core/DEPLOYMENT.md)** Section 4 & 8 |
 | "How does ApplyLens work?" | `docs/core/OVERVIEW.md`, `docs/core/ARCHITECTURE.md` |
 | "How do I run it locally?" | `docs/core/LOCAL_DEV_SETUP.md`, `docs/core/GETTING_STARTED.md` |
-| "How do I deploy to production?" | `docs/core/DEPLOYMENT.md`, `docs/core/DEPLOYMENT_GUARDRAILS.md` |
+| "What environment variables exist?" | `docs/core/DEPLOYMENT.md` Section 5, `docker-compose.prod.yml` |
 | "What tests exist?" | `docs/core/TESTING_OVERVIEW.md`, `docs/core/testing/` |
 | "How do I fix [specific issue]?" | `docs/core/runbooks/`, `docs/core/incidents/` |
 | "How should agents interact with the extension?" | `docs/agents/COMPANION_PROTOCOL.md` |
@@ -151,11 +253,13 @@ This guide helps **AI agents and automated tools** navigate the ApplyLens docume
 
 ## Tips for Efficient Agent Reading
 
-1. **Start broad, then narrow**: Begin with `OVERVIEW.md` and `ARCHITECTURE.md`, then dive into component-specific docs.
-2. **Follow the hierarchy**: `core/` → `agents/` → `future/` → `archive/` (in that order).
-3. **Check README files**: Each major folder has a `README.md` or index doc for navigation.
-4. **Use search strategically**: Search for error messages in `runbooks/` and `incidents/` first.
-5. **Respect the "archive" boundary**: Don't use archived docs to understand the current system—they represent **past state**, not present.
+1. **For deployment tasks**: Start with `DEPLOYMENT_CHEATSHEET.md`, not anywhere else
+2. **Start broad, then narrow**: Begin with `OVERVIEW.md` and `ARCHITECTURE.md`, then dive into component-specific docs
+3. **Follow the hierarchy**: `core/` → `agents/` → `future/` → `archive/` (in that order)
+4. **Check README files**: Each major folder has a `README.md` or index doc for navigation
+5. **Use search strategically**: Search for error messages in `runbooks/` and `incidents/` first
+6. **Respect the "archive" boundary**: Don't use archived docs to understand the current system—they represent **past state**, not present
+7. **Never guess commands**: If unsure, read `DEPLOYMENT.md` or `docker-compose.prod.yml`, don't invent commands
 
 ---
 
