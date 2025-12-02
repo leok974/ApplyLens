@@ -3,51 +3,49 @@
 import os
 from typing import Optional
 
-from fastapi import HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
+
+from ..auth.deps import current_user, optional_current_user
+from ..models import User
 
 DEFAULT_USER_EMAIL = os.getenv("DEFAULT_USER_EMAIL")
 
 
-def get_current_user_email(request: Request) -> str:
+def get_current_user_email(request: Request, user: User = Depends(current_user)) -> str:
     """
-    Resolve the current user's email from:
-    1. X-User-Email header (for admin/testing)
-    2. Session/cookie (OAuth flow)
-    3. Request state (set by OAuth middleware)
-    4. DEFAULT_USER_EMAIL env var (fallback for single-user mode)
+    Get the current authenticated user's email.
 
-    Raises 401 if no email can be determined.
+    Uses session-based authentication via current_user dependency.
+    Falls back to DEFAULT_USER_EMAIL env var for single-user mode.
+
+    Raises 401 if no user is authenticated and no default is set.
     """
-    # Try header first (allows admin override or testing)
-    email = request.headers.get("X-User-Email")
-
-    # Try session/cookie (OAuth)
-    if not email:
-        email = request.cookies.get("user_email")
-
-    # Try state or session data if using OAuth
-    if not email and hasattr(request.state, "user_email"):
-        email = request.state.user_email
+    # If we have an authenticated user, use their email
+    if user:
+        return user.email
 
     # Fallback to environment default (single-user mode)
-    if not email:
-        email = DEFAULT_USER_EMAIL
+    email = DEFAULT_USER_EMAIL
+    if email:
+        return email
 
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User email not available. Please log in or set DEFAULT_USER_EMAIL.",
-        )
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="User email not available. Please log in or set DEFAULT_USER_EMAIL.",
+    )
 
     return email
 
 
-def get_optional_user_email(request: Request) -> Optional[str]:
+def get_optional_user_email(
+    request: Request, user: User = Depends(optional_current_user)
+) -> Optional[str]:
     """
     Optional version that returns None instead of raising 401.
     Use for endpoints that can work with or without a user context.
     """
-    try:
-        return get_current_user_email(request)
-    except HTTPException:
-        return None
+    if user:
+        return user.email
+
+    # Fallback to environment default
+    return DEFAULT_USER_EMAIL
