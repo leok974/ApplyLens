@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -277,7 +277,6 @@ class OpportunityResponse(BaseModel):
 
 @router.get("", response_model=list[OpportunityResponse])
 async def list_opportunities(
-    request: Request,
     source: Optional[str] = Query(
         None, description="Filter by source (indeed, linkedin, etc.)"
     ),
@@ -290,6 +289,7 @@ async def list_opportunities(
     limit: int = Query(100, ge=1, le=500, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     db: Session = Depends(get_db),
+    user_email: str = Depends(get_current_user_email),
 ):
     """List job opportunities for the authenticated user.
 
@@ -310,7 +310,6 @@ async def list_opportunities(
 
     Returns opportunities sorted by recency (most recent email first).
     """
-    user_email = get_current_user_email(request)
 
     # Query emails with potential applications
     # Start with emails that have application category or are linked to applications
@@ -440,14 +439,13 @@ async def list_opportunities(
 @router.get("/{opportunity_id}", response_model=dict)
 async def get_opportunity_detail(
     opportunity_id: int,
-    request: Request,
     db: Session = Depends(get_db),
+    user_email: str = Depends(get_current_user_email),
 ):
     """Get detailed information for a specific opportunity including match data.
 
     Returns opportunity details with full match analysis (reasons, missing_skills, resume_tweaks).
     """
-    user_email = get_current_user_email(request)
 
     # Load opportunity
     opportunity = (

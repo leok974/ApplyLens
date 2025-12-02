@@ -7,7 +7,7 @@ No resume generation - upload only.
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -50,9 +50,9 @@ class ResumeProfileResponse(BaseModel):
     "/upload", response_model=ResumeProfileResponse, status_code=status.HTTP_201_CREATED
 )
 async def upload_resume(
-    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    user_email: str = Depends(get_current_user_email),
 ):
     """Upload and parse a resume file (PDF, DOCX, or TXT).
 
@@ -60,7 +60,6 @@ async def upload_resume(
 
     Returns the parsed resume profile.
     """
-    user_email = get_current_user_email(request)
 
     # Validate file type
     if not file.filename:
@@ -166,14 +165,13 @@ async def upload_resume(
 
 @router.get("/current", response_model=Optional[ResumeProfileResponse])
 async def get_current_resume(
-    request: Request,
     db: Session = Depends(get_db),
+    user_email: str = Depends(get_current_user_email),
 ):
     """Get the currently active resume profile for the authenticated user.
 
     Returns null if no active resume.
     """
-    user_email = get_current_user_email(request)
 
     resume = (
         db.query(ResumeProfile)
@@ -205,14 +203,13 @@ async def get_current_resume(
 @router.post("/activate/{profile_id}", response_model=ResumeProfileResponse)
 async def activate_resume(
     profile_id: int,
-    request: Request,
     db: Session = Depends(get_db),
+    user_email: str = Depends(get_current_user_email),
 ):
     """Activate a specific resume profile, deactivating others.
 
     - **profile_id**: Resume profile ID to activate
     """
-    user_email = get_current_user_email(request)
 
     # Verify profile belongs to user
     resume = (
@@ -260,11 +257,10 @@ async def activate_resume(
 
 @router.get("/all", response_model=list[ResumeProfileResponse])
 async def list_all_resumes(
-    request: Request,
     db: Session = Depends(get_db),
+    user_email: str = Depends(get_current_user_email),
 ):
     """List all resume profiles for the authenticated user."""
-    user_email = get_current_user_email(request)
 
     resumes = (
         db.query(ResumeProfile)
