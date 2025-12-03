@@ -13,13 +13,43 @@
 
 **Production Status**: Still heuristic mode (v0.8.2). ML infrastructure code-ready.
 
-**Next Operational Steps:**
-1. Inspect training data: `python -m scripts.inspect_email_training_labels`
-2. Train ml_v1: `python -m scripts.train_email_classifier`
-3. Evaluate on golden set: `python -m scripts.eval_email_classifier_on_golden`
-4. Deploy shadow mode (set `EMAIL_CLASSIFIER_MODE=ml_shadow` + rebuild Docker with model artifacts)
-5. Monitor agreement rate in `mart_model_comparison` for 1-2 weeks
-6. If >85% agreement, promote to ml_live
+**Next Operational Steps (run on production server with DB access):**
+
+```bash
+# SSH into production server
+ssh user@applylens-api-server
+
+# 1. Inspect training data quality
+python -m scripts.inspect_email_training_labels
+# Expected: 195+ labels from bootstrap, check class balance
+
+# 2. Train ml_v1 (if quality checks pass)
+python -m scripts.train_email_classifier
+# Creates: models/email_classifier_v1.joblib, models/email_vectorizer_v1.joblib
+
+# 3. Evaluate on golden set (if available)
+python -m scripts.eval_email_classifier_on_golden
+# Validates performance on hand-labeled data
+
+# 4. Build Docker image with ML artifacts
+docker build -t leoklemet/applylens-api:0.8.3-ml_shadow .
+docker push leoklemet/applylens-api:0.8.3-ml_shadow
+
+# 5. Deploy shadow mode
+# Update docker-compose.yml or k8s deployment:
+#   EMAIL_CLASSIFIER_MODE=ml_shadow
+#   EMAIL_CLASSIFIER_MODEL_VERSION=ml_v1
+#   EMAIL_CLASSIFIER_MODEL_PATH=/app/models/email_classifier_v1.joblib
+#   EMAIL_CLASSIFIER_VECTORIZER_PATH=/app/models/email_vectorizer_v1.joblib
+
+# 6. Verify deployment
+curl https://api.applylens.io/diagnostics/classifier/health
+# Should show: mode=ml_shadow, has_model_artifacts=true
+
+# 7. Monitor for 1-2 weeks
+# Query mart_model_comparison for agreement rate
+# Target: >85% agreement before promoting to ml_live
+```
 
 ---
 

@@ -97,11 +97,19 @@ ORDER BY avg_conf DESC;
 
 ### 2.0. Inspect Training Data Quality
 
-**Before training**, verify label distribution and quality:
+**Before training**, verify label distribution and quality.
+
+⚠️ **Note**: This script requires database access. Run on production server or use SSH tunnel to production DB.
 
 ```bash
-cd services/api
+# On production server:
+cd /app  # or wherever API code is deployed
 python -m scripts.inspect_email_training_labels
+
+# OR with SSH tunnel to production DB:
+# ssh -L 5432:localhost:5432 user@db-server
+# Then set DATABASE_URL=postgresql://user:pass@localhost:5432/applylens
+# python -m scripts.inspect_email_training_labels
 ```
 
 **Expected output:**
@@ -153,8 +161,10 @@ Recommendations:
 
 ### 2.1. Run Training Script
 
+⚠️ **Note**: Requires database access with training labels. Run on production server.
+
 ```bash
-cd services/api
+cd /app  # or API deployment directory
 python -m scripts.train_email_classifier
 ```
 
