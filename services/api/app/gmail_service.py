@@ -535,6 +535,16 @@ def gmail_backfill(db: Session, user_email: str, days: int = 60) -> int:
                 existing.quarantined = False
 
             db.flush()  # get email.id for linking
+
+            # Classify email and persist classification event
+            from app.services.classification import classify_and_persist_email
+
+            try:
+                classify_and_persist_email(db, existing)
+            except Exception as e:
+                # Log error but don't fail the entire backfill
+                logger.warning(f"Classification failed for {meta['id']}: {e}")
+
             upsert_application_for_email(db, existing)  # NEW: Link to application
 
             inserted += 1
@@ -760,6 +770,16 @@ def gmail_backfill_with_progress(
                 existing.quarantined = False
 
             db.flush()
+
+            # Classify email and persist classification event
+            from app.services.classification import classify_and_persist_email
+
+            try:
+                classify_and_persist_email(db, existing)
+            except Exception as e:
+                # Log error but don't fail the entire backfill
+                logger.warning(f"Classification failed for {meta['id']}: {e}")
+
             upsert_application_for_email(db, existing)
 
             inserted += 1
