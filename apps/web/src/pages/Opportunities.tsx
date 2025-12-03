@@ -272,12 +272,8 @@ export default function Opportunities() {
     return true
   })
 
-  const sortedOpportunities = sortOpportunities(filteredOpportunities)
-  const groupedOpportunities = groupByPriority(sortedOpportunities)
-
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
+    <div className="h-screen flex flex-col bg-gray-50">{/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
