@@ -1,413 +1,235 @@
 """
-Bootstrap email_training_labels from existing emails with high-confidence rules.
+Bootstrap high-confidence training labels for the email classifier.
 
-This script applies heuristic rules to label emails that we're confident about,
-creating training data for the ML classifier.
+Usage (from services/api/):
 
-Usage:
-    python -m scripts.bootstrap_email_training_labels [--limit N] [--dry-run]
+    python -m scripts.bootstrap_email_training_labels --limit 5000
 
-Rules implemented:
-    1. Application confirmations (ATS systems)
-    2. Security/auth codes
-    3. Job alert digests
-    4. Receipts/invoices
-    5. Interview invites (high-signal keywords)
+This script:
+    - Scans recent emails (up to --limit)
+    - Applies a few conservative rules to assign labels
+    - Inserts rows into email_training_labels with confidence scores
 """
 
-import argparse
-import sys
-from typing import List
+from __future__ import annotations
 
-from sqlalchemy import func
+import argparse
+from typing import Optional, Tuple
+
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
 from app.models import Email, EmailTrainingLabel
 
 
-# Known ATS domains that send application confirmations
-ATS_DOMAINS = [
-    "greenhouse.io",
-    "jobs.workablemail.com",
-    "jobs.lever.co",
-    "myworkday.com",
-    "icims.com",
-    "smartrecruiters.com",
-    "jobvite.com",
-    "brassring.com",
-    "ultipro.com",
-    "successfactors.com",
-    "taleo.net",
-]
+# --- Label helpers ---------------------------------------------------------
 
 
-def bootstrap_application_confirmations(
-    db: Session, limit: int = 1000
-) -> List[EmailTrainingLabel]:
+def _norm(s: Optional[str]) -> str:
+    return (s or "").lower()
+
+
+def infer_label_for_email(email: Email) -> Optional[Tuple[str, bool, str, float]]:
     """
-    Label emails that are clearly application confirmations from ATS systems.
+    Return (category, is_real_opportunity, label_source, confidence)
+    or None if we don't have a high-confidence guess.
 
-    High-confidence rules:
-        - Subject contains "application received" OR "we received your application"
-        - OR sender domain is a known ATS
-        - AND subject contains "application" or "applied"
+    This is intentionally conservative: we only emit labels when extremely confident.
     """
-    labels = []
+    subject = _norm(getattr(email, "subject", None))
+    snippet = _norm(getattr(email, "body_text", None))
 
-    # Rule 1: Subject-based application confirmations
-    emails = (
-        db.query(Email)
-        .filter(
-            Email.subject.ilike("%application received%")
-            | Email.subject.ilike("%we received your application%")
-            | Email.subject.ilike("%your application to%")
-            | Email.subject.ilike("%application submitted%")
+    text = subject + " " + snippet
+
+    # 1) Security / auth codes
+    if any(
+        k in text
+        for k in [
+            "verification code",
+            "one-time code",
+            "one time code",
+            "2-step verification",
+            "two-step verification",
+            "security code",
+        ]
+    ):
+        return (
+            "security_auth",
+            False,
+            "bootstrap_rule_security_auth",
+            0.99,
         )
-        .filter(
-            ~db.query(EmailTrainingLabel.id)
-            .filter(EmailTrainingLabel.email_id == Email.id)
-            .exists()
+
+    # 2) Receipts / invoices
+    if any(
+        k in text
+        for k in [
+            "your receipt",
+            "payment receipt",
+            "payment confirmation",
+            "invoice",
+            "order confirmation",
+            "thank you for your purchase",
+        ]
+    ):
+        return (
+            "receipt_invoice",
+            False,
+            "bootstrap_rule_receipt_invoice",
+            0.97,
         )
-        .limit(limit)
-        .all()
+
+    # 3) Application confirmation / ATS emails
+    if any(
+        k in text
+        for k in [
+            "we received your application",
+            "your application to",
+            "thank you for applying",
+            "application received",
+            "has been submitted",
+        ]
+    ):
+        return (
+            "application_confirmation",
+            True,
+            "bootstrap_rule_application_confirmation",
+            0.92,
+        )
+
+    # 4) Interview invites
+    if any(
+        k in text
+        for k in [
+            "would like to schedule an interview",
+            "interview with",
+            "phone screen",
+            "phone interview",
+            "technical interview",
+            "onsite interview",
+        ]
+    ):
+        return (
+            "interview_invite",
+            True,
+            "bootstrap_rule_interview_invite",
+            0.94,
+        )
+
+    # 5) Obvious job alert digests / newsletters
+    if any(
+        k in text
+        for k in [
+            "daily job alert",
+            "job alerts for",
+            "jobs we found for you",
+            "weekly job round-up",
+            "weekly job roundup",
+            "weekly newsletter",
+            "our latest newsletter",
+            "this week in",
+        ]
+    ):
+        return (
+            "job_alert_digest",
+            False,
+            "bootstrap_rule_job_alert_digest",
+            0.9,
+        )
+
+    # 6) Generic marketing newsletter
+    if any(
+        k in text
+        for k in [
+            "our latest blog posts",
+            "new features we released",
+            "this month we",
+            "our latest update",
+        ]
+    ):
+        return (
+            "newsletter_marketing",
+            False,
+            "bootstrap_rule_newsletter_marketing",
+            0.88,
+        )
+
+    # No confident label
+    return None
+
+
+def email_already_labeled(db: Session, email_id: int) -> bool:
+    return (
+        db.query(EmailTrainingLabel.id)
+        .filter(EmailTrainingLabel.email_id == email_id)
+        .limit(1)
+        .scalar()
+        is not None
     )
 
-    for email in emails:
-        labels.append(
-            EmailTrainingLabel(
+
+# --- Main script -----------------------------------------------------------
+
+
+def bootstrap_labels(limit: int) -> int:
+    """
+    Bootstrap labels for up to `limit` emails.
+    Returns the number of EmailTrainingLabel rows inserted.
+    """
+    db: Session = SessionLocal()
+    inserted = 0
+
+    try:
+        # Process most recent emails first (more relevant content)
+        q = db.query(Email).order_by(desc(Email.received_at)).limit(limit)
+
+        for email in q:
+            if email_already_labeled(db, email.id):
+                continue
+
+            inferred = infer_label_for_email(email)
+            if inferred is None:
+                continue
+
+            category, is_real_opp, source, confidence = inferred
+
+            tl = EmailTrainingLabel(
                 email_id=email.id,
                 thread_id=email.thread_id,
-                label_category="application_confirmation",
-                label_is_real_opportunity=True,
-                label_source="bootstrap_rule_application_subject",
-                confidence=0.95,
+                label_category=category,
+                label_is_real_opportunity=is_real_opp,
+                label_source=source,
+                confidence=confidence,
             )
-        )
+            db.add(tl)
+            inserted += 1
 
-    # Rule 2: ATS domain senders
-    for domain in ATS_DOMAINS:
-        emails = (
-            db.query(Email)
-            .filter(Email.from_address.ilike(f"%@%{domain}%"))
-            .filter(
-                Email.subject.ilike("%application%") | Email.subject.ilike("%applied%")
-            )
-            .filter(
-                ~db.query(EmailTrainingLabel.id)
-                .filter(EmailTrainingLabel.email_id == Email.id)
-                .exists()
-            )
-            .limit(100)
-            .all()
-        )
+        if inserted:
+            db.commit()
+        else:
+            db.rollback()
 
-        for email in emails:
-            labels.append(
-                EmailTrainingLabel(
-                    email_id=email.id,
-                    thread_id=email.thread_id,
-                    label_category="application_confirmation",
-                    label_is_real_opportunity=True,
-                    label_source=f"bootstrap_rule_ats_{domain.split('.')[0]}",
-                    confidence=0.90,
-                )
-            )
+    finally:
+        db.close()
 
-    return labels
+    return inserted
 
 
-def bootstrap_security_codes(
-    db: Session, limit: int = 1000
-) -> List[EmailTrainingLabel]:
-    """
-    Label emails that are clearly security/auth codes.
-
-    High-confidence rules:
-        - Subject contains security/verification keywords
-    """
-    labels = []
-
-    keywords = [
-        "verification code",
-        "one-time code",
-        "2-step verification",
-        "two-factor authentication",
-        "security code",
-        "authentication code",
-        "2fa code",
-        "confirm your email",
-    ]
-
-    for keyword in keywords:
-        emails = (
-            db.query(Email)
-            .filter(Email.subject.ilike(f"%{keyword}%"))
-            .filter(
-                ~db.query(EmailTrainingLabel.id)
-                .filter(EmailTrainingLabel.email_id == Email.id)
-                .exists()
-            )
-            .limit(limit // len(keywords))
-            .all()
-        )
-
-        for email in emails:
-            labels.append(
-                EmailTrainingLabel(
-                    email_id=email.id,
-                    thread_id=email.thread_id,
-                    label_category="security_auth",
-                    label_is_real_opportunity=False,
-                    label_source="bootstrap_rule_security_code",
-                    confidence=0.99,
-                )
-            )
-
-    return labels
-
-
-def bootstrap_job_alerts(db: Session, limit: int = 500) -> List[EmailTrainingLabel]:
-    """
-    Label emails that are job alert digests from known platforms.
-
-    High-confidence rules:
-        - Sender is LinkedIn, Indeed, Glassdoor, ZipRecruiter
-        - Subject contains "job alert" OR "recommended jobs"
-    """
-    labels = []
-
-    alert_senders = [
-        ("linkedin.com", "linkedin"),
-        ("indeed.com", "indeed"),
-        ("glassdoor.com", "glassdoor"),
-        ("ziprecruiter.com", "ziprecruiter"),
-        ("monster.com", "monster"),
-    ]
-
-    for domain, platform in alert_senders:
-        emails = (
-            db.query(Email)
-            .filter(Email.from_address.ilike(f"%@%{domain}%"))
-            .filter(
-                Email.subject.ilike("%job alert%")
-                | Email.subject.ilike("%recommended jobs%")
-                | Email.subject.ilike("%new jobs%")
-                | Email.subject.ilike("%daily digest%")
-            )
-            .filter(
-                ~db.query(EmailTrainingLabel.id)
-                .filter(EmailTrainingLabel.email_id == Email.id)
-                .exists()
-            )
-            .limit(limit // len(alert_senders))
-            .all()
-        )
-
-        for email in emails:
-            labels.append(
-                EmailTrainingLabel(
-                    email_id=email.id,
-                    thread_id=email.thread_id,
-                    label_category="job_alert_digest",
-                    label_is_real_opportunity=False,
-                    label_source=f"bootstrap_rule_job_alert_{platform}",
-                    confidence=0.92,
-                )
-            )
-
-    return labels
-
-
-def bootstrap_receipts(db: Session, limit: int = 500) -> List[EmailTrainingLabel]:
-    """
-    Label emails that are clearly receipts/invoices.
-
-    High-confidence rules:
-        - Subject contains receipt/invoice keywords
-    """
-    labels = []
-
-    keywords = [
-        "receipt",
-        "invoice",
-        "payment confirmation",
-        "order confirmation",
-        "your order",
-    ]
-
-    for keyword in keywords:
-        emails = (
-            db.query(Email)
-            .filter(Email.subject.ilike(f"%{keyword}%"))
-            .filter(
-                ~db.query(EmailTrainingLabel.id)
-                .filter(EmailTrainingLabel.email_id == Email.id)
-                .exists()
-            )
-            .limit(limit // len(keywords))
-            .all()
-        )
-
-        for email in emails:
-            labels.append(
-                EmailTrainingLabel(
-                    email_id=email.id,
-                    thread_id=email.thread_id,
-                    label_category="receipt_invoice",
-                    label_is_real_opportunity=False,
-                    label_source="bootstrap_rule_receipt",
-                    confidence=0.93,
-                )
-            )
-
-    return labels
-
-
-def bootstrap_interview_invites(
-    db: Session, limit: int = 500
-) -> List[EmailTrainingLabel]:
-    """
-    Label emails that are likely interview invitations.
-
-    Medium-high confidence rules:
-        - Subject contains strong interview signals
-    """
-    labels = []
-
-    strong_keywords = [
-        "interview invitation",
-        "schedule an interview",
-        "phone screen",
-        "video interview",
-        "interview with",
-        "interview for",
-        "onsite interview",
-    ]
-
-    for keyword in strong_keywords:
-        emails = (
-            db.query(Email)
-            .filter(Email.subject.ilike(f"%{keyword}%"))
-            .filter(
-                ~db.query(EmailTrainingLabel.id)
-                .filter(EmailTrainingLabel.email_id == Email.id)
-                .exists()
-            )
-            .limit(limit // len(strong_keywords))
-            .all()
-        )
-
-        for email in emails:
-            labels.append(
-                EmailTrainingLabel(
-                    email_id=email.id,
-                    thread_id=email.thread_id,
-                    label_category="interview_invite",
-                    label_is_real_opportunity=True,
-                    label_source="bootstrap_rule_interview_invite",
-                    confidence=0.88,
-                )
-            )
-
-    return labels
-
-
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Bootstrap email_training_labels from high-confidence rules"
+        description="Bootstrap high-confidence training labels for the email classifier."
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=5000,
-        help="Max emails to label per rule category",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print stats without committing to DB",
+        help="Max number of emails to scan (default: 5000).",
     )
     args = parser.parse_args()
 
-    db = SessionLocal()
-
-    try:
-        print("=== Email Training Labels Bootstrap ===\n")
-        print(f"Limit per category: {args.limit}")
-        print(f"Dry run: {args.dry_run}\n")
-
-        # Check existing labels
-        existing_count = db.query(func.count(EmailTrainingLabel.id)).scalar()
-        print(f"Existing training labels: {existing_count}\n")
-
-        all_labels = []
-
-        # Run bootstrap rules
-        print("Applying bootstrap rules...\n")
-
-        print("[1/5] Application confirmations...")
-        labels = bootstrap_application_confirmations(db, limit=args.limit)
-        all_labels.extend(labels)
-        print(f"      → {len(labels)} labels")
-
-        print("[2/5] Security/auth codes...")
-        labels = bootstrap_security_codes(db, limit=args.limit)
-        all_labels.extend(labels)
-        print(f"      → {len(labels)} labels")
-
-        print("[3/5] Job alert digests...")
-        labels = bootstrap_job_alerts(db, limit=args.limit // 2)
-        all_labels.extend(labels)
-        print(f"      → {len(labels)} labels")
-
-        print("[4/5] Receipts/invoices...")
-        labels = bootstrap_receipts(db, limit=args.limit // 2)
-        all_labels.extend(labels)
-        print(f"      → {len(labels)} labels")
-
-        print("[5/5] Interview invites...")
-        labels = bootstrap_interview_invites(db, limit=args.limit // 2)
-        all_labels.extend(labels)
-        print(f"      → {len(labels)} labels")
-
-        print(f"\n✓ Total new labels: {len(all_labels)}")
-
-        if args.dry_run:
-            print("\n[DRY RUN] No changes committed to database")
-        else:
-            # Bulk insert
-            db.bulk_save_objects(all_labels)
-            db.commit()
-            print("\n✅ Labels committed to database")
-
-            # Show distribution
-            print("\n=== Label Distribution ===")
-            distribution = (
-                db.query(
-                    EmailTrainingLabel.label_category,
-                    func.count(EmailTrainingLabel.id).label("count"),
-                )
-                .group_by(EmailTrainingLabel.label_category)
-                .order_by(func.count(EmailTrainingLabel.id).desc())
-                .all()
-            )
-
-            for category, count in distribution:
-                print(f"  {category:30s} {count:>6,} labels")
-
-            total = db.query(func.count(EmailTrainingLabel.id)).scalar()
-            print(f"\n  {'TOTAL':30s} {total:>6,} labels")
-
-            print("\n✅ Bootstrap complete!")
-            print("\nNext step: python -m scripts.train_email_classifier")
-
-    except Exception as e:
-        print(f"\n❌ Error: {e}", file=sys.stderr)
-        db.rollback()
-        raise
-    finally:
-        db.close()
+    inserted = bootstrap_labels(limit=args.limit)
+    print(f"Inserted {inserted} training labels")
 
 
 if __name__ == "__main__":
