@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { listOpportunities, getOpportunityDetail, JobOpportunity, OpportunityDetail, runBatchRoleMatch, OpportunityPriority } from '../api/opportunities'
 import { getRoleMatch } from '../api/agent'
 import { getCurrentResume, ResumeProfile } from '../api/opportunities'
-import { Briefcase, MapPin, DollarSign, ExternalLink, Sparkles, AlertCircle, TrendingUp, CalendarClock } from 'lucide-react'
+import { Briefcase, MapPin, DollarSign, ExternalLink, Sparkles, AlertCircle, TrendingUp, CalendarClock, Flame, ThermometerSun, Snowflake } from 'lucide-react'
 import { PriorityBadge } from '@/components/priority-badge'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type MatchBucket = 'perfect' | 'strong' | 'possible' | 'skip'
 
@@ -22,115 +25,84 @@ const MATCH_BUCKET_COLORS: Record<MatchBucket, string> = {
   skip: 'bg-gray-100 text-gray-600 border-gray-200',
 }
 
-// Priority grouping
-const PRIORITY_WEIGHT: Record<OpportunityPriority, number> = {
-  high: 3,
-  medium: 2,
-  low: 1,
+// Priority configuration
+const PRIORITY_LABEL: Record<OpportunityPriority, string> = {
+  high: 'Hot',
+  medium: 'Warm',
+  low: 'Cool',
 }
 
-const PRIORITY_SECTION_LABELS: Record<OpportunityPriority, string> = {
-  high: '🔥 Hot',
-  medium: '🌤 Warm',
-  low: '❄️ Cool',
+const PRIORITY_ICON: Record<OpportunityPriority, JSX.Element> = {
+  high: <Flame className="h-3 w-3 text-rose-500" />,
+  medium: <ThermometerSun className="h-3 w-3 text-amber-500" />,
+  low: <Snowflake className="h-3 w-3 text-slate-400" />,
 }
 
-/**
- * Sort opportunities by priority (high→medium→low), then by recency.
- */
-function sortOpportunities(opps: JobOpportunity[]): JobOpportunity[] {
-  return [...opps].sort((a, b) => {
-    // 1. Priority (high→medium→low)
-    const priorityDiff = PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority]
-    if (priorityDiff !== 0) return priorityDiff
-
-    // 2. Recency (newest first)
-    const dateA = new Date(a.created_at).getTime()
-    const dateB = new Date(b.created_at).getTime()
-    return dateB - dateA
-  })
+const PRIORITY_BADGE_CLASS: Record<OpportunityPriority, string> = {
+  high: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  medium: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  low: 'bg-slate-700/60 text-slate-200 border-slate-600',
 }
 
-/**
- * Group sorted opportunities by priority.
- */
-function groupByPriority(opps: JobOpportunity[]): Record<OpportunityPriority, JobOpportunity[]> {
-  return {
-    high: opps.filter((o) => o.priority === 'high'),
-    medium: opps.filter((o) => o.priority === 'medium'),
-    low: opps.filter((o) => o.priority === 'low'),
-  }
+function formatRelative(dateStr?: string | null): string {
+  if (!dateStr) return 'No contact yet'
+  const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) return 'No contact yet'
+
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays <= 0) return 'Today'
+  if (diffDays === 1) return '1 day ago'
+  if (diffDays < 7) return `${diffDays} days ago`
+  const weeks = Math.floor(diffDays / 7)
+  if (weeks === 1) return '1 week ago'
+  return `${weeks} weeks ago`
 }
 
-/**
- * Single opportunity item component
- */
-interface OpportunityItemProps {
-  opp: JobOpportunity
-  isSelected: boolean
-  onClick: () => void
+function formatLocation(opportunity: JobOpportunity): string {
+  const parts: string[] = []
+  if (opportunity.location) parts.push(opportunity.location)
+  if (opportunity.remote_flag) parts.push('Remote')
+  return parts.join(' • ') || 'Location not specified'
 }
 
-function OpportunityItem({ opp, isSelected, onClick }: OpportunityItemProps) {
+function formatSource(opportunity: JobOpportunity): string {
+  if (!opportunity.source) return 'Email'
+  return opportunity.source.replace(/_/g, ' ')
+}
+
+function PriorityLegend() {
+  const items: { key: OpportunityPriority; description: string }[] = [
+    {
+      key: 'high',
+      description: 'Interviews, offers, and time-sensitive outreach.',
+    },
+    {
+      key: 'medium',
+      description: 'Recent applications and promising recruiter messages.',
+    },
+    {
+      key: 'low',
+      description: 'Older or lower-signal leads you can review later.',
+    },
+  ]
+
   return (
-    <div
-      onClick={onClick}
-      className={`p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors ${
-        isSelected ? 'bg-blue-50 border-blue-600' : 'border-gray-200'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate text-sm">{opp.title}</h3>
-          <p className="text-xs text-gray-600 mt-0.5">{opp.company}</p>
+    <div className="flex flex-wrap items-start gap-4 text-xs text-slate-400">
+      {items.map((item) => (
+        <div key={item.key} className="flex items-start gap-2">
+          <Badge
+            variant="outline"
+            className={`mt-0.5 flex items-center gap-1 rounded-full border px-2 py-0.5 ${PRIORITY_BADGE_CLASS[item.key]}`}
+          >
+            {PRIORITY_ICON[item.key]}
+            <span className="font-medium">{PRIORITY_LABEL[item.key]}</span>
+          </Badge>
+          <span className="max-w-xs leading-snug">{item.description}</span>
         </div>
-        <PriorityBadge priority={opp.priority} />
-      </div>
-
-      <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-        {opp.location && (
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            {opp.location}
-          </span>
-        )}
-        {opp.remote_flag && (
-          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">Remote</span>
-        )}
-        {opp.salary_text && (
-          <span className="flex items-center gap-1">
-            <DollarSign className="w-3 h-3" />
-            {opp.salary_text}
-          </span>
-        )}
-        <span className="flex items-center gap-1 ml-auto">
-          <CalendarClock className="w-3 h-3" />
-          {new Date(opp.created_at).toLocaleDateString()}
-        </span>
-      </div>
-
-      {opp.match_bucket && (
-        <div className="mt-2">
-          <div className={`inline-block px-2 py-0.5 rounded border text-xs font-medium ${MATCH_BUCKET_COLORS[opp.match_bucket]}`}>
-            {MATCH_BUCKET_LABELS[opp.match_bucket]}
-          </div>
-        </div>
-      )}
-
-      {opp.tech_stack && opp.tech_stack.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {opp.tech_stack.slice(0, 3).map((tech, idx) => (
-            <span key={idx} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-              {tech}
-            </span>
-          ))}
-          {opp.tech_stack.length > 3 && (
-            <span className="px-1.5 py-0.5 text-gray-400 text-xs">
-              +{opp.tech_stack.length - 3}
-            </span>
-          )}
-        </div>
-      )}
+      ))}
     </div>
   )
 }
@@ -149,6 +121,45 @@ export default function Opportunities() {
   const [sourceFilter, setSourceFilter] = useState<string>('')
   const [matchFilter, setMatchFilter] = useState<MatchBucket | ''>('')
   const [search, setSearch] = useState('')
+
+  // Group opportunities by priority
+  const grouped = useMemo(() => {
+    const base: Record<OpportunityPriority, JobOpportunity[]> = {
+      high: [],
+      medium: [],
+      low: [],
+    }
+
+    if (!opportunities) return base
+
+    for (const opp of opportunities) {
+      const p = opp.priority ?? 'low'
+      base[p].push(opp)
+    }
+
+    // Sort each bucket by created_at desc (most recent first)
+    (Object.keys(base) as OpportunityPriority[]).forEach((p) => {
+      base[p] = base[p].slice().sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
+    })
+
+    return base
+  }, [opportunities])
+
+  const isLoading = loading
+  const hasAny = grouped.high.length + grouped.medium.length + grouped.low.length > 0
+
+  // Filter state for All vs Hot+Warm
+  const [focusHotWarmOnly, setFocusHotWarmOnly] = useState(false)
+
+  const visibleSections = useMemo(
+    () =>
+      (['high', 'medium', 'low'] as const).filter((priority) =>
+        focusHotWarmOnly ? priority !== 'low' : true
+      ),
+    [focusHotWarmOnly]
+  )
 
   // Load opportunities and resume on mount
   useEffect(() => {
@@ -345,114 +356,233 @@ export default function Opportunities() {
       {/* Content: List + Detail Split */}
       <div className="flex-1 flex overflow-hidden">
         {/* List Panel */}
-        <div className="w-1/2 border-r border-gray-200 overflow-y-auto bg-white">
-          {loading && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">Loading opportunities...</div>
-            </div>
-          )}
+        <div className="w-1/2 border-r border-slate-800 overflow-y-auto bg-slate-950">
+          <div className="p-6">
+            {isLoading && (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-40 bg-slate-800" />
+                <div className="grid gap-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Card key={i} className="border-slate-800 bg-slate-900/60">
+                      <CardHeader className="space-y-2 pb-3">
+                        <Skeleton className="h-4 w-3/4 bg-slate-700" />
+                        <Skeleton className="h-3 w-1/2 bg-slate-700" />
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <Skeleton className="h-3 w-full bg-slate-700" />
+                        <Skeleton className="h-3 w-2/3 bg-slate-700" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {error && (
-            <div className="p-6">
+            {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-red-800">{error}</div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!loading && !error && sortedOpportunities.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              <Briefcase className="w-12 h-12 mb-3 text-gray-400" />
-              <p className="text-lg font-medium">No opportunities yet</p>
-              <p className="text-sm text-gray-400 mt-1">Job aggregator emails will appear here</p>
-            </div>
-          )}
+            {!isLoading && !error && !hasAny && (
+              <div className="flex flex-col items-center justify-center py-16 text-center text-slate-300">
+                <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-emerald-400">
+                  No opportunities yet
+                </div>
+                <p className="max-w-md text-sm text-slate-400">
+                  Once ApplyLens sees real roles in your inbox, they'll show up here
+                  grouped by urgency. Try syncing the last 60 days of Gmail and
+                  searching for "interview" or "role".
+                </p>
+              </div>
+            )}
 
-          {!loading && !error && sortedOpportunities.length > 0 && (
-            <div className="p-4 space-y-6">
-              {/* Hot opportunities */}
-              {groupedOpportunities.high.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {PRIORITY_SECTION_LABELS.high}
-                      <span className="text-sm font-normal text-gray-500">
-                        ({groupedOpportunities.high.length})
-                      </span>
-                    </CardTitle>
-                    <CardDescription>
-                      High-priority roles with strong signals
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {groupedOpportunities.high.map((opp) => (
-                      <OpportunityItem
-                        key={opp.id}
-                        opp={opp}
-                        isSelected={selectedOpportunity?.id === opp.id}
-                        onClick={() => selectOpportunity(opp)}
-                      />
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
+            {!isLoading && !error && hasAny && (
+              <div className="space-y-8">
+                {/* Legend + Filter Bar */}
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <PriorityLegend />
 
-              {/* Warm opportunities */}
-              {groupedOpportunities.medium.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {PRIORITY_SECTION_LABELS.medium}
-                      <span className="text-sm font-normal text-gray-500">
-                        ({groupedOpportunities.medium.length})
-                      </span>
-                    </CardTitle>
-                    <CardDescription>
-                      Moderate-priority roles worth exploring
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {groupedOpportunities.medium.map((opp) => (
-                      <OpportunityItem
-                        key={opp.id}
-                        opp={opp}
-                        isSelected={selectedOpportunity?.id === opp.id}
-                        onClick={() => selectOpportunity(opp)}
-                      />
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
+                  <div className="inline-flex items-center gap-2">
+                    <span className="text-xs text-slate-400">Focus</span>
+                    <div className="inline-flex rounded-full border border-slate-700 bg-slate-900/70 p-0.5 text-xs">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`h-7 rounded-full px-3 text-xs ${
+                          !focusHotWarmOnly
+                            ? 'bg-slate-200 text-slate-900 shadow-sm'
+                            : 'text-slate-300'
+                        }`}
+                        onClick={() => setFocusHotWarmOnly(false)}
+                      >
+                        All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`h-7 rounded-full px-3 text-xs ${
+                          focusHotWarmOnly
+                            ? 'bg-emerald-500 text-emerald-950 shadow-sm'
+                            : 'text-slate-300'
+                        }`}
+                        onClick={() => setFocusHotWarmOnly(true)}
+                      >
+                        Hot + Warm
+                      </Button>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Cool opportunities */}
-              {groupedOpportunities.low.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {PRIORITY_SECTION_LABELS.low}
-                      <span className="text-sm font-normal text-gray-500">
-                        ({groupedOpportunities.low.length})
-                      </span>
-                    </CardTitle>
-                    <CardDescription>
-                      Lower-priority or earlier-stage roles
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {groupedOpportunities.low.map((opp) => (
-                      <OpportunityItem
-                        key={opp.id}
-                        opp={opp}
-                        isSelected={selectedOpportunity?.id === opp.id}
-                        onClick={() => selectOpportunity(opp)}
-                      />
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
+                {visibleSections.map((priority) => {
+                  const list = grouped[priority]
+                  if (!list.length) return null
+
+                  const descriptions = {
+                    high: 'Interviews, offers, and time-sensitive outreach.',
+                    medium: 'Recent applications and promising recruiter messages.',
+                    low: 'Older or lower-signal leads for later review.',
+                  }
+
+                  return (
+                    <section key={priority} className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_BADGE_CLASS[priority]}`}
+                            >
+                              {PRIORITY_ICON[priority]}
+                              <span>{PRIORITY_LABEL[priority]}</span>
+                            </Badge>
+                            <span className="text-xs text-slate-400">
+                              {list.length} opportunit{list.length === 1 ? 'y' : 'ies'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-400">
+                            {descriptions[priority]}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3">
+                        {list.map((opp) => (
+                          <Card
+                            key={opp.id}
+                            onClick={() => selectOpportunity(opp)}
+                            className={`group cursor-pointer border-slate-800 bg-slate-900/70 transition hover:border-emerald-500/60 hover:bg-slate-900 ${
+                              selectedOpportunity?.id === opp.id ? 'border-emerald-500/60 bg-slate-900' : ''
+                            }`}
+                          >
+                            <CardHeader className="space-y-1 pb-3">
+                              <CardTitle className="flex items-start justify-between gap-2 text-sm font-semibold text-slate-50">
+                                <span className="line-clamp-2">{opp.title}</span>
+                              </CardTitle>
+                              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
+                                <span className="font-medium text-slate-200">
+                                  {opp.company || 'Unknown company'}
+                                </span>
+                                <span className="text-slate-600">•</span>
+                                <span>{formatLocation(opp)}</span>
+                              </div>
+                            </CardHeader>
+
+                            <CardContent className="space-y-3 text-xs">
+                              <div className="flex flex-wrap gap-1.5">
+                                <Badge
+                                  variant="outline"
+                                  className={`rounded-full border px-2 py-0.5 text-[11px] ${PRIORITY_BADGE_CLASS[opp.priority]}`}
+                                >
+                                  {PRIORITY_ICON[opp.priority]}
+                                  <span className="ml-1">
+                                    {PRIORITY_LABEL[opp.priority]}
+                                  </span>
+                                </Badge>
+
+                                <Badge
+                                  variant="outline"
+                                  className="rounded-full border-slate-700 bg-slate-900/70 text-[11px] text-slate-200"
+                                >
+                                  Source: {formatSource(opp)}
+                                </Badge>
+
+                                {opp.match_bucket && (
+                                  <Badge
+                                    variant="outline"
+                                    className="rounded-full border-emerald-700/60 bg-emerald-500/5 text-[11px] text-emerald-300"
+                                  >
+                                    {opp.match_bucket}
+                                    {typeof opp.match_score === 'number' && (
+                                      <span className="ml-1 opacity-80">
+                                        ({Math.round(opp.match_score)}%)
+                                      </span>
+                                    )}
+                                  </Badge>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between text-[11px] text-slate-400">
+                                <span>
+                                  Last contact:{' '}
+                                  <span className="text-slate-200">
+                                    {formatRelative(opp.created_at)}
+                                  </span>
+                                </span>
+                                {opp.posted_at && (
+                                  <span className="hidden md:inline">
+                                    Posted:{' '}
+                                    {new Date(opp.posted_at).toLocaleDateString(undefined, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between pt-1">
+                                <div className="flex flex-wrap gap-1 text-[11px] text-slate-500">
+                                  {opp.level && <span>{opp.level}</span>}
+                                  {opp.level && opp.tech_stack && (
+                                    <span className="text-slate-700">•</span>
+                                  )}
+                                  {opp.tech_stack && (
+                                    <span className="line-clamp-1">{opp.tech_stack.join(', ')}</span>
+                                  )}
+                                </div>
+
+                                {opp.apply_url && (
+                                  <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-slate-300 hover:text-emerald-300"
+                                  >
+                                    <a
+                                      href={opp.apply_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      aria-label="Open job link"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="h-3.5 w-3.5" />
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Detail Panel */}
