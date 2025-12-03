@@ -140,9 +140,11 @@ class AgentSettings(BaseSettings):
         "heuristic"  # Classification mode
     )
     EMAIL_CLASSIFIER_MODEL_VERSION: str = "v1"  # Model version identifier
-    EMAIL_CLASSIFIER_MODEL_PATH: str | None = None  # Path to model .joblib file
-    EMAIL_CLASSIFIER_VECTORIZER_PATH: str | None = (
-        None  # Path to vectorizer .joblib file
+    EMAIL_CLASSIFIER_MODEL_PATH: str = (
+        "models/email_classifier_v1.joblib"  # Dev default: local demo model
+    )
+    EMAIL_CLASSIFIER_VECTORIZER_PATH: str = (
+        "models/email_vectorizer_v1.joblib"  # Dev default: local demo vectorizer
     )
 
     class Config:
