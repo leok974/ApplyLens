@@ -2,6 +2,14 @@
 
 Handles resume file uploads (PDF, DOCX, TXT), parsing, and activation.
 No resume generation - upload only.
+
+API DESIGN RULE (Dec 2024):
+    All FastAPI routes using SessionLocal (sync SQLAlchemy) MUST be `def`, not `async def`.
+    Do NOT convert these handlers to async def unless we fully migrate to async SQLAlchemy.
+
+    Why: FastAPI cannot properly serialize responses from async handlers that contain
+    only synchronous operations (no await). This causes silent 500 errors in production.
+    See test_routes_resume_opportunities.py for regression tests.
 """
 
 import logging
@@ -164,7 +172,7 @@ async def upload_resume(
 
 
 @router.get("/current", response_model=Optional[ResumeProfileResponse])
-async def get_current_resume(
+def get_current_resume(
     db: Session = Depends(get_db),
     user_email: str = Depends(get_current_user_email),
 ):

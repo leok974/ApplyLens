@@ -1,4 +1,13 @@
-"""Job opportunities listing and management endpoints."""
+"""Job opportunities listing and management endpoints.
+
+API DESIGN RULE (Dec 2024):
+    All FastAPI routes using SessionLocal (sync SQLAlchemy) MUST be `def`, not `async def`.
+    Do NOT convert these handlers to async def unless we fully migrate to async SQLAlchemy.
+
+    Why: FastAPI cannot properly serialize responses from async handlers that contain
+    only synchronous operations (no await). This causes silent 500 errors in production.
+    See test_routes_resume_opportunities.py for regression tests.
+"""
 
 import logging
 import re
@@ -276,7 +285,7 @@ class OpportunityResponse(BaseModel):
 
 
 @router.get("", response_model=list[OpportunityResponse])
-async def list_opportunities(
+def list_opportunities(
     source: Optional[str] = Query(
         None, description="Filter by source (indeed, linkedin, etc.)"
     ),
@@ -311,17 +320,25 @@ async def list_opportunities(
     Returns opportunities sorted by recency (most recent email first).
     """
 
-    # Query emails with potential applications
-    # Start with emails that have application category or are linked to applications
-    email_query = (
-        db.query(Email, Application)
-        .outerjoin(Application, Email.application_id == Application.id)
-        .filter(Email.owner_email == user_email)
-        # Focus on recent emails (last 6 months) to avoid processing entire history
-        .filter(Email.received_at >= func.now() - text("INTERVAL '6 months'"))
-    )
+    try:
+        logger.info(f"list_opportunities called for user_email={user_email}")
 
-    # Apply company filter if provided
+        # Query emails with potential applications
+        # Start with emails that have application category or are linked to applications
+        email_query = (
+            db.query(Email, Application)
+            .outerjoin(Application, Email.application_id == Application.id)
+            .filter(Email.owner_email == user_email)
+            # Focus on recent emails (last 6 months) to avoid processing entire history
+            .filter(Email.received_at >= func.now() - text("INTERVAL '6 months'"))
+        )
+
+        logger.info("Email query constructed successfully")
+    except Exception as e:
+        logger.exception(f"Error in list_opportunities for user {user_email}: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal error listing opportunities"
+        )  # Apply company filter if provided
     if company:
         email_query = email_query.filter(
             (Email.company.ilike(f"%{company}%"))
@@ -404,26 +421,34 @@ async def list_opportunities(
 
         # For backward compatibility, map to OpportunityResponse schema
         # Note: Some fields like tech_stack, apply_url won't be populated from Email
-        results.append(
-            OpportunityResponse(
-                id=email.id,  # Use email ID as opportunity ID
-                owner_email=email.owner_email or user_email,
-                source=email.source or (application.source if application else "email"),
-                title=item["role"] or email.subject or "",
-                company=item["company"] or "Unknown",
-                location=None,  # Not available in Email model
-                remote_flag=None,  # Not available in Email model
-                salary_text=None,  # Not available in Email model
-                level=None,  # Not available in Email model
-                tech_stack=None,  # Not available in Email model
-                apply_url=None,  # Not available in Email model
-                posted_at=None,
-                created_at=email.received_at.isoformat() if email.received_at else "",
-                match_bucket=None,  # Not applicable for Email-based opportunities
-                match_score=None,  # Not applicable for Email-based opportunities
-                priority=item["priority"],
+        try:
+            results.append(
+                OpportunityResponse(
+                    id=email.id,  # Use email ID as opportunity ID
+                    owner_email=email.owner_email or user_email,
+                    source=email.source
+                    or (application.source if application else "email"),
+                    title=item["role"] or email.subject or "",
+                    company=item["company"] or "Unknown",
+                    location=None,  # Not available in Email model
+                    remote_flag=None,  # Not available in Email model
+                    salary_text=None,  # Not available in Email model
+                    level=None,  # Not available in Email model
+                    tech_stack=None,  # Not available in Email model
+                    apply_url=None,  # Not available in Email model
+                    posted_at=None,
+                    created_at=email.received_at.isoformat()
+                    if email.received_at
+                    else "",
+                    match_bucket=None,  # Not applicable for Email-based opportunities
+                    match_score=None,  # Not applicable for Email-based opportunities
+                    priority=item["priority"],
+                )
             )
-        )
+        except Exception as e:
+            logger.exception(
+                f"Error creating OpportunityResponse for email {email.id}: {e}"
+            )
 
     logger.info(
         f"Listed {len(results)}/{total_count} opportunities for user {user_email} "
@@ -434,7 +459,7 @@ async def list_opportunities(
 
 
 @router.get("/{opportunity_id}", response_model=dict)
-async def get_opportunity_detail(
+def get_opportunity_detail(
     opportunity_id: int,
     db: Session = Depends(get_db),
     user_email: str = Depends(get_current_user_email),
