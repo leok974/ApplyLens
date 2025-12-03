@@ -7,7 +7,7 @@ from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from ..deps.user import get_current_user_email
@@ -318,10 +318,7 @@ async def list_opportunities(
         .outerjoin(Application, Email.application_id == Application.id)
         .filter(Email.owner_email == user_email)
         # Focus on recent emails (last 6 months) to avoid processing entire history
-        .filter(
-            Email.received_at
-            >= db.query(func.now()).scalar() - func.make_interval(0, 6)
-        )
+        .filter(Email.received_at >= func.now() - text("INTERVAL '6 months'"))
     )
 
     # Apply company filter if provided
