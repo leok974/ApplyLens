@@ -1,0 +1,308 @@
+{
+  "snapshot_kind": "applylens_classification_pipeline",
+  "project": "ApplyLens",
+  "owner": "Leo Klemet",
+  "timespan": "2025-11 → 2025-12",
+  "status": {
+    "current_mode": "heuristic_v1 (ml-ready)",
+    "tests": {
+      "train_email_classifier": "passing",
+      "hybrid_classifier_integration": "passing"
+    },
+    "production_ready": false,
+    "deployment_blockers": [
+      "Need to wire into Gmail ingest",
+      "Need to bootstrap email_training_labels",
+      "Need to train ml_v1 on real data"
+    ]
+  },
+  "schema": {
+    "emails_columns": [
+      "category:string(64)",
+      "is_real_opportunity:boolean",
+      "category_confidence:float",
+      "classifier_version:string(64)"
+    ],
+    "tables": {
+      "email_classification_events": {
+        "description": "Logs every classification for analytics and debugging",
+        "columns": [
+          "id",
+          "email_id",
+          "thread_id",
+          "model_version",
+          "predicted_category",
+          "predicted_is_real_opportunity",
+          "confidence",
+          "source (rule|heuristic|ml_shadow|ml_live)",
+          "created_at"
+        ],
+        "indexes": ["email_id", "created_at"]
+      },
+      "email_category_corrections": {
+        "description": "Tracks user corrections for continuous learning",
+        "columns": [
+          "id",
+          "email_id",
+          "thread_id",
+          "old_category",
+          "new_category",
+          "old_is_real_opportunity",
+          "new_is_real_opportunity",
+          "user_id",
+          "created_at"
+        ],
+        "indexes": ["email_id", "user_id"]
+      },
+      "email_golden_labels": {
+        "description": "Hand-labeled evaluation set (300-500 examples)",
+        "columns": [
+          "id",
+          "email_id (UNIQUE)",
+          "thread_id",
+          "golden_category",
+          "golden_is_real_opportunity",
+          "labeler",
+          "labeled_at"
+        ],
+        "constraints": ["UNIQUE(email_id)"]
+      },
+      "email_training_labels": {
+        "description": "Bootstrap training data from heuristics and rules",
+        "columns": [
+          "id",
+          "email_id",
+          "thread_id",
+          "label_category",
+          "label_is_real_opportunity",
+          "label_source (e.g., 'bootstrap_rule_ats_greenhouse')",
+          "confidence (0.0-1.0)",
+          "created_at"
+        ],
+        "indexes": ["email_id", "label_source"]
+      }
+    }
+  },
+  "classifier": {
+    "impl": "HybridEmailClassifier",
+    "file": "services/api/app/classification/email_classifier.py",
+    "sources": [
+      "rule - High-precision rules (security, receipts, job alerts)",
+      "heuristic - Legacy keyword-based classification",
+      "ml_shadow - ML predictions logged but not used in production",
+      "ml_live - ML predictions drive emails.category + is_real_opportunity"
+    ],
+    "settings_keys": [
+      "EMAIL_CLASSIFIER_MODE (heuristic|ml_shadow|ml_live)",
+      "EMAIL_CLASSIFIER_MODEL_VERSION (e.g., 'ml_v1')",
+      "EMAIL_CLASSIFIER_MODEL_PATH (path to .joblib model)",
+      "EMAIL_CLASSIFIER_VECTORIZER_PATH (path to .joblib vectorizer)"
+    ],
+    "api": {
+      "classify(email)": {
+        "returns": "ClassificationResult",
+        "fields": [
+          "category (11 canonical categories)",
+          "is_real_opportunity (boolean)",
+          "confidence (0.0-1.0)",
+          "model_version (string)",
+          "source (rule|heuristic|ml_shadow|ml_live)"
+        ]
+      },
+      "modes": {
+        "heuristic": "Rules + legacy heuristics only (safe default)",
+        "ml_shadow": "ML runs and logs events, heuristics drive UI (testing phase)",
+        "ml_live": "ML predictions drive emails.category + is_real_opportunity (production)"
+      }
+    },
+    "categories": {
+      "opportunities": [
+        "recruiter_outreach",
+        "interview_invite",
+        "offer",
+        "application_confirmation"
+      ],
+      "rejections": ["rejection"],
+      "non_opportunities": [
+        "job_alert_digest",
+        "newsletter_marketing",
+        "company_update",
+        "receipt_invoice",
+        "security_auth",
+        "personal_other"
+      ]
+    }
+  },
+  "pipeline": {
+    "ingest": {
+      "description": "Gmail → Email row → Classify → Log event",
+      "steps": [
+        "1. Gmail API fetch + normalize",
+        "2. Create Email row",
+        "3. db.flush() to populate email.id",
+        "4. classify_and_persist_email(db, email)",
+        "5. db.commit()"
+      ],
+      "integration_file": "services/api/app/services/classification.py",
+      "function": "classify_and_persist_email(db: Session, email: Email)"
+    },
+    "training": {
+      "description": "Bootstrap labels → Train TF-IDF + LogisticRegression → Deploy",
+      "steps": [
+        "1. python -m scripts.bootstrap_email_training_labels",
+        "2. python -m scripts.train_email_classifier",
+        "3. Copy models/*.joblib to production environment",
+        "4. Set EMAIL_CLASSIFIER_MODE=ml_shadow",
+        "5. Monitor classification_events and corrections tables",
+        "6. When confident, switch to EMAIL_CLASSIFIER_MODE=ml_live"
+      ],
+      "bootstrap_script": "services/api/scripts/bootstrap_email_training_labels.py",
+      "training_script": "services/api/scripts/train_email_classifier.py",
+      "artifacts": ["models/email_opp_model.joblib", "models/email_opp_vectorizer.joblib"]
+    },
+    "analytics": {
+      "description": "dbt models + Grafana dashboards for classification quality",
+      "dbt_models": [
+        "stg_email_classification_events",
+        "stg_email_category_corrections",
+        "fct_classification_events (join with emails + users)",
+        "mart_classification_quality_daily (events, corrections, correction rate)"
+      ],
+      "metrics": [
+        "Correction rate per category (7d/30d rolling)",
+        "Category distribution over time (stacked bar)",
+        "is_real_opportunity distribution (pie chart)",
+        "Model version performance comparison (table)",
+        "Drift detection: category share change week-over-week"
+      ],
+      "grafana_panels": [
+        "Timeseries: classification_events_total",
+        "Timeseries: classification_corrections_total",
+        "Table: Top categories by correction rate",
+        "Single stat: Correction rate (7d) for ml_live vs heuristic"
+      ]
+    },
+    "diagnostics": {
+      "health_check_endpoint": "GET /diagnostics/classifier/health",
+      "reload_endpoint": "POST /diagnostics/classifier/reload",
+      "response_fields": [
+        "status (healthy|degraded|unhealthy)",
+        "mode (heuristic|ml_shadow|ml_live)",
+        "model_version",
+        "ml_model_loaded (boolean)",
+        "vectorizer_loaded (boolean)",
+        "test_classification (synthetic email result)"
+      ]
+    }
+  },
+  "next_steps": [
+    {
+      "step": 1,
+      "title": "Wire classifier into Gmail ingest",
+      "description": "Find Gmail ingest code and call classify_and_persist_email(db, email) after email.id is populated",
+      "files": ["app/routers/gmail.py", "app/gmail_service.py", "app/services/classification.py"],
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "title": "Bootstrap email_training_labels",
+      "description": "Run bootstrap script with high-confidence rules to create initial training dataset",
+      "command": "python -m scripts.bootstrap_email_training_labels --limit 5000",
+      "expected_output": "5k-10k labels across application_confirmation, security_auth, job_alert_digest, receipt_invoice, interview_invite",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "title": "Train ml_v1 on real data",
+      "description": "Train baseline TF-IDF + LogisticRegression model on bootstrapped labels",
+      "command": "python -m scripts.train_email_classifier",
+      "artifacts": ["models/email_opp_model.joblib", "models/email_opp_vectorizer.joblib"],
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "title": "Deploy in ml_shadow mode",
+      "description": "Set EMAIL_CLASSIFIER_MODE=ml_shadow and monitor classification events vs heuristics",
+      "env_vars": {
+        "EMAIL_CLASSIFIER_MODE": "ml_shadow",
+        "EMAIL_CLASSIFIER_MODEL_VERSION": "ml_v1",
+        "EMAIL_CLASSIFIER_MODEL_PATH": "/app/models/email_opp_model.joblib",
+        "EMAIL_CLASSIFIER_VECTORIZER_PATH": "/app/models/email_opp_vectorizer.joblib"
+      },
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "title": "Build dbt models for analytics",
+      "description": "Create staging and mart models to track classification quality and drift",
+      "files": [
+        "analytics/dbt/models/staging/stg_email_classification_events.sql",
+        "analytics/dbt/models/staging/stg_email_category_corrections.sql",
+        "analytics/dbt/models/marts/mart_classification_quality_daily.sql"
+      ],
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "title": "Wire Opportunities/Follow-ups to new fields",
+      "description": "Update queries to use emails.is_real_opportunity and emails.category instead of heuristics",
+      "files": ["app/routers/opportunities.py", "app/routers/agent.py"],
+      "filters": [
+        "WHERE emails.is_real_opportunity = TRUE",
+        "ORDER BY emails.category_confidence DESC, emails.received_at DESC"
+      ],
+      "status": "pending"
+    },
+    {
+      "step": 7,
+      "title": "Add Grafana dashboard",
+      "description": "Create 'ApplyLens ML / Classification' dashboard with correction rate, category distribution, and drift detection panels",
+      "status": "pending"
+    },
+    {
+      "step": 8,
+      "title": "Gradual rollout to ml_live",
+      "description": "After 7-14 days in ml_shadow with correction rate <10%, switch to EMAIL_CLASSIFIER_MODE=ml_live",
+      "success_criteria": [
+        "Correction rate < 10% for all categories",
+        "No significant drift in category distribution",
+        "is_real_opportunity precision > 85%",
+        "User feedback positive"
+      ],
+      "status": "pending"
+    }
+  ],
+  "files": {
+    "core": [
+      "services/api/app/classification/email_classifier.py",
+      "services/api/app/classification/integration.py",
+      "services/api/app/services/classification.py"
+    ],
+    "scripts": [
+      "services/api/scripts/train_email_classifier.py",
+      "services/api/scripts/bootstrap_email_training_labels.py"
+    ],
+    "tests": [
+      "services/api/tests/test_train_email_classifier.py",
+      "services/api/tests/test_email_classifier_integration.py"
+    ],
+    "config": ["services/api/app/config.py"],
+    "migrations": [
+      "services/api/alembic/versions/20251203_add_email_classification_tables.py"
+    ],
+    "routers": ["services/api/app/routers/diagnostics_classifier.py"],
+    "documentation": [
+      "docs/EMAIL_CLASSIFICATION_ROADMAP.md",
+      "docs/core/APPLYLENS_CLASSIFICATION_SNAPSHOT.json"
+    ]
+  },
+  "references": {
+    "roadmap": "docs/EMAIL_CLASSIFICATION_ROADMAP.md",
+    "phase": "Phase 1 (Instrumentation & Analytics) - COMPLETE",
+    "next_phase": "Phase 2 (Dataset Building) - READY TO START",
+    "commit_history": [
+      "feat(classification): Phase 1 email classification infrastructure",
+      "test(classification): Add comprehensive tests for email classifier"
+    ]
+  }
+}

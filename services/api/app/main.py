@@ -249,6 +249,11 @@ app.include_router(resume.router)
 # Opportunities router - Job opportunities listing
 app.include_router(opportunities.router)
 
+# Classifier diagnostics router - Email classifier health checks
+from .routers import diagnostics_classifier  # noqa: E402
+
+app.include_router(diagnostics_classifier.router)
+
 # Agent router - Mailbox Agent v2 (AI assistant)
 app.include_router(agent_router.router)
 
