@@ -121,6 +121,7 @@ def compute_opportunity_priority(
     *,
     application_status: Optional[str],
     email_category: Optional[str],
+    email_category_confidence: Optional[float],
     last_message_at: Optional[datetime],
 ) -> OpportunityPriority:
     """
@@ -128,6 +129,7 @@ def compute_opportunity_priority(
     - Stage (from application status or email category)
     - Recency (age of last message)
     - Category quality
+    - **NEW**: Category confidence from ML classifier
 
     Returns:
     - "high": score >= 5 (hot opportunities)
@@ -146,7 +148,13 @@ def compute_opportunity_priority(
 
     category_bonus = 1 if category in GOOD_CATEGORIES else 0
 
-    score = stage_weight + age + category_bonus
+    # NEW: Confidence boost for high-confidence ML predictions
+    # Only apply if we have both category and high confidence
+    confidence_boost = 0
+    if email_category_confidence is not None and email_category_confidence >= 0.9:
+        confidence_boost = 1  # Extra point for very confident classifications
+
+    score = stage_weight + age + category_bonus + confidence_boost
 
     if score >= 4:
         return "high"
@@ -204,7 +212,26 @@ def is_real_opportunity(email: Email, application: Optional[Application]) -> boo
     - Job board alerts and mass mailings
     - Applications with terminal/closed statuses
     - Emails with non-recruiting categories
+
+    **NEW (Dec 2025)**: Prioritizes email.is_real_opportunity field if populated
+    by the email classifier. Falls back to heuristics if field is None.
     """
+    # PRIORITY 1: Use email.is_real_opportunity field if classifier has set it
+    if email.is_real_opportunity is not None:
+        # If classifier says it's not an opportunity, respect that
+        if not email.is_real_opportunity:
+            return False
+        # If classifier says it IS an opportunity, still check application status
+        # (classifier doesn't know about closed/withdrawn apps)
+        if application:
+            status = (application.status.value if application.status else "").lower()
+            if status in CLOSED_STATUSES:
+                return False
+        return True
+
+    # FALLBACK: Use legacy heuristics if is_real_opportunity field is None
+    # (e.g., old emails before classifier was deployed)
+
     # 1) Filter out newsletters/digests using existing helper
     # Convert Email model to dict format expected by is_newsletter_or_digest
     thread_dict = {
@@ -371,6 +398,7 @@ def list_opportunities(
             if application and application.status
             else None,
             email_category=email.category,
+            email_category_confidence=email.category_confidence,
             last_message_at=last_message_at,
         )
 

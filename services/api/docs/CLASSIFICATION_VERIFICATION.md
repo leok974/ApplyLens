@@ -2,7 +2,77 @@
 
 Quick sanity checks to verify the classification system is working correctly in production.
 
-## A. Verify Ingest Classification is Populating Fields
+## B. Verify Classifier Health Endpoint
+
+### 1. Check Classifier Diagnostics
+
+```bash
+curl http://localhost:8000/diagnostics/classifier/health
+```
+
+**Expected Response (Heuristic Mode):**
+```json
+{
+  "ok": true,
+  "status": "healthy",
+  "mode": "heuristic",
+  "model_version": "heuristic_v1",
+  "has_model_artifacts": false,
+  "uses_ml": false,
+  "ml_model_loaded": false,
+  "vectorizer_loaded": false,
+  "message": "Classifier running in heuristic mode (heuristic-only)",
+  "sample_prediction": {
+    "category": "interview_invite",
+    "is_real_opportunity": true,
+    "confidence": 0.5,
+    "source": "heuristic"
+  }
+}
+```
+
+**Expected Response (ML Shadow Mode with artifacts loaded):**
+```json
+{
+  "ok": true,
+  "status": "healthy",
+  "mode": "ml_shadow",
+  "model_version": "ml_v1",
+  "has_model_artifacts": true,
+  "uses_ml": true,
+  "ml_model_loaded": true,
+  "vectorizer_loaded": true,
+  "message": "Classifier running in ml_shadow mode with ML model loaded",
+  "sample_prediction": {
+    "category": "interview_invite",
+    "is_real_opportunity": true,
+    "confidence": 0.92,
+    "source": "ml_shadow"
+  }
+}
+```
+
+### 2. Verify Opportunities Use is_real_opportunity
+
+```sql
+-- Check that opportunities endpoint respects is_real_opportunity field
+SELECT
+  e.subject,
+  e.is_real_opportunity,
+  e.category,
+  e.category_confidence,
+  a.company,
+  a.status
+FROM emails e
+LEFT JOIN applications a ON a.thread_id = e.thread_id
+WHERE e.is_real_opportunity = TRUE
+  AND a.status NOT IN ('rejected', 'withdrawn', 'ghosted', 'closed')
+LIMIT 20;
+```
+
+**Expected**: These should match what `/api/opportunities` returns.
+
+---
 
 ### 1. Trigger Gmail Backfill
 

@@ -1,53 +1,92 @@
 # Email Classification System - Deployment Status
 
-## Overview
-Production-ready email classification system for ApplyLens. Automatically categorizes emails using a hybrid approach (rules + ML + heuristics) with full analytics tracking.
+## Latest Update (December 3, 2025)
 
-## Current Status: Step 1 COMPLETE ✅
+✅ **Infrastructure Phase Complete**
+- Email classifier diagnostics endpoint finalized (`/diagnostics/classifier/health`)
+- Environment variables documented and configured (`.env.example`, `.env.prod`)
+- Backend integration complete:
+  * Opportunities endpoint uses `is_real_opportunity` field
+  * Follow-up queue uses `category` and `category_confidence`
+  * Priority scoring enhanced with ML confidence signals
+- Test coverage added for all new integrations
+- Training helper script created (`scripts/train_and_eval_ml_v1.ps1`)
 
-### Completed (Commit: 3e744d9)
-- ✅ **Step 1: Wire into Gmail Ingest**
-  - Integrated `classify_and_persist_email()` into `gmail_backfill()` and `gmail_backfill_with_progress()`
-  - Classification runs after `db.flush()` to ensure `email.id` is populated
-  - Updates: `category`, `is_real_opportunity`, `category_confidence`, `classifier_version`
-  - Creates `EmailClassificationEvent` for every email (analytics tracking)
-  - Graceful error handling - classification failures don't block ingest
-  - Tests passing: `test_email_classifier_integration.py`, `test_train_email_classifier.py`
-
-### Infrastructure Complete (Previous commits: fa94471, 72740b8)
-- ✅ Database schema (4 tables + 4 email columns) - Alembic migration `20251203_add_email_classification_tables`
-- ✅ HybridEmailClassifier (3-tier: rules → ML → heuristics)
-- ✅ Training pipeline (TF-IDF + LogisticRegression)
-- ✅ Service module (`app/services/classification.py`)
-- ✅ Bootstrap script (5 rule sets, target 5k-10k labels)
-- ✅ Diagnostics endpoints (`/diagnostics/classifier/health`, `/diagnostics/classifier/reload`)
-
-## Next Steps (Remaining 7 Steps)
-
-### Step 2: Bootstrap Training Labels 🔜
-**Command:**
-```bash
-cd services/api
-python -m scripts.bootstrap_email_training_labels --limit 5000
-```
-
-**Expected Output:**
-```
-Distribution of bootstrap labels:
-  application_confirmation: ~1500 labels (conf 0.90-0.95)
-  security_auth: ~800 labels (conf 0.99)
-  job_alert_digest: ~1200 labels (conf 0.92)
-  receipt_invoice: ~600 labels (conf 0.93)
-  interview_invite: ~900 labels (conf 0.88)
-Total: 5000-10000 training labels
-```
-
-**Status:** NOT STARTED
-**Blockers:** None - ready to run
+**Status**: Code-ready for ML shadow mode deployment. Awaiting operational decision to train ml_v1.
 
 ---
 
-### Step 3: Train ML Model v1
+## Overview
+Production-ready email classification system for ApplyLens. Automatically categorizes emails using a hybrid approach (rules + ML + heuristics) with full analytics tracking.
+
+## Current Status: ✅ **DEPLOYED TO PRODUCTION (v0.8.1)**
+
+### 🚀 Production Deployment Complete
+- **Version**: leoklemet/applylens-api:0.8.1
+- **Container**: applylens-api-prod (running)
+- **Mode**: heuristic (rule-based classification)
+- **Model Version**: heuristic_v1
+
+### ✅ Step 1: Gmail Integration (COMPLETE)
+- Integrated `classify_and_persist_email()` into `gmail_backfill()` and `gmail_backfill_with_progress()`
+- Classification runs after `db.flush()` to ensure `email.id` is populated
+- Updates: `category`, `is_real_opportunity`, `category_confidence`, `classifier_version`
+- Creates `EmailClassificationEvent` for every email (analytics tracking)
+- Graceful error handling - classification failures don't block ingest
+- Tests passing: `test_email_classifier_integration.py`, `test_train_email_classifier.py`
+
+### ✅ Step 2: Bootstrap Training Labels (COMPLETE)
+- **Executed**: December 3, 2025
+- **Results**: 195 training labels created from existing emails
+- **Distribution**:
+  - application_confirmation: 108 labels
+  - job_alert_digest: 49 labels
+  - receipt_invoice: 14 labels
+  - security_auth: 12 labels
+  - interview_invite: 11 labels
+  - newsletter_marketing: 1 label
+
+### Infrastructure Complete
+- ✅ Database schema (4 tables + 4 email columns)
+- ✅ HybridEmailClassifier (3-tier: rules → ML → heuristics)
+- ✅ Training pipeline (TF-IDF + LogisticRegression)
+- ✅ Service module (`app/services/classification.py`)
+- ✅ Bootstrap script (6 conservative rules)
+- ✅ Diagnostics endpoints (`/diagnostics/classifier/health`, `/diagnostics/classifier/reload`)
+- ✅ Production bug fixes (user_id type mismatch resolved)
+- ✅ **Backend integration** (Opportunities + Follow-ups use classification fields)
+- ✅ **Environment configuration** (.env.example with classifier settings)
+- ✅ **Test coverage** (diagnostics, opportunities, classification integration)
+- ✅ **Training helper** (scripts/train_and_eval_ml_v1.ps1)
+
+## Production Deployment Details
+
+### Docker Image
+```bash
+docker pull leoklemet/applylens-api:0.8.1
+# or
+docker pull leoklemet/applylens-api:latest
+```
+
+### Environment Variables
+```bash
+EMAIL_CLASSIFIER_MODE=heuristic           # Current mode
+EMAIL_CLASSIFIER_MODEL_VERSION=heuristic_v1  # Model version
+```
+
+### Database Tables Created
+1. `email_classification_events` - All classification predictions logged
+2. `email_category_corrections` - User feedback for model improvement
+3. `email_training_labels` - Bootstrap training data
+4. `email_golden_labels` - Hand-labeled evaluation set
+
+### Email Columns Added
+- `category` VARCHAR(64) - Predicted category
+- `is_real_opportunity` BOOLEAN - Binary opportunity flag
+- `category_confidence` FLOAT - Confidence score (0-1)
+- `classifier_version` VARCHAR(64) - Model version identifier
+
+## Next Steps (Remaining 5 Steps)
 **Command:**
 ```bash
 cd services/api

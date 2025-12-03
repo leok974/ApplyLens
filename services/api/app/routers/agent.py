@@ -696,11 +696,17 @@ def looks_like_real_interview(thread: dict) -> bool:
     return True
 
 
-def compute_followup_priority(stage: str, last_contact_at) -> str:
+def compute_followup_priority(
+    stage: str,
+    last_contact_at,
+    email_category: Optional[str] = None,
+    email_category_confidence: Optional[float] = None,
+) -> str:
     """
     Compute a simple priority score for follow-up items.
     - Stage drives the base score
     - Age in days adds an "urgency" bonus
+    - **NEW**: Email category and confidence provide additional signals
 
     Returns: "low" | "medium" | "high"
     """
@@ -725,6 +731,7 @@ def compute_followup_priority(stage: str, last_contact_at) -> str:
         last_contact_at = last_contact_at.replace(tzinfo=timezone.utc)
 
     stage_norm = (stage or "").lower()
+    category_norm = (email_category or "").lower()
     now = datetime.now(timezone.utc)
     age_days = max(0, (now - last_contact_at).days)
 
@@ -746,7 +753,17 @@ def compute_followup_priority(stage: str, last_contact_at) -> str:
     else:
         age_bonus = 0
 
-    score = base + age_bonus
+    # NEW: Category bonus for high-value categories
+    category_bonus = 0
+    if category_norm in {"interview_invite", "offer", "recruiter_outreach"}:
+        category_bonus = 1  # These are high-priority categories
+
+    # NEW: Confidence bonus for high-confidence classifications
+    confidence_bonus = 0
+    if email_category_confidence is not None and email_category_confidence >= 0.9:
+        confidence_bonus = 1  # High confidence in classification
+
+    score = base + age_bonus + category_bonus + confidence_bonus
 
     if score >= 4:
         return "high"
@@ -828,6 +845,7 @@ async def get_followup_queue(
                 email_meta_by_thread[email.thread_id] = {
                     "labels": email.labels or [],
                     "category": email.category,
+                    "category_confidence": email.category_confidence,
                 }
 
         # Merge threads and applications
@@ -849,7 +867,7 @@ async def get_followup_queue(
             seen_threads.add(thread_id)
             app = apps_by_thread.get(thread_id)
 
-            # Compute priority based on stage and age
+            # Compute priority based on stage, age, and email classification
             stage = app.status if app else None
 
             # Interview sanity check: if marked as interview but looks like newsletter, skip
@@ -857,7 +875,12 @@ async def get_followup_queue(
                 continue  # Don't include obvious newsletters marked as interview
 
             last_message_at = thread.get("last_message_at")
-            priority = compute_followup_priority(stage, last_message_at)
+            priority = compute_followup_priority(
+                stage,
+                last_message_at,
+                email_category=meta.get("category"),
+                email_category_confidence=meta.get("category_confidence"),
+            )
 
             # Build reason tags
             reason_tags = ["pending_reply"]
