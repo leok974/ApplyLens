@@ -1,16 +1,27 @@
-# Email Classification Verification Checklist
+# Email Classification - Verification Guide
 
-Quick sanity checks to verify the classification system is working correctly in production.
+This guide covers how to verify the email classification system is working correctly in production.
 
-## B. Verify Classifier Health Endpoint
+## Table of Contents
+1. [Health Check](#health-check)
+2. [Classification Backfill](#classification-backfill)
+3. [Database Verification](#database-verification)
+4. [Opportunities Integration](#opportunities-integration)
+5. [Bootstrap Training Labels](#bootstrap-training-labels)
 
-### 1. Check Classifier Diagnostics
+---
+
+## 1. Health Check
+
+### Classifier Diagnostics Endpoint
+
+Check classifier status and configuration:
 
 ```bash
-curl http://localhost:8000/diagnostics/classifier/health
+curl http://localhost:8000/diagnostics/classifier/health | jq
 ```
 
-**Expected Response (Heuristic Mode):**
+Expected response (heuristic mode):
 ```json
 {
   "ok": true,
@@ -25,34 +36,80 @@ curl http://localhost:8000/diagnostics/classifier/health
   "sample_prediction": {
     "category": "interview_invite",
     "is_real_opportunity": true,
-    "confidence": 0.5,
+    "confidence": 0.8,
     "source": "heuristic"
-  }
+  },
+  "error": null
 }
 ```
 
-**Expected Response (ML Shadow Mode with artifacts loaded):**
-```json
-{
-  "ok": true,
-  "status": "healthy",
-  "mode": "ml_shadow",
-  "model_version": "ml_v1",
-  "has_model_artifacts": true,
-  "uses_ml": true,
-  "ml_model_loaded": true,
-  "vectorizer_loaded": true,
-  "message": "Classifier running in ml_shadow mode with ML model loaded",
-  "sample_prediction": {
-    "category": "interview_invite",
-    "is_real_opportunity": true,
-    "confidence": 0.92,
-    "source": "ml_shadow"
-  }
-}
+---
+
+## 2. Classification Backfill
+
+### Overview
+
+The backfill script classifies historical emails that don't have classification data yet.
+
+### Dry Run (Preview Mode)
+
+See what would be updated without making changes:
+
+```bash
+cd services/api
+python -m scripts.backfill_email_classification --limit 500 --dry-run
 ```
 
-### 2. Verify Opportunities Use is_real_opportunity
+### Real Backfill
+
+Classify and persist results for unclassified emails:
+
+```bash
+# Backfill up to 1000 emails
+python -m scripts.backfill_email_classification --limit 1000
+
+# Backfill for specific user
+python -m scripts.backfill_email_classification --user-id leo@applylens.app --limit 500
+
+# Large backfill (gradual rollout)
+python -m scripts.backfill_email_classification --limit 5000
+```
+
+### Verify Backfill Results
+
+Check how many emails were classified:
+
+```sql
+SELECT
+  category,
+  is_real_opportunity,
+  COUNT(*) AS n
+FROM emails
+WHERE is_real_opportunity IS NOT NULL
+GROUP BY category, is_real_opportunity
+ORDER BY n DESC
+LIMIT 20;
+```
+
+Expected output after backfill:
+```
+         category         | is_real_opportunity |  n
+--------------------------+---------------------+------
+ newsletter_marketing     | false               | 1523
+ recruiter_outreach       | true                | 342
+ interview_invite         | true                | 89
+ application_confirmation | true                | 67
+ job_alert_digest         | false               | 54
+ rejection                | false               | 41
+ security_auth            | false               | 28
+ receipt_invoice          | false               | 15
+```
+
+---
+
+## 3. Database Verification
+
+### Check Email Classification Fields
 
 ```sql
 -- Check that opportunities endpoint respects is_real_opportunity field

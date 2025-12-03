@@ -14,6 +14,30 @@ from app.models import Email
 from app.config import get_agent_settings
 
 
+def build_email_text(email: Email) -> str:
+    """
+    Build text representation of email for ML feature extraction.
+
+    This is the canonical way to convert an Email to text for classification.
+    Used by:
+    - Classifier inference (HybridEmailClassifier)
+    - Training pipeline (train_email_classifier.py)
+    - Evaluation pipeline (eval_email_classifier_on_golden.py)
+
+    Args:
+        email: Email model instance
+
+    Returns:
+        Concatenated text with subject, body, and sender
+    """
+    parts = [
+        email.subject or "",
+        email.body_text or "",
+        email.sender or "",
+    ]
+    return "\n".join(p for p in parts if p)
+
+
 Category = Literal[
     "recruiter_outreach",
     "interview_invite",
@@ -55,8 +79,8 @@ def _apply_high_precision_rules(email: Email) -> Optional[ClassificationResult]:
     These rules have very high precision and bypass ML models.
     """
     subject = (email.subject or "").lower()
-    sender = (email.from_address or "").lower()
-    snippet = (email.snippet or "").lower()
+    sender = (email.sender or "").lower()
+    snippet = (email.body_text or "").lower()
 
     # Security / Authentication emails
     security_keywords = [
@@ -194,7 +218,7 @@ class HybridEmailClassifier:
         This is a simplified version - replace with your actual heuristics.
         """
         subject = (email.subject or "").lower()
-        snippet = (email.snippet or "").lower()
+        snippet = (email.body_text or "").lower()
 
         # Opportunity signals
         opportunity_keywords = [
@@ -292,16 +316,9 @@ class HybridEmailClassifier:
             source="ml_live" if self.mode == "ml_live" else "ml_shadow",
         )
 
-    @staticmethod
-    def _build_text(email: Email) -> str:
+    def _build_text(self, email: Email) -> str:
         """Build text representation of email for ML features."""
-        parts = [
-            email.subject or "",
-            email.snippet or "",
-            email.from_address or "",
-        ]
-        # You can add body text if available
-        return "\n".join(parts)
+        return build_email_text(email)
 
 
 def get_classifier() -> HybridEmailClassifier:
@@ -315,17 +332,22 @@ def get_classifier() -> HybridEmailClassifier:
 
     settings = get_agent_settings()
 
-    model_path = getattr(
-        settings, "EMAIL_CLASSIFIER_MODEL_PATH", "models/email_opp_model.joblib"
+    model_path = (
+        getattr(settings, "EMAIL_CLASSIFIER_MODEL_PATH", None)
+        or "models/email_opp_model.joblib"
     )
-    vec_path = getattr(
-        settings,
-        "EMAIL_CLASSIFIER_VECTORIZER_PATH",
-        "models/email_opp_vectorizer.joblib",
+    vec_path = (
+        getattr(settings, "EMAIL_CLASSIFIER_VECTORIZER_PATH", None)
+        or "models/email_opp_vectorizer.joblib"
     )
 
     # Check if ML artifacts exist
-    if not (os.path.exists(model_path) and os.path.exists(vec_path)):
+    if not (
+        model_path
+        and vec_path
+        and os.path.exists(model_path)
+        and os.path.exists(vec_path)
+    ):
         # ML artifacts not present, fall back to heuristics-only
         return HybridEmailClassifier(ml_model=None, vectorizer=None)
 

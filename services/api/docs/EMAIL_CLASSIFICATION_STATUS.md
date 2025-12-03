@@ -2,6 +2,22 @@
 
 ## Latest Update (December 3, 2025)
 
+✅ **v0.8.2 - Classification Backfill & Production Rollout Complete**
+- Health endpoint fixed (`body_text` instead of `snippet` field)
+- All field name inconsistencies resolved (`from_address` → `sender`, `snippet` → `body_text`)
+- Backfill script implemented (`scripts/backfill_email_classification.py`)
+- Text building standardized across training/eval/inference (`build_email_text` helper)
+- Backend integration verified:
+  * Opportunities endpoint prioritizes `is_real_opportunity` field
+  * Follow-up queue uses `category` and `category_confidence` in priority scoring
+- Heuristic mode live in production, ready for manual backfill execution
+
+**Status**: Code-complete. Ready for production backfill and ML training.
+
+---
+
+## Previous Update (December 3, 2025)
+
 ✅ **Infrastructure Phase Complete**
 - Email classifier diagnostics endpoint finalized (`/diagnostics/classifier/health`)
 - Environment variables documented and configured (`.env.example`, `.env.prod`)

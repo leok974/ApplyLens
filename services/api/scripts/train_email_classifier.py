@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db import SessionLocal
 from app.models import Email, EmailTrainingLabel
+from app.classification.email_classifier import build_email_text
 
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
@@ -34,16 +35,6 @@ VEC_PATH = os.path.join(MODEL_DIR, "email_opp_vectorizer.joblib")
 def _ensure_model_dir() -> None:
     """Create models directory if it doesn't exist."""
     os.makedirs(MODEL_DIR, exist_ok=True)
-
-
-def _build_text(email: Email) -> str:
-    """Build text representation from email for feature extraction."""
-    parts = [
-        email.subject or "",
-        email.snippet or "",
-        email.from_address or "",
-    ]
-    return "\n".join(parts)
 
 
 def load_training_data(
@@ -76,7 +67,7 @@ def load_training_data(
             continue
 
         y = 1 if tl.label_is_real_opportunity else 0
-        x = _build_text(email)
+        x = build_email_text(email)
 
         if not x.strip():
             continue

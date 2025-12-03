@@ -7,7 +7,48 @@ from sqlalchemy.orm import sessionmaker
 from app.classification.email_classifier import (
     HybridEmailClassifier,
     ClassificationResult,
+    build_email_text,
 )
+
+
+def test_build_email_text():
+    """Test that build_email_text handles various field combinations."""
+    from app.models import Email
+
+    # All fields present
+    email = Email(
+        subject="Interview for Senior Engineer",
+        body_text="We'd like to schedule a call next week",
+        sender="recruiter@tech.com",
+        thread_id="test-123",
+    )
+    text = build_email_text(email)
+    assert "Interview for Senior Engineer" in text
+    assert "We'd like to schedule a call next week" in text
+    assert "recruiter@tech.com" in text
+
+    # Some fields None
+    email_partial = Email(
+        subject="Test Subject",
+        body_text=None,
+        sender="sender@test.com",
+        thread_id="test-456",
+    )
+    text_partial = build_email_text(email_partial)
+    assert "Test Subject" in text_partial
+    assert "sender@test.com" in text_partial
+    # Should handle None gracefully (no crash)
+
+    # All fields None
+    email_empty = Email(
+        subject=None,
+        body_text=None,
+        sender=None,
+        thread_id="test-789",
+    )
+    text_empty = build_email_text(email_empty)
+    # Should return empty or minimal string, not crash
+    assert isinstance(text_empty, str)
 
 
 def create_in_memory_session():
