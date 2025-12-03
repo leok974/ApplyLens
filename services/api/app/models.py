@@ -1082,7 +1082,7 @@ class EmailCategoryCorrection(Base):
     old_is_real_opportunity = Column(Boolean, nullable=True)
     new_is_real_opportunity = Column(Boolean, nullable=False)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        String(64), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True

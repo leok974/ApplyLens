@@ -103,7 +103,7 @@ def upgrade() -> None:
         sa.Column("new_is_real_opportunity", sa.Boolean(), nullable=False),
         sa.Column(
             "user_id",
-            sa.Integer(),
+            sa.String(length=64),
             sa.ForeignKey("users.id", ondelete="SET NULL"),
             nullable=True,
         ),
