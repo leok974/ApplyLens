@@ -124,6 +124,12 @@ class Email(Base):
     source = Column(String(128), index=True)
     source_confidence = Column(Float, default=0.0)
 
+    # Email classification fields (Phase 1)
+    category = Column(String(64), nullable=True, index=True)
+    is_real_opportunity = Column(Boolean, nullable=True, index=True)
+    category_confidence = Column(Float, nullable=True)
+    classifier_version = Column(String(64), nullable=True)
+
     # Reply metrics
     first_user_reply_at = Column(DateTime(timezone=True), nullable=True)
     last_user_reply_at = Column(DateTime(timezone=True), nullable=True)
@@ -1028,3 +1034,117 @@ class OpportunityMatch(Base):
 
     def __repr__(self):
         return f"<OpportunityMatch(id={self.id}, bucket={self.match_bucket}, score={self.match_score})>"
+
+
+# === Email Classification Tables (Phase 1) ===
+
+
+class EmailClassificationEvent(Base):
+    """Log every classification event for analytics and debugging."""
+
+    __tablename__ = "email_classification_events"
+
+    id = Column(Integer, primary_key=True)
+    email_id = Column(
+        Integer, ForeignKey("emails.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    thread_id = Column(String(255), nullable=True)
+    model_version = Column(String(64), nullable=False)
+    predicted_category = Column(String(64), nullable=False)
+    predicted_is_real_opportunity = Column(Boolean, nullable=False)
+    confidence = Column(Float, nullable=True)
+    source = Column(
+        String(32), nullable=False
+    )  # "rule" | "heuristic" | "ml_shadow" | "ml_live"
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+    # Relationship
+    email = relationship("Email", foreign_keys=[email_id])
+
+    def __repr__(self):
+        return f"<EmailClassificationEvent(id={self.id}, category={self.predicted_category}, source={self.source})>"
+
+
+class EmailCategoryCorrection(Base):
+    """Track user corrections to improve the model."""
+
+    __tablename__ = "email_category_corrections"
+
+    id = Column(Integer, primary_key=True)
+    email_id = Column(
+        Integer, ForeignKey("emails.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    thread_id = Column(String(255), nullable=True)
+    old_category = Column(String(64), nullable=True)
+    new_category = Column(String(64), nullable=False)
+    old_is_real_opportunity = Column(Boolean, nullable=True)
+    new_is_real_opportunity = Column(Boolean, nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+    # Relationships
+    email = relationship("Email", foreign_keys=[email_id])
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return f"<EmailCategoryCorrection(id={self.id}, old={self.old_category}, new={self.new_category})>"
+
+
+class EmailGoldenLabel(Base):
+    """Hand-labeled evaluation set (never used for training)."""
+
+    __tablename__ = "email_golden_labels"
+
+    id = Column(Integer, primary_key=True)
+    email_id = Column(
+        Integer,
+        ForeignKey("emails.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    thread_id = Column(String(255), nullable=True)
+    golden_category = Column(String(64), nullable=False)
+    golden_is_real_opportunity = Column(Boolean, nullable=False)
+    labeler = Column(String(128), nullable=True)
+    labeled_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationship
+    email = relationship("Email", foreign_keys=[email_id])
+
+    def __repr__(self):
+        return f"<EmailGoldenLabel(id={self.id}, category={self.golden_category}, by={self.labeler})>"
+
+
+class EmailTrainingLabel(Base):
+    """Training labels from rules, heuristics, and user corrections."""
+
+    __tablename__ = "email_training_labels"
+
+    id = Column(Integer, primary_key=True)
+    email_id = Column(
+        Integer, ForeignKey("emails.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    thread_id = Column(String(255), nullable=True)
+    label_category = Column(String(64), nullable=False)
+    label_is_real_opportunity = Column(Boolean, nullable=False)
+    label_source = Column(
+        String(64), nullable=False
+    )  # "rule" | "heuristic" | "gmail_label" | "user_correction"
+    confidence = Column(Float, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationship
+    email = relationship("Email", foreign_keys=[email_id])
+
+    def __repr__(self):
+        return f"<EmailTrainingLabel(id={self.id}, category={self.label_category}, source={self.label_source}, conf={self.confidence})>"
