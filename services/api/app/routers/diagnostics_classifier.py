@@ -7,7 +7,7 @@ Provides visibility into classifier state, model versions, and basic sanity chec
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.auth.deps import get_current_user_optional
+from app.auth.deps import optional_current_user
 from app.models import Email
 from app.services.classification import get_global_classifier, reload_classifier
 
@@ -27,7 +27,7 @@ class ClassifierHealthResponse(BaseModel):
 
 
 @router.get("/health", response_model=ClassifierHealthResponse)
-def classifier_health_check(current_user=Depends(get_current_user_optional)):
+def classifier_health_check(current_user=Depends(optional_current_user)):
     """
     Check email classifier health and configuration.
 
@@ -79,7 +79,7 @@ def classifier_health_check(current_user=Depends(get_current_user_optional)):
 
 
 @router.post("/reload")
-def reload_classifier_endpoint(current_user=Depends(get_current_user_optional)):
+def reload_classifier_endpoint(current_user=Depends(optional_current_user)):
     """
     Reload the global classifier (e.g., after deploying new model).
 
