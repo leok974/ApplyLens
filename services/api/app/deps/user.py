@@ -1,5 +1,6 @@
 """User authentication and identification dependencies."""
 
+import logging
 import os
 from typing import Optional
 
@@ -8,6 +9,7 @@ from fastapi import Depends, HTTPException, status
 from ..auth.deps import current_user, optional_current_user
 from ..models import User
 
+logger = logging.getLogger(__name__)
 DEFAULT_USER_EMAIL = os.getenv("DEFAULT_USER_EMAIL")
 
 
@@ -20,19 +22,25 @@ def get_current_user_email(user: User = Depends(current_user)) -> str:
 
     Raises 401 if no user is authenticated and no default is set.
     """
-    # If we have an authenticated user, use their email
-    if user:
-        return user.email
+    try:
+        # If we have an authenticated user, use their email
+        if user:
+            logger.info(f"User authenticated: {user.id}, email: {user.email}")
+            return user.email
 
-    # Fallback to environment default (single-user mode)
-    email = DEFAULT_USER_EMAIL
-    if email:
-        return email
+        # Fallback to environment default (single-user mode)
+        email = DEFAULT_USER_EMAIL
+        if email:
+            logger.info(f"Using default email: {email}")
+            return email
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="User email not available. Please log in or set DEFAULT_USER_EMAIL.",
-    )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User email not available. Please log in or set DEFAULT_USER_EMAIL.",
+        )
+    except Exception as e:
+        logger.error(f"Error in get_current_user_email: {e}", exc_info=True)
+        raise
 
 
 def get_optional_user_email(
