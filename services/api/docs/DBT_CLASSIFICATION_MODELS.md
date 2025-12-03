@@ -295,6 +295,8 @@ ORDER BY 1 DESC, 2, 3, 4;
 
 ### 4.2. Shadow Mode Comparison Dashboard
 
+**Purpose:** Monitor ML classifier performance in shadow mode (ml_shadow) where heuristic drives production but ML predictions are logged for comparison.
+
 **Key Panels:**
 
 1. **Agreement Rate** (Stat)
@@ -303,6 +305,8 @@ ORDER BY 1 DESC, 2, 3, 4;
      COUNT(CASE WHEN opportunity_agreement = 'match' THEN 1 END)::float / COUNT(*) AS agreement_rate
    FROM mart_model_comparison;
    ```
+   - **Target:** >85% agreement before promoting to ml_live
+   - **Warning:** <75% suggests ML needs more training data
 
 2. **Disagreement Examples** (Table)
    ```sql
@@ -319,6 +323,22 @@ ORDER BY 1 DESC, 2, 3, 4;
    ORDER BY ABS(heuristic_confidence - ml_confidence) DESC
    LIMIT 20;
    ```
+   - **Action:** Review high-confidence disagreements manually
+   - **Purpose:** Identify where ML outperforms or underperforms heuristics
+
+3. **Shadow Mode Coverage** (Time Series)
+   ```sql
+   SELECT
+     DATE(created_at_utc) AS date,
+     source,
+     COUNT(*) AS prediction_count
+   FROM stg_email_classification_events
+   WHERE created_at_utc >= NOW() - INTERVAL '7 days'
+   GROUP BY date, source
+   ORDER BY date;
+   ```
+   - **Validation:** Ensure both 'heuristic' and 'ml_shadow' sources exist
+   - **Expected:** Equal counts (1 heuristic + 1 ml_shadow per email)
 
 ## 5. Alerts
 

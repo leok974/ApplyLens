@@ -25,11 +25,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.db import SessionLocal
 from app.models import Email, EmailTrainingLabel
 from app.classification.email_classifier import build_email_text
+from app.config import get_agent_settings
 
 
+# Default paths (can be overridden by settings)
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
-MODEL_PATH = os.path.join(MODEL_DIR, "email_opp_model.joblib")
-VEC_PATH = os.path.join(MODEL_DIR, "email_opp_vectorizer.joblib")
+DEFAULT_MODEL_PATH = os.path.join(MODEL_DIR, "email_opp_model.joblib")
+DEFAULT_VEC_PATH = os.path.join(MODEL_DIR, "email_opp_vectorizer.joblib")
 
 
 def _ensure_model_dir() -> None:
@@ -82,8 +84,14 @@ def main() -> None:
     """Main training pipeline."""
     print("=== Email Opportunity Classifier Training ===\n")
 
+    # Get settings for model paths
+    settings = get_agent_settings()
+    model_path = settings.EMAIL_CLASSIFIER_MODEL_PATH or DEFAULT_MODEL_PATH
+    vec_path = settings.EMAIL_CLASSIFIER_VECTORIZER_PATH or DEFAULT_VEC_PATH
+
     # Ensure output directory exists
-    _ensure_model_dir()
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    os.makedirs(os.path.dirname(vec_path), exist_ok=True)
 
     # Connect to database
     print("Connecting to database...")
@@ -175,7 +183,6 @@ def main() -> None:
     # Evaluate on validation set
     print("\n=== Validation Results ===")
     y_pred = clf.predict(X_val_vec)
-    y_proba = clf.predict_proba(X_val_vec)[:, 1]
 
     print(
         classification_report(
@@ -192,20 +199,12 @@ def main() -> None:
     print(f"   Recall:    {recall:.3f}")
     print(f"   F1-Score:  {f1:.3f}")
 
-    # Confidence distribution
-    import numpy as np
-
-    print("\n📈 Confidence distribution:")
-    print(f"   Mean confidence: {np.mean(y_proba):.3f}")
-    print(f"   Median confidence: {np.median(y_proba):.3f}")
-    print(f"   Predictions > 0.9 confidence: {(y_proba > 0.9).sum()} / {len(y_proba)}")
-
     # Save artifacts
     print("\n💾 Saving model artifacts...")
-    joblib.dump(clf, MODEL_PATH)
-    joblib.dump(vectorizer, VEC_PATH)
-    print(f"✓ Saved model to: {MODEL_PATH}")
-    print(f"✓ Saved vectorizer to: {VEC_PATH}")
+    joblib.dump(clf, model_path)
+    joblib.dump(vectorizer, vec_path)
+    print(f"✓ Saved model to: {model_path}")
+    print(f"✓ Saved vectorizer to: {vec_path}")
 
     print("\n✅ Training complete! Model is ready to use.")
     print("\nNext steps:")

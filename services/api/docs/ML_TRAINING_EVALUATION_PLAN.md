@@ -95,6 +95,62 @@ ORDER BY avg_conf DESC;
 
 ## Phase 2: Train ML Model (v1)
 
+### 2.0. Inspect Training Data Quality
+
+**Before training**, verify label distribution and quality:
+
+```bash
+cd services/api
+python -m scripts.inspect_email_training_labels
+```
+
+**Expected output:**
+```
+=== Email Training Labels Report ===
+
+Total Labels: 487
+
+Distribution by Category:
+  security_auth                ████████████████████░  120 (24.6%)
+  receipt_invoice              ████████████████░      98 (20.1%)
+  application_confirmation     ██████████████░        87 (17.9%)
+  newsletter_marketing         ███████████░           65 (13.3%)
+  job_alert_digest             █████████░             54 (11.1%)
+  interview_invite             ███████░               43 (8.8%)
+  recruiter_outreach           ████░                  20 (4.1%)
+
+Distribution by is_real_opportunity:
+  TRUE    ████████████░  187 (38.4%)
+  FALSE   ████████████████████  300 (61.6%)
+  NULL    ░              0 (0.0%)
+
+Class Balance Ratio: 1.60 (FALSE/TRUE)
+✅ Class balance is healthy (1.0-3.0 range)
+
+Confidence Statistics:
+  Min: 0.80, Avg: 0.91, Max: 0.99
+  High-confidence (≥0.8): 487 (100.0%)
+
+Label Source Breakdown:
+  bootstrap_rule_auth          120 (24.6%)
+  bootstrap_rule_receipt       98 (20.1%)
+  bootstrap_rule_confirmation  87 (17.9%)
+
+Recommendations:
+✅ Good label count (≥300)
+✅ Healthy class balance
+✅ High average confidence
+✅ Ready for training!
+```
+
+**Requirements:**
+- ✅ Total labels ≥ 300 (ideally 1000+)
+- ✅ Class balance ratio between 1.0-3.0
+- ✅ Average confidence ≥ 0.85
+- ✅ No severe category skew (one category <80%)
+
+**If issues found, re-run bootstrap with adjusted rules before training.**
+
 ### 2.1. Run Training Script
 
 ```bash

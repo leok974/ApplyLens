@@ -54,7 +54,7 @@ def evaluate_on_golden_set() -> None:
         # Get classifier
         classifier = get_classifier()
         print(
-            f"✓ Loaded classifier: mode={classifier.mode}, version={classifier.version}\n"
+            f"✓ Loaded classifier: mode={classifier.mode}, version={classifier.model_version}\n"
         )
 
         # Collect predictions and ground truth
@@ -124,7 +124,7 @@ def evaluate_on_golden_set() -> None:
         print(f"Binary accuracy:           {binary_accuracy:.3f}")
         print(f"Category accuracy:         {category_accuracy:.3f}")
         print(f"Classifier mode:           {classifier.mode}")
-        print(f"Model version:             {classifier.version}")
+        print(f"Model version:             {classifier.model_version}")
 
         # Breakdown by category
         print("\n" + "=" * 60)

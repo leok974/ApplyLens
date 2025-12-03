@@ -25,10 +25,10 @@ def test_train_email_classifier_main_creates_artifacts(tmp_path, monkeypatch, ca
     model_path = model_dir / "email_opp_model.joblib"
     vec_path = model_dir / "email_opp_vectorizer.joblib"
 
-    # Override the module constants
+    # Override the module constants (now DEFAULT_MODEL_PATH and DEFAULT_VEC_PATH)
     monkeypatch.setattr(te, "MODEL_DIR", str(model_dir))
-    monkeypatch.setattr(te, "MODEL_PATH", str(model_path))
-    monkeypatch.setattr(te, "VEC_PATH", str(vec_path))
+    monkeypatch.setattr(te, "DEFAULT_MODEL_PATH", str(model_path))
+    monkeypatch.setattr(te, "DEFAULT_VEC_PATH", str(vec_path))
 
     # --- Fake DB training data ---
     def fake_load_training_data(_db, min_confidence=0.8):

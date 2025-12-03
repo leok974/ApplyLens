@@ -1,6 +1,29 @@
 # Email Classification System - Deployment Status
 
-## Latest Update (December 3, 2025)
+## Latest Update (December 3, 2025 - Evening)
+
+✅ **v0.8.3 - ML Training & Shadow Mode Preparation Complete**
+- Created data quality inspection script (`scripts/inspect_email_training_labels.py`)
+- Enhanced training script with config-based paths (uses `EMAIL_CLASSIFIER_MODEL_PATH` from settings)
+- Fixed evaluation script bug (`classifier.version` → `classifier.model_version`)
+- Verified shadow mode implementation (HybridEmailClassifier handles ml_shadow correctly)
+- Updated Dockerfile with ML artifact COPY instructions (commented, ready to uncomment)
+- Enhanced DBT documentation with shadow mode monitoring queries
+- Updated ML training plan with pre-training inspection step
+
+**Production Status**: Still heuristic mode (v0.8.2). ML infrastructure code-ready.
+
+**Next Operational Steps:**
+1. Inspect training data: `python -m scripts.inspect_email_training_labels`
+2. Train ml_v1: `python -m scripts.train_email_classifier`
+3. Evaluate on golden set: `python -m scripts.eval_email_classifier_on_golden`
+4. Deploy shadow mode (set `EMAIL_CLASSIFIER_MODE=ml_shadow` + rebuild Docker with model artifacts)
+5. Monitor agreement rate in `mart_model_comparison` for 1-2 weeks
+6. If >85% agreement, promote to ml_live
+
+---
+
+## Previous Update (December 3, 2025 - Afternoon)
 
 ✅ **v0.8.2 - Classification Backfill & Production Rollout Complete**
 - Health endpoint fixed (`body_text` instead of `snippet` field)
@@ -103,45 +126,96 @@ EMAIL_CLASSIFIER_MODEL_VERSION=heuristic_v1  # Model version
 - `classifier_version` VARCHAR(64) - Model version identifier
 
 ## Next Steps (Remaining 5 Steps)
+
+### Step 3: Train ML Model v1
+**Prerequisites:**
+- ✅ Inspect training data quality first: `python -m scripts.inspect_email_training_labels`
+- Ensure ≥300 labels, healthy class balance (1.0-3.0 ratio), avg confidence ≥0.85
+
 **Command:**
 ```bash
 cd services/api
 python -m scripts.train_email_classifier
 ```
 
+**What happens:**
+- Loads training labels with confidence ≥ 0.8
+- Uses `EMAIL_CLASSIFIER_MODEL_PATH` from settings (or defaults to `models/email_classifier_v1.joblib`)
+- Builds TF-IDF features (50k vocab, 1-2 grams)
+- Trains LogisticRegression (balanced, LBFGS, 200 iter)
+- Saves model + vectorizer to `models/` directory
+
 **Expected Output:**
 ```
-Loaded 5000+ training samples
+Loaded training labels: 487 (confidence >= 0.8)
+Training samples: 389, Validation samples: 98
 TF-IDF vectorization complete (50k features)
 Training LogisticRegression...
 Validation metrics:
-  Precision: 0.85+
-  Recall: 0.80+
-  F1: 0.82+
-Saved: models/email_opp_model.joblib, models/email_opp_vectorizer.joblib
+  Precision (True): 0.87
+  Recall (True): 0.82
+  F1 (True): 0.84
+  Overall Accuracy: 0.88
+✅ Model saved: models/email_classifier_v1.joblib
+✅ Vectorizer saved: models/email_vectorizer_v1.joblib
 ```
 
-**Status:** NOT STARTED
-**Blockers:** Requires Step 2 completion
+**Status:** READY TO RUN (data quality inspection script available)
 
 ---
 
 ### Step 4: Deploy in ML Shadow Mode
+**Prerequisites:**
+- ✅ Step 3 complete (model artifacts exist)
+- ✅ Dockerfile prep complete (COPY commands ready to uncomment)
+
+**Docker Build Process:**
+```dockerfile
+# In services/api/Dockerfile, uncomment these lines:
+COPY models/email_classifier_v1.joblib /app/models/email_classifier_v1.joblib
+COPY models/email_vectorizer_v1.joblib /app/models/email_vectorizer_v1.joblib
+```
+
+Then rebuild:
+```bash
+cd services/api
+docker build -t leoklemet/applylens-api:0.8.3-ml_shadow .
+docker push leoklemet/applylens-api:0.8.3-ml_shadow
+```
+
 **Environment Variables:**
 ```bash
 EMAIL_CLASSIFIER_MODE=ml_shadow
 EMAIL_CLASSIFIER_MODEL_VERSION=ml_v1
-EMAIL_CLASSIFIER_MODEL_PATH=models/email_opp_model.joblib
-EMAIL_CLASSIFIER_VECTORIZER_PATH=models/email_opp_vectorizer.joblib
+EMAIL_CLASSIFIER_MODEL_PATH=/app/models/email_classifier_v1.joblib
+EMAIL_CLASSIFIER_VECTORIZER_PATH=/app/models/email_vectorizer_v1.joblib
+```
+
+**Health Check:**
+```bash
+curl https://api.applylens.io/diagnostics/classifier/health
+```
+
+Expected:
+```json
+{
+  "ok": true,
+  "status": "healthy",
+  "mode": "ml_shadow",
+  "model_version": "ml_v1",
+  "has_model_artifacts": true,
+  "uses_ml": true,
+  "message": "Classifier running in ml_shadow mode with ML model loaded"
+}
 ```
 
 **Validation:**
-- Monitor `email_classification_events` table for dual predictions (heuristic + ML)
-- Compare ML vs heuristic predictions
-- Check for drift, anomalies, confidence distribution
+- Monitor `email_classification_events` table for dual predictions (source='heuristic' and source='ml_shadow')
+- Each email should have 2 events: one from heuristic (drives Email fields), one from ML (logged for comparison)
+- Check `mart_model_comparison` DBT model for agreement rate (target: >85%)
+- Review high-confidence disagreements manually
 
-**Status:** NOT STARTED
-**Blockers:** Requires Step 3 completion
+**Status:** CODE-READY (awaiting Step 3 completion)
 
 ---
 
