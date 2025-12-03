@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Optional, Literal, Protocol, Any
 
 from app.models import Email
-from app.config import get_settings
+from app.config import get_agent_settings
 
 
 Category = Literal[
@@ -157,7 +157,7 @@ class HybridEmailClassifier:
         self.ml_model = ml_model
         self.vectorizer = vectorizer
 
-        settings = get_settings()
+        settings = get_agent_settings()
         self.model_version = getattr(
             settings, "EMAIL_CLASSIFIER_MODEL_VERSION", "heuristic_v1"
         )
@@ -313,7 +313,7 @@ def get_classifier() -> HybridEmailClassifier:
     """
     import os
 
-    settings = get_settings()
+    settings = get_agent_settings()
 
     model_path = getattr(
         settings, "EMAIL_CLASSIFIER_MODEL_PATH", "models/email_opp_model.joblib"

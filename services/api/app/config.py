@@ -135,6 +135,16 @@ class AgentSettings(BaseSettings):
     RECAPTCHA_SECRET_KEY: str | None = None  # reCAPTCHA v3 secret key
     RECAPTCHA_MIN_SCORE: float = 0.5  # Minimum score for reCAPTCHA v3 (0.0-1.0)
 
+    # Email Classification
+    EMAIL_CLASSIFIER_MODE: Literal["heuristic", "ml_shadow", "ml_live"] = (
+        "heuristic"  # Classification mode
+    )
+    EMAIL_CLASSIFIER_MODEL_VERSION: str = "v1"  # Model version identifier
+    EMAIL_CLASSIFIER_MODEL_PATH: str | None = None  # Path to model .joblib file
+    EMAIL_CLASSIFIER_VECTORIZER_PATH: str | None = (
+        None  # Path to vectorizer .joblib file
+    )
+
     class Config:
         env_prefix = "APPLYLENS_"
         case_sensitive = True
