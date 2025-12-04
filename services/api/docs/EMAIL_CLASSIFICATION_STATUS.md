@@ -1,6 +1,57 @@
 # Email Classification System - Deployment Status
 
-## Latest Update (December 3, 2025 - Evening)
+## Latest Update (December 3, 2025 - Production ML Training Complete)
+
+✅ **v0.8.3-ml_v1 - First Production ML Model Trained Successfully**
+
+**Training Run Summary:**
+- **Date**: December 3, 2025, 8:19 PM EST
+- **Method**: `docker exec applylens-api-prod python -m scripts.train_email_classifier`
+- **Training Data**: 195 labels from `email_training_labels` (bootstrapped from heuristic)
+  - Opportunities: 119 (61.0%)
+  - Not Opportunities: 76 (39.0%)
+- **Train/Val Split**: 156 training / 39 validation (80/20)
+- **Feature Engineering**: TF-IDF vectorization with 6,816 features
+
+**Validation Performance:**
+| Metric | Not Opp | Opportunity | Overall |
+|--------|---------|-------------|---------|
+| Precision | 1.000 | 1.000 | 1.000 |
+| Recall | 1.000 | 1.000 | 1.000 |
+| F1-Score | 1.000 | 1.000 | 1.000 |
+| Support | 15 | 24 | 39 |
+
+**Artifacts:**
+- Model: `/app/models/email_classifier_ml_v1.joblib` (55KB)
+- Vectorizer: `/app/models/email_vectorizer_ml_v1.joblib` (284KB)
+- Committed to git: `services/api/models/email_classifier_ml_v1.joblib`
+
+**Deployment Status:**
+- Docker Image: `leoklemet/applylens-api:0.8.3-ml_v1` (built and running)
+- Container: `applylens-api-prod` (redeployed with new image)
+- Current Mode: `heuristic` (safe start - ML artifacts loaded but not active)
+- Config: `docker-compose.prod.yml` updated with ML env vars
+
+**Health Check Status:**
+```yaml
+APPLYLENS_EMAIL_CLASSIFIER_MODE: heuristic
+APPLYLENS_EMAIL_CLASSIFIER_MODEL_VERSION: ml_v1
+APPLYLENS_EMAIL_CLASSIFIER_MODEL_PATH: /app/models/email_classifier_ml_v1.joblib
+APPLYLENS_EMAIL_CLASSIFIER_VECTORIZER_PATH: /app/models/email_vectorizer_ml_v1.joblib
+```
+
+**Next Steps:**
+1. ✅ Training complete (100% validation accuracy)
+2. ✅ Artifacts copied to repo and committed
+3. ✅ Docker image built and deployed
+4. ⏳ Monitor heuristic mode stability (24-48 hours recommended)
+5. ⏳ Switch to `ml_shadow` mode (change env var + redeploy)
+6. ⏳ Monitor shadow mode agreement rate (target: ≥85% over 7 days)
+7. ⏳ Promote to `ml_live` if validation successful
+
+---
+
+## Previous Update (December 3, 2025 - Evening)
 
 ✅ **v0.8.3 - ML Training & Shadow Mode Preparation Complete**
 - Created data quality inspection script (`scripts/inspect_email_training_labels.py`)
