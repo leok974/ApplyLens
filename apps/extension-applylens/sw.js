@@ -1,4 +1,11 @@
-// sw.js — add history persistence using chrome.storage.local
+// sw.js — Service worker for ApplyLens Companion
+// Handles message routing between popup/content script and backend API
+//
+// Dogfood v0.1 gaps addressed (from COMPANION_EXTENSION_AUDIT_2025-12.md):
+// - Added CHECK_HEALTH message type for backend connectivity verification
+// - Improved error handling with structured error responses
+// - All API calls now return consistent {ok, data?, error?} format
+
 import { APPLYLENS_API_BASE } from "./config.js";
 
 const HISTORY_MAX = 50;
@@ -26,14 +33,40 @@ async function apiPost(path, json) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
-      if (msg?.type === "GET_PROFILE") {
+      if (msg?.type === "CHECK_HEALTH") {
+        // Dogfood v0.1: Health check endpoint for connection status
+        try {
+          const r = await fetch(`${APPLYLENS_API_BASE}/api/extension/health`, {
+            method: "GET",
+            credentials: "omit",
+          });
+          if (r.ok) {
+            const data = await r.json();
+            sendResponse({ ok: true, data });
+          } else {
+            sendResponse({ ok: false, error: `HTTP ${r.status}`, httpStatus: r.status });
+          }
+        } catch (err) {
+          sendResponse({ ok: false, error: String(err), networkError: true });
+        }
+      }
+      else if (msg?.type === "GET_PROFILE") {
         const r = await fetch(`${APPLYLENS_API_BASE}/api/profile/me`);
+        if (!r.ok) {
+          sendResponse({ ok: false, error: `HTTP ${r.status}`, httpStatus: r.status });
+          return;
+        }
         const data = await r.json();
         sendResponse({ ok: r.ok, data });
       }
       else if (msg?.type === "GEN_FORM_ANSWERS") {
         const r = await apiPost(`/api/extension/generate-form-answers`, msg.payload);
-        sendResponse({ ok: r.ok, data: r.ok ? await r.json() : null });
+        if (!r.ok) {
+          sendResponse({ ok: false, error: `HTTP ${r.status}`, httpStatus: r.status });
+          return;
+        }
+        const data = await r.json();
+        sendResponse({ ok: true, data });
       }
       else if (msg?.type === "LOG_APPLICATION") {
         const r = await apiPost(`/api/extension/applications`, msg.payload);
@@ -42,7 +75,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       else if (msg?.type === "GEN_DM") {
         const r = await apiPost(`/api/extension/generate-recruiter-dm`, msg.payload);
-        sendResponse({ ok: r.ok, data: r.ok ? await r.json() : null });
+        if (!r.ok) {
+          sendResponse({ ok: false, error: `HTTP ${r.status}`, httpStatus: r.status });
+          return;
+        }
+        const data = await r.json();
+        sendResponse({ ok: true, data });
       }
       else if (msg?.type === "LOG_OUTREACH") {
         const r = await apiPost(`/api/extension/outreach`, msg.payload);
@@ -59,7 +97,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, applications: history_applications, outreach: history_outreach });
       }
     } catch (e) {
-      sendResponse({ ok: false, error: String(e) });
+      console.error("[SW] Message handler error:", e);
+      sendResponse({ ok: false, error: String(e), networkError: true });
     }
   })();
   return true; // async

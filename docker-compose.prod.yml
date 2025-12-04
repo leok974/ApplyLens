@@ -447,7 +447,7 @@ services:
     #   - Nav uses justify-between to distribute links across space
     #   - gap-4 for airier spacing between nav items
     #   - First link hugs logo, last link hugs profile, rest evenly distributed
-    image: leoklemet/applylens-web:0.7.9
+    image: leoklemet/applylens-web:0.8.0
     container_name: applylens-web-prod
     environment:
       - NODE_ENV=production

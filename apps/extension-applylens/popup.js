@@ -3,13 +3,14 @@ import { clearFormMemory } from "./learning/formMemory.js";
 
 const apiEl = document.getElementById("api");
 const profileEl = document.getElementById("profile");
+const healthStatusEl = document.getElementById("health-status");
 const histApps = document.getElementById("hist-apps");
 const histOut = document.getElementById("hist-out");
 const learningEnabled = document.getElementById("learning-enabled");
 const resetLearningBtn = document.getElementById("reset-learning");
 
 // Helper: retry sendMessage if service worker isn't ready
-async function sendMessageWithRetry(message, maxRetries = 3, delayMs = 100) {
+async function sendMessageWithRetry(message, maxRetries = 5, delayMs = 100) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await chrome.runtime.sendMessage(message);
@@ -17,7 +18,8 @@ async function sendMessageWithRetry(message, maxRetries = 3, delayMs = 100) {
       if (i === maxRetries - 1 || !err.message?.includes("Receiving end does not exist")) {
         throw err;
       }
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      // Exponential backoff for service worker startup
+      await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
     }
   }
 }
@@ -33,12 +35,37 @@ function renderList(ul, items, fmt) {
 
 (async () => {
   apiEl.textContent = APPLYLENS_API_BASE;
+
+  // Dogfood v0.1: Check backend health first
+  try {
+    const healthResp = await sendMessageWithRetry({ type: "CHECK_HEALTH" });
+    if (healthResp?.ok) {
+      healthStatusEl.innerHTML = `<span class="ok">🟢 Connected to ApplyLens</span>`;
+      healthStatusEl.dataset.connected = "true";
+    } else {
+      const errMsg = healthResp?.networkError
+        ? "Network error - check your internet connection"
+        : `API unavailable (${healthResp?.error || "unknown"})`;
+      healthStatusEl.innerHTML = `<span class="bad">🔴 ${errMsg}</span>`;
+      healthStatusEl.dataset.connected = "false";
+    }
+  } catch (err) {
+    healthStatusEl.innerHTML = `<span class="bad">🔴 Cannot reach ApplyLens backend</span>`;
+    healthStatusEl.dataset.connected = "false";
+  }
+
+  // Load profile
   try {
     const resp = await sendMessageWithRetry({ type: "GET_PROFILE" });
-    profileEl.innerHTML = resp?.ok
-      ? `<span class="ok">${resp.data?.name || "OK"}</span>`
-      : `<span class="bad">profile error</span>`;
-  } catch {
+    if (resp?.ok) {
+      profileEl.innerHTML = `<span class="ok">${resp.data?.name || resp.data?.email || "OK"}</span>`;
+    } else {
+      const errMsg = resp?.httpStatus === 401 || resp?.httpStatus === 403
+        ? "Not logged in - visit applylens.app to sign in"
+        : resp?.error || "profile error";
+      profileEl.innerHTML = `<span class="bad">${errMsg}</span>`;
+    }
+  } catch (err) {
     profileEl.innerHTML = `<span class="bad">offline</span>`;
   }
 
@@ -59,12 +86,27 @@ function renderList(ul, items, fmt) {
 })();
 
 document.getElementById("scan").addEventListener("click", async () => {
+  // Dogfood v0.1: Fail soft if backend is down
+  const isConnected = healthStatusEl?.dataset?.connected === "true";
+  if (!isConnected) {
+    if (!confirm("Backend is offline. Form scanning works locally, but autofill won't be available. Continue?")) {
+      return;
+    }
+  }
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   await chrome.tabs.sendMessage(tab.id, { type: "SCAN_AND_SUGGEST" }).catch(() => {});
   window.close();
 });
 
 document.getElementById("dm").addEventListener("click", async () => {
+  // Dogfood v0.1: Check if backend is available
+  const isConnected = healthStatusEl?.dataset?.connected === "true";
+  if (!isConnected) {
+    alert("Backend is offline. DM generation requires an active connection to ApplyLens.");
+    return;
+  }
+
   const name = prompt("Recruiter name (e.g., Jane Doe):") || "Recruiter";
   const headline = prompt("Headline (optional):") || "";
   const company = prompt("Company:") || "Company";
@@ -83,7 +125,10 @@ document.getElementById("dm").addEventListener("click", async () => {
     }).catch(()=>{});
     window.close();
   } else {
-    alert("Failed to draft DM");
+    const errMsg = r?.httpStatus === 401 || r?.httpStatus === 403
+      ? "Not logged in. Please sign in at applylens.app first."
+      : `Failed to draft DM: ${r?.error || "unknown error"}`;
+    alert(errMsg);
   }
 });
 

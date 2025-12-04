@@ -192,14 +192,32 @@ async function fetchFormAnswers(job, fields, styleHint = null) {
     payload.style_hint = styleHint;
   }
 
-  const res = await fetch(`${APPLYLENS_API_BASE}/api/extension/generate-form-answers`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-    credentials: "omit",
-  });
-  if (!res.ok) throw new Error(`gen answers failed: ${res.status}`);
-  return res.json(); // { job, answers: [ { field_id, answer } ] }
+  // Dogfood v0.1: Better error handling with specific messages
+  try {
+    const res = await fetch(`${APPLYLENS_API_BASE}/api/extension/generate-form-answers`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "omit",
+    });
+
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("NOT_LOGGED_IN");
+      } else if (res.status >= 500) {
+        throw new Error("SERVER_ERROR");
+      } else {
+        throw new Error(`HTTP_${res.status}`);
+      }
+    }
+
+    return res.json(); // { job, answers: [ { field_id, answer } ] }
+  } catch (err) {
+    if (err.message.startsWith("HTTP_") || err.message === "NOT_LOGGED_IN" || err.message === "SERVER_ERROR") {
+      throw err; // Re-throw known errors
+    }
+    throw new Error("NETWORK_ERROR"); // Network/fetch failures
+  }
 }
 
 function mountPanel() {
@@ -522,7 +540,33 @@ async function runScanAndSuggest() {
       }});
     } catch {}
   } catch (e) {
-    body.innerHTML = `<div class="muted">Error: ${String(e)}</div>`;
+    // Dogfood v0.1: Show user-friendly error messages
+    let errorMsg = "Something went wrong";
+    let helpMsg = "";
+
+    if (e.message === "NOT_LOGGED_IN") {
+      errorMsg = "Not logged in to ApplyLens";
+      helpMsg = `Please visit <a href="${APPLYLENS_API_BASE.replace('/api', '')}" target="_blank">applylens.app</a> and sign in first.`;
+    } else if (e.message === "NETWORK_ERROR") {
+      errorMsg = "Cannot reach ApplyLens backend";
+      helpMsg = "Check your internet connection and try again.";
+    } else if (e.message === "SERVER_ERROR") {
+      errorMsg = "ApplyLens server error";
+      helpMsg = "Our servers are experiencing issues. Please try again in a few minutes.";
+    } else if (e.message.startsWith("HTTP_")) {
+      errorMsg = `Backend error (${e.message.replace('HTTP_', '')})`;
+      helpMsg = "An unexpected error occurred. Please try again.";
+    } else {
+      errorMsg = String(e);
+    }
+
+    body.innerHTML = `
+      <div style="padding: 12px; background: #fef2f2; border-left: 3px solid #ef4444; margin: 8px 0;">
+        <div style="font-weight: 600; color: #991b1b; margin-bottom: 4px;">⚠️ ${errorMsg}</div>
+        ${helpMsg ? `<div style="color: #7f1d1d; font-size: 13px;">${helpMsg}</div>` : ''}
+      </div>
+      <div class="muted" style="margin-top: 8px;">Form scanning still works locally, but autofill generation requires backend access.</div>
+    `;
   }
 }
 
