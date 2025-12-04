@@ -27,27 +27,102 @@
 - Committed to git: `services/api/models/email_classifier_ml_v1.joblib`
 
 **Deployment Status:**
-- Docker Image: `leoklemet/applylens-api:0.8.3-ml_v1` (built and running)
-- Container: `applylens-api-prod` (redeployed with new image)
-- Current Mode: `heuristic` (safe start - ML artifacts loaded but not active)
+- Docker Image: `leoklemet/applylens-api:0.8.3-ml_v1` (rebuilt with ml_v1 artifacts)
+- Container: `applylens-api-prod` (redeployed)
+- **Current Mode: `ml_shadow`** ✅ (switched from heuristic Dec 3, 8:26 PM EST)
 - Config: `docker-compose.prod.yml` updated with ML env vars
 
 **Health Check Status:**
-```yaml
-APPLYLENS_EMAIL_CLASSIFIER_MODE: heuristic
-APPLYLENS_EMAIL_CLASSIFIER_MODEL_VERSION: ml_v1
-APPLYLENS_EMAIL_CLASSIFIER_MODEL_PATH: /app/models/email_classifier_ml_v1.joblib
-APPLYLENS_EMAIL_CLASSIFIER_VECTORIZER_PATH: /app/models/email_vectorizer_ml_v1.joblib
+```json
+{
+  "mode": "ml_shadow",
+  "model_version": "ml_v1",
+  "has_model_artifacts": true,
+  "ml_model_loaded": true,
+  "vectorizer_loaded": true,
+  "uses_ml": true
+}
 ```
+
+**Shadow Mode Monitoring:**
+- Started: December 3, 2025, 8:26 PM EST
+- Email classification events will log both heuristic and ML predictions
+- Query: `SELECT source, COUNT(*) FROM email_classification_events GROUP BY source;`
+- Target agreement rate: ≥85% over 7 days before promoting to `ml_live`
 
 **Next Steps:**
 1. ✅ Training complete (100% validation accuracy)
 2. ✅ Artifacts copied to repo and committed
 3. ✅ Docker image built and deployed
-4. ⏳ Monitor heuristic mode stability (24-48 hours recommended)
-5. ⏳ Switch to `ml_shadow` mode (change env var + redeploy)
-6. ⏳ Monitor shadow mode agreement rate (target: ≥85% over 7 days)
-7. ⏳ Promote to `ml_live` if validation successful
+4. ✅ Shadow mode enabled (heuristic remains source of truth)
+5. ⏳ Monitor shadow mode for 7+ days
+6. ⏳ Check disagreement patterns (manual review)
+7. ⏳ Promote to `ml_live` if ≥85% agreement + manual validation passes
+
+### Shadow Mode Monitoring Queries
+
+**Check event logging:**
+```sql
+-- Verify both heuristic and ml_shadow events are logging
+SELECT source, COUNT(*)
+FROM email_classification_events
+GROUP BY source
+ORDER BY source;
+```
+
+**Agreement rate (7-day rolling):**
+```sql
+-- Calculate agreement between heuristic and ML predictions
+WITH recent_events AS (
+  SELECT
+    email_id,
+    source,
+    predicted_is_real_opportunity,
+    created_at
+  FROM email_classification_events
+  WHERE created_at >= NOW() - INTERVAL '7 days'
+)
+SELECT
+  COUNT(DISTINCT h.email_id) as total_classified,
+  SUM(CASE WHEN h.predicted_is_real_opportunity = m.predicted_is_real_opportunity THEN 1 ELSE 0 END) as agreements,
+  ROUND(100.0 * SUM(CASE WHEN h.predicted_is_real_opportunity = m.predicted_is_real_opportunity THEN 1 ELSE 0 END) / COUNT(*), 2) as agreement_pct
+FROM recent_events h
+JOIN recent_events m ON h.email_id = m.email_id
+WHERE h.source = 'heuristic' AND m.source = 'ml_shadow';
+```
+
+**Disagreement review:**
+```sql
+-- Find emails where heuristic and ML disagree (for manual review)
+SELECT
+  e.id,
+  e.subject,
+  e.sender,
+  e.category AS heuristic_category,
+  e.is_real_opportunity AS heuristic_is_opp,
+  ev_ml.predicted_category AS ml_category,
+  ev_ml.predicted_is_real_opportunity AS ml_is_opp,
+  ev_ml.confidence AS ml_confidence,
+  e.received_at
+FROM emails e
+JOIN email_classification_events ev_h ON ev_h.email_id = e.id AND ev_h.source = 'heuristic'
+JOIN email_classification_events ev_ml ON ev_ml.email_id = e.id AND ev_ml.source = 'ml_shadow'
+WHERE ev_h.predicted_is_real_opportunity IS DISTINCT FROM ev_ml.predicted_is_real_opportunity
+  AND e.received_at >= NOW() - INTERVAL '7 days'
+ORDER BY e.received_at DESC
+LIMIT 50;
+```
+
+### ml_v1 Promotion Criteria (to ml_live)
+
+Before switching to `ml_live` mode:
+- ✅ Shadow mode running ≥7 days
+- ✅ Agreement rate ≥85% (heuristic vs ML on same emails)
+- ✅ Manual review of disagreements shows ML quality ≥ heuristic:
+  - Opportunity recall ≥90% (don't miss interviews/offers)
+  - Newsletter precision ≥90% (don't surface spam/promos)
+- ✅ No major "WTF" misclassifications in recent 100 emails
+- ⚠️ Optional: Correction UI in place to recover from mistakes
 
 ---
 

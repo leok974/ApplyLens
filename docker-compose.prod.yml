@@ -261,7 +261,7 @@ services:
       ALLOW_ACTION_MUTATIONS: "true"  # v0.4.29: Enable mutations for lifecycle management
 
       # Email Classification - ML Model Configuration
-      APPLYLENS_EMAIL_CLASSIFIER_MODE: "heuristic"  # Start with heuristic, switch to ml_shadow later
+      APPLYLENS_EMAIL_CLASSIFIER_MODE: "ml_shadow"  # Shadow mode: heuristic is truth, ML logs predictions
       APPLYLENS_EMAIL_CLASSIFIER_MODEL_VERSION: "ml_v1"
       APPLYLENS_EMAIL_CLASSIFIER_MODEL_PATH: "/app/models/email_classifier_ml_v1.joblib"
       APPLYLENS_EMAIL_CLASSIFIER_VECTORIZER_PATH: "/app/models/email_vectorizer_ml_v1.joblib"
