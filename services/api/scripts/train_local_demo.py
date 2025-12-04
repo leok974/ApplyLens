@@ -334,5 +334,46 @@ def main() -> None:
     print("  3. Monitor predictions and compare with heuristic baseline")
 
 
+# Helper functions for testing and tooling
+
+
+def get_mock_training_data():
+    """
+    Expose the synthetic training data for tests/tools.
+
+    Returns:
+        Tuple of (texts, labels) where:
+        - texts: List of email text strings
+        - labels: List of binary labels (1=opportunity, 0=not opportunity)
+    """
+    return generate_synthetic_training_data()
+
+
+def train_demo_model_in_memory():
+    """
+    Helper used by tests: trains the demo model entirely in-memory
+    and returns (classifier, vectorizer) without touching disk.
+
+    Returns:
+        Tuple of (classifier, vectorizer) ready for inference
+    """
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.linear_model import LogisticRegression
+
+    texts, labels = generate_synthetic_training_data()
+
+    vectorizer = TfidfVectorizer(
+        max_features=5000, ngram_range=(1, 2), lowercase=True, min_df=1
+    )
+    X = vectorizer.fit_transform(texts)
+
+    clf = LogisticRegression(
+        max_iter=1000, class_weight="balanced", solver="lbfgs", random_state=42
+    )
+    clf.fit(X, labels)
+
+    return clf, vectorizer
+
+
 if __name__ == "__main__":
     main()
