@@ -171,17 +171,50 @@ def _build_form_prompt(
 
     profile_summary = "\n".join(profile_lines) if profile_lines else "(no profile data)"
 
+    # Build style instructions based on user preferences
+    style_instructions = []
+    if style:
+        tone = style.get("tone", "confident")
+        length = style.get("length", "medium")
+
+        # Tone instructions
+        tone_map = {
+            "concise": "Use a concise, direct tone. Be brief and to-the-point.",
+            "confident": "Use a confident, assertive tone. Be clear and self-assured.",
+            "friendly": "Use a friendly, warm tone. Be approachable and personable.",
+            "detailed": "Use a detailed, explanatory tone. Provide thorough responses.",
+        }
+        if tone in tone_map:
+            style_instructions.append(tone_map[tone])
+
+        # Length instructions
+        length_map = {
+            "short": "Keep answers SHORT (1-3 sentences maximum).",
+            "medium": "Keep answers MEDIUM length (1-2 short paragraphs).",
+            "long": "Provide LONGER answers (2-4 paragraphs with detail).",
+        }
+        if length in length_map:
+            style_instructions.append(length_map[length])
+
+    style_guidance = (
+        "\n".join(style_instructions)
+        if style_instructions
+        else "Keep answers concise and relevant."
+    )
+
     system_prompt = f"""You are ApplyLens Companion. You help the user fill job application forms.
 
-Use the job context and profile summary to generate concise, high-quality answers.
+Use the job context and profile summary to generate high-quality answers.
 
 CRITICAL SAFETY RULES:
 1. Never output email addresses, phone numbers, or direct URLs to personal profiles
 2. Never fabricate employment history or education
 3. If the profile indicates years of experience or preferred work setup, you MUST respect it
-4. Keep answers concise and relevant to each specific field
-5. Use professional, error-free language
-6. Answer in the same language as each question
+4. Use professional, error-free language
+5. Answer in the same language as each question
+
+STYLE GUIDANCE:
+{style_guidance}
 
 PROFILE SUMMARY:
 {profile_summary}

@@ -199,7 +199,7 @@ services:
     # v0.8.4-resume-fix: Add PyPDF2 + python-docx for resume upload (fixes 500 error)
     # v0.8.6-experience: Resume contact parsing + years_experience extraction
     # v0.8.7-profile-context: Profile-aware LLM prompts for personalized answers
-    image: leoklemet/applylens-api:0.8.7-profile-context
+    image: leoklemet/applylens-api:0.8.8-style-prefs
     container_name: applylens-api-prod
     environment:
       # Database

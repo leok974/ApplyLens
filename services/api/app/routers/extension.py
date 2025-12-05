@@ -247,10 +247,18 @@ class FormProfileContext(BaseModel):
     note: Optional[str] = None
 
 
+class StylePrefs(BaseModel):
+    """User style preferences for answer generation."""
+
+    tone: Optional[str] = "confident"  # concise | confident | friendly | detailed
+    length: Optional[str] = "medium"  # short | medium | long
+
+
 class GenerateFormAnswersIn(BaseModel):
     job: Dict[str, Any]
     fields: List[FormField]
     profile_context: Optional[FormProfileContext] = None
+    style_prefs: Optional[StylePrefs] = None
 
 
 @router.post("/extension/generate-form-answers", dependencies=[Depends(dev_only)])
@@ -278,6 +286,18 @@ def generate_form_answers(payload: GenerateFormAnswersIn):
                 f"Using profile context: {payload.profile_context.name}, "
                 f"{payload.profile_context.experience_years} years, "
                 f"{len(payload.profile_context.tech_stack)} skills"
+            )
+
+        # Convert style_prefs to dict (if provided)
+        style_dict = None
+        if payload.style_prefs:
+            style_dict = {
+                "tone": payload.style_prefs.tone,
+                "length": payload.style_prefs.length,
+            }
+            logger.info(
+                f"Using style preferences: tone={payload.style_prefs.tone}, "
+                f"length={payload.style_prefs.length}"
             )
 
         # Convert profile to dict format (legacy support)
@@ -313,7 +333,7 @@ def generate_form_answers(payload: GenerateFormAnswersIn):
             fields=fields_list,
             profile=profile_dict,
             job_context=payload.job,
-            style={"tone": "professional", "length": "concise"},
+            style=style_dict or {"tone": "confident", "length": "medium"},
             profile_context=profile_ctx_dict,  # NEW: Pass profile context
         )
 
