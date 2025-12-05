@@ -193,11 +193,29 @@ function buildLLMProfileContext(profile) {
 }
 
 /**
+ * Get style preferences from extension storage
+ */
+async function getStylePrefs() {
+  try {
+    const stored = await chrome.storage.sync.get(['companionTone', 'companionLength']);
+
+    const tone = stored.companionTone || 'confident';
+    const length = stored.companionLength || 'medium';
+
+    return { tone, length };
+  } catch (err) {
+    console.warn('[v0.3] Failed to load style prefs:', err);
+    return { tone: 'confident', length: 'medium' };
+  }
+}
+
+/**
  * Generate suggestions from backend
  */
 async function generateSuggestions(fields, jobContext, userProfile = null) {
   try {
     const profileContext = buildLLMProfileContext(userProfile);
+    const stylePrefs = await getStylePrefs();
 
     if (profileContext) {
       const skillCount = (profileContext.tech_stack || []).length;
@@ -205,6 +223,10 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
       console.log(`[v0.3] Sending profile context to LLM: ${profileContext.name}, ${profileContext.experience_years} years, ${skillCount} skills, ${roleCount} roles`);
     } else {
       console.log("[v0.3] No profile context available for LLM");
+    }
+
+    if (stylePrefs) {
+      console.log(`[v0.3] Using style: ${stylePrefs.tone} tone, ${stylePrefs.length} length`);
     }
 
     const response = await sendExtensionMessage({
@@ -223,7 +245,8 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
             label: f.labelText,
             type: f.type,
           })),
-          profile_context: profileContext,  // NEW: Send profile context to LLM
+          profile_context: profileContext,  // Send profile context to LLM
+          style_prefs: stylePrefs,          // Send style preferences to LLM
         },
       }
     });

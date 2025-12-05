@@ -477,7 +477,44 @@ async function init() {
     console.warn('[ApplyLens Popup] Failed to load stored metrics:', err);
   }
 
+  // Load style preferences
+  loadStylePrefs();
+
   console.log('[ApplyLens Popup] Ready');
+}
+
+// ---------- Style Preferences ----------
+
+async function loadStylePrefs() {
+  try {
+    const stored = await chrome.storage.sync.get(['companionTone', 'companionLength']);
+
+    const tone = stored.companionTone || 'confident';
+    const length = stored.companionLength || 'medium';
+
+    const toneEl = q('#companion-tone');
+    const lengthEl = q('#companion-length');
+
+    if (toneEl) {
+      toneEl.value = tone;
+      toneEl.addEventListener('change', async (e) => {
+        await chrome.storage.sync.set({ companionTone: e.target.value });
+        console.log('[ApplyLens Popup] Saved tone:', e.target.value);
+      });
+    }
+
+    if (lengthEl) {
+      lengthEl.value = length;
+      lengthEl.addEventListener('change', async (e) => {
+        await chrome.storage.sync.set({ companionLength: e.target.value });
+        console.log('[ApplyLens Popup] Saved length:', e.target.value);
+      });
+    }
+
+    console.log('[ApplyLens Popup] Style prefs loaded:', { tone, length });
+  } catch (err) {
+    console.warn('[ApplyLens Popup] Failed to load style prefs:', err);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
