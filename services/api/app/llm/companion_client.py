@@ -47,15 +47,17 @@ def generate_form_answers_llm(
     profile: Dict[str, Any],
     job_context: Optional[Dict[str, Any]] = None,
     style: Optional[Dict[str, Any]] = None,
+    profile_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, str]:
     """
     Generate form answers using LLM or template fallback.
 
     Args:
         fields: List of field descriptors with selector, semantic_key, label
-        profile: User profile data (from /api/profile/me)
+        profile: User profile data (legacy, kept for backward compatibility)
         job_context: Optional job posting details
         style: Optional generation style preferences
+        profile_context: Structured profile context (name, experience, skills, etc.)
 
     Returns:
         Dict mapping semantic_key to generated answer text
@@ -78,7 +80,9 @@ def generate_form_answers_llm(
             status = "template_fallback"
             return result
 
-        prompt = _build_form_prompt(fields, profile, job_context, style)
+        prompt = _build_form_prompt(
+            fields, profile, job_context, style, profile_context
+        )
 
         if LLM_PROVIDER == "openai":
             raw_response = _call_openai(prompt)
@@ -122,23 +126,67 @@ def _build_form_prompt(
     profile: Dict[str, Any],
     job_context: Optional[Dict[str, Any]],
     style: Optional[Dict[str, Any]],
+    profile_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Build structured prompt for LLM.
+    Build structured prompt for LLM with enhanced profile context.
+
+    Args:
+        fields: List of form fields to generate answers for
+        profile: Legacy profile dict (kept for backward compatibility)
+        job_context: Job posting details
+        style: Generation style preferences
+        profile_context: New structured profile context with experience, skills, etc.
 
     Returns a dict that will be converted to JSON for the LLM.
     """
-    system_prompt = """You are an expert job application assistant. Generate ATS-friendly answers for application form fields.
+    # Build profile summary lines for the system prompt
+    profile_lines = []
+    if profile_context:
+        if profile_context.get("name"):
+            profile_lines.append(f"Name: {profile_context['name']}")
+        if profile_context.get("headline"):
+            profile_lines.append(f"Headline: {profile_context['headline']}")
+        if profile_context.get("experience_years") is not None:
+            years = profile_context["experience_years"]
+            profile_lines.append(f"Years of experience: {years}")
+        if profile_context.get("target_roles"):
+            roles = ", ".join(profile_context["target_roles"])
+            profile_lines.append(f"Target roles: {roles}")
+        if profile_context.get("tech_stack"):
+            stack = ", ".join(profile_context["tech_stack"])
+            profile_lines.append(f"Tech stack: {stack}")
+        if profile_context.get("domains"):
+            domains = ", ".join(profile_context["domains"])
+            profile_lines.append(f"Preferred domains: {domains}")
+        if profile_context.get("work_setup"):
+            profile_lines.append(
+                f"Work setup preference: {profile_context['work_setup']}"
+            )
+        if profile_context.get("locations"):
+            locations = ", ".join(profile_context["locations"])
+            profile_lines.append(f"Locations: {locations}")
+        if profile_context.get("note"):
+            profile_lines.append(f"Additional note: {profile_context['note']}")
 
-CRITICAL RULES:
-1. Never fabricate employment history or education
-2. Never include URLs or links
-3. Keep answers concise and relevant to the field
-4. Use professional, error-free language
-5. Match the tone indicated by the generation style
-6. Only use information from the provided profile
+    profile_summary = "\n".join(profile_lines) if profile_lines else "(no profile data)"
 
-For each field, return ONLY the answer text, no explanations."""
+    system_prompt = f"""You are ApplyLens Companion. You help the user fill job application forms.
+
+Use the job context and profile summary to generate concise, high-quality answers.
+
+CRITICAL SAFETY RULES:
+1. Never output email addresses, phone numbers, or direct URLs to personal profiles
+2. Never fabricate employment history or education
+3. If the profile indicates years of experience or preferred work setup, you MUST respect it
+4. Keep answers concise and relevant to each specific field
+5. Use professional, error-free language
+6. Answer in the same language as each question
+
+PROFILE SUMMARY:
+{profile_summary}
+
+Return ONLY a JSON object mapping field semantic_keys to answer text. No explanations."""
 
     field_descriptions = [
         {
@@ -149,21 +197,25 @@ For each field, return ONLY the answer text, no explanations."""
         for f in fields
     ]
 
-    user_prompt = {
-        "task": "Generate answers for these application form fields",
-        "fields": field_descriptions,
-        "profile": {
-            "first_name": profile.get("first_name"),
-            "last_name": profile.get("last_name"),
-            "email": profile.get("email"),
-            "phone": profile.get("phone"),
-            "summary": profile.get("summary"),
-            "skills": profile.get("skills", []),
-            # Don't include full employment history to avoid hallucination
-        },
-        "job_context": job_context or {},
-        "style": style or {"tone": "professional", "length": "concise"},
-    }
+    # Build job context description
+    job_lines = []
+    if job_context:
+        if job_context.get("title"):
+            job_lines.append(f"Title: {job_context['title']}")
+        if job_context.get("company"):
+            job_lines.append(f"Company: {job_context['company']}")
+        if job_context.get("url"):
+            job_lines.append(f"URL: {job_context['url']}")
+
+    job_description = "\n".join(job_lines) if job_lines else "(no job context)"
+
+    user_prompt = f"""JOB CONTEXT:
+{job_description}
+
+FIELDS TO ANSWER:
+{json.dumps(field_descriptions, indent=2)}
+
+Generate answers as a JSON object: {{"semantic_key": "answer text", ...}}"""
 
     return {
         "system": system_prompt,
@@ -186,7 +238,7 @@ def _call_openai(prompt: Dict[str, Any]) -> str:
             model=LLM_MODEL,
             messages=[
                 {"role": "system", "content": prompt["system"]},
-                {"role": "user", "content": json.dumps(prompt["user"])},
+                {"role": "user", "content": prompt["user"]},
             ],
             temperature=0.7,
             max_tokens=1500,

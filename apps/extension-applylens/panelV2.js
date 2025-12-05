@@ -97,6 +97,7 @@ function isIdentityCanonical(canonical) {
     'github_url',
     'portfolio_url',
     'location',
+    'years_experience',  // Profile fact, not AI-generated
   ].includes(canonical);
 }
 

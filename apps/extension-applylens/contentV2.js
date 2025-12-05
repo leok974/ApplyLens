@@ -378,7 +378,8 @@ export async function runScanAndSuggestV2() {
     // Identity/profile fields that should NEVER go to LLM
     const PROFILE_CANONICAL = new Set([
       "first_name", "last_name", "email", "phone", "linkedin",
-      "github", "portfolio", "website", "location", "headline"
+      "github", "portfolio", "website", "location", "headline",
+      "years_experience"
     ]);
 
     // Map canonical names to profile keys and handle special cases
@@ -398,6 +399,11 @@ export async function runScanAndSuggestV2() {
       // Handle location (convert array to string)
       if (canonical === 'location' && profile.locations && profile.locations.length > 0) {
         return profile.locations[0]; // Use first location
+      }
+
+      // Handle years of experience (convert number to string)
+      if (canonical === 'years_experience' && typeof profile.experience_years === 'number') {
+        return String(profile.experience_years);
       }
 
       // Direct mappings
@@ -509,7 +515,7 @@ export async function runScanAndSuggestV2() {
         // Canonical types we NEVER ask the LLM for – they come from profile/memory
         const NON_AI_CANONICAL = new Set([
           "first_name", "last_name", "email", "phone", "linkedin",
-          "github", "portfolio", "website", "location"
+          "github", "portfolio", "website", "location", "years_experience"
         ]);
 
         // Only send real "question" fields to the LLM

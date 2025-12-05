@@ -68,8 +68,14 @@ const getProfileValue = (canonical, profile) => {
      - Email shows "Profile" chip with your email
      - Phone shows "Profile" chip with your phone
      - LinkedIn shows "Profile" chip with your LinkedIn URL
+     - **Years of Experience** shows "Profile" chip with your years (e.g., "5")
    - All profile fields should be auto-checked
    - Click "Apply to Page" → fields should fill correctly
+
+4. **Verify LLM Bypass**
+   - Check browser console for `[v0.3] Requesting AI for X fields`
+   - Years of experience should NOT be in the AI request
+   - Console should show: `Filtered out NON_AI_CANONICAL: years_experience`
 
 ## Current Profile Structure
 
@@ -77,10 +83,11 @@ The extension expects this from `/api/profile/me`:
 
 ```json
 {
-  "name": "Leo Klemet",           // NEW - from resume
-  "email": "leo@example.com",     // NEW - from resume
-  "phone": "+33 6 12 34 56 78",   // NEW - from resume
-  "linkedin": "https://linkedin.com/in/leoklemet", // NEW - from resume
+  "name": "Leo Klemet",                    // from resume
+  "email": "leo@example.com",              // from resume
+  "phone": "+33 6 12 34 56 78",            // from resume
+  "linkedin": "https://linkedin.com/in/leoklemet", // from resume
+  "experience_years": 5,                   // NEW v0.8.6 - from resume
   "headline": "AI/ML Engineer · Agentic systems · Full-stack",
   "locations": ["Paris, France", "Remote EU"],
   "target_roles": ["AI Engineer", "ML Engineer"],
@@ -92,6 +99,20 @@ The extension expects this from `/api/profile/me`:
   }
 }
 ```
+
+## Extension Mapping (v0.3+)
+
+The extension automatically maps profile fields to canonical form fields:
+
+| Profile Field | Canonical | Auto-Fill | Source Chip |
+|--------------|-----------|-----------|-------------|
+| `name` (split) | `first_name`, `last_name` | ✅ Yes | 🟣 Profile |
+| `email` | `email` | ✅ Yes | 🟣 Profile |
+| `phone` | `phone` | ✅ Yes | 🟣 Profile |
+| `linkedin` | `linkedin` | ✅ Yes | 🟣 Profile |
+| `experience_years` | `years_experience` | ✅ Yes | 🟣 Profile |
+| `locations[0]` | `location` | ✅ Yes | 🟣 Profile |
+| `headline` | `headline` | ✅ Yes | 🟣 Profile |
 
 ## Fallback Behavior
 

@@ -227,24 +227,65 @@ class FormField(BaseModel):
     type: Optional[str] = None
 
 
+class FormProfileContext(BaseModel):
+    """LLM-safe profile context for form generation.
+
+    Intentionally excludes PII like email/phone/LinkedIn URLs.
+    These should be filled from profile directly, not generated.
+    """
+
+    name: Optional[str] = None
+    headline: Optional[str] = None
+    experience_years: Optional[int] = None
+
+    locations: List[str] = []
+    target_roles: List[str] = []
+    tech_stack: List[str] = []
+    domains: List[str] = []
+
+    work_setup: Optional[str] = None
+    note: Optional[str] = None
+
+
 class GenerateFormAnswersIn(BaseModel):
     job: Dict[str, Any]
     fields: List[FormField]
+    profile_context: Optional[FormProfileContext] = None
 
 
 @router.post("/extension/generate-form-answers", dependencies=[Depends(dev_only)])
 def generate_form_answers(payload: GenerateFormAnswersIn):
     """
     Generate form answers based on job context and profile using LLM.
-    Phase 3.1: Now uses real LLM generation with safety guardrails.
+    Phase 4.0: Now uses profile_context for personalized, grounded answers.
     """
     try:
-        # Convert profile to dict format expected by LLM client
+        # Convert profile_context to dict (if provided)
+        profile_ctx_dict = None
+        if payload.profile_context:
+            profile_ctx_dict = {
+                "name": payload.profile_context.name,
+                "headline": payload.profile_context.headline,
+                "experience_years": payload.profile_context.experience_years,
+                "target_roles": payload.profile_context.target_roles,
+                "tech_stack": payload.profile_context.tech_stack,
+                "domains": payload.profile_context.domains,
+                "work_setup": payload.profile_context.work_setup,
+                "locations": payload.profile_context.locations,
+                "note": payload.profile_context.note,
+            }
+            logger.info(
+                f"Using profile context: {payload.profile_context.name}, "
+                f"{payload.profile_context.experience_years} years, "
+                f"{len(payload.profile_context.tech_stack)} skills"
+            )
+
+        # Convert profile to dict format (legacy support)
         profile_dict = {
             "first_name": PROFILE.name.split()[0] if PROFILE.name else "",
             "last_name": PROFILE.name.split()[-1] if PROFILE.name else "",
             "headline": PROFILE.headline,
-            "summary": PROFILE.headline,  # Use headline as summary
+            "summary": PROFILE.headline,
             "tech_stack": PROFILE.tech_stack,
             "projects": [
                 {
@@ -259,20 +300,21 @@ def generate_form_answers(payload: GenerateFormAnswersIn):
         # Convert fields to format expected by LLM client
         fields_list = [
             {
-                "selector": f"field_{f.field_id}",  # Placeholder selector
-                "semantic_key": f.field_id,  # Use field_id as semantic key
+                "selector": f"field_{f.field_id}",
+                "semantic_key": f.field_id,
                 "label": f.label or f.field_id,
                 "type": "text",
             }
             for f in payload.fields
         ]
 
-        # Generate answers using LLM
+        # Generate answers using LLM with profile context
         raw_answers = generate_form_answers_llm(
             fields=fields_list,
             profile=profile_dict,
             job_context=payload.job,
             style={"tone": "professional", "length": "concise"},
+            profile_context=profile_ctx_dict,  # NEW: Pass profile context
         )
 
         # Apply safety guardrails
