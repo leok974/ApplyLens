@@ -1,0 +1,27 @@
+{
+  "job": {
+    "title": "Senior AI Engineer",
+    "company": "Anthropic",
+    "url": "https://www.anthropic.com/careers"
+  },
+  "fields": [
+    {
+      "field_id": "why_interested",
+      "semantic_key": "why_interested",
+      "label": "Why are you interested in this role?",
+      "type": "textarea"
+    }
+  ],
+  "profile_context": {
+    "name": "Leo Klemet",
+    "headline": "AI/ML Engineer · Agentic systems · Full-stack",
+    "experience_years": 5,
+    "target_roles": ["AI Engineer", "Machine Learning Engineer"],
+    "tech_stack": ["Python", "FastAPI", "React", "LLMs"],
+    "work_setup": "Remote"
+  },
+  "style_prefs": {
+    "tone": "friendly",
+    "length": "short"
+  }
+}
