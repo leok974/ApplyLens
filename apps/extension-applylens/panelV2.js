@@ -102,6 +102,118 @@ function isIdentityCanonical(canonical) {
 }
 
 /**
+ * Compute source summary with counts for the "Using:" display
+ */
+function computeSourceSummary(fields, suggestions) {
+  const summary = {
+    // counts by source
+    profileCount: 0,
+    learnedCount: 0,
+    aiCount: 0,
+    scanOnlyCount: 0,
+
+    // overall stats
+    totalFields: fields.length,
+    totalSuggested: 0,
+    requiredCount: 0,
+    optionalCount: 0,
+  };
+
+  for (const field of fields) {
+    if (field.required) summary.requiredCount++;
+    else summary.optionalCount++;
+
+    const canonical = field.canonical;
+    const suggestionData = suggestions[canonical] || suggestions[field.selector];
+    const suggestionValue = typeof suggestionData === 'object' ? suggestionData.value : (suggestionData || '');
+    const hasSuggestion = suggestionValue && String(suggestionValue).trim() !== '';
+
+    if (!hasSuggestion) {
+      summary.scanOnlyCount++;
+      continue;
+    }
+
+    summary.totalSuggested++;
+
+    const source = suggestionData?.source;
+    if (source === 'profile') {
+      summary.profileCount++;
+    } else if (source === 'learned' || source === 'memory') {
+      summary.learnedCount++;
+    } else if (source === 'ai') {
+      summary.aiCount++;
+    }
+  }
+
+  return summary;
+}
+
+/**
+ * Build HTML for source summary bar showing counts
+ */
+function buildSourceSummaryBar(summary) {
+  const items = [];
+
+  if (summary.profileCount > 0) {
+    items.push({
+      label: 'Profile',
+      count: summary.profileCount,
+      color: '#a78bfa',  // indigo
+      tooltip: `Using your ApplyLens profile for ${summary.profileCount} field(s)`
+    });
+  }
+
+  if (summary.learnedCount > 0) {
+    items.push({
+      label: 'Learned',
+      count: summary.learnedCount,
+      color: '#34d399',  // emerald
+      tooltip: `Using learned mappings from previous applications for ${summary.learnedCount} field(s)`
+    });
+  }
+
+  if (summary.aiCount > 0) {
+    items.push({
+      label: 'AI',
+      count: summary.aiCount,
+      color: '#7dd3fc',  // sky
+      tooltip: `Using AI (job posting + profile) for ${summary.aiCount} field(s)`
+    });
+  }
+
+  if (items.length === 0) {
+    return '';
+  }
+
+  const totalText = summary.totalSuggested > 0
+    ? `Filled ${summary.totalSuggested} of ${summary.totalFields} fields`
+    : `Found ${summary.totalFields} fields`;
+
+  const chipsHtml = items.map(item => `
+    <span
+      class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium shadow-sm"
+      style="border-color: ${item.color}40; background-color: ${item.color}15; color: ${item.color};"
+      title="${item.tooltip}"
+    >
+      <span>${item.label}</span>
+      <span class="ml-0.5 tabular-nums font-semibold">${item.count}</span>
+    </span>
+  `).join('');
+
+  return `
+    <div class="mt-2 flex flex-col gap-1.5 text-[11px] text-slate-400">
+      <div class="flex items-center gap-2">
+        <span class="uppercase tracking-wide text-[10px] text-slate-500">Using:</span>
+        <span class="rounded-full bg-slate-900/70 px-2 py-0.5 text-[10px] text-slate-200">${totalText}</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
+        ${chipsHtml}
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Get reason chip data for a field
  */
 function getReasonChip(field, suggestions) {
@@ -984,13 +1096,23 @@ export function renderFields(panel, fields, suggestions = {}, learningProfile = 
   const requiredCount = fields.filter(f => f.required).length;
   const suggestionCount = Object.keys(suggestions).length;
 
+  // Compute source summary with counts
+  const sourceSummary = computeSourceSummary(fields, suggestions);
+
   console.log(`[panelV2] Rendering ${totalFields} fields: ${mappedCount} mapped, ${profileFieldCount} from profile, ${requiredCount} required`);
+  console.log(
+    `[panelV2] Source summary: ${sourceSummary.totalSuggested} suggestions | Profile: ${sourceSummary.profileCount}, Learned: ${sourceSummary.learnedCount}, AI: ${sourceSummary.aiCount}, Scan-only: ${sourceSummary.scanOnlyCount}`
+  );
 
   // Update status subheader
   const subheader = panel.querySelector("#al_status_subheader");
   if (subheader) {
     const atsName = detectATS(location.hostname) || "Generic";
-    subheader.innerHTML = `Job board: <span style="color:#7dd3fc;font-weight:500;">${atsName}</span> · <span style="color:#cbd5e1;">${totalFields} fields</span> · <span style="color:#6ee7b7;">${mappedCount} mapped</span>`;
+    const sourceSummaryHtml = buildSourceSummaryBar(sourceSummary);
+    subheader.innerHTML = `
+      <div>Job board: <span style="color:#7dd3fc;font-weight:500;">${atsName}</span> · <span style="color:#cbd5e1;">${totalFields} fields</span> · <span style="color:#6ee7b7;">${mappedCount} mapped</span></div>
+      ${sourceSummaryHtml}
+    `;
   }
 
   // Classify fields with importance reasoning
