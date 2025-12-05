@@ -23,6 +23,8 @@ from ..deps.user import get_current_user_email
 from ..db import get_db
 from ..models import ResumeProfile
 from ..services.resume_parser import extract_text_from_resume, parse_resume_text
+from ..services.resume_profile_parser import parse_contact_from_resume
+from ..services.profile_updater import merge_resume_contact_into_profile
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,15 @@ class ResumeProfileResponse(BaseModel):
     owner_email: str
     source: str  # Always "upload"
     is_active: bool
+
+    # Contact information
+    name: Optional[str]
+    email: Optional[str]
+    phone: Optional[str]
+    linkedin: Optional[str]
+    experience_years: Optional[int]
+
+    # Parsed content
     headline: Optional[str]
     summary: Optional[str]
     skills: Optional[list[str]]
@@ -137,6 +148,14 @@ async def upload_resume(
             "projects": [],
         }
 
+    # Parse contact information from resume
+    parsed_contact = parse_contact_from_resume(raw_text)
+    logger.info(
+        f"Parsed contact from resume: name={parsed_contact.full_name}, "
+        f"email={parsed_contact.email}, phone={parsed_contact.phone}, "
+        f"linkedin={parsed_contact.linkedin}, years_experience={parsed_contact.years_experience}"
+    )
+
     # Deactivate previous active resume
     db.query(ResumeProfile).filter(
         ResumeProfile.owner_email == user_email,
@@ -156,6 +175,9 @@ async def upload_resume(
         projects=parsed_data.get("projects"),
     )
 
+    # Merge contact info into profile
+    merge_resume_contact_into_profile(resume, parsed_contact, overwrite_existing=False)
+
     db.add(resume)
     db.commit()
     db.refresh(resume)
@@ -169,6 +191,11 @@ async def upload_resume(
         owner_email=resume.owner_email,
         source=resume.source,
         is_active=resume.is_active,
+        name=resume.name,
+        email=resume.email,
+        phone=resume.phone,
+        linkedin=resume.linkedin,
+        experience_years=resume.experience_years,
         headline=resume.headline,
         summary=resume.summary,
         skills=resume.skills,
@@ -206,6 +233,11 @@ def get_current_resume(
         owner_email=resume.owner_email,
         source=resume.source,
         is_active=resume.is_active,
+        name=resume.name,
+        email=resume.email,
+        phone=resume.phone,
+        linkedin=resume.linkedin,
+        experience_years=resume.experience_years,
         headline=resume.headline,
         summary=resume.summary,
         skills=resume.skills,
@@ -261,6 +293,11 @@ async def activate_resume(
         owner_email=resume.owner_email,
         source=resume.source,
         is_active=resume.is_active,
+        name=resume.name,
+        email=resume.email,
+        phone=resume.phone,
+        linkedin=resume.linkedin,
+        experience_years=resume.experience_years,
         headline=resume.headline,
         summary=resume.summary,
         skills=resume.skills,
@@ -291,6 +328,11 @@ async def list_all_resumes(
             owner_email=r.owner_email,
             source=r.source,
             is_active=r.is_active,
+            name=r.name,
+            email=r.email,
+            phone=r.phone,
+            linkedin=r.linkedin,
+            experience_years=r.experience_years,
             headline=r.headline,
             summary=r.summary,
             skills=r.skills,

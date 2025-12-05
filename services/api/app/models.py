@@ -974,6 +974,17 @@ class ResumeProfile(Base):
         Boolean, nullable=False, default=False
     )  # Only one active per user
     raw_text = Column(Text, nullable=True)
+
+    # Contact information (parsed from resume)
+    name = Column(String(255), nullable=True)  # Full name from resume
+    email = Column(String(320), nullable=True)  # Email from resume
+    phone = Column(String(50), nullable=True)  # Phone number from resume
+    linkedin = Column(Text, nullable=True)  # LinkedIn URL from resume
+    experience_years = Column(
+        Integer, nullable=True
+    )  # Years of experience (inferred from resume)
+
+    # Parsed content
     headline = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
     skills = Column(JSONType, nullable=True)  # ["Python", "React", "AWS"]
