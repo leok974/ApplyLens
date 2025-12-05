@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ApplyLens Companion",
-  "version": "0.1.0",
-  "description": "Autofill ATS forms and draft recruiter DMs using your ApplyLens profile.",
+  "version": "0.3.0",
+  "description": "Autofill ATS forms with smart field detection, memory-based preferences, and AI-powered cover letters.",
   "action": { "default_popup": "popup.html" },
   "background": { "service_worker": "sw.js", "type": "module" },
   "permissions": ["activeTab", "scripting", "storage"],
@@ -10,6 +10,7 @@
     "https://api.applylens.app/*",
     "https://jobs.lever.co/*",
     "https://boards.greenhouse.io/*",
+    "https://*.greenhouse.io/*",
     "https://*.myworkdayjobs.com/*",
     "https://careers.smartrecruiters.com/*",
     "https://jobs.ashbyhq.com/*"
@@ -19,17 +20,60 @@
       "matches": [
         "https://jobs.lever.co/*",
         "https://boards.greenhouse.io/*",
+        "https://*.greenhouse.io/*",
         "https://*.myworkdayjobs.com/*",
         "https://careers.smartrecruiters.com/*",
         "https://jobs.ashbyhq.com/*"
       ],
-      "js": ["config.js", "learning.mergeMaps.js", "learning.profileClient.js", "content.js"],
+      "js": [
+        "content-loader.js"
+      ],
+      "css": [
+        "panel.css"
+      ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "contentV2.js",
+        "panelV2.js",
+        "config.js",
+        "schema.js",
+        "atsPresets.js",
+        "fieldScanner.js",
+        "jobExtractor.js",
+        "memoryV3Clean.js",
+        "guardrails.js",
+        "extension-id.js",
+        "learning/client.js",
+        "learning/formMemory.js",
+        "learning/utils.js"
+      ],
+      "matches": [
+        "https://jobs.lever.co/*",
+        "https://boards.greenhouse.io/*",
+        "https://*.greenhouse.io/*",
+        "https://*.myworkdayjobs.com/*",
+        "https://careers.smartrecruiters.com/*",
+        "https://jobs.ashbyhq.com/*"
+      ]
     }
   ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "externally_connectable": {
+    "matches": [
+      "https://jobs.lever.co/*",
+      "https://boards.greenhouse.io/*",
+      "https://*.greenhouse.io/*",
+      "https://*.myworkdayjobs.com/*",
+      "https://careers.smartrecruiters.com/*",
+      "https://jobs.ashbyhq.com/*"
+    ]
   }
 }

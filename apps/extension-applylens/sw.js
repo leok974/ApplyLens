@@ -33,12 +33,39 @@ async function apiPost(path, json) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
-      if (msg?.type === "CHECK_HEALTH") {
-        // Dogfood v0.1: Health check endpoint for connection status
+      if (msg?.type === "API_PROXY") {
+        // Proxy API calls from content scripts to avoid CSP violations
         try {
-          const r = await fetch(`${APPLYLENS_API_BASE}/api/extension/health`, {
+          const { url, method = "GET", body, headers = {} } = msg.payload;
+          const fetchOptions = {
+            method,
+            credentials: "include",
+            headers: { "Content-Type": "application/json", ...headers },
+          };
+          if (body) {
+            fetchOptions.body = JSON.stringify(body);
+          }
+
+          const r = await fetch(`${APPLYLENS_API_BASE}${url}`, fetchOptions);
+          const data = await r.json();
+
+          if (r.ok) {
+            sendResponse({ ok: true, data, status: r.status });
+          } else {
+            sendResponse({ ok: false, error: `HTTP ${r.status}`, data, status: r.status });
+          }
+        } catch (err) {
+          sendResponse({ ok: false, error: String(err), networkError: true });
+        }
+        return;
+      }
+
+      if (msg?.type === "CHECK_HEALTH") {
+        // Dogfood v0.1: Use profile endpoint as health check (simpler than dedicated /health)
+        try {
+          const r = await fetch(`${APPLYLENS_API_BASE}/api/profile/me`, {
             method: "GET",
-            credentials: "omit",
+            credentials: "include",
           });
           if (r.ok) {
             const data = await r.json();
@@ -98,6 +125,53 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
     } catch (e) {
       console.error("[SW] Message handler error:", e);
+      sendResponse({ ok: false, error: String(e), networkError: true });
+    }
+  })();
+  return true; // async
+});
+
+// Handle messages from externally connected scripts (web_accessible_resources in page context)
+// These scripts use chrome.runtime.sendMessage(extensionId, ...) and trigger onMessageExternal
+chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+  console.log("[SW] External message received:", msg.type, "from:", sender.url);
+
+  // Reuse the same handler as onMessage
+  // All our message types (API_PROXY, etc.) work the same regardless of source
+  (async () => {
+    try {
+      if (msg?.type === "API_PROXY") {
+        // Proxy API calls from content scripts to avoid CSP violations
+        try {
+          const { url, method = "GET", body, headers = {} } = msg.payload;
+          const fetchOptions = {
+            method,
+            credentials: "include",
+            headers: { "Content-Type": "application/json", ...headers },
+          };
+          if (body) {
+            fetchOptions.body = JSON.stringify(body);
+          }
+
+          const r = await fetch(`${APPLYLENS_API_BASE}${url}`, fetchOptions);
+          const data = await r.json();
+
+          if (r.ok) {
+            sendResponse({ ok: true, data, status: r.status });
+          } else {
+            sendResponse({ ok: false, error: `HTTP ${r.status}`, data, status: r.status });
+          }
+        } catch (err) {
+          sendResponse({ ok: false, error: String(err), networkError: true });
+        }
+        return;
+      }
+
+      // For other message types, we can add handlers as needed
+      console.warn("[SW] Unhandled external message type:", msg.type);
+      sendResponse({ ok: false, error: "Unhandled message type" });
+    } catch (e) {
+      console.error("[SW] External message handler error:", e);
       sendResponse({ ok: false, error: String(e), networkError: true });
     }
   })();

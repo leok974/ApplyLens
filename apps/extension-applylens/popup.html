@@ -1,62 +1,413 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>ApplyLens</title>
-    <style>
-      body { font: 13px/1.4 system-ui, sans-serif; margin: 10px; min-width: 280px; }
-      .row { margin: 6px 0; }
-      .ok { color: #16a34a }
-      .bad { color: #dc2626 }
-      .muted { color: #64748b; font-size: 11px; }
-      code { background:#111827; color:#e5e7eb; padding:2px 4px; border-radius:4px; }
-      ul { list-style: none; padding: 0; margin: 4px 0; font-size: 11px; }
-      ul li { padding: 3px 0; color: #475569; }
-    </style>
+    <title>ApplyLens Companion</title>
+    <link rel="stylesheet" href="popup.css" />
   </head>
-  <body>
-    <div class="row"><strong>ApplyLens Companion</strong></div>
-    <div class="row">API: <span id="api"></span></div>
-    <div class="row">Status: <span id="health-status">🟡 Checking...</span></div>
-    <div class="row">Profile: <span id="profile"></span></div>
-    <hr />
-    <div class="row">
-      <button id="scan">Scan form & suggest answers</button>
-    </div>
-    <div class="row">
-      <button id="dm">Draft recruiter DM (LinkedIn)</button>
-    </div>
-    <hr />
-    <section>
-      <h3>Learning Settings</h3>
-      <div class="row">
-        <label>
-          <input type="checkbox" id="learning-enabled" />
-          Improve autofill using my data
-        </label>
-      </div>
-      <div class="row">
-        <button id="reset-learning">Reset all learning data</button>
-      </div>
-      <div class="row muted">
-        Learning helps improve field detection and answer quality over time.
-        All data is stored locally and synced anonymously.
-      </div>
-    </section>
-    <hr />
-    <section>
-      <h3>Recent activity</h3>
-      <div style="display:flex; gap:12px;">
-        <div style="flex:1;">
-          <div class="muted">Applications</div>
-          <ul id="hist-apps"></ul>
+  <body class="alp-theme-root alp-theme-dark">
+    <div class="flex items-center justify-center bg-transparent">
+      <div class="alp-popup-shell bg-gradient-radial from-slate-950 via-slate-950 to-slate-900">
+        <div class="alp-popup-card">
+          <!-- Sidebar -->
+          <aside class="alp-popup-sidebar">
+            <button
+              class="alp-popup-sidebar-item alp-popup-sidebar-item-active"
+              data-view="overview"
+            >
+              <svg class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 11.5 12 4l8 7.5" />
+                <path d="M5 10.75V20h14v-9.25" />
+                <path d="M10 20v-5h4v5" />
+              </svg>
+              <span>Overview</span>
+            </button>
+
+            <button
+              class="alp-popup-sidebar-item"
+              data-view="form"
+            >
+              <svg class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                <path d="M14 3v6h6" />
+                <path d="M9 13h6" />
+                <path d="M9 17h3" />
+              </svg>
+              <span>Form</span>
+            </button>
+
+            <button
+              class="alp-popup-sidebar-item"
+              data-view="dm"
+            >
+              <svg class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M7 11h10" />
+                <path d="M7 7h6" />
+                <path d="M5 21v-3H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-7z" />
+              </svg>
+              <span>DM</span>
+            </button>
+
+            <button
+              class="mt-auto alp-popup-sidebar-item"
+              data-view="settings"
+            >
+              <svg class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.8 1.8 0 0 0 .36 2l.06.06a1.5 1.5 0 0 1-2.12 2.12l-.06-.06a1.8 1.8 0 0 0-2-.36 1.8 1.8 0 0 0-1 1.64V21a1.5 1.5 0 0 1-3 0v-.12a1.8 1.8 0 0 0-1-1.64 1.8 1.8 0 0 0-2 .36l-.06.06a1.5 1.5 0 0 1-2.12-2.12l.06-.06a1.8 1.8 0 0 0 .36-2 1.8 1.8 0 0 0-1.64-1H3a1.5 1.5 0 0 1 0-3h.12a1.8 1.8 0 0 0 1.64-1 1.8 1.8 0 0 0-.36-2l-.06-.06a1.5 1.5 0 0 1 2.12-2.12l.06.06a1.8 1.8 0 0 0 2 .36A1.8 1.8 0 0 0 11 3.12V3a1.5 1.5 0 0 1 3 0v.12a1.8 1.8 0 0 0 1 1.64 1.8 1.8 0 0 0 2-.36l.06-.06a1.5 1.5 0 0 1 2.12 2.12l-.06.06a1.8 1.8 0 0 0-.36 2 1.8 1.8 0 0 0 1.64 1H21a1.5 1.5 0 0 1 0 3h-.12a1.8 1.8 0 0 0-1.64 1Z" />
+              </svg>
+              <span>Settings</span>
+            </button>
+          </aside>
+
+          <!-- OVERVIEW VIEW (default) -->
+          <main class="alp-popup-main" data-view-container="overview">
+            <!-- Header with theme toggle -->
+            <header class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center">
+                  <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" class="fill-cyan-500/20 stroke-cyan-400"/>
+                    <polyline points="14 2 14 8 20 8" class="stroke-cyan-400"/>
+                    <line x1="9" y1="13" x2="15" y2="13" class="stroke-cyan-300"/>
+                    <line x1="9" y1="17" x2="15" y2="17" class="stroke-cyan-300"/>
+                  </svg>
+                </div>
+                <div>
+                  <h1 class="m-0 text-[16px] font-semibold">
+                    ApplyLens Companion
+                  </h1>
+                  <p class="mt-0.5 text-[11px] text-slate-400">
+                    Job board:
+                    <span
+                      id="alp-popup-job-board"
+                      class="text-cyan-400"
+                    >
+                      –
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- theme toggle -->
+              <button
+                id="alp-popup-theme-toggle"
+                class="rounded-full border border-slate-600/70 bg-slate-900/70 p-1.5 text-[11px] text-slate-300 hover:border-cyan-400/60 hover:text-cyan-100 transition"
+                title="Toggle light / dark"
+              >
+                <svg id="alp-popup-theme-icon-sun" class="icon-lucide hidden" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="M4.93 4.93 6.34 6.34" />
+                  <path d="M17.66 17.66 19.07 19.07" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="M4.93 19.07 6.34 17.66" />
+                  <path d="M17.66 6.34 19.07 4.93" />
+                </svg>
+                <svg id="alp-popup-theme-icon-moon" class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 12.79A9 9 0 0 1 12.21 3 7 7 0 1 0 21 12.79Z" />
+                </svg>
+              </button>
+            </header>
+
+            <!-- Metrics grid -->
+            <section class="grid grid-cols-2 gap-2">
+              <div class="alp-popup-metric">
+                <div class="text-[11px] text-slate-400">API Status</div>
+                <div
+                  id="alp-popup-api-status"
+                  class="mt-0.5 text-[13px] font-semibold text-emerald-400"
+                >
+                  Online
+                </div>
+              </div>
+              <div id="alp-popup-auth-pill" class="alp-popup-metric border-slate-700/80">
+                <div class="text-[11px] text-slate-400">Signed In</div>
+                <div
+                  id="alp-popup-auth-value"
+                  class="mt-0.5 text-[13px] font-semibold text-amber-300"
+                >
+                  No
+                </div>
+                <div
+                  id="alp-popup-auth-email"
+                  class="text-[10px] text-slate-400/80 truncate mt-0.5 hidden"
+                ></div>
+              </div>
+              <div class="alp-popup-metric">
+                <div class="text-[11px] text-slate-400">Last Scan</div>
+                <div
+                  id="alp-popup-last-scan"
+                  class="mt-0.5 text-[13px] font-semibold"
+                >
+                  –
+                </div>
+              </div>
+              <div class="alp-popup-metric">
+                <div class="text-[11px] text-slate-400">Learning</div>
+                <div
+                  id="alp-popup-learning"
+                  class="mt-0.5 text-[13px] font-semibold text-cyan-400"
+                >
+                  On
+                </div>
+              </div>
+            </section>
+
+            <!-- Activity Timeline -->
+            <section class="flex-1 overflow-hidden">
+              <h3 class="m-0 mb-2 text-[12px] font-semibold text-slate-300">Recent Activity</h3>
+              <div class="alp-popup-timeline h-full overflow-y-auto">
+                <div id="alp-popup-timeline-content" class="space-y-3">
+                  <!-- Timeline items will be inserted here -->
+                  <div class="grid grid-cols-[16px,1fr] gap-x-3">
+                    <div
+                      class="mt-1 h-[7px] w-[7px] rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]"
+                    ></div>
+                    <div>
+                      <div class="text-[12px]">Ready to scan this page</div>
+                      <div class="text-[11px] text-slate-400">just now</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Actions -->
+            <section class="flex gap-2">
+              <button
+                id="alp-popup-scan"
+                class="alp-popup-action-secondary"
+              >
+                Scan this form
+              </button>
+              <button
+                id="alp-popup-apply"
+                class="alp-popup-action-primary text-slate-950"
+              >
+                Apply to page
+              </button>
+            </section>
+          </main>
+
+          <!-- FORM VIEW -->
+          <main class="alp-popup-main hidden" data-view-container="form">
+            <header class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 class="m-0 text-[15px] font-semibold">Form Helper</h2>
+                <p class="mt-0.5 text-[11px] text-slate-400">
+                  Scan and fill the current application form
+                </p>
+              </div>
+              <button
+                id="alp-popup-theme-toggle-form"
+                class="rounded-full border border-slate-600/70 bg-slate-900/70 p-1.5 text-[11px] text-slate-300 hover:border-cyan-400/60 hover:text-cyan-100 transition"
+                title="Toggle light / dark"
+              >
+                <svg class="alp-popup-theme-icon-sun icon-lucide hidden" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="M4.93 4.93 6.34 6.34" />
+                  <path d="M17.66 17.66 19.07 19.07" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="M4.93 19.07 6.34 17.66" />
+                  <path d="M17.66 6.34 19.07 4.93" />
+                </svg>
+                <svg class="alp-popup-theme-icon-moon icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 12.79A9 9 0 0 1 12.21 3 7 7 0 1 0 21 12.79Z" />
+                </svg>
+              </button>
+            </header>
+
+            <div class="flex flex-col gap-4 flex-1">
+              <div class="rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4">
+                <h3 class="text-[12px] font-semibold text-slate-300 mb-2">Quick Actions</h3>
+                <div class="flex flex-col gap-2">
+                  <button
+                    id="alp-popup-form-scan"
+                    class="alp-popup-action-secondary justify-center flex items-center gap-2"
+                  >
+                    <svg class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"/>
+                      <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <span>Scan this form</span>
+                  </button>
+                  <button
+                    id="alp-popup-form-apply"
+                    class="alp-popup-action-primary text-slate-950 justify-center flex items-center gap-2"
+                  >
+                    <svg class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                      <path d="M5 3v4"/>
+                      <path d="M19 17v4"/>
+                      <path d="M3 5h4"/>
+                      <path d="M17 19h4"/>
+                    </svg>
+                    <span>Apply to page</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4 flex-1">
+                <h3 class="text-[12px] font-semibold text-slate-300 mb-2">Tips</h3>
+                <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc list-inside">
+                  <li>Click "Scan" to detect all form fields on the page</li>
+                  <li>Review suggestions in the sidepanel</li>
+                  <li>Select which fields to fill automatically</li>
+                  <li>Click "Apply" to populate the form</li>
+                </ul>
+              </div>
+            </div>
+          </main>
+
+          <!-- DM VIEW -->
+          <main class="alp-popup-main hidden" data-view-container="dm">
+            <header class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 class="m-0 text-[15px] font-semibold">Recruiter DM</h2>
+                <p class="mt-0.5 text-[11px] text-slate-400">
+                  Draft a personalized message for this opportunity
+                </p>
+              </div>
+              <button
+                id="alp-popup-theme-toggle-dm"
+                class="rounded-full border border-slate-600/70 bg-slate-900/70 p-1.5 text-[11px] text-slate-300 hover:border-cyan-400/60 hover:text-cyan-100 transition"
+                title="Toggle light / dark"
+              >
+                <svg class="alp-popup-theme-icon-sun icon-lucide hidden" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="M4.93 4.93 6.34 6.34" />
+                  <path d="M17.66 17.66 19.07 19.07" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="M4.93 19.07 6.34 17.66" />
+                  <path d="M17.66 6.34 19.07 4.93" />
+                </svg>
+                <svg class="alp-popup-theme-icon-moon icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 12.79A9 9 0 0 1 12.21 3 7 7 0 1 0 21 12.79Z" />
+                </svg>
+              </button>
+            </header>
+
+            <div class="flex flex-col gap-4 flex-1">
+              <div class="rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4">
+                <p class="text-[12px] text-slate-300 mb-3">
+                  Generate a professional DM tailored to this job posting and the recruiter's profile.
+                </p>
+                <button
+                  id="alp-popup-dm-draft"
+                  class="alp-popup-action-primary text-slate-950 w-full justify-center flex items-center gap-2"
+                >
+                  <svg class="icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                  </svg>
+                  <span>Draft DM in ApplyLens</span>
+                </button>
+              </div>
+
+              <div class="rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4 flex-1">
+                <h3 class="text-[12px] font-semibold text-slate-300 mb-2">What you'll get</h3>
+                <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc list-inside">
+                  <li>Personalized opening based on job details</li>
+                  <li>Relevant skills and experience highlights</li>
+                  <li>Professional tone and formatting</li>
+                  <li>Editable in ApplyLens dashboard</li>
+                </ul>
+              </div>
+            </div>
+          </main>
+
+          <!-- SETTINGS VIEW -->
+          <main class="alp-popup-main hidden" data-view-container="settings">
+            <header class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 class="m-0 text-[15px] font-semibold">Settings</h2>
+                <p class="mt-0.5 text-[11px] text-slate-400">
+                  Configure your companion preferences
+                </p>
+              </div>
+              <button
+                id="alp-popup-theme-toggle-settings"
+                class="rounded-full border border-slate-600/70 bg-slate-900/70 p-1.5 text-[11px] text-slate-300 hover:border-cyan-400/60 hover:text-cyan-100 transition"
+                title="Toggle light / dark"
+              >
+                <svg class="alp-popup-theme-icon-sun icon-lucide hidden" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2" />
+                  <path d="M12 20v2" />
+                  <path d="M4.93 4.93 6.34 6.34" />
+                  <path d="M17.66 17.66 19.07 19.07" />
+                  <path d="M2 12h2" />
+                  <path d="M20 12h2" />
+                  <path d="M4.93 19.07 6.34 17.66" />
+                  <path d="M17.66 6.34 19.07 4.93" />
+                </svg>
+                <svg class="alp-popup-theme-icon-moon icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 12.79A9 9 0 0 1 12.21 3 7 7 0 1 0 21 12.79Z" />
+                </svg>
+              </button>
+            </header>
+
+            <div class="flex flex-col gap-4">
+              <div class="rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4">
+                <h3 class="text-[12px] font-semibold text-slate-300 mb-3">Appearance</h3>
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] text-slate-400">Theme</span>
+                  <button
+                    id="alp-popup-theme-toggle-settings-btn"
+                    class="rounded-full border border-slate-600/70 bg-slate-900/70 px-3 py-1.5 text-[11px] text-slate-300 hover:border-cyan-400/60 hover:text-cyan-100 transition flex items-center gap-1.5"
+                  >
+                    <svg class="alp-popup-theme-icon-sun icon-lucide hidden" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="4" />
+                      <path d="M12 2v2" />
+                      <path d="M12 20v2" />
+                      <path d="M4.93 4.93 6.34 6.34" />
+                      <path d="M17.66 17.66 19.07 19.07" />
+                      <path d="M2 12h2" />
+                      <path d="M20 12h2" />
+                      <path d="M4.93 19.07 6.34 17.66" />
+                      <path d="M17.66 6.34 19.07 4.93" />
+                    </svg>
+                    <svg class="alp-popup-theme-icon-moon icon-lucide" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 12.79A9 9 0 0 1 12.21 3 7 7 0 1 0 21 12.79Z" />
+                    </svg>
+                    <span class="ml-1" id="alp-popup-theme-label">Dark</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4">
+                <h3 class="text-[12px] font-semibold text-slate-300 mb-3">Learning</h3>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[11px] text-slate-400">Auto-learn from filled forms</span>
+                  <span class="text-[11px] font-semibold text-cyan-400" id="alp-popup-learning-status">On</span>
+                </div>
+                <p class="text-[10px] text-slate-500">
+                  When enabled, ApplyLens learns from your manual form entries to improve suggestions.
+                </p>
+              </div>
+
+              <div class="rounded-2xl border border-slate-700/70 bg-slate-900/60 p-4">
+                <h3 class="text-[12px] font-semibold text-slate-300 mb-3">About</h3>
+                <div class="text-[11px] text-slate-400 space-y-1">
+                  <div>Version: 0.2.0</div>
+                  <div>API: <span class="text-cyan-400" id="alp-popup-settings-api-status">Online</span></div>
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
-        <div style="flex:1;">
-          <div class="muted">Outreach</div>
-          <ul id="hist-out"></ul>
-        </div>
       </div>
-    </section>
-    <script type="module" src="popup.js"></script>
+    </div>
+
+    <script src="popup.js" type="module"></script>
   </body>
 </html>

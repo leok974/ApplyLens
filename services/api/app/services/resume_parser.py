@@ -43,41 +43,57 @@ def _extract_from_pdf(content: bytes) -> str:
     """Extract text from PDF using PyPDF2."""
     try:
         from PyPDF2 import PdfReader
-    except ImportError:
+    except ImportError as e:
+        logger.error(f"PyPDF2 not available: {e}")
         raise ImportError(
-            "PyPDF2 is required for PDF extraction. Install with: pip install PyPDF2"
+            "PyPDF2 is required for PDF extraction. Install with: pip install PyPDF2==3.0.1"
         )
 
-    pdf_file = io.BytesIO(content)
-    reader = PdfReader(pdf_file)
+    try:
+        pdf_file = io.BytesIO(content)
+        reader = PdfReader(pdf_file)
 
-    text_parts = []
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            text_parts.append(text)
+        text_parts = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                text_parts.append(text)
 
-    return "\n\n".join(text_parts)
+        result = "\n\n".join(text_parts)
+        if not result.strip():
+            raise ValueError("PDF appears to be empty or text could not be extracted")
+        return result
+    except Exception as e:
+        logger.error(f"Error extracting text from PDF: {e}")
+        raise ValueError(f"Failed to extract text from PDF: {str(e)}")
 
 
 def _extract_from_docx(content: bytes) -> str:
     """Extract text from DOCX using python-docx."""
     try:
         from docx import Document
-    except ImportError:
+    except ImportError as e:
+        logger.error(f"python-docx not available: {e}")
         raise ImportError(
-            "python-docx is required for DOCX extraction. Install with: pip install python-docx"
+            "python-docx is required for DOCX extraction. Install with: pip install python-docx==1.1.0"
         )
 
-    docx_file = io.BytesIO(content)
-    doc = Document(docx_file)
+    try:
+        docx_file = io.BytesIO(content)
+        doc = Document(docx_file)
 
-    text_parts = []
-    for para in doc.paragraphs:
-        if para.text.strip():
-            text_parts.append(para.text)
+        text_parts = []
+        for para in doc.paragraphs:
+            if para.text.strip():
+                text_parts.append(para.text)
 
-    return "\n".join(text_parts)
+        result = "\n".join(text_parts)
+        if not result.strip():
+            raise ValueError("DOCX appears to be empty or text could not be extracted")
+        return result
+    except Exception as e:
+        logger.error(f"Error extracting text from DOCX: {e}")
+        raise ValueError(f"Failed to extract text from DOCX: {str(e)}")
 
 
 async def parse_resume_text(text: str, llm_callable: Optional[callable] = None) -> dict:

@@ -80,8 +80,8 @@ async def upload_resume(
     file_ext = "." + file.filename.split(".")[-1].lower()
     if file_ext not in allowed_extensions:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file format. Allowed: {', '.join(allowed_extensions)}",
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported file type '{file_ext}'. For now we only support PDF and DOCX.",
         )
 
     # Read file content
@@ -97,22 +97,30 @@ async def upload_resume(
     # Extract text from file
     try:
         raw_text = extract_text_from_resume(file.filename, content)
+        if not raw_text or not raw_text.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The uploaded file appears to be empty or unreadable.",
+            )
     except ValueError as e:
+        # User error - bad file content
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except ImportError as e:
+        # Server configuration error - missing dependencies
         logger.error(f"Missing dependency for file parsing: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server is missing required dependencies for this file format",
+            detail="Server is missing required dependencies for this file format. Please contact support.",
         )
     except Exception as e:
-        logger.error(f"Failed to extract text from resume: {e}")
+        # Generic server error
+        logger.error(f"Failed to extract text from resume: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to extract text from resume file",
+            detail="Failed to process resume on the server. Please try another file or contact support.",
         )
 
     # Parse resume text (heuristic for now, LLM integration later)
