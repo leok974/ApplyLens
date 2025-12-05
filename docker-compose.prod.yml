@@ -198,7 +198,8 @@ services:
     # v0.8.3-ml_v1: ML training infrastructure + production model artifacts
     # v0.8.4-resume-fix: Add PyPDF2 + python-docx for resume upload (fixes 500 error)
     # v0.8.6-experience: Resume contact parsing + years_experience extraction
-    image: leoklemet/applylens-api:0.8.6-experience
+    # v0.8.7-profile-context: Profile-aware LLM prompts for personalized answers
+    image: leoklemet/applylens-api:0.8.7-profile-context
     container_name: applylens-api-prod
     environment:
       # Database
