@@ -1,7 +1,7 @@
 """add contact fields to resume_profiles
 
 Revision ID: c5d6e7f8g9h0
-Revises: bf7f93a3b301
+Revises: 20251203_classification
 Create Date: 2025-12-05 12:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "c5d6e7f8g9h0"
-down_revision = "bf7f93a3b301"
+down_revision = "20251203_classification"
 branch_labels = None
 depends_on = None
 
