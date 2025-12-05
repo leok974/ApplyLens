@@ -174,10 +174,39 @@ function normalizeAnswerText(label, raw) {
 }
 
 /**
+ * Build safe profile context for LLM (excludes PII like email/phone)
+ */
+function buildLLMProfileContext(profile) {
+  if (!profile) return null;
+
+  return {
+    name: profile.name || null,
+    headline: profile.headline || null,
+    experience_years: profile.experience_years || null,
+    target_roles: profile.target_roles || [],
+    tech_stack: profile.tech_stack || [],
+    domains: profile.domains || [],  // from flattened preferences
+    work_setup: profile.work_setup || null,  // from flattened preferences
+    locations: profile.locations || [],
+    note: profile.note || null,  // from flattened preferences
+  };
+}
+
+/**
  * Generate suggestions from backend
  */
-async function generateSuggestions(fields, jobContext) {
+async function generateSuggestions(fields, jobContext, userProfile = null) {
   try {
+    const profileContext = buildLLMProfileContext(userProfile);
+
+    if (profileContext) {
+      const skillCount = (profileContext.tech_stack || []).length;
+      const roleCount = (profileContext.target_roles || []).length;
+      console.log(`[v0.3] Sending profile context to LLM: ${profileContext.name}, ${profileContext.experience_years} years, ${skillCount} skills, ${roleCount} roles`);
+    } else {
+      console.log("[v0.3] No profile context available for LLM");
+    }
+
     const response = await sendExtensionMessage({
       type: "API_PROXY",
       payload: {
@@ -194,6 +223,7 @@ async function generateSuggestions(fields, jobContext) {
             label: f.labelText,
             type: f.type,
           })),
+          profile_context: profileContext,  // NEW: Send profile context to LLM
         },
       }
     });
@@ -534,7 +564,7 @@ export async function runScanAndSuggestV2() {
           `[v0.3] Requesting AI for ${fieldsNeedingAI.length} fields (question/summary only)`
         );
 
-        const aiSuggestions = await generateSuggestions(fieldsNeedingAI, jobContext);
+        const aiSuggestions = await generateSuggestions(fieldsNeedingAI, jobContext, userProfile);
         console.log("[v0.3] Generated AI suggestions:", aiSuggestions);
 
         // Merge: memory takes precedence, AI fills gaps
