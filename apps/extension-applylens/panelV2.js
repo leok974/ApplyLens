@@ -149,6 +149,45 @@ function computeSourceSummary(fields, suggestions) {
 }
 
 /**
+ * Render style preferences tag
+ */
+function renderStylePrefsTag(stylePrefs) {
+  if (!stylePrefs) return "";
+
+  const tone = stylePrefs.tone || "concise";
+  const length = stylePrefs.length || "medium";
+
+  const toneLabel =
+    tone === "confident"
+      ? "Confident"
+      : tone === "friendly"
+      ? "Friendly"
+      : tone === "detailed"
+      ? "Detailed"
+      : "Concise";
+
+  const lengthLabel =
+    length === "short"
+      ? "Short"
+      : length === "long"
+      ? "Long"
+      : "Medium";
+
+  const chipText = `${toneLabel} · ${lengthLabel}`;
+  const title = `Answers for this run will follow: ${toneLabel} tone, ${lengthLabel} length. Change this in the ApplyLens popup.`;
+
+  return `
+    <div
+      class="mt-1 inline-flex items-center gap-1 rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] text-slate-200 ring-1 ring-slate-700/70"
+      title="${title}"
+    >
+      <svg class="h-3 w-3" data-lucide="SlidersHorizontal"></svg>
+      <span>${chipText}</span>
+    </div>
+  `;
+}
+
+/**
  * Build HTML for source summary bar showing counts
  */
 function buildSourceSummaryBar(summary) {
@@ -1109,9 +1148,13 @@ export function renderFields(panel, fields, suggestions = {}, learningProfile = 
   if (subheader) {
     const atsName = detectATS(location.hostname) || "Generic";
     const sourceSummaryHtml = buildSourceSummaryBar(sourceSummary);
+    const stylePrefs = panel.__stylePrefs;
+    const stylePrefsHtml = renderStylePrefsTag(stylePrefs);
+    console.log("[panelV2] Style prefs for this run:", stylePrefs);
     subheader.innerHTML = `
       <div>Job board: <span style="color:#7dd3fc;font-weight:500;">${atsName}</span> · <span style="color:#cbd5e1;">${totalFields} fields</span> · <span style="color:#6ee7b7;">${mappedCount} mapped</span></div>
       ${sourceSummaryHtml}
+      ${stylePrefsHtml}
     `;
   }
 

@@ -372,6 +372,11 @@ export async function runScanAndSuggestV2() {
   const memoryKey = buildMemoryKey(location);
   console.log("[v0.3] Memory key:", memoryKey);
 
+  // v0.3: Fetch style prefs once per run
+  const stylePrefs = await getStylePrefs();
+  console.log("[v0.3] Style prefs for this run:", stylePrefs);
+  panel.__stylePrefs = stylePrefs;
+
   // Learning v1: Track timing and mappings for learning events
   const autofillStartTime = Date.now();
   let suggestedMap = {}; // canonical -> selector mappings from AI/memory
