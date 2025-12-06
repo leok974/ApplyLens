@@ -127,9 +127,9 @@ PROFILE = Profile(
         "LangChain/LangGraph",
     ],
     contact=ProfileContact(
-        email="leo@applylens.dev",
-        phone="+1 (555) 123-4567",
-        location_city="Fairfax",
+        email="leoklemet.pa@gmail.com",
+        phone="2024401027",
+        location_city="Herndon",
         location_country="US",
     ),
     links=ProfileLinks(
