@@ -193,16 +193,25 @@ function buildLLMProfileContext(profile) {
 }
 
 /**
- * Get style preferences from extension storage
+ * Get style preferences from extension storage via message passing
  */
 async function getStylePrefs() {
   try {
-    const stored = await chrome.storage.sync.get(['companionTone', 'companionLength']);
+    const response = await sendExtensionMessage({
+      type: "GET_STORAGE",
+      payload: {
+        keys: ['companionTone', 'companionLength'],
+        storageType: 'sync'
+      }
+    });
 
-    const tone = stored.companionTone || 'confident';
-    const length = stored.companionLength || 'medium';
+    if (response && response.data) {
+      const tone = response.data.companionTone || 'confident';
+      const length = response.data.companionLength || 'medium';
+      return { tone, length };
+    }
 
-    return { tone, length };
+    return { tone: 'confident', length: 'medium' };
   } catch (err) {
     console.warn('[v0.3] Failed to load style prefs:', err);
     return { tone: 'confident', length: 'medium' };
@@ -229,29 +238,48 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
       console.log(`[v0.3] Using style: ${stylePrefs.tone} tone, ${stylePrefs.length} length`);
     }
 
+    // Build request body
+    const requestBody = {
+      job: {
+        url: jobContext.url,
+        title: jobContext.title,
+        company: jobContext.company,
+      },
+      fields: fields.map(f => ({
+        field_id: f.canonical,
+        label: f.labelText,
+        type: f.type,
+      })),
+    };
+
+    // Add optional fields
+    if (profileContext) {
+      requestBody.profile_context = profileContext;
+    }
+
+    // Only send style_prefs if backend supports it (v0.8.8+)
+    // For now, comment out to avoid 422 errors until backend is updated
+    // if (stylePrefs) {
+    //   requestBody.style_prefs = stylePrefs;
+    // }
+
     const response = await sendExtensionMessage({
       type: "API_PROXY",
       payload: {
         url: "/api/extension/generate-form-answers",
         method: "POST",
-        body: {
-          job: {
-            url: jobContext.url,
-            title: jobContext.title,
-            company: jobContext.company,
-          },
-          fields: fields.map(f => ({
-            field_id: f.canonical,
-            label: f.labelText,
-            type: f.type,
-          })),
-          profile_context: profileContext,  // Send profile context to LLM
-          style_prefs: stylePrefs,          // Send style preferences to LLM
-        },
+        body: requestBody,
       }
     });
 
     if (!response.ok) {
+      // Log the full error response for debugging
+      console.error('[v0.3] API error response:', {
+        status: response.status,
+        error: response.error,
+        data: response.data
+      });
+
       if (response.status === 401 || response.status === 403) {
         throw new Error("NOT_LOGGED_IN");
       } else if (response.status >= 500) {

@@ -60,6 +60,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return;
       }
 
+      if (msg?.type === "GET_STORAGE") {
+        // Fetch from chrome.storage for page context scripts
+        try {
+          const { keys, storageType = 'sync' } = msg.payload || {};
+          const storage = storageType === 'local' ? chrome.storage.local : chrome.storage.sync;
+          const data = await storage.get(keys);
+          sendResponse({ ok: true, data });
+        } catch (err) {
+          console.error("[SW] GET_STORAGE error:", err);
+          sendResponse({ ok: false, error: String(err) });
+        }
+        return;
+      }
+
       if (msg?.type === "CHECK_HEALTH") {
         // Dogfood v0.1: Use profile endpoint as health check (simpler than dedicated /health)
         try {
@@ -140,6 +154,20 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   // All our message types (API_PROXY, etc.) work the same regardless of source
   (async () => {
     try {
+      if (msg?.type === "GET_STORAGE") {
+        // Fetch from chrome.storage for page context scripts
+        try {
+          const { keys, storageType = 'sync' } = msg.payload || {};
+          const storage = storageType === 'local' ? chrome.storage.local : chrome.storage.sync;
+          const data = await storage.get(keys);
+          sendResponse({ ok: true, data });
+        } catch (err) {
+          console.error("[SW] GET_STORAGE error:", err);
+          sendResponse({ ok: false, error: String(err) });
+        }
+        return;
+      }
+
       if (msg?.type === "API_PROXY") {
         // Proxy API calls from content scripts to avoid CSP violations
         try {
