@@ -75,6 +75,24 @@ class Project(BaseModel):
     links: ProjectLink
 
 
+class ProfileContact(BaseModel):
+    """Contact information for profile."""
+
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    location_city: Optional[str] = None
+    location_country: Optional[str] = None
+
+
+class ProfileLinks(BaseModel):
+    """External links for profile."""
+
+    linkedin: Optional[HttpUrl] = None
+    github: Optional[HttpUrl] = None
+    website: Optional[HttpUrl] = None
+    portfolio: Optional[HttpUrl] = None
+
+
 class Profile(BaseModel):
     name: str
     headline: str
@@ -83,6 +101,8 @@ class Profile(BaseModel):
     tech_stack: List[str]
     projects: List[Project]
     preferences: Dict[str, Any]
+    contact: Optional[ProfileContact] = None
+    links: Optional[ProfileLinks] = None
 
 
 PROFILE = Profile(
@@ -106,6 +126,18 @@ PROFILE = Profile(
         "LLMs",
         "LangChain/LangGraph",
     ],
+    contact=ProfileContact(
+        email="leo@applylens.dev",
+        phone="+1 (555) 123-4567",
+        location_city="Fairfax",
+        location_country="US",
+    ),
+    links=ProfileLinks(
+        linkedin="https://linkedin.com/in/leoklemet",
+        github="https://github.com/leok974",
+        website="https://leoklemet.com",
+        portfolio=None,
+    ),
     projects=[
         Project(
             name="ApplyLens",
