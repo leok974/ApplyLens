@@ -232,6 +232,11 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
 
+      # Companion LLM (for form answer generation)
+      COMPANION_LLM_ENABLED: "1"
+      COMPANION_LLM_PROVIDER: ${COMPANION_LLM_PROVIDER:-openai}
+      COMPANION_LLM_MODEL: ${COMPANION_LLM_MODEL:-gpt-4o-mini}
+
       # Assistant Configuration
       ASSISTANT_INTERNAL_API_BASE: http://api:8003
 
