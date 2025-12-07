@@ -189,15 +189,38 @@ function buildLLMProfileContext(profile) {
   const contact = profile.contact || {};
   const links = profile.links || {};
 
+  // Build formatted location string
+  let locationText = null;
+  if (profile.location) {
+    locationText = String(profile.location).trim();
+  } else if (contact.location_city || contact.location_country) {
+    const parts = [contact.location_city, contact.location_country].filter(Boolean);
+    locationText = parts.join(', ');
+  } else if (Array.isArray(profile.locations) && profile.locations.length > 0) {
+    const loc = profile.locations[0];
+    if (typeof loc === 'string') {
+      locationText = loc.trim();
+    } else if (loc && typeof loc === 'object') {
+      const parts = [
+        loc.city || loc.town || loc.locality,
+        loc.region || loc.state || loc.province,
+        loc.country || loc.country_code,
+      ].filter(Boolean);
+      if (parts.length > 0) {
+        locationText = parts.join(', ');
+      }
+    }
+  }
+
   return {
     name: profile.name || null,
     headline: profile.headline || null,
+    location: locationText,  // Formatted location string
     experience_years: profile.experience_years || null,
     target_roles: profile.target_roles || [],
     tech_stack: profile.tech_stack || [],
     domains: profile.domains || [],  // from flattened preferences
     work_setup: workSetup || null,  // from flattened preferences (converted to string)
-    locations: profile.locations || [],
     note: profile.note || null,  // from flattened preferences
     // Include social/professional links for AI to use (not PII)
     linkedin: links.linkedin || profile.linkedin || profile.linkedinUrl || null,
@@ -244,8 +267,10 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
     if (profileContext) {
       const skillCount = (profileContext.tech_stack || []).length;
       const roleCount = (profileContext.target_roles || []).length;
-      console.log(`[v0.3] Sending profile context to LLM: ${profileContext.name}, ${profileContext.experience_years} years, ${skillCount} skills, ${roleCount} roles`);
-      console.log(`[v0.3] Profile links: LinkedIn=${profileContext.linkedin}, GitHub=${profileContext.github}, Portfolio=${profileContext.portfolio}`);
+      const hasLinks = !!(profileContext.linkedin || profileContext.github || profileContext.portfolio || profileContext.website);
+
+      console.log(`[v0.3] Sending profile context to LLM: ${profileContext.name}, ${profileContext.location || 'no location'}, ${profileContext.experience_years || 'unknown'} years, ${skillCount} skills, ${roleCount} roles`);
+      console.log(`[v0.3] Profile links: LinkedIn=${profileContext.linkedin || 'none'}, GitHub=${profileContext.github || 'none'}, Portfolio=${profileContext.portfolio || 'none'}, Website=${profileContext.website || 'none'}`);
     } else {
       console.log("[v0.3] No profile context available for LLM");
     }
