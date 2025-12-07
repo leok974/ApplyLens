@@ -13,6 +13,7 @@ API DESIGN RULE (Dec 2024):
 """
 
 import logging
+import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -22,7 +23,11 @@ from sqlalchemy.orm import Session
 from ..deps.user import get_current_user_email
 from ..db import get_db
 from ..models import ResumeProfile
-from ..services.resume_parser import extract_text_from_resume, parse_resume_text
+from ..services.resume_parser import (
+    extract_text_from_resume,
+    parse_resume_text,
+    extract_profile_from_resume_llm,
+)
 from ..services.resume_profile_parser import parse_contact_from_resume
 from ..services.profile_updater import merge_resume_contact_into_profile
 
@@ -148,6 +153,22 @@ async def upload_resume(
             "projects": [],
         }
 
+    # LLM-powered profile extraction (if enabled)
+    llm_enabled = os.getenv("COMPANION_LLM_ENABLED", "0") == "1"
+    extracted_profile = None
+    if llm_enabled:
+        try:
+            logger.info("Attempting LLM-powered profile extraction from resume")
+            extracted_profile = await extract_profile_from_resume_llm(raw_text)
+            logger.info(
+                f"LLM extracted: name={extracted_profile.full_name}, "
+                f"skills={len(extracted_profile.skills)}, "
+                f"roles={len(extracted_profile.top_roles)}"
+            )
+        except Exception as e:
+            logger.warning(f"LLM profile extraction failed, continuing without it: {e}")
+            extracted_profile = None
+
     # Parse contact information from resume
     parsed_contact = parse_contact_from_resume(raw_text)
     logger.info(
@@ -174,6 +195,29 @@ async def upload_resume(
         experiences=parsed_data.get("experiences"),
         projects=parsed_data.get("projects"),
     )
+
+    # Merge LLM-extracted profile data (if available)
+    if extracted_profile:
+        # Override with LLM data if better quality
+        if extracted_profile.headline:
+            resume.headline = extracted_profile.headline
+        if extracted_profile.summary:
+            resume.summary = extracted_profile.summary
+
+        # Merge skills (LLM extraction is usually more comprehensive)
+        if extracted_profile.skills:
+            existing_skills = set(resume.skills or [])
+            llm_skills = set(extracted_profile.skills)
+            resume.skills = sorted(existing_skills.union(llm_skills))
+
+        # Store years of experience if available
+        if extracted_profile.years_experience is not None:
+            resume.experience_years = extracted_profile.years_experience
+
+        logger.info(
+            f"Merged LLM data: {len(resume.skills or [])} total skills, "
+            f"years_exp={resume.experience_years}"
+        )
 
     # Merge contact info into profile
     merge_resume_contact_into_profile(resume, parsed_contact, overwrite_existing=False)

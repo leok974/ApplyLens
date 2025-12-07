@@ -5,9 +5,13 @@ Uses LLM for intelligent parsing of resume structure.
 """
 
 import io
+import json
 import logging
+import os
 import re
-from typing import Optional
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +98,120 @@ def _extract_from_docx(content: bytes) -> str:
     except Exception as e:
         logger.error(f"Error extracting text from DOCX: {e}")
         raise ValueError(f"Failed to extract text from DOCX: {str(e)}")
+
+
+# ===== LLM-Powered Profile Extraction =====
+
+
+class ExtractedProfile(BaseModel):
+    """Structured profile data extracted from resume text."""
+
+    full_name: Optional[str] = None
+    headline: Optional[str] = None
+    location: Optional[str] = None
+    years_experience: Optional[int] = None
+
+    skills: List[str] = []
+    top_roles: List[str] = []
+
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    website_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    twitter_url: Optional[str] = None
+
+    summary: Optional[str] = None
+
+
+async def extract_profile_from_resume_llm(resume_text: str) -> ExtractedProfile:
+    """
+    Extract structured profile data from resume text using LLM.
+
+    Args:
+        resume_text: Raw text extracted from resume
+
+    Returns:
+        ExtractedProfile with parsed fields
+
+    Raises:
+        Exception: If LLM call fails
+    """
+    try:
+        import openai
+    except ImportError as e:
+        logger.error("openai package not available for resume extraction")
+        raise ImportError("openai package required for LLM resume extraction") from e
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY not set - cannot use LLM extraction")
+
+    model = os.getenv("COMPANION_LLM_MODEL", "gpt-4o-mini")
+
+    system_prompt = (
+        "You are a resume parser for ApplyLens. "
+        "Given the raw text of a resume, extract a concise JSON object with "
+        "career profile fields. Return ONLY valid JSON with no explanations or markdown."
+    )
+
+    user_prompt = (
+        "Extract the following fields from this resume text:\n\n"
+        "full_name (string)\n"
+        "headline (short role tagline, e.g. 'AI Engineer & Full-Stack Developer')\n"
+        "location (string, city + country if present)\n"
+        "years_experience (integer, best estimate; can be null)\n"
+        "skills (array of 10-30 key technical skills)\n"
+        "top_roles (array of target roles, e.g. ['ML Engineer','Full-Stack Engineer'])\n"
+        "github_url (string or null)\n"
+        "portfolio_url (string or null)\n"
+        "website_url (string or null)\n"
+        "linkedin_url (string or null)\n"
+        "twitter_url (string or null)\n"
+        "summary (2-4 sentence professional summary).\n\n"
+        "Return ONLY a JSON object with these keys.\n\n"
+        f"Resume text:\n{resume_text[:15000]}"
+    )
+
+    try:
+        client = openai.OpenAI(api_key=api_key)
+
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.2,
+            max_tokens=1000,
+        )
+
+        response_text = response.choices[0].message.content or ""
+
+        # Try to extract JSON from response (handle markdown code blocks)
+        cleaned = response_text.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+
+        data = json.loads(cleaned.strip())
+        logger.info(
+            f"LLM extracted profile: {len(data.get('skills', []))} skills, {data.get('full_name', 'N/A')}"
+        )
+
+        return ExtractedProfile(**data)
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse LLM JSON response: {e}")
+        logger.debug(f"Response text: {response_text}")
+        # Return empty profile on parse error
+        return ExtractedProfile()
+    except Exception as e:
+        logger.error(f"LLM resume extraction failed: {e}")
+        # Return empty profile on any error
+        return ExtractedProfile()
 
 
 async def parse_resume_text(text: str, llm_callable: Optional[callable] = None) -> dict:
