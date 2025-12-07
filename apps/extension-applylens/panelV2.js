@@ -497,15 +497,14 @@ function getRowSourceMeta(field, suggestions) {
 /**
  * Determine if a field is optional (for grouping)
  */
+// Core profile fields that should always be in "Key fields" section
+// even if the site doesn't mark them as required
 const CORE_CANONICAL = new Set([
   "first_name",
   "last_name",
-  "full_name",
   "email",
   "phone",
   "linkedin",
-  "portfolio_url",
-  "location",
 ]);
 
 function isOptionalField(field) {
@@ -525,27 +524,25 @@ function classifyField(field) {
   const labelText = (field.labelText || "").toLowerCase();
 
   const hasRequiredAttr = !!field.required;
-  const hasAsterisk = field.labelText && (field.labelText.includes("*") || labelText.includes("(required)"));
   const isCoreProfile = CORE_CANONICAL.has(canonical);
+  const isExplicitlyOptional = labelText.includes('optional');
 
   let bucket = "optional";
   let importanceReason = "No required marker detected; treated as optional.";
 
-  if (hasRequiredAttr && isCoreProfile) {
+  // Explicitly optional always wins
+  if (isExplicitlyOptional) {
+    bucket = "optional";
+    importanceReason = "Label contains '(optional)' - always treated as optional.";
+  } else if (hasRequiredAttr && isCoreProfile) {
     bucket = "key";
     importanceReason = "Marked as required on the page and matches a core profile field.";
   } else if (hasRequiredAttr) {
     bucket = "key";
-    importanceReason = "Detected HTML required attribute or a red * next to the label.";
-  } else if (hasAsterisk && isCoreProfile) {
-    bucket = "key";
-    importanceReason = "Label has * asterisk and matches a core profile field.";
+    importanceReason = "Detected HTML required attribute or aria-required=true or * in label.";
   } else if (isCoreProfile) {
     bucket = "key";
-    importanceReason = "Even if not strictly required, this is a core profile field (e.g., name/email/phone).";
-  } else if (hasAsterisk) {
-    bucket = "key";
-    importanceReason = "Label has * asterisk indicating it may be required.";
+    importanceReason = "Even if not strictly required, this is a core profile field (e.g., name/email/phone/linkedin).";
   }
 
   return { ...field, bucket, importanceReason };

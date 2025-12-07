@@ -100,21 +100,33 @@ function findLabelText(el) {
 }
 
 /**
- * Detect if a field is required based on multiple signals
- * @param {HTMLElement} inputEl
+ * Infer if a field is required based on multiple signals
+ * Priority: explicit optional > native attributes > asterisk in label > default optional
  * @param {string} labelText
+ * @param {HTMLElement} inputEl
  * @returns {boolean}
  */
-function detectRequired(inputEl, labelText = "") {
-  const text = (labelText || "").toLowerCase();
+function inferRequiredStatus(labelText, inputEl) {
+  const text = (labelText || '').toLowerCase().trim();
 
-  return Boolean(
-    inputEl.required ||
-    inputEl.getAttribute("aria-required") === "true" ||
-    text.includes("(required") ||
-    text.includes("required:") ||
-    /[*]\s*$/.test(labelText || "")   // label ends with *
-  );
+  // 1) If label explicitly says optional, treat as optional no matter what
+  if (text.includes('optional')) return false;
+
+  // 2) Trust native attributes first
+  if (inputEl) {
+    if (inputEl.required === true) return true;
+    const ariaRequired = inputEl.getAttribute?.('aria-required');
+    if (ariaRequired && ariaRequired.toLowerCase() === 'true') return true;
+  }
+
+  // 3) Trailing * in label → required
+  if (/\*\s*$/.test(labelText || '')) return true;
+
+  // 4) "(required)" or "required:" in label
+  if (text.includes('(required') || text.includes('required:')) return true;
+
+  // 5) Default: optional
+  return false;
 }
 
 /**
@@ -217,8 +229,8 @@ export function scanFormFields() {
     // Infer canonical field
     const canonical = inferCanonicalField(labelText, nameAttr, idAttr, placeholder, type);
 
-    // Detect if required
-    const required = detectRequired(el, labelText);
+    // Infer if required (label text first, then element)
+    const required = inferRequiredStatus(labelText, el);
 
     fields.push({
       canonical,

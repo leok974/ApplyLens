@@ -472,11 +472,40 @@ export async function runScanAndSuggestV2() {
     let userProfile = null;
     try {
       userProfile = await fetchProfile();
-      console.log("[v0.3] Loaded user profile:", userProfile ? "yes" : "no");
+      console.log("[v0.3] Loaded user profile from API:", userProfile ? "yes" : "no");
+      if (userProfile) {
+        console.log("[v0.3] API profile links:", userProfile.links);
+      }
 
       // Flatten preferences into profile for easier access
       if (userProfile?.preferences) {
         userProfile = { ...userProfile, ...userProfile.preferences };
+      }
+
+      // Merge local chrome.storage links (from popup settings) into API profile
+      try {
+        const response = await sendExtensionMessage({
+          type: "GET_STORAGE",
+          payload: {
+            keys: ['userProfile'],
+            storageType: 'sync'
+          }
+        });
+
+        console.log("[v0.3] Local storage response:", response);
+
+        const localProfile = response?.data?.userProfile;
+        console.log("[v0.3] Local userProfile:", localProfile);
+
+        if (localProfile?.links) {
+          console.log("[v0.3] ✓ Merging local Professional Links into profile:", localProfile.links);
+          userProfile.links = { ...userProfile.links, ...localProfile.links };
+          console.log("[v0.3] ✓ Final merged links:", userProfile.links);
+        } else {
+          console.log("[v0.3] No local Professional Links found in storage");
+        }
+      } catch (storageErr) {
+        console.warn("[v0.3] Could not load local Professional Links:", storageErr);
       }
     } catch (err) {
       console.warn("[v0.3] Could not fetch profile:", err.message);
