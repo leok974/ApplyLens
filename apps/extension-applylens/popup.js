@@ -480,6 +480,9 @@ async function init() {
   // Load style preferences
   loadStylePrefs();
 
+  // Load auto-fill settings
+  loadAutoFillSettings();
+
   // Load professional links
   loadProfileLinks();
 
@@ -517,6 +520,29 @@ async function loadStylePrefs() {
     console.log('[ApplyLens Popup] Style prefs loaded:', { tone, length });
   } catch (err) {
     console.warn('[ApplyLens Popup] Failed to load style prefs:', err);
+  }
+}
+
+// ---------- Auto-fill Settings ----------
+
+async function loadAutoFillSettings() {
+  try {
+    const stored = await chrome.storage.sync.get(['autoApplyContactLinks']);
+    const autoApplyContactLinks = stored.autoApplyContactLinks !== false; // default true
+
+    const toggleEl = q('#auto-apply-contact-links');
+
+    if (toggleEl) {
+      toggleEl.checked = autoApplyContactLinks;
+      toggleEl.addEventListener('change', async (e) => {
+        await chrome.storage.sync.set({ autoApplyContactLinks: e.target.checked });
+        console.log('[ApplyLens Popup] Saved auto-apply contact links:', e.target.checked);
+      });
+    }
+
+    console.log('[ApplyLens Popup] Auto-fill settings loaded:', { autoApplyContactLinks });
+  } catch (err) {
+    console.warn('[ApplyLens Popup] Failed to load auto-fill settings:', err);
   }
 }
 

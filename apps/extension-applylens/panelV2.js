@@ -9,6 +9,46 @@ import { summarizeLearningProfile } from "./learning/client.js";
 const PANEL_ID = "__applylens_panel_v2__";
 const STYLE_ID = "__applylens_panel_style_v2__";
 
+// Source badge configuration
+const SOURCE_LABELS = {
+  profile: "Profile",
+  learned: "Learned",
+  ai: "AI",
+  scan: "Scan",
+};
+
+const SOURCE_TOOLTIPS = {
+  profile: "Filled from your ApplyLens profile (name, links, location, etc.)",
+  learned: "Filled from previous successful applications on this site",
+  ai: "Filled by AI using your profile + job description",
+  scan: "Field detected by scanner, no suggestion yet",
+};
+
+function createSourceBadge(source) {
+  const type = source || "scan";
+  const label = SOURCE_LABELS[type] || "Scan";
+  const tooltip = SOURCE_TOOLTIPS[type] || "Detected field";
+
+  const badge = document.createElement("span");
+  badge.className =
+    "ml-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium";
+  badge.textContent = label;
+  badge.title = tooltip;
+
+  // Apply color classes based on source
+  if (type === "profile") {
+    badge.classList.add("border-indigo-500/25", "bg-indigo-500/10", "text-indigo-300");
+  } else if (type === "learned") {
+    badge.classList.add("border-emerald-500/25", "bg-emerald-500/10", "text-emerald-300");
+  } else if (type === "ai") {
+    badge.classList.add("border-sky-500/25", "bg-sky-500/10", "text-sky-300");
+  } else {
+    badge.classList.add("border-slate-500/25", "bg-slate-500/10", "text-slate-200");
+  }
+
+  return badge;
+}
+
 // Panel state for selection tracking
 const panelState = {
   selectionByRowId: {}, // rowId -> boolean
@@ -457,40 +497,42 @@ function getReasonChip(field, suggestions) {
  */
 function getRowSourceMeta(field, suggestions) {
   const source = inferRowSource(field, suggestions);
+  const label = SOURCE_LABELS[source] || 'Scan';
+  const tooltip = SOURCE_TOOLTIPS[source] || 'Detected field';
 
   if (source === 'ai') {
     return {
-      label: 'AI',
+      label,
       className:
         'ml-2 inline-flex items-center rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-300',
-      tooltip: 'Generated just now for this job',
+      tooltip,
     };
   }
 
   if (source === 'learned') {
     return {
-      label: 'Learned',
+      label,
       className:
         'ml-2 inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300',
-      tooltip: 'Mapping learned from your previous applications',
+      tooltip,
     };
   }
 
   if (source === 'profile') {
     return {
-      label: 'Profile',
+      label,
       className:
         'ml-2 inline-flex items-center rounded-full border border-indigo-500/25 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-300',
-      tooltip: 'From your ApplyLens profile',
+      tooltip,
     };
   }
 
   // "scan" / unknown
   return {
-    label: 'Scan',
+    label,
     className:
       'ml-2 inline-flex items-center rounded-full border border-slate-500/25 bg-slate-500/10 px-2 py-0.5 text-[10px] font-medium text-slate-200',
-    tooltip: 'Detected from the page but not filled yet',
+    tooltip,
   };
 }
 
@@ -505,6 +547,23 @@ const CORE_CANONICAL = new Set([
   "email",
   "phone",
   "linkedin",
+]);
+
+// Contact/link fields that respect the auto-apply toggle
+const AUTO_CHECK_CANONICALS = new Set([
+  "first_name",
+  "last_name",
+  "email",
+  "phone",
+  "linkedin",
+  "linkedin_url",
+  "github",
+  "github_url",
+  "portfolio",
+  "portfolio_url",
+  "website",
+  "website_url",
+  "location",
 ]);
 
 function isOptionalField(field) {
@@ -583,7 +642,7 @@ function computeAutoApplyScore(row, learningProfile) {
 /**
  * Determine if a row should be auto-selected for apply
  */
-function shouldAutoApply(row, learningProfile, suggestions) {
+function shouldAutoApply(row, learningProfile, suggestions, settings = {}) {
   // Don't auto-apply if there is no suggestion yet
   const suggestionData = suggestions[row.canonical] || suggestions[row.selector];
   const suggestion = typeof suggestionData === 'object' ? suggestionData.value : (suggestionData || "");
@@ -592,12 +651,24 @@ function shouldAutoApply(row, learningProfile, suggestions) {
   }
 
   const source = inferRowSource(row, suggestions);
+  const autoApplyLinks = settings.autoApplyContactLinks !== false; // default true
 
   // 1) Always auto-select required core fields if we have a suggestion
   if (row.required) return true;
 
-  // 2) Strongly prefer anything that came from profile / learning / memory
+  // 2) For profile/learned fields, respect the toggle setting
   if (source === 'profile' || source === 'learned') {
+    // Always auto-select name fields even if toggle is off
+    if (row.canonical === 'first_name' || row.canonical === 'last_name') {
+      return true;
+    }
+
+    // For contact links, only auto-select if toggle is enabled
+    if (AUTO_CHECK_CANONICALS.has(row.canonical)) {
+      return autoApplyLinks;
+    }
+
+    // Other profile/learned fields auto-select by default
     return true;
   }
 
@@ -611,18 +682,19 @@ function shouldAutoApply(row, learningProfile, suggestions) {
 }
 
 /**
- * Initialize selection state based on learning hints
+ * Initialize selection state based on learning hints and settings
  */
-function initializeSelectionState(fields, learningProfile, suggestions) {
+function initializeSelectionState(fields, learningProfile, suggestions, settings = {}) {
   const map = {};
   fields.forEach((row, index) => {
     const rowId = getRowId(row, index);
-    map[rowId] = shouldAutoApply(row, learningProfile, suggestions);
+    map[rowId] = shouldAutoApply(row, learningProfile, suggestions, settings);
   });
   panelState.selectionByRowId = map;
   console.log("[panelV2] Initialized selection state:",
     Object.values(map).filter(Boolean).length,
-    "of", fields.length, "rows pre-selected");
+    "of", fields.length, "rows pre-selected",
+    "(autoApplyContactLinks:", settings.autoApplyContactLinks !== false, ")");
 }
 
 /**
@@ -1344,7 +1416,7 @@ function renderFieldRow(field, index, suggestions, learningProfile) {
 /**
  * Render scanned fields in a cleaner card-based layout
  */
-export function renderFields(panel, fields, suggestions = {}, learningProfile = null) {
+export function renderFields(panel, fields, suggestions = {}, learningProfile = null, settings = {}) {
   const body = panel.querySelector("#al_body");
   body.innerHTML = "";
 
@@ -1396,7 +1468,7 @@ export function renderFields(panel, fields, suggestions = {}, learningProfile = 
   console.log(`[panelV2] Sorted ${sortedFields.length} rows`);
 
   // Initialize selection state
-  initializeSelectionState(sortedFields, learningProfile, suggestions);
+  initializeSelectionState(sortedFields, learningProfile, suggestions, settings);
 
   // Group fields
   const keyFields = sortedFields.filter(f => f.bucket === "key");
@@ -1498,7 +1570,7 @@ export function renderFields(panel, fields, suggestions = {}, learningProfile = 
 /**
  * Render scanned fields in a table (DEPRECATED - keep for compatibility)
  */
-export function renderFieldsOld(panel, fields, suggestions = {}, learningProfile = null) {
+export function renderFieldsOld(panel, fields, suggestions = {}, learningProfile = null, settings = {}) {
   const body = panel.querySelector("#al_body");
   body.innerHTML = "";
 
@@ -1552,7 +1624,7 @@ export function renderFieldsOld(panel, fields, suggestions = {}, learningProfile
   console.log(`[panelV2] Sorted ${sortedFields.length} rows`);
 
   // Initialize selection state based on learning hints
-  initializeSelectionState(sortedFields, learningProfile, suggestions);
+  initializeSelectionState(sortedFields, learningProfile, suggestions, settings);
 
   // Learning summary
   renderLearningSummary(body, learningProfile);

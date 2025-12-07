@@ -257,6 +257,31 @@ async function getStylePrefs() {
 }
 
 /**
+ * Get auto-fill settings from extension storage via message passing
+ */
+async function getAutoFillSettings() {
+  try {
+    const response = await sendExtensionMessage({
+      type: "GET_STORAGE",
+      payload: {
+        keys: ['autoApplyContactLinks'],
+        storageType: 'sync'
+      }
+    });
+
+    if (response && response.data) {
+      const autoApplyContactLinks = response.data.autoApplyContactLinks !== false; // default true
+      return { autoApplyContactLinks };
+    }
+
+    return { autoApplyContactLinks: true };
+  } catch (err) {
+    console.warn('[v0.3] Failed to load auto-fill settings:', err);
+    return { autoApplyContactLinks: true };
+  }
+}
+
+/**
  * Generate suggestions from backend
  */
 async function generateSuggestions(fields, jobContext, userProfile = null) {
@@ -693,8 +718,9 @@ export async function runScanAndSuggestV2() {
     panel.__learningProfile = learningProfile;
     panel.__suggestions = suggestions;  // Store for Apply
 
-    // Step 5: Render fields with memory-based suggestions
-    renderFields(panel, annotatedFields, suggestions, learningProfile);
+    // Step 5: Fetch auto-fill settings and render fields
+    const autoFillSettings = await getAutoFillSettings();
+    renderFields(panel, annotatedFields, suggestions, learningProfile, autoFillSettings);
 
     // Update banner with scan results
     const mappedCount = fields.filter(f => f.canonical).length;
@@ -789,7 +815,8 @@ export async function runScanAndSuggestV2() {
 
         // Re-render with merged suggestions
         panel.__suggestions = mergedSuggestions;  // Update for Apply
-        renderFields(panel, annotatedFields, mergedSuggestions, learningProfile);
+        const autoFillSettings = await getAutoFillSettings();
+        renderFields(panel, annotatedFields, mergedSuggestions, learningProfile, autoFillSettings);
 
         showStatus(panel, "Suggestions generated! Review and edit before applying.", "success");
 
