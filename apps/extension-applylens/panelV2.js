@@ -16,6 +16,182 @@ const panelState = {
 
 let applyButtonRef = null;
 
+// --- Helpers: copy + modal ----------------------------------------
+
+async function copyTextToClipboard(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    console.info("[panelV2] Copied suggestion to clipboard");
+    return true;
+  } catch (err) {
+    console.warn("[panelV2] Failed to copy suggestion:", err);
+    return false;
+  }
+}
+
+function openSuggestionModal(opts) {
+  const { label, suggestion, sourceLabel } = opts;
+
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, {
+    position: "fixed",
+    inset: "0",
+    background: "rgba(15,23,42,0.85)",
+    zIndex: "2147483647",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+
+  const dialog = document.createElement("div");
+  Object.assign(dialog.style, {
+    width: "min(640px, 90vw)",
+    maxHeight: "80vh",
+    background: "#020617",
+    borderRadius: "18px",
+    padding: "20px 24px",
+    boxShadow: "0 24px 80px rgba(15,23,42,0.9)",
+    border: "1px solid rgba(148,163,184,0.5)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    color: "#e5e7eb",
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  });
+
+  const header = document.createElement("div");
+  Object.assign(header.style, {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "8px",
+  });
+
+  const title = document.createElement("div");
+  title.textContent = label;
+  Object.assign(title.style, {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#f9fafb",
+  });
+
+  const meta = document.createElement("div");
+  meta.textContent = sourceLabel || "";
+  Object.assign(meta.style, {
+    fontSize: "11px",
+    color: "#9ca3af",
+  });
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.textContent = "✕";
+  Object.assign(closeBtn.style, {
+    marginLeft: "8px",
+    border: "none",
+    background: "transparent",
+    color: "#9ca3af",
+    cursor: "pointer",
+    fontSize: "14px",
+  });
+
+  closeBtn.addEventListener("click", () => {
+    document.body.removeChild(overlay);
+  });
+
+  header.appendChild(title);
+  header.appendChild(meta);
+  header.appendChild(closeBtn);
+
+  const body = document.createElement("div");
+  body.textContent = suggestion;
+  Object.assign(body.style, {
+    fontSize: "13px",
+    lineHeight: "1.5",
+    color: "#e5e7eb",
+    whiteSpace: "pre-wrap",
+    overflowY: "auto",
+    padding: "8px 0",
+    borderTop: "1px solid rgba(31,41,55,0.9)",
+    borderBottom: "1px solid rgba(31,41,55,0.9)",
+    maxHeight: "55vh",
+  });
+
+  const footer = document.createElement("div");
+  Object.assign(footer.style, {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "8px",
+    marginTop: "4px",
+  });
+
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.textContent = "Copy";
+  Object.assign(copyBtn.style, {
+    borderRadius: "999px",
+    border: "1px solid rgba(148,163,184,0.6)",
+    background: "rgba(15,23,42,0.9)",
+    padding: "6px 10px",
+    fontSize: "12px",
+    color: "#e5e7eb",
+    cursor: "pointer",
+  });
+
+  copyBtn.addEventListener("click", async (ev) => {
+    ev.stopPropagation();
+    const ok = await copyTextToClipboard(suggestion);
+    if (ok) {
+      const prev = copyBtn.textContent;
+      copyBtn.textContent = "Copied";
+      setTimeout(() => { copyBtn.textContent = prev; }, 900);
+    }
+  });
+
+  const closeFooterBtn = document.createElement("button");
+  closeFooterBtn.type = "button";
+  closeFooterBtn.textContent = "Close";
+  Object.assign(closeFooterBtn.style, {
+    borderRadius: "999px",
+    border: "none",
+    background: "rgba(15,23,42,0.9)",
+    padding: "6px 12px",
+    fontSize: "12px",
+    color: "#9ca3af",
+    cursor: "pointer",
+  });
+  closeFooterBtn.addEventListener("click", () => {
+    document.body.removeChild(overlay);
+  });
+
+  footer.appendChild(copyBtn);
+  footer.appendChild(closeFooterBtn);
+
+  dialog.appendChild(header);
+  dialog.appendChild(body);
+  dialog.appendChild(footer);
+
+  overlay.appendChild(dialog);
+
+  overlay.addEventListener("click", (ev) => {
+    if (ev.target === overlay) {
+      document.body.removeChild(overlay);
+    }
+  });
+
+  document.body.appendChild(overlay);
+}
+
 /**
  * Compute a stable row ID for selection tracking
  */
@@ -485,7 +661,8 @@ function injectStyles() {
     top: 16px;
     right: 16px;
     z-index: 2147483646;
-    width: 480px;
+    width: 520px;
+    max-width: 540px;
     max-height: 80vh;
     overflow: hidden;
     background: #0f172a;
@@ -493,9 +670,10 @@ function injectStyles() {
     border: 1px solid #334155;
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0,0,0,.4);
-    font: 13px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
+    font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
     display: flex;
     flex-direction: column;
+    padding: 0;
   }
 
   #${PANEL_ID} header {
@@ -705,15 +883,19 @@ function injectStyles() {
 
   #${PANEL_ID} .suggestion-input {
     width: 100%;
-    padding: 4px 6px;
+    padding: 6px 8px;
     background: #0a0f1c;
     border: 1px solid #334155;
     border-radius: 4px;
     color: #e2e8f0;
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.4;
     font-family: inherit;
     resize: vertical;
-    min-height: 32px;
+    min-height: 36px;
+    white-space: normal;
+    overflow: visible;
+    max-height: 8em;
   }
 
   #${PANEL_ID} .suggestion-input:focus {
@@ -764,6 +946,21 @@ function injectStyles() {
 
   #${PANEL_ID} button.primary:hover:not(:disabled) {
     background: #1d4ed8;
+  }
+
+  #${PANEL_ID} .alp-btn-copy,
+  #${PANEL_ID} .alp-btn-expand {
+    transition: all 0.15s;
+  }
+
+  #${PANEL_ID} .alp-btn-copy:hover {
+    background: rgba(15,23,42,1) !important;
+    border-color: rgba(148,163,184,0.7) !important;
+  }
+
+  #${PANEL_ID} .alp-btn-expand:hover {
+    background: rgba(30,41,55,1) !important;
+    color: #cbd5e1 !important;
   }
 
   #${PANEL_ID} button.secondary {
@@ -1058,14 +1255,45 @@ function renderFieldRow(field, index, suggestions, learningProfile) {
     ? `<div class="alp-field-value" title="${field.value}">${field.value}</div>`
     : `<div class="alp-field-value-empty">— empty —</div>`;
 
-  // Suggestion value
+  // Suggestion value with actions
   let suggestionHtml;
   if (!hasSuggestions) {
     suggestionHtml = `<div class="alp-field-value-empty">Pending</div>`;
   } else if (!suggestionValue || suggestionValue.trim() === "") {
     suggestionHtml = `<div class="alp-field-value-empty">— none —</div>`;
   } else {
-    suggestionHtml = `<div class="alp-field-suggestion" title="${suggestionValue}">${suggestionValue}</div>`;
+    // Truncate for display but keep full value in data attribute
+    const displayValue = suggestionValue.length > 60
+      ? suggestionValue.slice(0, 60) + '...'
+      : suggestionValue;
+
+    suggestionHtml = `
+      <div class="alp-field-suggestion-wrapper" style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
+        <div class="alp-field-suggestion"
+             title="${suggestionValue.replace(/"/g, '&quot;')}"
+             style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${displayValue}
+        </div>
+        <div class="alp-field-actions" style="display:flex;gap:4px;flex-shrink:0;">
+          <button type="button"
+                  class="alp-btn-copy"
+                  data-suggestion="${suggestionValue.replace(/"/g, '&quot;')}"
+                  data-row-id="${rowId}"
+                  style="border-radius:999px;border:1px solid rgba(148,163,184,0.4);background:rgba(15,23,42,0.8);padding:2px 8px;fontSize:10px;color:#e5e7eb;cursor:pointer;">
+            Copy
+          </button>
+          <button type="button"
+                  class="alp-btn-expand"
+                  data-suggestion="${suggestionValue.replace(/"/g, '&quot;')}"
+                  data-label="${displayLabel.replace(/"/g, '&quot;')}"
+                  data-source="${sourceMeta.label}"
+                  data-row-id="${rowId}"
+                  style="border-radius:999px;border:none;background:rgba(15,23,42,0.9);padding:2px 8px;fontSize:10px;color:#9ca3af;cursor:pointer;">
+            Expand
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   // Status
@@ -1224,6 +1452,42 @@ export function renderFields(panel, fields, suggestions = {}, learningProfile = 
       const rowId = cb.dataset.rowId;
       panelState.selectionByRowId[rowId] = cb.checked;
       updateApplyButtonState();
+    });
+  });
+
+  // Wire up Copy button events
+  const copyButtons = body.querySelectorAll('.alp-btn-copy');
+  copyButtons.forEach(btn => {
+    btn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const suggestionValue = btn.dataset.suggestion;
+      if (!suggestionValue) return;
+
+      const ok = await copyTextToClipboard(suggestionValue);
+      if (ok) {
+        const prev = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = prev; }, 900);
+      }
+    });
+  });
+
+  // Wire up Expand button events
+  const expandButtons = body.querySelectorAll('.alp-btn-expand');
+  expandButtons.forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const suggestionValue = btn.dataset.suggestion;
+      const label = btn.dataset.label;
+      const sourceLabel = btn.dataset.source;
+
+      if (!suggestionValue) return;
+
+      openSuggestionModal({
+        label: label || "Field",
+        suggestion: suggestionValue,
+        sourceLabel: sourceLabel || "Suggestion",
+      });
     });
   });
 
@@ -1523,40 +1787,521 @@ export async function generateSuggestions(fields, jobContext) {
 }
 
 /**
+ * Find phone widget elements (split country + number)
+ * @param {HTMLElement} anchor - Starting element (wrapper or input)
+ * @returns {{phoneInput: HTMLElement|null, countrySelect: HTMLElement|null}}
+ */
+function findPhoneElements(anchor) {
+  if (!anchor) return { phoneInput: null, countrySelect: null };
+
+  console.log('[panelV2] findPhoneElements starting from:', {
+    tag: anchor.tagName,
+    id: anchor.id,
+    type: anchor.type,
+    className: anchor.className
+  });
+
+  // If anchor itself is the phone input, use it directly
+  if (anchor.tagName === 'INPUT' && anchor.type === 'tel') {
+    console.log('[panelV2] Anchor itself is tel input!');
+    return { phoneInput: anchor, countrySelect: null };
+  }
+
+  // Try nearest "phone" wrapper
+  const wrapper =
+    anchor.closest('div[class*="phone"], div[data-testid*="phone"], .phone-number-input') ||
+    anchor.closest('div, fieldset, section') ||
+    anchor;
+
+  console.log('[panelV2] Using wrapper:', {
+    tag: wrapper.tagName,
+    id: wrapper.id,
+    className: wrapper.className
+  });
+
+  const phoneInput =
+    wrapper.querySelector('input[type="tel"]') ||
+    wrapper.querySelector('input[name*="phone"], input[aria-label*="Phone"]') ||
+    (anchor.tagName === 'INPUT' && anchor.type === 'tel' ? anchor : null);
+
+  const countrySelect =
+    wrapper.querySelector('select') ||
+    wrapper.querySelector('select[name*="country"], select[aria-label*="Country"]');
+
+  console.log('[panelV2] findPhoneElements result:', {
+    phoneInput: phoneInput ? `${phoneInput.tagName}#${phoneInput.id}` : 'null',
+    countrySelect: countrySelect ? `${countrySelect.tagName}` : 'null'
+  });
+
+  return { phoneInput, countrySelect };
+}
+
+/**
+ * Wait for phone country widget to initialize, then auto-select country
+ * Retries multiple times to handle async intlTelInput initialization
+ * @param {HTMLElement} widgetRoot - Phone widget container or input
+ * @param {string} countryCode - ISO country code (default: "us")
+ * @param {number} attempt - Current attempt number (default: 1)
+ */
+function waitForPhoneCountryWidget(widgetRoot, countryCode = "us", attempt = 1) {
+  const MAX_ATTEMPTS = 10;      // ~10 * 300ms = 3 seconds max
+  const DELAY_MS = 300;
+
+  if (!widgetRoot) {
+    console.warn("[panelV2] No widgetRoot passed to waitForPhoneCountryWidget");
+    return;
+  }
+
+  // Try once using existing logic
+  const ok = autoSelectPhoneCountry(widgetRoot, countryCode);
+  if (ok) {
+    console.log(
+      "[panelV2] ✓ Phone country auto-selected on attempt",
+      attempt,
+      "for",
+      countryCode
+    );
+    return;
+  }
+
+  if (attempt >= MAX_ATTEMPTS) {
+    console.warn(
+      "[panelV2] Phone country auto-select timed out after",
+      attempt,
+      "attempts for",
+      countryCode
+    );
+    return;
+  }
+
+  // Retry later – give intlTelInput time to initialize
+  setTimeout(() => {
+    waitForPhoneCountryWidget(widgetRoot, countryCode, attempt + 1);
+  }, DELAY_MS);
+}
+
+/**
+ * Auto-select phone country in dropdown (for intl phone widgets)
+ * @param {HTMLElement} phoneInput - The phone input element (may have intlTelInput instance)
+ * @param {string} countryCode - ISO country code (default: "us")
+ * @returns {boolean} - True if country was selected
+ */
+function autoSelectPhoneCountry(phoneInput, countryCode = "us") {
+  if (!phoneInput) return false;
+
+  try {
+    // Method 1: Check for intlTelInput via global object
+    if (window.intlTelInputGlobals && typeof window.intlTelInputGlobals.getInstance === 'function') {
+      const itiInstance = window.intlTelInputGlobals.getInstance(phoneInput);
+
+      if (itiInstance && typeof itiInstance.setCountry === 'function') {
+        console.log("[panelV2] Found intlTelInput instance via globals, setting country to:", countryCode);
+        itiInstance.setCountry(countryCode.toLowerCase());
+        console.log("[panelV2] ✓ Auto-selected phone country via intlTelInput:", countryCode);
+        return true;
+      }
+    }
+
+    // Method 2: Check for jQuery intlTelInput plugin
+    if (window.$ && phoneInput.id) {
+      const $input = window.$('#' + phoneInput.id);
+      if ($input.length && typeof $input.intlTelInput === 'function') {
+        try {
+          $input.intlTelInput("setCountry", countryCode.toLowerCase());
+          console.log("[panelV2] ✓ Auto-selected phone country via jQuery intlTelInput:", countryCode);
+          return true;
+        } catch (e) {
+          console.warn("[panelV2] jQuery intlTelInput setCountry failed:", e.message);
+        }
+      }
+    }
+
+    // Method 3: Try clicking the flag dropdown and selecting country
+    // Search in multiple parent levels for intlTelInput container
+    let flagContainer = null;
+    let currentElement = phoneInput;
+    for (let i = 0; i < 5; i++) {
+      if (!currentElement) break;
+      flagContainer = currentElement.querySelector('.iti__flag-container, .iti__selected-flag');
+      if (flagContainer) break;
+      currentElement = currentElement.parentElement;
+    }
+
+    if (flagContainer) {
+      console.log("[panelV2] Found intlTelInput flag container, attempting manual country selection");
+
+      // Click to open dropdown
+      flagContainer.click();
+
+      // Wait a bit for dropdown to open, then select US
+      setTimeout(() => {
+        const countryList = document.querySelector('.iti__country-list');
+        if (countryList) {
+          const usOption = countryList.querySelector('[data-country-code="us"], .iti__united-states, [data-dial-code="1"]');
+          if (usOption) {
+            usOption.click();
+            console.log("[panelV2] ✓ Auto-selected phone country via flag dropdown click");
+          } else {
+            console.warn("[panelV2] Found country list but no US option");
+          }
+        } else {
+          console.warn("[panelV2] Clicked flag but no country list appeared");
+        }
+      }, 100);
+
+      return true; // Optimistically return true
+    } else {
+      console.log("[panelV2] No intlTelInput flag container found (searched 5 parent levels)");
+    }
+
+    // Fallback: Try to find a native <select> in parent wrapper
+    const wrapper = phoneInput.closest('div, fieldset') || phoneInput.parentElement;
+    if (!wrapper) {
+      console.warn("[panelV2] No wrapper found for phone country select");
+      return false;
+    }
+
+    const select =
+      wrapper.querySelector("select") ||
+      wrapper.querySelector('select[name*="country"], select[aria-label*="Country"]');
+
+    if (!select) {
+      console.warn("[panelV2] No intlTelInput instance and no <select> found");
+      return false;
+    }
+
+    const target = String(countryCode || "us").toLowerCase().trim();
+    const candidates = [
+      target,
+      "united states",
+      "united states of america",
+      "usa",
+      "us",
+      "+1",
+      "1",
+    ];
+
+    let matched = false;
+
+    for (const opt of select.options) {
+      const text = (opt.textContent || "").toLowerCase().trim();
+      const val = String(opt.value || "").toLowerCase().trim();
+
+      if (candidates.some((c) => text === c || val === c || text.includes(c))) {
+        select.value = opt.value;
+        select.dispatchEvent(
+          new Event("change", { bubbles: true, cancelable: true })
+        );
+        matched = true;
+        console.log("[panelV2] Auto-selected phone country option:", opt.textContent);
+        break;
+      }
+    }
+
+    if (!matched) {
+      console.warn("[panelV2] Could not match phone country option for", countryCode);
+    }
+
+    return matched;
+  } catch (err) {
+    console.error("[panelV2] Error setting phone country:", err);
+    return false;
+  }
+}
+
+/**
+ * Set React input value (bypasses React property descriptor)
+ * @param {HTMLInputElement|HTMLTextAreaElement} element
+ * @param {string} value
+ */
+function setReactInputValue(element, value) {
+  if (!element) return false;
+
+  try {
+    console.log('[panelV2] setReactInputValue - BEFORE:', {
+      element: element.tagName,
+      id: element.id,
+      currentValue: element.value,
+      newValue: value
+    });
+
+    // Use React's internal setter if available (for React-controlled inputs)
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value"
+    )?.set;
+    const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      "value"
+    )?.set;
+
+    const setter = element.tagName === "TEXTAREA" ? nativeTextAreaValueSetter : nativeInputValueSetter;
+
+    if (setter) {
+      setter.call(element, value);
+      console.log('[panelV2] Used native setter');
+    } else {
+      element.value = value;
+      console.log('[panelV2] Used direct assignment');
+    }
+
+    console.log('[panelV2] setReactInputValue - AFTER setter:', {
+      valueNow: element.value,
+      valueMatches: element.value === value
+    });
+
+    // Dispatch React-compatible events
+    element.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
+
+    console.log('[panelV2] setReactInputValue - Dispatched events');
+
+    // PERSISTENCE STRATEGY: Re-apply value if React/plugins clear it
+    setTimeout(() => {
+      if (element.value !== value) {
+        console.log('[panelV2] Value was cleared by React/plugin, re-applying:', {
+          id: element.id,
+          expected: value,
+          actual: element.value
+        });
+
+        // Re-apply using setter
+        if (setter) {
+          setter.call(element, value);
+        } else {
+          element.value = value;
+        }
+
+        // Re-dispatch events
+        element.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
+
+        // Final persistence attempt
+        setTimeout(() => {
+          if (element.value !== value) {
+            console.warn('[panelV2] Value still not persisting for:', element.id);
+            if (setter) {
+              setter.call(element, value);
+            }
+          } else {
+            console.log('[panelV2] ✓ Value persisted after re-apply:', element.id);
+          }
+        }, 50);
+      } else {
+        console.log('[panelV2] ✓ Value persisted naturally:', element.id);
+      }
+    }, 150);
+
+    // Focus WITHOUT triggering other extension conflicts
+    setTimeout(() => {
+      try {
+        element.focus();
+        element.blur();
+      } catch (e) {
+        // Silently ignore focus errors from other extensions
+      }
+    }, 0);
+
+    return true;
+  } catch (error) {
+    console.warn('[panelV2] Error setting React input value:', error.message);
+    return false;
+  }
+}
+
+/**
  * Apply suggestions to page
  */
 export function applySuggestionsToPage(panel) {
   const fields = panel.__fields || [];
-  const inputs = panel.querySelectorAll(".suggestion-input");
+
+  // Collect checked rows with suggestions
+  const toApply = [];
+  const fieldsWithoutSuggestions = [];
+
+  for (const field of fields) {
+    // Check if checkbox is checked
+    const checkbox = panel.querySelector(`.field-toggle[data-field="${CSS.escape(field.selector)}"]`);
+    const isChecked = checkbox && checkbox.checked;
+
+    // Get suggestion value (from either canonical or selector key)
+    const suggestionData = panel.__suggestions?.[field.canonical] || panel.__suggestions?.[field.selector];
+    const suggestionValue = typeof suggestionData === 'object' ? suggestionData.value : (suggestionData || "");
+
+    if (!suggestionValue || !suggestionValue.trim()) {
+      if (isChecked) {
+        fieldsWithoutSuggestions.push({
+          canonical: field.canonical,
+          selector: field.selector,
+          label: field.labelText
+        });
+      }
+      continue;
+    }
+
+    if (!isChecked) {
+      continue; // User unchecked it
+    }
+
+    toApply.push({
+      selector: field.selector,
+      value: suggestionValue,
+      canonical: field.canonical,
+      element: field.element
+    });
+  }
+
+  if (fieldsWithoutSuggestions.length > 0) {
+    console.log('[panelV2] Fields checked but no suggestion:', fieldsWithoutSuggestions);
+  }
+
+  console.log(`[panelV2] Applying ${toApply.length} of ${fields.length} fields`);
 
   let appliedCount = 0;
+  let skippedCount = 0;
 
-  inputs.forEach(input => {
-    const selector = input.dataset.field;
-    const value = input.value.trim();
+  for (const item of toApply) {
+    console.log('[panelV2] Applying field:', {
+      selector: item.selector,
+      canonical: item.canonical,
+      hasValue: !!item.value,
+      valueLength: item.value?.length || 0,
+      hasElement: !!item.element
+    });
 
-    if (!value) return; // Skip empty suggestions
+    // Use the element reference from scan, or fallback to querySelector
+    const anchor = item.element || document.querySelector(item.selector);
 
-    // v0.3: Check if field is enabled via checkbox
-    const checkbox = panel.querySelector(`.field-toggle[data-field="${CSS.escape(selector)}"]`);
-    if (checkbox && !checkbox.checked) return; // Skip disabled fields
+    if (!anchor) {
+      console.warn('[panelV2] No DOM element for field:', item.selector, item.canonical);
+      skippedCount++;
+      continue;
+    }
 
-    const element = document.querySelector(selector);
-    if (!element) return;
+    try {
+      // 🔹 Special case: split phone widget (country + number)
+      if (item.canonical === "phone") {
+        console.log('[panelV2] Phone field detected, finding phone input...', {
+          anchor: anchor.tagName,
+          anchorId: anchor.id,
+          anchorType: anchor.type
+        });
 
-    // Set value
-    element.value = value;
-    element.focus();
+        const { phoneInput, countrySelect } = findPhoneElements(anchor);
 
-    // Dispatch events to trigger any listeners (React, etc.)
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-    element.dispatchEvent(new Event("blur", { bubbles: true }));
+        console.log('[panelV2] Phone input search result:', {
+          found: !!phoneInput,
+          element: phoneInput?.tagName,
+          elementId: phoneInput?.id,
+          elementType: phoneInput?.type,
+          hasCountrySelect: !!countrySelect
+        });
 
-    appliedCount++;
-  });
+        if (!phoneInput) {
+          console.warn('[panelV2] No phone input found for selector', item.selector);
+          skippedCount++;
+          continue;
+        }
 
-  console.log(`[panelV2] Applied ${appliedCount} suggestions to page`);
+        if (setReactInputValue(phoneInput, item.value)) {
+          appliedCount++;
+          console.log('[panelV2] ✓ Applied phone value to input:', item.value);
+
+          // 🔁 NEW: Retry country selection over ~3s while intlTelInput initializes
+          waitForPhoneCountryWidget(phoneInput.closest('div') || phoneInput.parentElement || phoneInput, "us");
+        } else {
+          skippedCount++;
+        }
+        continue; // skip generic logic
+      }
+
+      // 🔹 Special case: country dropdown (may be part of phone widget or standalone)
+      if (item.canonical === "country") {
+        // First check if this is a standalone country select or part of phone widget
+        let countryElement = null;
+
+        // Check if anchor is a standard SELECT element
+        if (anchor.tagName === 'SELECT') {
+          countryElement = anchor;
+        }
+        // Check if it's a React/custom select component (INPUT with select class)
+        else if (anchor.tagName === 'INPUT' &&
+                 (anchor.className.includes('select') || anchor.getAttribute('role') === 'combobox')) {
+          // For custom select components, just fill the input directly
+          if (setReactInputValue(anchor, item.value)) {
+            appliedCount++;
+            console.log('[panelV2] ✓ Applied country value to custom select input:', item.value);
+          } else {
+            skippedCount++;
+          }
+          continue;
+        }
+        // Fallback: look for select in phone widget
+        else {
+          const { countrySelect: phoneWidgetCountry } = findPhoneElements(anchor);
+          countryElement = phoneWidgetCountry;
+        }
+
+        if (!countryElement) {
+          console.warn('[panelV2] No country select found for selector', item.selector);
+          skippedCount++;
+          continue;
+        }
+
+        // Standard SELECT handling
+        // Try to match by option text or value (very forgiving)
+        const target = String(item.value || "").toLowerCase().trim();
+        let matched = false;
+
+        for (const opt of countryElement.options) {
+          const text = opt.textContent.toLowerCase().trim();
+          const val = String(opt.value || "").toLowerCase().trim();
+
+          if (text === target || val === target || text.includes(target) || val.includes(target)) {
+            countryElement.value = opt.value;
+            countryElement.dispatchEvent(
+              new Event("change", { bubbles: true, cancelable: true })
+            );
+            matched = true;
+            appliedCount++;
+            console.log('[panelV2] Applied country value:', opt.value);
+            break;
+          }
+        }
+
+        if (!matched) {
+          console.warn('[panelV2] Could not match country option for', item.value);
+          skippedCount++;
+        }
+        continue; // skip generic logic
+      }
+
+      // 🔹 Fallback: generic fields (name, email, Q&A, etc.)
+      const element = anchor;
+
+      if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+        if (setReactInputValue(element, item.value)) {
+          appliedCount++;
+        } else {
+          skippedCount++;
+        }
+      } else if (element.tagName === "SELECT") {
+        element.value = item.value;
+        element.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
+        appliedCount++;
+      } else {
+        // Fallback: try textContent
+        element.textContent = item.value;
+        element.dispatchEvent?.(new Event("change", { bubbles: true, cancelable: true }));
+        appliedCount++;
+      }
+    } catch (error) {
+      console.warn('[panelV2] Error applying field (likely extension conflict):', item.selector, error.message);
+      skippedCount++;
+    }
+  }
+
+  console.log(`[panelV2] Applied ${appliedCount} suggestions to page (${skippedCount} skipped, no element found)`);
 
   // Show success banner
   if (appliedCount > 0) {

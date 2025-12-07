@@ -179,6 +179,16 @@ function normalizeAnswerText(label, raw) {
 function buildLLMProfileContext(profile) {
   if (!profile) return null;
 
+  // Convert work_setup array to string if needed
+  let workSetup = profile.work_setup;
+  if (Array.isArray(workSetup)) {
+    workSetup = workSetup.join(', ');
+  }
+
+  // Get contact and links objects
+  const contact = profile.contact || {};
+  const links = profile.links || {};
+
   return {
     name: profile.name || null,
     headline: profile.headline || null,
@@ -186,9 +196,14 @@ function buildLLMProfileContext(profile) {
     target_roles: profile.target_roles || [],
     tech_stack: profile.tech_stack || [],
     domains: profile.domains || [],  // from flattened preferences
-    work_setup: profile.work_setup || null,  // from flattened preferences
+    work_setup: workSetup || null,  // from flattened preferences (converted to string)
     locations: profile.locations || [],
     note: profile.note || null,  // from flattened preferences
+    // Include social/professional links for AI to use (not PII)
+    linkedin: links.linkedin || profile.linkedin || profile.linkedinUrl || null,
+    github: links.github || profile.github || profile.githubUrl || null,
+    portfolio: links.portfolio || profile.portfolio || profile.portfolioUrl || null,
+    website: links.website || profile.website || profile.websiteUrl || null,
   };
 }
 
@@ -230,6 +245,7 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
       const skillCount = (profileContext.tech_stack || []).length;
       const roleCount = (profileContext.target_roles || []).length;
       console.log(`[v0.3] Sending profile context to LLM: ${profileContext.name}, ${profileContext.experience_years} years, ${skillCount} skills, ${roleCount} roles`);
+      console.log(`[v0.3] Profile links: LinkedIn=${profileContext.linkedin}, GitHub=${profileContext.github}, Portfolio=${profileContext.portfolio}`);
     } else {
       console.log("[v0.3] No profile context available for LLM");
     }
@@ -246,7 +262,7 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
         company: jobContext.company,
       },
       fields: fields.map(f => ({
-        field_id: f.canonical,
+        field_id: f.canonical || f.selector,  // Use selector as fallback for non-canonical fields
         label: f.labelText,
         type: f.type,
       })),
@@ -257,11 +273,18 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
       requestBody.profile_context = profileContext;
     }
 
-    // Only send style_prefs if backend supports it (v0.8.8+)
-    // For now, comment out to avoid 422 errors until backend is updated
-    // if (stylePrefs) {
-    //   requestBody.style_prefs = stylePrefs;
-    // }
+    // Backend supports style_prefs as of v0.8.8-style-prefs
+    if (stylePrefs) {
+      requestBody.style_prefs = stylePrefs;
+    }
+
+    console.log('[v0.3] Sending request to API:', {
+      url: '/api/extension/generate-form-answers',
+      fieldCount: requestBody.fields.length,
+      hasProfileContext: !!requestBody.profile_context,
+      hasStylePrefs: !!requestBody.style_prefs,
+      stylePrefs: requestBody.style_prefs
+    });
 
     const response = await sendExtensionMessage({
       type: "API_PROXY",
@@ -279,6 +302,14 @@ async function generateSuggestions(fields, jobContext, userProfile = null) {
         error: response.error,
         data: response.data
       });
+
+      // Log validation details if available
+      if (response.data?.detail) {
+        console.error('[v0.3] Validation error details:', JSON.stringify(response.data.detail, null, 2));
+      }
+
+      // Log the full request that failed
+      console.error('[v0.3] Failed request body:', JSON.stringify(requestBody, null, 2));
 
       if (response.status === 401 || response.status === 403) {
         throw new Error("NOT_LOGGED_IN");
@@ -464,27 +495,41 @@ export async function runScanAndSuggestV2() {
     // Identity/profile fields that should NEVER go to LLM
     const PROFILE_CANONICAL = new Set([
       "first_name", "last_name", "email", "phone", "linkedin",
-      "github", "portfolio", "website", "location", "headline",
-      "years_experience"
+      "github", "portfolio", "website", "location", "country", "headline",
+      "years_experience", "linkedin_url", "github_url", "portfolio_url"
     ]);
 
     // Map canonical names to profile keys and handle special cases
     const getProfileValue = (canonical, profile) => {
       if (!profile) return null;
 
+      // Get contact and links objects (with fallbacks)
+      const contact = profile.contact || {};
+      const links = profile.links || {};
+
       // Handle name splitting
       if (canonical === 'first_name' && profile.name) {
-        const parts = profile.name.split(' ');
-        return parts[0];
+        const parts = profile.name.trim().split(/\s+/);
+        return parts[0] || null;
       }
       if (canonical === 'last_name' && profile.name) {
-        const parts = profile.name.split(' ');
-        return parts.slice(1).join(' ') || parts[0]; // fallback to first name if only one word
+        const parts = profile.name.trim().split(/\s+/);
+        return parts.length > 1 ? parts.slice(1).join(' ') : null;
       }
 
-      // Handle location (convert array to string)
-      if (canonical === 'location' && profile.locations && profile.locations.length > 0) {
-        return profile.locations[0]; // Use first location
+      // Handle location (convert array to string or use contact fields)
+      if (canonical === 'location') {
+        const locCity = contact.location_city;
+        const locCountry = contact.location_country;
+        const locStr =
+          profile.location ||
+          (locCity && locCountry ? `${locCity}, ${locCountry}` : locCity || locCountry);
+        return locStr || (profile.locations && profile.locations.length > 0 ? profile.locations[0] : null);
+      }
+
+      // Handle country
+      if (canonical === 'country') {
+        return contact.location_country || null;
       }
 
       // Handle years of experience (convert number to string)
@@ -492,21 +537,35 @@ export async function runScanAndSuggestV2() {
         return String(profile.experience_years);
       }
 
-      // Direct mappings
+      // Direct mappings with new contact/links structure
       const directMap = {
         headline: profile.headline,
-        email: profile.email,
-        phone: profile.phone,
-        linkedin: profile.linkedin || profile.linkedinUrl,
-        linkedin_url: profile.linkedin || profile.linkedinUrl,
-        github: profile.github || profile.githubUrl,
-        github_url: profile.github || profile.githubUrl,
-        portfolio: profile.portfolio || profile.portfolioUrl,
-        portfolio_url: profile.portfolio || profile.portfolioUrl,
-        website: profile.website || profile.websiteUrl,
+        // Contact info (prioritize nested contact object)
+        email: contact.email || profile.email,
+        phone: contact.phone || profile.phone,
+        // Links (prioritize nested links object, extract username from URL if needed)
+        linkedin: links.linkedin || profile.linkedin || profile.linkedinUrl,
+        linkedin_url: links.linkedin || profile.linkedin || profile.linkedinUrl,
+        github: links.github || profile.github || profile.githubUrl,
+        github_url: links.github || profile.github || profile.githubUrl,
+        portfolio: links.portfolio || profile.portfolio || profile.portfolioUrl,
+        portfolio_url: links.portfolio || profile.portfolio || profile.portfolioUrl,
+        website: links.website || profile.website || profile.websiteUrl,
       };
 
-      return directMap[canonical] || null;
+      let value = directMap[canonical];
+
+      // If linkedin field and value is a full URL, check if we should extract username
+      if (canonical === 'linkedin' && value && value.includes('linkedin.com/in/')) {
+        // Keep full URL - some forms want the full URL, some want just username
+        // The form scanner should have already determined which format is needed
+        // For now, always use full URL format
+        if (!value.startsWith('http')) {
+          value = 'https://' + value;
+        }
+      }
+
+      return value || null;
     };
 
     const annotatedFields = fields.map(field => {
@@ -555,6 +614,7 @@ export async function runScanAndSuggestV2() {
     panel.__suggestedMap = suggestedMap;
     panel.__fields = annotatedFields;
     panel.__learningProfile = learningProfile;
+    panel.__suggestions = suggestions;  // Store for Apply
 
     // Step 5: Render fields with memory-based suggestions
     renderFields(panel, annotatedFields, suggestions, learningProfile);
@@ -607,13 +667,19 @@ export async function runScanAndSuggestV2() {
         // Only send real "question" fields to the LLM
         const fieldsNeedingAI = annotatedFields.filter((field) => {
           const c = field.canonical;
-          if (!c) return false;
-          if (NON_AI_CANONICAL.has(c)) return false;          // profile/identity → local only
-          if (suggestions[c]?.source === "profile") return false;  // already have from profile
-          if (suggestions[c]?.source === "memory") return false;   // already have from memory
-          // Always ask AI for cover_letter even if we have memory (user might want fresh one)
-          if (c === "cover_letter") return true;
-          return true;                                        // ask AI for the rest
+
+          // Include non-canonical fields (questions without standard mappings)
+          if (!c) return true;
+
+          // Exclude profile/identity fields
+          if (NON_AI_CANONICAL.has(c)) return false;
+
+          // Skip if we already have from profile/memory, EXCEPT for cover_letter
+          if (c === "cover_letter") return true;  // Always allow regenerating
+          if (suggestions[c]?.source === "profile") return false;
+          if (suggestions[c]?.source === "memory") return false;
+
+          return true;  // Include all other canonical fields
         });
 
         console.log(
@@ -626,22 +692,26 @@ export async function runScanAndSuggestV2() {
         // Merge: memory takes precedence, AI fills gaps
         const mergedSuggestions = { ...suggestions }; // Start with memory
 
-        for (const [canonical, value] of Object.entries(aiSuggestions)) {
-          if (!mergedSuggestions[canonical]) {
-            mergedSuggestions[canonical] = {
+        for (const [fieldId, value] of Object.entries(aiSuggestions)) {
+          if (!mergedSuggestions[fieldId]) {
+            mergedSuggestions[fieldId] = {
               value,
               source: "ai",
             };
 
             // Learning v1: Track AI-sourced mappings
-            const field = annotatedFields.find(f => f.canonical === canonical);
+            // fieldId can be either canonical or selector
+            const field = annotatedFields.find(f =>
+              f.canonical === fieldId || f.selector === fieldId
+            );
             if (field) {
-              panel.__suggestedMap[canonical] = field.selector;
+              panel.__suggestedMap[fieldId] = field.selector;
             }
           }
         }
 
         // Re-render with merged suggestions
+        panel.__suggestions = mergedSuggestions;  // Update for Apply
         renderFields(panel, annotatedFields, mergedSuggestions, learningProfile);
 
         showStatus(panel, "Suggestions generated! Review and edit before applying.", "success");

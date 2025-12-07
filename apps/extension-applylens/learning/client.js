@@ -153,14 +153,15 @@ export async function flushLearningEvents() {
     });
 
     if (!res.ok) {
-      console.warn("[LearningClient] Sync failed:", res.status);
-      // Re-queue events for retry
-      eventQueue.push(...batch);
+      console.warn("[LearningClient] Sync failed:", res.status, res.error || "");
+      // Don't re-queue - fire and forget for now to prevent infinite retries
+      return;
     }
+
+    console.log("[LearningClient] Synced", batch.length, "events successfully");
   } catch (err) {
     console.warn("[LearningClient] Sync error:", err);
-    // Re-queue events for retry
-    eventQueue.push(...batch);
+    // Don't re-queue - fire and forget to prevent crashes
   }
 }
 

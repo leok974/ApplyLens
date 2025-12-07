@@ -2,7 +2,7 @@
 // Single source of truth for field detection and mapping
 
 /**
- * @typedef {"full_name"|"first_name"|"last_name"|"email"|"phone"|"location"|"linkedin"|"github"|"portfolio"|"website"|"headline"|"summary"|"cover_letter"|"salary_expectation"|"visa_status"|"relocation"|"remote_preference"|"years_experience"|"work_authorization"|"notice_period"|"pronouns"|"diversity_gender"|"diversity_race"|"diversity_veteran"|"diversity_disability"|"referral_source"|"how_hear"} CanonicalField
+ * @typedef {"full_name"|"first_name"|"last_name"|"email"|"phone"|"location"|"country"|"linkedin"|"github"|"portfolio"|"website"|"headline"|"summary"|"cover_letter"|"salary_expectation"|"visa_status"|"relocation"|"remote_preference"|"years_experience"|"work_authorization"|"notice_period"|"pronouns"|"diversity_gender"|"diversity_race"|"diversity_veteran"|"diversity_disability"|"referral_source"|"how_hear"} CanonicalField
  */
 
 /**
@@ -74,6 +74,11 @@ export function inferCanonicalField(labelText, nameAttr, idAttr, placeholder, in
   // Location
   if (/\b(location|city|address|current.?location|where.*located)\b/.test(combined)) {
     return "location";
+  }
+
+  // Country (specific - dropdowns, structured fields)
+  if (/\b(country|nation|nationality|country.*region)\b/.test(combined)) {
+    return "country";
   }
 
   // Cover letter / motivation
@@ -155,7 +160,7 @@ export function isProfileField(canonical) {
   if (!canonical) return false;
   const profileFields = [
     "full_name", "first_name", "last_name", "email", "phone",
-    "location", "linkedin", "github", "portfolio", "website",
+    "location", "country", "linkedin", "github", "portfolio", "website",
     "headline", "summary"
   ];
   return profileFields.includes(canonical);

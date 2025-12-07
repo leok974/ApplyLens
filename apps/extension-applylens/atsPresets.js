@@ -35,24 +35,53 @@ function patchLeverFields(fields) {
  */
 function patchGreenhouseFields(fields) {
   // Greenhouse uses IDs like "first_name", "last_name", "email", "phone"
-  // Very clean structure - our generic heuristics should work well
-  // But we can add special cases if needed
-  return fields.map(field => {
-    const { idAttr, nameAttr, labelText, canonical } = field;
+  // BUT: Phone is a split widget (country dropdown + tel input)
 
-    // Greenhouse sometimes has "Cover Letter" as a section header
-    // The actual field might be id="cover_letter" or similar
+  let phoneFieldFound = false;
+
+  // First, ensure the phone input is correctly mapped
+  fields = fields.map(field => {
+    const { idAttr, nameAttr, labelText, canonical, selector, type } = field;
+
+    // Cover Letter handling
     if (!canonical && (idAttr === "cover_letter" || nameAttr === "cover_letter")) {
       return { ...field, canonical: "cover_letter" };
     }
 
     // Resume upload field (file input) - mark as special
-    if (field.type === "file" && /resume|cv/.test(labelText.toLowerCase())) {
+    if (type === "file" && /resume|cv/.test(labelText.toLowerCase())) {
       return { ...field, canonical: null }; // Don't autofill file inputs
+    }
+
+    // Phone input: Ensure we're targeting the actual tel input, not wrapper
+    if (type === "tel" || idAttr === "phone" || nameAttr === "phone") {
+      phoneFieldFound = true;
+      console.log('[ATS] Greenhouse phone field detected:', { selector, type, idAttr, nameAttr, canonical });
+      // If the scanner picked up a phone field, ensure it's canonical
+      if (!canonical || canonical !== "phone") {
+        return { ...field, canonical: "phone" };
+      }
+    }
+
+    // Country code dropdown (part of phone widget)
+    if (type === "select" && (idAttr === "country" || nameAttr?.includes("country") || labelText.toLowerCase().includes("country"))) {
+      // Only map to 'country' if it's NOT the dial code dropdown
+      // Greenhouse phone widgets have a separate country dropdown for dial codes
+      // We want location_country for actual country of residence
+      const isDialCodeDropdown = selector?.includes("phone") || labelText.toLowerCase().includes("code");
+      if (!isDialCodeDropdown && !canonical) {
+        return { ...field, canonical: "country" };
+      }
     }
 
     return field;
   });
+
+  if (phoneFieldFound) {
+    console.log('[ATS] Greenhouse phone field mapping complete');
+  }
+
+  return fields;
 }
 
 /**

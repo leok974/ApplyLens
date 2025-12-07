@@ -480,6 +480,9 @@ async function init() {
   // Load style preferences
   loadStylePrefs();
 
+  // Load professional links
+  loadProfileLinks();
+
   console.log('[ApplyLens Popup] Ready');
 }
 
@@ -514,6 +517,96 @@ async function loadStylePrefs() {
     console.log('[ApplyLens Popup] Style prefs loaded:', { tone, length });
   } catch (err) {
     console.warn('[ApplyLens Popup] Failed to load style prefs:', err);
+  }
+}
+
+// ---------- Professional Links ----------
+
+async function loadProfileLinks() {
+  try {
+    let { userProfile } = await chrome.storage.sync.get(['userProfile']);
+
+    if (!userProfile) {
+      console.log('[ApplyLens Popup] No user profile found');
+      return;
+    }
+
+    // Migrate old top-level link properties to links object
+    let links = userProfile.links || {};
+    if (!userProfile.links) {
+      // First time - migrate any old top-level properties
+      links.linkedin = userProfile.linkedin || userProfile.linkedinUrl || null;
+      links.github = userProfile.github || userProfile.githubUrl || null;
+      links.portfolio = userProfile.portfolio || userProfile.portfolioUrl || null;
+      links.website = userProfile.website || userProfile.websiteUrl || null;
+
+      // Save migrated structure and remove old properties
+      userProfile = { ...userProfile, links };
+      delete userProfile.linkedin;
+      delete userProfile.linkedinUrl;
+      delete userProfile.github;
+      delete userProfile.githubUrl;
+      delete userProfile.portfolio;
+      delete userProfile.portfolioUrl;
+      delete userProfile.website;
+      delete userProfile.websiteUrl;
+
+      await chrome.storage.sync.set({ userProfile });
+      console.log('[ApplyLens Popup] Migrated profile links to new structure:', links);
+    }
+
+    const linkedinEl = q('#profile-linkedin');
+    const githubEl = q('#profile-github');
+    const portfolioEl = q('#profile-portfolio');
+    const websiteEl = q('#profile-website');
+
+    // Load existing values
+    if (linkedinEl) linkedinEl.value = links.linkedin || '';
+    if (githubEl) githubEl.value = links.github || '';
+    if (portfolioEl) portfolioEl.value = links.portfolio || '';
+    if (websiteEl) websiteEl.value = links.website || '';
+
+    // Auto-save on change
+    const saveLinks = async () => {
+      // Re-fetch to get latest profile state
+      const { userProfile: currentProfile } = await chrome.storage.sync.get(['userProfile']);
+
+      const updatedProfile = {
+        ...(currentProfile || userProfile),
+        links: {
+          linkedin: linkedinEl?.value?.trim() || null,
+          github: githubEl?.value?.trim() || null,
+          portfolio: portfolioEl?.value?.trim() || null,
+          website: websiteEl?.value?.trim() || null,
+        }
+      };
+
+      // Remove old top-level properties to prevent fallback confusion
+      delete updatedProfile.linkedin;
+      delete updatedProfile.linkedinUrl;
+      delete updatedProfile.github;
+      delete updatedProfile.githubUrl;
+      delete updatedProfile.portfolio;
+      delete updatedProfile.portfolioUrl;
+      delete updatedProfile.website;
+      delete updatedProfile.websiteUrl;
+
+      await chrome.storage.sync.set({ userProfile: updatedProfile });
+      console.log('[ApplyLens Popup] Saved profile links:', updatedProfile.links);
+
+      // Verify save
+      const { userProfile: verified } = await chrome.storage.sync.get(['userProfile']);
+      console.log('[ApplyLens Popup] Verified saved links:', verified?.links);
+    };
+
+    if (linkedinEl) linkedinEl.addEventListener('input', saveLinks);
+    if (githubEl) githubEl.addEventListener('input', saveLinks);
+    if (portfolioEl) portfolioEl.addEventListener('input', saveLinks);
+    if (websiteEl) websiteEl.addEventListener('input', saveLinks);
+
+    console.log('[ApplyLens Popup] Profile links loaded:', links);
+  } catch (err) {
+    console.warn('[ApplyLens Popup] Failed to load profile links:', err);
   }
 }
 
