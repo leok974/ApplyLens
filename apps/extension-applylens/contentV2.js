@@ -550,10 +550,36 @@ export async function runScanAndSuggestV2() {
       if (canonical === 'location') {
         const locCity = contact.location_city;
         const locCountry = contact.location_country;
-        const locStr =
-          profile.location ||
-          (locCity && locCountry ? `${locCity}, ${locCountry}` : locCity || locCountry);
-        return locStr || (profile.locations && profile.locations.length > 0 ? profile.locations[0] : null);
+
+        // Try flat string first
+        if (profile.location) {
+          return String(profile.location).trim();
+        }
+
+        // Try contact object next
+        if (locCity || locCountry) {
+          return locCity && locCountry ? `${locCity}, ${locCountry}` : (locCity || locCountry);
+        }
+
+        // Try locations array
+        if (Array.isArray(profile.locations) && profile.locations.length > 0) {
+          const loc = profile.locations[0];
+          if (typeof loc === 'string') {
+            return loc.trim();
+          } else if (loc && typeof loc === 'object') {
+            // Build string from object like { city: "Herndon", region: "VA", country: "United States" }
+            const parts = [
+              loc.city || loc.town || loc.locality,
+              loc.region || loc.state || loc.province,
+              loc.country || loc.country_code,
+            ].filter(Boolean);
+            if (parts.length > 0) {
+              return parts.join(', ');
+            }
+          }
+        }
+
+        return null;
       }
 
       // Handle country
@@ -572,7 +598,7 @@ export async function runScanAndSuggestV2() {
         // Contact info (prioritize nested contact object)
         email: contact.email || profile.email,
         phone: contact.phone || profile.phone,
-        // Links (prioritize nested links object, extract username from URL if needed)
+        // Links (prioritize nested links object)
         linkedin: links.linkedin || profile.linkedin || profile.linkedinUrl,
         linkedin_url: links.linkedin || profile.linkedin || profile.linkedinUrl,
         github: links.github || profile.github || profile.githubUrl,
@@ -580,18 +606,15 @@ export async function runScanAndSuggestV2() {
         portfolio: links.portfolio || profile.portfolio || profile.portfolioUrl,
         portfolio_url: links.portfolio || profile.portfolio || profile.portfolioUrl,
         website: links.website || profile.website || profile.websiteUrl,
+        website_url: links.website || profile.website || profile.websiteUrl,
       };
 
       let value = directMap[canonical];
 
-      // If linkedin field and value is a full URL, check if we should extract username
-      if (canonical === 'linkedin' && value && value.includes('linkedin.com/in/')) {
-        // Keep full URL - some forms want the full URL, some want just username
-        // The form scanner should have already determined which format is needed
-        // For now, always use full URL format
-        if (!value.startsWith('http')) {
-          value = 'https://' + value;
-        }
+      // Normalize URLs - ensure they start with http/https
+      const urlCanonicals = ['linkedin', 'linkedin_url', 'github', 'github_url', 'portfolio', 'portfolio_url', 'website', 'website_url'];
+      if (urlCanonicals.includes(canonical) && value && typeof value === 'string' && !value.startsWith('http')) {
+        value = 'https://' + value;
       }
 
       return value || null;
