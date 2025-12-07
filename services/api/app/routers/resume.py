@@ -123,8 +123,8 @@ async def upload_resume(
         # Server configuration error - missing dependencies
         logger.error(f"Missing dependency for file parsing: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server is missing required dependencies for this file format. Please contact support.",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="PDF/DOCX parsing is temporarily unavailable. Server is missing required dependencies (PyPDF2 or python-docx). Please try uploading a .txt file or contact support.",
         )
     except Exception as e:
         # Generic server error
