@@ -550,7 +550,7 @@ export async function runScanAndSuggestV2() {
     const PROFILE_CANONICAL = new Set([
       "first_name", "last_name", "email", "phone", "linkedin",
       "github", "portfolio", "website", "location", "country", "headline",
-      "years_experience", "linkedin_url", "github_url", "portfolio_url"
+      "years_experience", "linkedin_url", "github_url", "portfolio_url", "website_url"
     ]);
 
     // Map canonical names to profile keys and handle special cases
