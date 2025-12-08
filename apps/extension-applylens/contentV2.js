@@ -281,6 +281,31 @@ async function getAutoFillSettings() {
   }
 }
 
+// BEGIN YEARS_EXP
+/**
+ * Detect if a field is asking for years of experience
+ */
+function isYearsExperienceQuestion(field) {
+  const label = (field.labelText || '').toLowerCase();
+  return (
+    label.includes('how many') &&
+    label.includes('years') &&
+    (label.includes('experience') || label.includes('coding') || label.includes('programming'))
+  );
+}
+
+/**
+ * Extract numeric value from AI-generated years answer
+ * E.g., "I have around 4 years of coding experience" -> "4"
+ */
+function normalizeYearsAnswer(raw) {
+  if (!raw) return null;
+  // Grab the first number like "3", "3.5", etc.
+  const match = String(raw).match(/\d+(\.\d+)?/);
+  return match ? match[0] : null;
+}
+// END YEARS_EXP
+
 /**
  * Generate suggestions from backend
  */
@@ -764,12 +789,25 @@ export async function runScanAndSuggestV2() {
         // Canonical types we NEVER ask the LLM for – they come from profile/memory
         const NON_AI_CANONICAL = new Set([
           "first_name", "last_name", "email", "phone", "linkedin",
-          "github", "portfolio", "website", "location", "years_experience"
+          "github", "portfolio", "website", "location"
         ]);
 
+        // BEGIN YEARS_EXP
         // Only send real "question" fields to the LLM
         const fieldsNeedingAI = annotatedFields.filter((field) => {
           const c = field.canonical;
+
+          // Special case: years of experience question (even if not textarea)
+          const isYearsQuestion = isYearsExperienceQuestion(field);
+          if (isYearsQuestion) {
+            // If profile has years_experience, skip AI (will use profile value)
+            if (userProfile?.years_experience != null) {
+              console.log(`[v0.3] Skipping years question for AI (using profile: ${userProfile.years_experience})`);
+              return false;
+            }
+            // Otherwise, ask AI to estimate
+            return true;
+          }
 
           // Include non-canonical fields (questions without standard mappings)
           if (!c) return true;
@@ -784,13 +822,33 @@ export async function runScanAndSuggestV2() {
 
           return true;  // Include all other canonical fields
         });
+        // END YEARS_EXP
 
         console.log(
-          `[v0.3] Requesting AI for ${fieldsNeedingAI.length} fields (question/summary only)`
+          `[v0.3] Requesting AI for ${fieldsNeedingAI.length} fields (question/summary + years-exp if needed)`
         );
 
         const aiSuggestions = await generateSuggestions(fieldsNeedingAI, jobContext, userProfile);
         console.log("[v0.3] Generated AI suggestions:", aiSuggestions);
+
+        // BEGIN YEARS_EXP
+        // Post-process: extract numeric values from years experience answers
+        for (const [fieldId, value] of Object.entries(aiSuggestions)) {
+          const field = annotatedFields.find(f =>
+            f.canonical === fieldId || f.selector === fieldId
+          );
+          if (field && isYearsExperienceQuestion(field)) {
+            const numeric = normalizeYearsAnswer(value);
+            if (numeric) {
+              aiSuggestions[fieldId] = numeric;
+              console.log(`[v0.3] Normalized years answer: "${value}" -> "${numeric}"`);
+            } else {
+              console.warn(`[v0.3] Could not extract numeric years from: "${value}"`);
+              delete aiSuggestions[fieldId]; // Skip if we can't extract a number
+            }
+          }
+        }
+        // END YEARS_EXP
 
         // Merge: memory takes precedence, AI fills gaps
         const mergedSuggestions = { ...suggestions }; // Start with memory
