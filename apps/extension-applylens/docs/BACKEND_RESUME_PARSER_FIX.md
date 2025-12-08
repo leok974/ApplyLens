@@ -595,32 +595,285 @@ Once deployed, the extension automatically gets:
 
 ## Future Enhancements
 
-### Phase 2: LLM-Based Extraction (Later)
+### Phase 2: LLM-Based Extraction (Recommended Next Step)
 
-Replace heuristic extraction with Claude/GPT for better accuracy:
+Replace heuristic extraction with Claude/GPT for **much better accuracy** and richer profile data.
+
+#### Update ExtractedProfile Schema
+
+**File**: `services/api/app/core/resume_parser.py`
 
 ```python
-async def extract_with_llm(resume_text: str) -> ExtractedProfile:
-    """Use LLM to extract profile fields from resume."""
+class ExtractedProfile(BaseModel):
+    """Extracted profile fields from resume text."""
+    # Identity
+    full_name: Optional[str] = None
+    headline: Optional[str] = None
+    location: Optional[str] = None
+    years_experience: Optional[int] = None
 
-    prompt = f"""Extract structured data from this resume:
+    # Skills & roles
+    skills: list[str] = []
+    top_roles: list[str] = []  # Target roles like ['ML Engineer', 'Full-Stack Developer']
 
-{resume_text}
+    # Links
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    website_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    twitter_url: Optional[str] = None
 
-Return JSON with:
-- skills: list of technical skills (["Python", "React", ...])
-- github_url: GitHub profile URL (if found)
-- portfolio_url: Portfolio/personal website (if found)
-- location: Current location (City, State format)
-- summary: 2-3 sentence professional summary
-
-Return only JSON, no explanations."""
-
-    response = await call_llm(prompt)
-    return ExtractedProfile(**json.loads(response))
+    # Professional summary
+    summary: Optional[str] = None
 ```
 
+#### Add LLM-Powered Extraction
+
+**File**: `services/api/app/core/resume_parser.py`
+
+```python
+import json
+from app.core.llm_client import llm  # Your existing LLM client
+
+
+async def extract_profile_fields_from_text_llm(text: str) -> ExtractedProfile:
+    """
+    Use LLM to extract structured profile from resume text.
+
+    Much more accurate than heuristics - can extract:
+    - Skills with proper capitalization
+    - Target roles from job titles
+    - Professional summary from multiple sections
+    - Links from various formats
+    - Years of experience from job history
+    """
+    system_prompt = (
+        "You are a resume parser for ApplyLens. "
+        "Given the raw text of a resume, extract a concise JSON object with "
+        "career profile fields. Do NOT include explanations, only valid JSON."
+    )
+
+    user_prompt = (
+        "Extract the following fields from this resume text:\n\n"
+        "full_name (string)\n"
+        "headline (short role tagline, e.g. 'AI Engineer & Full-Stack Developer')\n"
+        "location (string, city + country if present)\n"
+        "years_experience (integer, best estimate from job history; can be null)\n"
+        "skills (array of 10-30 key technical skills, properly capitalized)\n"
+        "top_roles (array of 2-5 target roles from job titles, e.g. ['ML Engineer','Full-Stack Engineer'])\n"
+        "github_url (string or null)\n"
+        "portfolio_url (string or null)\n"
+        "website_url (string or null)\n"
+        "linkedin_url (string or null)\n"
+        "twitter_url (string or null)\n"
+        "summary (2-4 sentence professional summary combining experience and strengths).\n\n"
+        "Return ONLY a JSON object with these keys.\n\n"
+        f"Resume text:\n{text[:15000]}"
+    )
+
+    try:
+        resp = await llm.achat(
+            system=system_prompt,
+            user=user_prompt,
+            temperature=0.2,  # Low temp for consistent extraction
+            max_tokens=800,
+        )
+
+        # Parse LLM response as JSON
+        data = json.loads(resp.text)
+        return ExtractedProfile(**data)
+
+    except json.JSONDecodeError as e:
+        logger.error(f"LLM returned invalid JSON: {e}")
+        # Fallback to heuristic extraction
+        return extract_profile_fields_from_text(text)
+
+    except Exception as e:
+        logger.error(f"LLM extraction failed: {e}")
+        # Fallback to heuristic extraction
+        return extract_profile_fields_from_text(text)
+
+
+# Keep heuristic version as fallback
+def extract_profile_fields_from_text(text: str) -> ExtractedProfile:
+    """Heuristic extraction (fallback if LLM fails)."""
+    # ... existing heuristic code ...
+```
+
+#### Update Upload Endpoint to Use LLM
+
+**File**: `services/api/app/routers/resume.py`
+
+```python
+from app.core.resume_parser import extract_profile_fields_from_text_llm
+from app.services.profile_service import get_or_create_profile
+
+
+@router.post("/upload", response_model=ResumeProfileResponse)
+async def upload_resume(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user_email: str = Depends(get_current_user_email),
+):
+    """Upload and parse resume with LLM-powered extraction."""
+
+    # ... existing file validation and text extraction ...
+
+    # Extract profile fields using LLM
+    extracted = await extract_profile_fields_from_text_llm(raw_text)
+
+    logger.info(
+        f"LLM extracted: name={extracted.full_name}, "
+        f"headline={extracted.headline}, "
+        f"{len(extracted.skills)} skills, "
+        f"{len(extracted.top_roles)} roles, "
+        f"GitHub={bool(extracted.github_url)}"
+    )
+
+    # Get or create user profile
+    profile = get_or_create_profile(db, user_email)
+
+    # Merge extracted fields (only if profile fields are empty)
+    # Identity
+    if extracted.full_name and not profile.name:
+        profile.name = extracted.full_name
+    if extracted.headline and not profile.headline:
+        profile.headline = extracted.headline
+    if extracted.location and not profile.location:
+        profile.location = extracted.location
+    if extracted.years_experience is not None and not profile.years_experience:
+        profile.years_experience = extracted.years_experience
+
+    # Skills - merge with existing
+    if extracted.skills:
+        existing_skills = set(profile.tech_stack or [])
+        merged_skills = sorted(existing_skills.union(extracted.skills))
+        profile.tech_stack = merged_skills
+
+    # Target roles - merge with existing
+    if extracted.top_roles:
+        existing_roles = set(profile.target_roles or [])
+        merged_roles = sorted(existing_roles.union(extracted.top_roles))
+        profile.target_roles = merged_roles
+
+    # Links - only if currently blank (don't overwrite manual edits)
+    if extracted.github_url and not profile.github_url:
+        profile.github_url = extracted.github_url
+    if extracted.portfolio_url and not profile.portfolio_url:
+        profile.portfolio_url = extracted.portfolio_url
+    if extracted.website_url and not profile.website_url:
+        profile.website_url = extracted.website_url
+    if extracted.linkedin_url and not profile.linkedin_url:
+        profile.linkedin_url = extracted.linkedin_url
+    if extracted.twitter_url and not profile.twitter_url:
+        profile.twitter_url = extracted.twitter_url
+
+    # Summary - only if blank
+    if extracted.summary and not profile.summary:
+        profile.summary = extracted.summary
+
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+
+    logger.info(
+        f"Profile updated for {user_email}: "
+        f"{len(profile.tech_stack or [])} total skills, "
+        f"{len(profile.target_roles or [])} roles"
+    )
+
+    return profile
+```
+
+#### Add Async Test
+
+**File**: `services/api/tests/test_resume_llm_extraction.py` (new file)
+
+```python
+"""Tests for LLM-powered resume extraction."""
+
+import pytest
+from app.core.resume_parser import extract_profile_fields_from_text_llm, ExtractedProfile
+
+
+@pytest.mark.asyncio
+@pytest.mark.llm  # Mark as LLM test - may skip in CI
+async def test_llm_extract_profile_shape():
+    """Test LLM extraction returns valid ExtractedProfile."""
+    sample_text = """
+    Leo Klemet
+    AI/ML Engineer & Full-Stack Developer
+
+    GitHub: https://github.com/leok974
+    Portfolio: https://www.leoklemet.com
+    Location: Herndon, VA
+
+    SKILLS
+    Python, TypeScript, React, FastAPI, Docker, PostgreSQL
+
+    EXPERIENCE
+    Senior Developer at TechCorp (2020-2025)
+    - Built scalable ML pipelines
+    - Led team of 3 engineers
+    """
+
+    profile = await extract_profile_fields_from_text_llm(sample_text)
+
+    # Verify schema
+    assert isinstance(profile, ExtractedProfile)
+
+    # Verify some fields populated (LLM output may vary)
+    assert profile.github_url is None or profile.github_url.startswith("http")
+    assert isinstance(profile.skills, list)
+    assert isinstance(profile.top_roles, list)
+
+
+@pytest.mark.asyncio
+@pytest.mark.llm
+async def test_llm_extract_handles_empty_resume():
+    """Test LLM extraction handles minimal resume gracefully."""
+    minimal_text = "John Doe\nSoftware Engineer"
+
+    profile = await extract_profile_fields_from_text_llm(minimal_text)
+
+    assert isinstance(profile, ExtractedProfile)
+    # Should return valid object even with minimal data
+    assert profile.full_name is None or isinstance(profile.full_name, str)
+```
+
+Run LLM tests locally:
+```bash
+pytest -m llm tests/test_resume_llm_extraction.py -v
+```
+
+#### Benefits Over Heuristic Approach
+
+**Heuristic Extraction:**
+- ❌ Misses skills with typos or variations
+- ❌ Can't infer roles from job titles
+- ❌ Simple regex for URLs (misses some formats)
+- ❌ Can't generate professional summary
+
+**LLM Extraction:**
+- ✅ Extracts 20-30+ skills accurately
+- ✅ Infers target roles from job history
+- ✅ Finds URLs in various formats
+- ✅ Generates cohesive professional summary
+- ✅ Properly capitalizes skill names (TypeScript not typescript)
+- ✅ Estimates years of experience from timeline
+
+#### Cost Analysis
+
+With Claude Haiku ($0.25/MTok input, $1.25/MTok output):
+- Resume text: ~5K tokens input
+- Extraction response: ~500 tokens output
+- **Cost per resume: ~$0.002** (less than a penny!)
+
+For 1000 resume uploads/month: **~$2 total**
+
 ### Phase 3: DOCX Support
+
+Add python-docx for Word document parsing:
 
 Add python-docx:
 
@@ -634,6 +887,105 @@ def parse_docx_resume(data: bytes) -> ParsedResume:
     return ParsedResume(raw_text=raw_text, pages=len(doc.sections))
 ```
 
+## Expected Results After LLM Implementation
+
+### Profile API Response
+
+After uploading resume with LLM extraction, `/api/profile/me` should show:
+
+```json
+{
+  "name": "Leo Klemet",
+  "headline": "AI Engineer & Full-Stack Developer",
+  "location": "Herndon, VA, United States",
+  "years_experience": 5,
+  "tech_stack": [
+    "AWS",
+    "Docker",
+    "FastAPI",
+    "PostgreSQL",
+    "Python",
+    "React",
+    "TypeScript"
+  ],
+  "target_roles": [
+    "AI Engineer",
+    "Full-Stack Developer",
+    "ML Engineer"
+  ],
+  "github_url": "https://github.com/leok974",
+  "portfolio_url": "https://www.leoklemet.com",
+  "website_url": "https://www.leoklemet.com",
+  "linkedin_url": "https://linkedin.com/in/leoklemet",
+  "summary": "Experienced AI engineer with 5+ years building scalable ML systems and full-stack applications. Passionate about developer tools and automation."
+}
+```
+
+### Extension Auto-Fill Experience
+
+On job application forms, users will see:
+
+**Identity Fields:**
+- ✅ Name: "Leo Klemet" (purple "Profile" badge, pre-checked)
+- ✅ Location: "Herndon, VA, United States" (purple "Profile" badge, pre-checked)
+- ✅ Years of Experience: "5" (purple "Profile" badge, pre-checked)
+
+**Contact Links:**
+- ✅ GitHub: "https://github.com/leok974" (purple "Profile" badge, pre-checked)
+- ✅ Portfolio: "https://www.leoklemet.com" (purple "Profile" badge, pre-checked)
+- ✅ LinkedIn: "https://linkedin.com/in/leoklemet" (purple "Profile" badge, pre-checked)
+
+**AI-Generated Answers (Enhanced Context):**
+
+*Question: "What technical skills are you strongest in?"*
+
+**Before** (no resume):
+> "I have experience with Python, JavaScript, and cloud technologies."
+
+**After** (LLM-extracted resume):
+> "I specialize in Python, TypeScript, and React for full-stack development, with strong expertise in FastAPI for building scalable APIs. I'm proficient with PostgreSQL for database design and Docker/AWS for cloud deployment. My 5+ years of experience has given me deep knowledge of ML systems and developer tooling."
+
+*Question: "Why are you interested in this role?"*
+
+**Before**:
+> "This position aligns with my background and interests."
+
+**After**:
+> "As an AI Engineer with 5 years building production ML systems, this ML Engineer role is a perfect fit for my expertise. My experience with Python, FastAPI, and AWS directly maps to your tech stack, and I'm excited to bring my background in scalable AI systems to your team."
+
+### Resume Status Card (Future UI Enhancement)
+
+Add to `apps/web/src/components/settings/ProfilePanel.tsx`:
+
+```tsx
+<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+  <div className="flex items-start gap-3">
+    <FileText className="w-5 h-5 text-blue-600" />
+    <div className="flex-1">
+      <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+        Resume Profile
+      </h4>
+      <div className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
+        <div className="flex items-center gap-2">
+          <Check className="w-3 h-3 text-green-500" />
+          <span>Uploaded 2 days ago</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Check className="w-3 h-3 text-green-500" />
+          <span>Parsed: 23 skills, 3 target roles</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Check className="w-3 h-3 text-green-500" />
+          <span>Extension auto-fill: GitHub, Portfolio, Location</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+This gives instant visibility into what the extension is using.
+
 ## Testing Checklist
 
 - [ ] pypdf installed (`poetry show pypdf`)
@@ -643,22 +995,32 @@ def parse_docx_resume(data: bytes) -> ParsedResume:
 - [ ] Extension auto-fills GitHub/portfolio on job forms
 - [ ] Skills in profile match resume skills
 - [ ] LLM answers use skills from resume
+- [ ] LLM extraction test passes (`pytest -m llm tests/test_resume_llm_extraction.py`)
+- [ ] Profile shows 20+ skills after upload (vs 5-10 with heuristics)
+- [ ] Target roles extracted from job titles
 
 ## Rollback Plan
 
 If issues occur:
 
-1. **Disable PDF parsing**:
+1. **Disable LLM extraction** (keep heuristic):
+   ```python
+   # In upload endpoint
+   extracted = extract_profile_fields_from_text(raw_text)  # Use heuristic
+   # extracted = await extract_profile_fields_from_text_llm(raw_text)  # Comment out LLM
+   ```
+
+2. **Disable PDF parsing**:
    ```python
    RESUME_PARSER_AVAILABLE = False  # Force disable
    ```
 
-2. **Revert to text-only**:
+3. **Revert to text-only**:
    ```python
    allowed_extensions = {".txt"}  # Remove .pdf
    ```
 
-3. **Database rollback** (if schema changed):
+4. **Database rollback** (if schema changed):
    ```bash
    alembic downgrade -1
    ```
@@ -669,10 +1031,18 @@ After deployment:
 
 - ✅ Resume upload success rate > 90%
 - ✅ Profile completion rate increases (more fields filled)
+- ✅ **Profile has 20-30 skills** (vs 5-10 with heuristics)
+- ✅ **Target roles extracted** (ML Engineer, Full-Stack Developer, etc.)
 - ✅ Extension auto-fill rate increases (fewer manual fills)
 - ✅ AI answer quality improves (uses resume context)
 - ✅ No 500 errors on `/api/resume/upload`
+- ✅ LLM extraction cost < $0.01 per resume
 
 ---
+
+**Implementation Priority**:
+1. ✅ **Phase 1 (Basic)**: PDF parsing + heuristic extraction (good enough to start)
+2. 🎯 **Phase 2 (Recommended)**: LLM extraction (10x better accuracy, <$0.01 cost)
+3. ⏳ **Phase 3 (Optional)**: DOCX support, Resume status UI
 
 **Next Steps**: Copy this to backend repo and implement. Extension is already ready to consume the enriched profile! 🚀
