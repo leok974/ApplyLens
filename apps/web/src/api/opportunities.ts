@@ -15,9 +15,18 @@ export interface ResumeProfile {
   owner_email: string;
   source: 'upload';  // Always 'upload' - no generation
   is_active: boolean;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin: string | null;
+  experience_years: number | null;
+  github_url: string | null;
+  portfolio_url: string | null;
+  website_url: string | null;
   headline: string | null;
   summary: string | null;
   skills: string[] | null;
+  target_roles: string[] | null;
   experiences: Array<{
     company: string;
     role: string;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { uploadResume, getCurrentResume, listResumes, activateResume, ResumeProfile } from '../../api/opportunities'
 import { Upload, FileText, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { ResumeStatusPill } from '../profile/ResumeStatusPill'
 
 export function ResumeUploadPanel() {
   const [currentResume, setCurrentResume] = useState<ResumeProfile | null>(null)
@@ -95,10 +96,19 @@ export function ResumeUploadPanel() {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
       {/* Header */}
       <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Resume</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Upload your resume for AI-powered job matching
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Resume</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Upload your resume for AI-powered job matching
+            </p>
+          </div>
+          <ResumeStatusPill
+            resumeUploadedAt={currentResume?.created_at}
+            skillsCount={currentResume?.skills?.length ?? 0}
+            rolesCount={currentResume?.target_roles?.length ?? 0}
+          />
+        </div>
       </div>
 
       <div className="p-6 space-y-6">
