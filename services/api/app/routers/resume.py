@@ -53,11 +53,15 @@ class ResumeProfileResponse(BaseModel):
     phone: Optional[str]
     linkedin: Optional[str]
     experience_years: Optional[int]
+    github_url: Optional[str]
+    portfolio_url: Optional[str]
+    website_url: Optional[str]
 
     # Parsed content
     headline: Optional[str]
     summary: Optional[str]
     skills: Optional[list[str]]
+    target_roles: Optional[list[str]]
     experiences: Optional[list[dict]]
     projects: Optional[list[dict]]
     created_at: str
@@ -214,9 +218,25 @@ async def upload_resume(
         if extracted_profile.years_experience is not None:
             resume.experience_years = extracted_profile.years_experience
 
+        # Store URLs from LLM extraction
+        if extracted_profile.github_url:
+            resume.github_url = extracted_profile.github_url
+        if extracted_profile.portfolio_url:
+            resume.portfolio_url = extracted_profile.portfolio_url
+        if extracted_profile.website_url:
+            resume.website_url = extracted_profile.website_url
+
+        # Store target roles from LLM extraction
+        if extracted_profile.top_roles:
+            resume.target_roles = extracted_profile.top_roles
+
         logger.info(
             f"Merged LLM data: {len(resume.skills or [])} total skills, "
-            f"years_exp={resume.experience_years}"
+            f"years_exp={resume.experience_years}, "
+            f"roles={len(extracted_profile.top_roles)}, "
+            f"urls=[github={bool(extracted_profile.github_url)}, "
+            f"portfolio={bool(extracted_profile.portfolio_url)}, "
+            f"website={bool(extracted_profile.website_url)}]"
         )
 
     # Merge contact info into profile
@@ -240,9 +260,13 @@ async def upload_resume(
         phone=resume.phone,
         linkedin=resume.linkedin,
         experience_years=resume.experience_years,
+        github_url=resume.github_url,
+        portfolio_url=resume.portfolio_url,
+        website_url=resume.website_url,
         headline=resume.headline,
         summary=resume.summary,
         skills=resume.skills,
+        target_roles=resume.target_roles,
         experiences=resume.experiences,
         projects=resume.projects,
         created_at=resume.created_at.isoformat(),
@@ -282,9 +306,13 @@ def get_current_resume(
         phone=resume.phone,
         linkedin=resume.linkedin,
         experience_years=resume.experience_years,
+        github_url=resume.github_url,
+        portfolio_url=resume.portfolio_url,
+        website_url=resume.website_url,
         headline=resume.headline,
         summary=resume.summary,
         skills=resume.skills,
+        target_roles=resume.target_roles,
         experiences=resume.experiences,
         projects=resume.projects,
         created_at=resume.created_at.isoformat(),
@@ -342,9 +370,13 @@ async def activate_resume(
         phone=resume.phone,
         linkedin=resume.linkedin,
         experience_years=resume.experience_years,
+        github_url=resume.github_url,
+        portfolio_url=resume.portfolio_url,
+        website_url=resume.website_url,
         headline=resume.headline,
         summary=resume.summary,
         skills=resume.skills,
+        target_roles=resume.target_roles,
         experiences=resume.experiences,
         projects=resume.projects,
         created_at=resume.created_at.isoformat(),
@@ -377,9 +409,13 @@ async def list_all_resumes(
             phone=r.phone,
             linkedin=r.linkedin,
             experience_years=r.experience_years,
+            github_url=r.github_url,
+            portfolio_url=r.portfolio_url,
+            website_url=r.website_url,
             headline=r.headline,
             summary=r.summary,
             skills=r.skills,
+            target_roles=r.target_roles,
             experiences=r.experiences,
             projects=r.projects,
             created_at=r.created_at.isoformat(),

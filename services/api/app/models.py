@@ -983,6 +983,16 @@ class ResumeProfile(Base):
     experience_years = Column(
         Integer, nullable=True
     )  # Years of experience (inferred from resume)
+    github_url = Column(Text, nullable=True)  # GitHub URL from resume (LLM extracted)
+    portfolio_url = Column(
+        Text, nullable=True
+    )  # Portfolio URL from resume (LLM extracted)
+    website_url = Column(
+        Text, nullable=True
+    )  # Personal website URL from resume (LLM extracted)
+    target_roles = Column(
+        JSONType, nullable=True
+    )  # ["ML Engineer", "Data Scientist"] (LLM extracted)
 
     # Parsed content
     headline = Column(Text, nullable=True)
