@@ -200,7 +200,8 @@ services:
     # v0.8.6-experience: Resume contact parsing + years_experience extraction
     # v0.8.7-profile-context: Profile-aware LLM prompts for personalized answers
     # v0.8.10-llm-resume: LLM-powered resume extraction (skills, roles, URLs, summary)
-    image: leoklemet/applylens-api:0.8.10-llm-resume
+    # v0.8.11-resume-urls: Add LLM-extracted URLs and target_roles to resume profiles
+    image: leoklemet/applylens-api:0.8.11-resume-urls
     container_name: applylens-api-prod
     environment:
       # Database
