@@ -20,6 +20,7 @@
   /* Main sidepanel card */
   .alp-panel {
     @apply flex flex-col h-full bg-slate-950/95 text-slate-50 border-l border-slate-800;
+    width: 100%;
   }
 
   .alp-panel-header {
@@ -217,6 +218,7 @@
 
   .alp-popup-main {
     @apply flex flex-1 flex-col gap-3 px-4 py-4;
+    overflow-y: auto;
   }
 
   .alp-popup-metric {
@@ -289,9 +291,11 @@
 }
 
 /* Optional: tiny global reset just for popup */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
+  background: #020617;
 }
 
 /* ApplyLens Custom Input Styles */
@@ -342,25 +346,24 @@ html, body {
 }
 
 /* Popup Root & Animation */
-.applylens-popup-root {
-  width: 420px;
-  height: 640px;
-  padding: 6px;
-  box-sizing: border-box;
-  background: #020617;
-  overflow: hidden; /* Prevent root from scrolling */
-}
-
 .applylens-popup-wrapper {
-  width: 100%;
-  height: 100%;
+  box-sizing: border-box;
+  margin: 10px 12px;
+  width: 400px;
+  height: 620px;
   border-radius: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: radial-gradient(
+    circle at top left,
+    #020617 0%,
+    #020617 40%,
+    #020617 100%
+  );
   box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.12),
-    0 18px 50px rgba(15, 23, 42, 0.9);
-  overflow: hidden; /* Let inner content handle scrolling */
-  animation: popupFadeIn 220ms cubic-bezier(0.21, 0.67, 0.23, 0.99);
+    0 0 0 1px rgba(56, 189, 248, 0.18),
+    0 20px 50px rgba(15, 23, 42, 0.95);
+  overflow: hidden;
+  animation: popupFadeIn 260ms cubic-bezier(0.21, 0.67, 0.23, 0.99);
   transform-origin: top center;
   display: flex;
   flex-direction: column;
@@ -370,8 +373,8 @@ html, body {
 @keyframes popupFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-    filter: blur(3px);
+    transform: translateY(10px) scale(0.95);
+    filter: blur(4px);
   }
   100% {
     opacity: 1;
@@ -381,22 +384,22 @@ html, body {
 }
 
 /* Sidepanel Shell & Animation */
-.applylens-companion-root {
-  min-height: 100vh;
-  padding: 8px 6px;
-  box-sizing: border-box;
-  background: #020617; /* same dark background as the app */
-}
-
 .applylens-companion-shell {
-  height: calc(100vh - 16px); /* Account for root padding */
+  box-sizing: border-box;
+  margin: 10px 12px;
+  min-height: calc(100vh - 20px);
   border-radius: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: radial-gradient(
+    circle at top left,
+    #020617 0%,
+    #020617 40%,
+    #020617 100%
+  );
   box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.12),
-    0 18px 50px rgba(15, 23, 42, 0.9);
+    0 0 0 1px rgba(56, 189, 248, 0.18),
+    0 20px 50px rgba(15, 23, 42, 0.95);
   overflow: hidden;
-  background: radial-gradient(circle at top left, #020617 0%, #020617 45%, #020617 100%);
   animation: companionFadeIn 260ms cubic-bezier(0.21, 0.67, 0.23, 0.99);
   transform-origin: top right;
 }
@@ -405,7 +408,7 @@ html, body {
 @keyframes companionFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(10px) scale(0.95);
     filter: blur(4px);
   }
   100% {
