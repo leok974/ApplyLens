@@ -293,3 +293,38 @@ html, body {
   margin: 0;
   padding: 0;
 }
+
+/* Sidepanel Shell & Animation */
+.applylens-companion-root {
+  min-height: 100vh;
+  padding: 8px 6px;
+  box-sizing: border-box;
+  background: #020617; /* same dark background as the app */
+}
+
+.applylens-companion-shell {
+  height: calc(100vh - 16px); /* Account for root padding */
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.12),
+    0 18px 50px rgba(15, 23, 42, 0.9);
+  overflow: hidden;
+  background: radial-gradient(circle at top left, #020617 0%, #020617 45%, #020617 100%);
+  animation: companionFadeIn 260ms cubic-bezier(0.21, 0.67, 0.23, 0.99);
+  transform-origin: top right;
+}
+
+/* Smooth "open" animation when the extension appears */
+@keyframes companionFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
