@@ -294,6 +294,53 @@ html, body {
   padding: 0;
 }
 
+/* ApplyLens Custom Input Styles */
+.al-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  background-color: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  color: rgb(241, 245, 249);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.al-input::placeholder {
+  color: rgb(148, 163, 184);
+}
+
+.al-input:focus {
+  border-color: rgb(56, 189, 248);
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4);
+}
+
+.al-select {
+  width: 100%;
+  border-radius: 0.75rem;
+  background-color: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  color: rgb(241, 245, 249);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.al-select:focus {
+  border-color: rgb(56, 189, 248);
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4);
+}
+
+.al-settings-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgb(203, 213, 225);
+  margin-bottom: 0.25rem;
+}
+
 /* Popup Root & Animation */
 .applylens-popup-root {
   width: 420px;
@@ -301,6 +348,7 @@ html, body {
   padding: 6px;
   box-sizing: border-box;
   background: #020617;
+  overflow: hidden; /* Prevent root from scrolling */
 }
 
 .applylens-popup-wrapper {
@@ -311,9 +359,11 @@ html, body {
   box-shadow:
     0 0 0 1px rgba(56, 189, 248, 0.12),
     0 18px 50px rgba(15, 23, 42, 0.9);
-  overflow: hidden;
+  overflow: hidden; /* Let inner content handle scrolling */
   animation: popupFadeIn 220ms cubic-bezier(0.21, 0.67, 0.23, 0.99);
   transform-origin: top center;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Smooth "open" animation when popup appears */
