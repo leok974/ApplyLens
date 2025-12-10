@@ -19,7 +19,22 @@
 
   /* Main sidepanel card */
   .alp-panel {
-    @apply flex flex-col h-full bg-slate-950/95 text-slate-50 border-l border-slate-800;
+    @apply flex flex-col bg-slate-950/95 text-slate-50;
+    width: 100vw;
+    height: 100vh;
+    min-height: 0;
+  }
+
+  /* Prevent flex compression of fixed-height sections */
+  .alp-panel > header,
+  .alp-panel > nav,
+  .alp-panel > section:not(.flex-1) {
+    flex-shrink: 0;
+  }
+
+  /* Allow scrollable sections to shrink */
+  .alp-panel > section.flex-1 {
+    min-height: 0;
   }
 
   .alp-panel-header {
@@ -96,9 +111,17 @@
     @apply bg-opacity-80 font-medium shadow-inner;
   }
 
+  /* Scrollable view container */
+  .alp-sp-view {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   /* Field rows */
   .alp-field-rows {
     @apply flex-1 overflow-y-auto px-2 py-1 text-[12px];
+    min-height: 0;
   }
 
   .alp-field-row {
