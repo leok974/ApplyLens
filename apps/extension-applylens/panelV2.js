@@ -745,6 +745,137 @@ function injectStyles() {
     padding: 0;
   }
 
+  #${PANEL_ID} .alp-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #334155;
+    background: #0a0f1c;
+    flex-shrink: 0;
+  }
+
+  #${PANEL_ID} .alp-panel-header-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #e2e8f0;
+  }
+
+  #${PANEL_ID} .alp-panel-header-sub {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 400;
+  }
+
+  #${PANEL_ID} .alp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(52,211,153,0.6);
+    background: rgba(16,185,129,0.1);
+    font-size: 11px;
+    color: #6ee7b7;
+  }
+
+  #${PANEL_ID} .alp-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16,185,129,0.8);
+  }
+
+  #${PANEL_ID} .alp-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+  }
+
+  #${PANEL_ID} .alp-panel-footer {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #334155;
+    background: #0a0f1c;
+    flex-shrink: 0;
+  }
+
+  #${PANEL_ID} .alp-btn-primary {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
+    border: none;
+    color: #020617;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 0 28px rgba(56,189,248,0.55);
+    transition: all 0.15s;
+  }
+
+  #${PANEL_ID} .alp-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  #${PANEL_ID} .alp-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  #${PANEL_ID} .alp-btn-secondary {
+    flex: 1;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(71,85,105,0.8);
+    background: rgba(15,23,42,0.9);
+    color: #e2e8f0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  #${PANEL_ID} .alp-btn-secondary:hover:not(:disabled) {
+    border-color: rgba(34,211,238,0.6);
+    color: #7dd3fc;
+  }
+
+  #${PANEL_ID} #al_close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+  }
+
+  #${PANEL_ID} #al_close:hover {
+    color: #e2e8f0;
+  }
+
+  #${PANEL_ID} .flex {
+    display: flex;
+  }
+
+  #${PANEL_ID} .items-center {
+    align-items: center;
+  }
+
+  #${PANEL_ID} .gap-2 {
+    gap: 8px;
+  }
+
   #${PANEL_ID} header {
     display: flex;
     align-items: center;
