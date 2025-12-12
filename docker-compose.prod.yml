@@ -201,7 +201,8 @@ services:
     # v0.8.7-profile-context: Profile-aware LLM prompts for personalized answers
     # v0.8.10-llm-resume: LLM-powered resume extraction (skills, roles, URLs, summary)
     # v0.8.11-resume-urls: Add LLM-extracted URLs and target_roles to resume profiles
-    image: leoklemet/applylens-api:0.8.11-resume-urls
+    # v0.8.12-agent-v2-fix: Fix /api/v2/agent/run 404 by adding /api prefix to router
+    image: leoklemet/applylens-api:0.8.12-agent-v2-fix
     container_name: applylens-api-prod
     environment:
       # Database
