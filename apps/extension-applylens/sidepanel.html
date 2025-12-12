@@ -6,81 +6,85 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body class="alp-theme-root alp-theme-dark">
-    <!-- Main panel -->
-    <div class="alp-panel">
-      <!-- Header -->
-      <header class="flex items-center justify-between gap-3 pb-3">
-          <div class="flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-700/70 bg-gradient-radial from-cyan-500/25 to-transparent">
-              <span class="text-2xl">📋</span>
-            </div>
-            <div>
-              <h1 class="m-0 text-[16px] font-semibold">ApplyLens Companion</h1>
-              <p class="m-0 mt-0.5 text-[12px] text-slate-400">
-                Job board: <span id="alp-sp-job-board" class="text-cyan-400">Greenhouse</span>
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <!-- Status pill -->
-            <div id="alp-sp-status-pill" class="alp-status-pill">
-              <span class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-              <span>Connected</span>
+    <!-- Outer frame: creates gap from Chrome edges -->
+    <div class="al-panel-frame">
+      <!-- Card bubble wrapper -->
+      <div class="al-panel-card">
+        <!-- Main panel -->
+        <div class="alp-panel">
+          <!-- Header -->
+          <header class="flex items-center justify-between gap-3 pb-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-700/70 bg-gradient-radial from-cyan-500/25 to-transparent">
+                <span class="text-2xl">📋</span>
+              </div>
+              <div>
+                <h1 class="m-0 text-[16px] font-semibold">ApplyLens Companion</h1>
+                <p class="m-0 mt-0.5 text-[12px] text-slate-400">
+                  Job board: <span id="alp-sp-job-board" class="text-cyan-400">Greenhouse</span>
+                </p>
+              </div>
             </div>
 
-            <!-- Theme toggle -->
-            <button
-              id="alp-sp-theme-toggle"
-              class="rounded-full border border-slate-600/70 bg-slate-900/70 p-1.5 text-[11px] text-slate-300 hover:border-cyan-400/60 hover:text-cyan-100 transition"
-              title="Toggle light / dark"
-            >
-              <span id="alp-sp-theme-icon">☀️</span>
+            <div class="flex items-center gap-2">
+              <!-- Status pill -->
+              <div id="alp-sp-status-pill" class="alp-status-pill">
+                <span class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                <span>Connected</span>
+              </div>
+
+              <!-- Theme toggle -->
+              <button
+                id="alp-sp-theme-toggle"
+                class="rounded-full border border-slate-600/70 bg-slate-900/70 p-1.5 text-[11px] text-slate-300 hover:border-cyan-400/60 hover:text-cyan-100 transition"
+                title="Toggle light / dark"
+              >
+                <span id="alp-sp-theme-icon">☀️</span>
+              </button>
+            </div>
+            </header>
+
+          <!-- Metrics row -->
+          <section class="grid grid-cols-4 gap-2 pb-3 text-[11px]">
+            <div class="alp-metric-card">
+              <div class="text-slate-400">Fields</div>
+              <div id="alp-sp-metric-fields" class="mt-0.5 text-[13px] font-semibold">0</div>
+            </div>
+            <div class="alp-metric-card">
+              <div class="text-slate-400">Mapped</div>
+              <div id="alp-sp-metric-mapped" class="mt-0.5 text-[13px] font-semibold">0</div>
+            </div>
+            <div class="alp-metric-card">
+              <div class="text-slate-400">Profile</div>
+              <div id="alp-sp-metric-profile" class="mt-0.5 text-[13px] font-semibold">0</div>
+            </div>
+            <div class="alp-metric-card">
+              <div class="text-slate-400">Learning</div>
+              <div id="alp-sp-metric-learning" class="mt-0.5 text-[13px] font-semibold text-cyan-400">—</div>
+            </div>
+          </section>
+
+          <!-- Tabs / view selector -->
+          <nav class="alp-tabs">
+            <button data-tab="fields" class="alp-sp-tab alp-tab alp-tab-active">
+              Fields
             </button>
-          </div>
-        </header>
+            <button data-tab="profile" class="alp-sp-tab alp-tab">
+              Profile
+            </button>
+            <button data-tab="activity" class="alp-sp-tab alp-tab">
+              Activity
+            </button>
+          </nav>
 
-        <!-- Metrics row -->
-        <section class="grid grid-cols-4 gap-2 pb-3 text-[11px]">
-          <div class="alp-metric-card">
-            <div class="text-slate-400">Fields</div>
-            <div id="alp-sp-metric-fields" class="mt-0.5 text-[13px] font-semibold">0</div>
+          <!-- Progress indicator -->
+          <div id="alp-sp-scan-progress" class="hidden mb-3 rounded-alp-lg bg-slate-900/80 p-3">
+            <div class="h-1.5 w-full animate-pulse rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400"></div>
+            <p id="alp-sp-scan-label" class="mt-2 text-center text-[11px] text-slate-400"></p>
           </div>
-          <div class="alp-metric-card">
-            <div class="text-slate-400">Mapped</div>
-            <div id="alp-sp-metric-mapped" class="mt-0.5 text-[13px] font-semibold">0</div>
-          </div>
-          <div class="alp-metric-card">
-            <div class="text-slate-400">Profile</div>
-            <div id="alp-sp-metric-profile" class="mt-0.5 text-[13px] font-semibold">0</div>
-          </div>
-          <div class="alp-metric-card">
-            <div class="text-slate-400">Learning</div>
-            <div id="alp-sp-metric-learning" class="mt-0.5 text-[13px] font-semibold text-cyan-400">—</div>
-          </div>
-        </section>
 
-        <!-- Tabs / view selector -->
-        <nav class="alp-tabs">
-          <button data-tab="fields" class="alp-sp-tab alp-tab alp-tab-active">
-            Fields
-          </button>
-          <button data-tab="profile" class="alp-sp-tab alp-tab">
-            Profile
-          </button>
-          <button data-tab="activity" class="alp-sp-tab alp-tab">
-            Activity
-          </button>
-        </nav>
-
-        <!-- Progress indicator -->
-        <div id="alp-sp-scan-progress" class="hidden mb-3 rounded-alp-lg bg-slate-900/80 p-3">
-          <div class="h-1.5 w-full animate-pulse rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400"></div>
-          <p id="alp-sp-scan-label" class="mt-2 text-center text-[11px] text-slate-400"></p>
-        </div>
-
-        <!-- Scrollable body -->
-        <section class="flex-1 overflow-hidden rounded-alp-lg border border-slate-700/70 bg-slate-900/90">
+          <!-- Scrollable body -->
+          <section class="flex-1 overflow-hidden rounded-alp-lg border border-slate-700/70 bg-slate-900/90">
           <!-- FIELDS VIEW -->
           <div id="view-fields" class="alp-sp-view flex h-full flex-col opacity-100 translate-y-0 transition duration-150 ease-out">
             <!-- Header row -->
@@ -148,16 +152,37 @@
           </div>
 
           <div class="flex gap-2">
-            <button id="alp-sp-apply" class="alp-btn-primary text-slate-950" disabled>
-              Apply to page
-            </button>
-            <button id="alp-sp-log" class="alp-btn-secondary">
-              Log application
-            </button>
-          </div>
-        </section>
+              <button id="alp-sp-apply" class="alp-btn-primary text-slate-950" disabled>
+                Apply to page
+              </button>
+              <button id="alp-sp-log" class="alp-btn-secondary">
+                Log application
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
 
     <script src="sidepanel.js" type="module"></script>
+    <script>
+      // Debug overlay to visualize structure
+      window.addEventListener('load', () => {
+        console.log('[DEBUG HTML] Page loaded');
+        const panel = document.querySelector('.alp-panel');
+        const frame = document.querySelector('.al-panel-frame');
+        const card = document.querySelector('.al-panel-card');
+
+        console.log('[DEBUG HTML] frame dimensions:', frame?.getBoundingClientRect());
+        console.log('[DEBUG HTML] card dimensions:', card?.getBoundingClientRect());
+        console.log('[DEBUG HTML] panel dimensions:', panel?.getBoundingClientRect());
+        console.log('[DEBUG HTML] panel children count:', panel?.children.length);
+
+        // Log all direct children of panel
+        Array.from(panel?.children || []).forEach((child, i) => {
+          console.log(`[DEBUG HTML] panel child ${i}:`, child.tagName, child.className, child.getBoundingClientRect());
+        });
+      });
+    </script>
   </body>
 </html>

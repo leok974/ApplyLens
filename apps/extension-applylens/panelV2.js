@@ -1353,18 +1353,18 @@ export function createPanel() {
 
   panel.innerHTML = `
     <div class="alp-panel-header">
-      <div>
+      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
         <div class="alp-panel-header-title">ApplyLens Companion</div>
         <div id="al_status_subheader" class="alp-panel-header-sub">
           Job board: <span style="color:#7dd3fc;font-weight:500;">${atsName}</span>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2" style="display: flex; align-items: center; gap: 8px;">
         <div id="al_status_pill" class="alp-pill">
           <span class="alp-pill-dot"></span>
           <span>Ready</span>
         </div>
-        <button id="al_close" title="Close">✕</button>
+        <button id="al_close" title="Close" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 18px; padding: 4px 8px;">✕</button>
       </div>
     </div>
 

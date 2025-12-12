@@ -255,7 +255,8 @@ from .routers import diagnostics_classifier  # noqa: E402
 app.include_router(diagnostics_classifier.router)
 
 # Agent router - Mailbox Agent v2 (AI assistant)
-app.include_router(agent_router.router)
+# Mount with /api prefix to match frontend expectations (/api/v2/agent/run)
+app.include_router(agent_router.router, prefix="/api")
 
 # Agent feedback - Learning loop for Agent V2
 from . import routes_agent_feedback  # noqa: E402

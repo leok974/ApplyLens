@@ -535,6 +535,25 @@ function wireEvents() {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[ApplyLens Sidepanel] DOMContentLoaded');
 
+  // Debug layout issues
+  console.log('[DEBUG] Checking DOM structure...');
+  const panel = document.querySelector('.alp-panel');
+  const header = document.querySelector('header');
+  const sections = document.querySelectorAll('section');
+
+  console.log('[DEBUG] .alp-panel:', panel);
+  console.log('[DEBUG] .alp-panel computed style:', panel ? window.getComputedStyle(panel) : null);
+  console.log('[DEBUG] header:', header);
+  console.log('[DEBUG] header parent:', header?.parentElement);
+  console.log('[DEBUG] sections:', sections.length);
+
+  sections.forEach((section, i) => {
+    console.log(`[DEBUG] section ${i}:`, section);
+    console.log(`[DEBUG] section ${i} parent:`, section.parentElement);
+    console.log(`[DEBUG] section ${i} classes:`, section.className);
+    console.log(`[DEBUG] section ${i} computed:`, window.getComputedStyle(section));
+  });
+
   // Apply initial theme
   const initialTheme = getInitialTheme();
   applyTheme(initialTheme);

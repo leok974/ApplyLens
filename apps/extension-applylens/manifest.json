@@ -4,8 +4,11 @@
   "version": "0.3.0",
   "description": "Autofill ATS forms with smart field detection, memory-based preferences, and AI-powered cover letters.",
   "action": { "default_popup": "popup.html" },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "background": { "service_worker": "sw.js", "type": "module" },
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
   "host_permissions": [
     "https://api.applylens.app/*",
     "https://jobs.lever.co/*",
